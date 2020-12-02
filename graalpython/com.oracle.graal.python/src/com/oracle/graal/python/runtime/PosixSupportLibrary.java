@@ -80,7 +80,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int umask(Object receiver, int mask) throws PosixException;
 
-    public abstract int openAt(Object receiver, int dirFd, PosixPath pathname, int flags, int mode) throws PosixException;
+    public abstract int openAt(Object receiver, int dirFd, Object pathname, int flags, int mode) throws PosixException;
 
     public abstract void close(Object receiver, int fd) throws PosixException;
 
@@ -111,44 +111,42 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract int[] getTerminalSize(Object receiver, int fd) throws PosixException;
 
     // see stat_struct_to_longs in posix.c for the layout of the array
-    public abstract long[] fstatAt(Object receiver, int dirFd, PosixPath pathname, boolean followSymlinks) throws PosixException;
+    public abstract long[] fstatAt(Object receiver, int dirFd, Object pathname, boolean followSymlinks) throws PosixException;
 
     /**
      * Performs operation of fstat(fd).
      *
      * @param receiver the receiver of the message
      * @param fd the file descriptor
-     * @param filename filename for the error message, can be null
      * @param handleEintr if {@code true}, EINTR causes the call to be repeated
      * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array
      * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is
      *             {@code false}
      */
-    public abstract long[] fstat(Object receiver, int fd, Object filename, boolean handleEintr) throws PosixException;
+    public abstract long[] fstat(Object receiver, int fd, boolean handleEintr) throws PosixException;
 
     public abstract Object[] uname(Object receiver) throws PosixException;
 
-    public abstract void unlinkAt(Object receiver, int dirFd, PosixPath pathname, boolean rmdir) throws PosixException;
+    public abstract void unlinkAt(Object receiver, int dirFd, Object pathname, boolean rmdir) throws PosixException;
 
-    public abstract void symlinkAt(Object receiver, PosixPath target, int linkpathDirFd, PosixPath linkpath) throws PosixException;
+    public abstract void symlinkAt(Object receiver, Object target, int linkpathDirFd, Object linkpath) throws PosixException;
 
-    public abstract void mkdirAt(Object receiver, int dirFd, PosixPath pathname, int mode) throws PosixException;
+    public abstract void mkdirAt(Object receiver, int dirFd, Object pathname, int mode) throws PosixException;
 
     public abstract Object getcwd(Object receiver) throws PosixException;
 
-    public abstract void chdir(Object receiver, PosixPath path) throws PosixException;
+    public abstract void chdir(Object receiver, Object path) throws PosixException;
 
     /**
      * Performs operation of fchdir(fd).
      *
      * @param receiver the receiver of the message
      * @param fd the file descriptor
-     * @param pathname pathname for the error message, can be null
      * @param handleEintr if {@code true}, EINTR causes the call to be repeated
      * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is
      *             {@code false}
      */
-    public abstract void fchdir(Object receiver, int fd, Object pathname, boolean handleEintr) throws PosixException;
+    public abstract void fchdir(Object receiver, int fd, boolean handleEintr) throws PosixException;
 
     public abstract boolean isatty(Object receiver, int fd);
 
@@ -156,9 +154,9 @@ public abstract class PosixSupportLibrary extends Library {
      * @return an opaque directory stream object to be used in calls to {@code readdir} and
      *         {@code closedir}
      */
-    public abstract Object opendir(Object receiver, PosixPath path) throws PosixException;
+    public abstract Object opendir(Object receiver, Object path) throws PosixException;
 
-    public abstract Object fdopendir(Object receiver, PosixFd fd) throws PosixException;
+    public abstract Object fdopendir(Object receiver, int fd) throws PosixException;
 
     public abstract void closedir(Object receiver, Object dirStream);
 
@@ -178,12 +176,12 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Returns the dir entry path, which is the name of the dir entry joined with the given path.
      *
-     * @param scandirPath the path originally passed to {@link #opendir(Object, PosixPath)}
+     * @param scandirPath the path originally passed to {@link #opendir(Object, Object)}
      * @return an opaque object representing the dir entry path
      * @see #getPathAsBytes(Object, Object)
      * @see #getPathAsString(Object, Object)
      */
-    public abstract Object dirEntryGetPath(Object receiver, Object dirEntry, PosixPath scandirPath) throws PosixException;
+    public abstract Object dirEntryGetPath(Object receiver, Object dirEntry, Object scandirPath) throws PosixException;
 
     public abstract long dirEntryGetInode(Object receiver, Object dirEntry) throws PosixException;
 
@@ -199,22 +197,22 @@ public abstract class PosixSupportLibrary extends Library {
      *            {@code atime.tv_sec, atime.tv_nsec, mtime.tv_sec, mtime.tv_nsec} or {@code null}
      *            to set both times to 'now'
      */
-    public abstract void utimeNsAt(Object receiver, int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks) throws PosixException;
+    public abstract void utimeNsAt(Object receiver, int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException;
 
     /**
      * Equivalent of POSIX {@code futimens()}.
      */
-    public abstract void futimeNs(Object receiver, PosixFd fd, long[] timespec) throws PosixException;
+    public abstract void futimeNs(Object receiver, int fd, long[] timespec) throws PosixException;
 
-    public abstract void renameAt(Object receiver, int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath) throws PosixException;
+    public abstract void renameAt(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
-    public abstract boolean faccessAt(Object receiver, int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks);
+    public abstract boolean faccessAt(Object receiver, int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks);
 
-    public abstract void fchmodat(Object receiver, int dirFd, PosixPath path, int mode, boolean followSymlinks) throws PosixException;
+    public abstract void fchmodat(Object receiver, int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException;
 
-    public abstract void fchmod(Object receiver, PosixFd fd, int mode) throws PosixException;
+    public abstract void fchmod(Object receiver, int fd, int mode) throws PosixException;
 
-    public abstract Object readlinkat(Object receiver, int dirFd, PosixPath path) throws PosixException;
+    public abstract Object readlinkat(Object receiver, int dirFd, Object path) throws PosixException;
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
@@ -324,55 +322,6 @@ public abstract class PosixSupportLibrary extends Library {
         @TruffleBoundary
         public ByteBuffer getByteBuffer() {
             return ByteBuffer.wrap(data, 0, (int) length);
-        }
-    }
-
-    /**
-     * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
-     * structure, but only contains the results of the conversion, not the conversion parameters.
-     */
-    public abstract static class PosixFileHandle {
-
-        /**
-         * Contains the original object (or the object returned by {@code __fspath__}) for auditing
-         * purposes. This field is {code null} iff the path parameter was optional and the caller
-         * did not provide it.
-         */
-        public final Object originalObject;
-
-        protected PosixFileHandle(Object originalObject) {
-            this.originalObject = originalObject;
-        }
-    }
-
-    /**
-     * Contains the path converted to the representation used by the {@code PosixSupportLibrary}
-     * implementation
-     *
-     * @see PosixSupportLibrary#createPathFromString(Object, String)
-     * @see PosixSupportLibrary#createPathFromBytes(Object, byte[])
-     */
-    public static class PosixPath extends PosixFileHandle {
-        public final Object value;
-        public final boolean wasBufferLike;
-
-        public PosixPath(Object originalObject, Object value, boolean wasBufferLike) {
-            super(originalObject);
-            this.value = value;
-            this.wasBufferLike = wasBufferLike;
-        }
-    }
-
-    /**
-     * Contains the file descriptor if it was allowed in the argument conversion node and the caller
-     * provided an integer instead of a path.
-     */
-    public static class PosixFd extends PosixFileHandle {
-        public final int fd;
-
-        public PosixFd(Object originalObject, int fd) {
-            super(originalObject);
-            this.fd = fd;
         }
     }
 }

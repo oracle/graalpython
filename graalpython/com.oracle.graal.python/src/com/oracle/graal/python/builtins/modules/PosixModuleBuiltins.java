@@ -153,9 +153,6 @@ import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1057,7 +1054,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             int fixedFlags = flags | CLOEXEC;
             auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
             try {
-                return posixLib.openAt(getPosixSupport(), dirFd, path, fixedFlags, mode);
+                return posixLib.openAt(getPosixSupport(), dirFd, path.value, fixedFlags, mode);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1408,7 +1405,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
             try {
-                long[] out = posixLib.fstatAt(getPosixSupport(), dirFd, path, followSymlinks);
+                long[] out = posixLib.fstatAt(getPosixSupport(), dirFd, path.value, followSymlinks);
                 return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -1432,7 +1429,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
             try {
-                long[] out = posixLib.fstat(getPosixSupport(), fd.fd, fd.originalObject, false);
+                long[] out = posixLib.fstat(getPosixSupport(), fd.fd, false);
                 return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
@@ -1460,7 +1457,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ConditionProfile positiveLongProfile) {
             try {
-                long[] out = posixLib.fstatAt(getPosixSupport(), dirFd, path, false);
+                long[] out = posixLib.fstatAt(getPosixSupport(), dirFd, path.value, false);
                 return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -1483,7 +1480,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ConditionProfile positiveLongProfile) {
             try {
-                long[] out = posixLib.fstat(getPosixSupport(), fd, null, true);
+                long[] out = posixLib.fstat(getPosixSupport(), fd, true);
                 return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -1523,7 +1520,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.remove", path.originalObject, dirFdForAudit(dirFd));
             try {
-                posixLib.unlinkAt(getPosixSupport(), dirFd, path, false);
+                posixLib.unlinkAt(getPosixSupport(), dirFd, path.value, false);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1563,7 +1560,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone symlink(VirtualFrame frame, PosixPath src, PosixPath dst, @SuppressWarnings("unused") boolean targetIsDir, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                posixLib.symlinkAt(getPosixSupport(), src, dirFd, dst);
+                posixLib.symlinkAt(getPosixSupport(), src.value, dirFd, dst.value);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
             }
@@ -1589,7 +1586,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.mkdir", path.originalObject, mode, dirFdForAudit(dirFd));
             try {
-                posixLib.mkdirAt(getPosixSupport(), dirFd, path, mode);
+                posixLib.mkdirAt(getPosixSupport(), dirFd, path.value, mode);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1614,7 +1611,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.rmdir", path.originalObject, dirFdForAudit(dirFd));
             try {
-                posixLib.unlinkAt(getPosixSupport(), dirFd, path, true);
+                posixLib.unlinkAt(getPosixSupport(), dirFd, path.value, true);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1664,7 +1661,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone chdirPath(VirtualFrame frame, PosixPath path,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                posixLib.chdir(getPosixSupport(), path);
+                posixLib.chdir(getPosixSupport(), path.value);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1675,7 +1672,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone chdirFd(VirtualFrame frame, PosixFd fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                posixLib.fchdir(getPosixSupport(), fd.fd, fd.originalObject, false);
+                posixLib.fchdir(getPosixSupport(), fd.fd, false);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -1697,7 +1694,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone fchdir(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                posixLib.fchdir(getPosixSupport(), fd, null, true);
+                posixLib.fchdir(getPosixSupport(), fd, true);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1758,7 +1755,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return factory().createNfiScandirIterator(posixLib.opendir(getPosixSupport(), path), path);
+                return factory().createNfiScandirIterator(posixLib.opendir(getPosixSupport(), path.value), path);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1770,7 +1767,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", fd.originalObject);
             try {
-                return factory().createNfiScandirIterator(posixLib.fdopendir(getPosixSupport(), fd), fd);
+                return factory().createNfiScandirIterator(posixLib.fdopendir(getPosixSupport(), fd.fd), fd);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -1793,7 +1790,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.listdir", path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return listdir(frame, posixLib.opendir(getPosixSupport(), path), path.wasBufferLike, posixLib);
+                return listdir(frame, posixLib.opendir(getPosixSupport(), path.value), path.wasBufferLike, posixLib);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1805,7 +1802,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.listdir", fd.originalObject);
             try {
-                return listdir(frame, posixLib.fdopendir(getPosixSupport(), fd), false, posixLib);
+                return listdir(frame, posixLib.fdopendir(getPosixSupport(), fd.fd), false, posixLib);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -1984,7 +1981,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         private void callUtimeNsAt(VirtualFrame frame, PosixPath path, long[] timespec, int dirFd, boolean followSymlinks, PosixSupportLibrary posixLib) {
             try {
-                posixLib.utimeNsAt(getPosixSupport(), dirFd, path, timespec, followSymlinks);
+                posixLib.utimeNsAt(getPosixSupport(), dirFd, path.value, timespec, followSymlinks);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1992,7 +1989,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         private void callFutimeNs(VirtualFrame frame, PosixFd fd, long[] timespec, PosixSupportLibrary posixLib) {
             try {
-                posixLib.futimeNs(getPosixSupport(), fd, timespec);
+                posixLib.futimeNs(getPosixSupport(), fd.fd, timespec);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -2022,7 +2019,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.rename", src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
             try {
-                posixLib.renameAt(getPosixSupport(), srcDirFd, src, dstDirFd, dst);
+                posixLib.renameAt(getPosixSupport(), srcDirFd, src.value, dstDirFd, dst.value);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
             }
@@ -2064,7 +2061,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         boolean access(PosixPath path, int mode, int dirFd, boolean effectiveIds, boolean followSymlinks,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.faccessAt(getPosixSupport(), dirFd, path, mode, effectiveIds, followSymlinks);
+            return posixLib.faccessAt(getPosixSupport(), dirFd, path.value, mode, effectiveIds, followSymlinks);
         }
     }
 
@@ -2087,7 +2084,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             auditNode.audit("os.chmod", path.originalObject, mode, dirFdForAudit(dirFd));
             try {
-                posixLib.fchmodat(getPosixSupport(), dirFd, path, mode, followSymlinks);
+                posixLib.fchmodat(getPosixSupport(), dirFd, path.value, mode, followSymlinks);
             } catch (PosixException e) {
                 // TODO CPython checks for ENOTSUP as well
                 if (e.getErrorCode() == OSErrorEnum.EOPNOTSUPP.getNumber() && !followSymlinks) {
@@ -2112,7 +2109,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // arguments is used, CPython's implementation of chmod simply ignores dir_fd and
             // follow_symlinks if a fd is specified instead of a path.
             try {
-                posixLib.fchmod(getPosixSupport(), fd, mode);
+                posixLib.fchmod(getPosixSupport(), fd.fd, mode);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -2136,7 +2133,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PBytes readlinkAsBytes(VirtualFrame frame, PosixPath path, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                return opaquePathToBytes(posixLib.readlinkat(getPosixSupport(), dirFd, path), posixLib, getPosixSupport(), factory());
+                return opaquePathToBytes(posixLib.readlinkat(getPosixSupport(), dirFd, path.value), posixLib, getPosixSupport(), factory());
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -2146,7 +2143,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         String readlinkAsString(VirtualFrame frame, PosixPath path, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                return posixLib.getPathAsString(getPosixSupport(), posixLib.readlinkat(getPosixSupport(), dirFd, path));
+                return posixLib.getPathAsString(getPosixSupport(), posixLib.readlinkat(getPosixSupport(), dirFd, path.value));
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -3707,6 +3704,55 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
         public static FileDescriptorConversionNode create() {
             return PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
+     * structure, but only contains the results of the conversion, not the conversion parameters.
+     */
+    public abstract static class PosixFileHandle {
+
+        /**
+         * Contains the original object (or the object returned by {@code __fspath__}) for auditing
+         * purposes. This field is {code null} iff the path parameter was optional and the caller
+         * did not provide it.
+         */
+        public final Object originalObject;
+
+        protected PosixFileHandle(Object originalObject) {
+            this.originalObject = originalObject;
+        }
+    }
+
+    /**
+     * Contains the path converted to the representation used by the {@code PosixSupportLibrary}
+     * implementation
+     *
+     * @see PosixSupportLibrary#createPathFromString(Object, String)
+     * @see PosixSupportLibrary#createPathFromBytes(Object, byte[])
+     */
+    public static class PosixPath extends PosixFileHandle {
+        public final Object value;
+        public final boolean wasBufferLike;
+
+        public PosixPath(Object originalObject, Object value, boolean wasBufferLike) {
+            super(originalObject);
+            this.value = value;
+            this.wasBufferLike = wasBufferLike;
+        }
+    }
+
+    /**
+     * Contains the file descriptor if it was allowed in the argument conversion node and the caller
+     * provided an integer instead of a path.
+     */
+    public static class PosixFd extends PosixFileHandle {
+        public final int fd;
+
+        public PosixFd(Object originalObject, int fd) {
+            super(originalObject);
+            this.fd = fd;
         }
     }
 }
