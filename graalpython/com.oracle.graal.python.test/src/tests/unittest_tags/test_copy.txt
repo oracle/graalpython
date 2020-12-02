@@ -11,13 +11,16 @@
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_inst_getnewargs
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_inst_getnewargs_ex
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_inst_getstate
+*graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_inst_getstate_setstate
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_inst_setstate
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_inst_vanilla
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_list
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_list_subclass
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_reduce
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_reduce_ex
+*graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_registry
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_set
+*graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_slots
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_tuple
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_tuple_subclass
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_copy_weakref
@@ -36,6 +39,7 @@
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_inst_getnewargs
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_inst_getnewargs_ex
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_inst_getstate
+*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_inst_getstate_setstate
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_inst_setstate
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_inst_vanilla
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_issubclass
@@ -50,6 +54,8 @@
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_reflexive_inst
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_reflexive_list
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_reflexive_tuple
+*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_registry
+*graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_slots
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_tuple
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_tuple_of_immutables
 *graalpython.lib-python.3.test.test_copy.TestCopy.test_deepcopy_tuple_subclass
