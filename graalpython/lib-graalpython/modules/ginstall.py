@@ -381,7 +381,7 @@ def known_packages():
     def Pillow(**kwargs):
         setuptools(**kwargs)
         build_env = {"MAX_CONCURRENCY": "0"}
-        install_from_pypi("Pillow==6.2.0", env=build_env, **kwargs)
+        install_from_pypi("Pillow==6.2.0", build_cmd=["build_ext", "--disable-jpeg"], env=build_env, **kwargs)
         
     @pip_package()
     def matplotlib(**kwargs):
@@ -449,7 +449,7 @@ def _download_with_curl_and_extract(dest_dir, url):
     return bare_name
 
 
-def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None, pre_install_hook=None):
+def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None, pre_install_hook=None, build_cmd=[]):
     tempdir = tempfile.mkdtemp()
 
     os_env = os.environ
@@ -487,7 +487,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
         user_arg = ["--user"]
     else:
         user_arg = []
-    status = run_cmd([sys.executable, "setup.py", "install"] + user_arg + extra_opts, env=setup_env,
+    status = run_cmd([sys.executable, "setup.py"] + build_cmd + ["install"] + user_arg + extra_opts, env=setup_env,
                      cwd=os.path.join(tempdir, bare_name))
     if status != 0 and not ignore_errors:
         xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
@@ -522,7 +522,7 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 # end of code duplicated in pip_hook.py
 
-def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env=None, pre_install_hook=None):
+def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env=None, pre_install_hook=None, build_cmd=[]):
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
 
@@ -567,7 +567,8 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
 
     if url:
         _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags,
-                          ignore_errors=ignore_errors, env=env, version=version, pre_install_hook=pre_install_hook)
+                          ignore_errors=ignore_errors, env=env, version=version, pre_install_hook=pre_install_hook,
+                          build_cmd=build_cmd)
     else:
         xit("Package not found: '%s'" % package)
 
