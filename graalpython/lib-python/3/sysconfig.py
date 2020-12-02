@@ -20,6 +20,17 @@ __all__ = [
 ]
 
 _INSTALL_SCHEMES = {
+    # Graalpython change: custom scheme
+    'graalpython': {
+        'stdlib': '{base}/lib-python/3',
+        'platstdlib': '{base}/lib-python/3',
+        'purelib': '{base}/lib-python/3/site-packages',
+        'platlib': '{base}/lib-python/3/site-packages',
+        'include': '{base}/include',
+        'platinclude': '{base}/include',
+        'scripts': '{base}/bin',
+        'data': '{base}',
+    },
     'posix_prefix': {
         'stdlib': '{installed_base}/lib/python{py_version_short}',
         'platstdlib': '{platbase}/lib/python{py_version_short}',
@@ -180,10 +191,12 @@ def _expand_vars(scheme, vars):
 
 
 def _get_default_scheme():
-    if os.name == 'posix':
-        # the default scheme for posix is posix_prefix
-        return 'posix_prefix'
-    return os.name
+    # XXX Graalpython change
+    return 'graalpython'
+    # if os.name == 'posix':
+    #     # the default scheme for posix is posix_prefix
+    #     return 'posix_prefix'
+    # return os.name
 
 
 # NOTE: site.py has copy of this function.
