@@ -152,9 +152,3 @@ old_get_terminal_size = get_terminal_size
 @__graalpython__.builtin
 def get_terminal_size(fd = None):
     return terminal_size(old_get_terminal_size(fd))
-
-def execl(file, *args):
-    """execl(file, *args)
-    Execute the executable file with argument list args, replacing the
-    current process. """
-    execv(file, args)

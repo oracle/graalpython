@@ -133,7 +133,8 @@ public class PosixTest {
     public void lseek() throws IOException {
         Files.write(tmpfile, "hello".getBytes());
         assertPrints("b'llo'\n", open("0") +
-                        "posix.lseek(fd, 2, posix.SEEK_SET)\n" +
+                        "import os\n" +
+                        "posix.lseek(fd, 2, os.SEEK_SET)\n" +
                         "print(posix.read(fd, 3))");
     }
 
