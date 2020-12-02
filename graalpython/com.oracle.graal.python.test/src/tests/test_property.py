@@ -129,3 +129,68 @@ def test_property_error():
     except BaseException as e:
         assert isinstance(e, AttributeError), "did not get AttributeError, was %s" % type(e)
         assert str(e) == ERROR_FROM_GETTER, "did not get expected error message; was %s" % str(e)
+
+def test_get_set_propert_attr():
+    p = C.__dict__['prop_x']
+    got_error = False
+    try:
+        p.a
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.a = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        del p.a
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.fget = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.fset = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.fdel = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.getter = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.setter = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
+    
+    got_error = False
+    try:
+        p.deleter = 1
+    except AttributeError:
+        got_error = True
+    assert got_error
