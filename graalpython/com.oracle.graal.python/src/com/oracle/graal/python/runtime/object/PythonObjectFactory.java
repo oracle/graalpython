@@ -948,8 +948,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
-    public PNfiScandirIterator createNfiScandirIterator(Object dirStream, PosixFileHandle path) {
-        return trace(new PNfiScandirIterator(PythonBuiltinClassType.PNfiScandirIterator, PythonBuiltinClassType.PNfiScandirIterator.getInstanceShape(getLanguage()), dirStream, path));
+    public PNfiScandirIterator createNfiScandirIterator(Object dirStream, PosixFileHandle path, ReferenceQueue<PNfiScandirIterator> queue) {
+        return trace(new PNfiScandirIterator(PythonBuiltinClassType.PNfiScandirIterator, PythonBuiltinClassType.PNfiScandirIterator.getInstanceShape(getLanguage()), dirStream, path, queue));
     }
 
     public PNfiDirEntry createNfiDirEntry(Object dirEntryData, PosixFileHandle path) {

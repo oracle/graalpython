@@ -40,11 +40,6 @@
  */
 package com.oracle.graal.python.runtime;
 
-import java.lang.ref.PhantomReference;
-import java.lang.ref.ReferenceQueue;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -56,7 +51,6 @@ import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
@@ -79,8 +73,6 @@ public final class NFIPosixSupport extends PosixSupport {
     private static final int PATH_MAX = 4096;
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
-
-    private final ReferenceQueue<DirStream> dirStreamRefQueue = new ReferenceQueue<>();
 
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
@@ -146,7 +138,6 @@ public final class NFIPosixSupport extends PosixSupport {
                         "You can switch to pure Java emulated POSIX support, " +
                                         "which does not require native access privilege, by passing option " +
                                         "'--python.PosixModuleBackend=java'.");
-        // TODO registerAsyncAction - use SharedFinalizer from PR #1316
     }
 
     public static NFIPosixSupport createNative(PythonContext context) {
@@ -453,7 +444,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
-        return new DirStream(dirStreamRefQueue, ptr, false);
+        return new DirStream(ptr, false);
     }
 
     @ExportMessage
@@ -463,23 +454,22 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
-        return new DirStream(dirStreamRefQueue, ptr, true);
+        return new DirStream(ptr, true);
     }
 
     @ExportMessage
     public void closedir(Object dirStreamObj,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         DirStream dirStream = (DirStream) dirStreamObj;
-        synchronized (dirStream.ref.lock) {
-            if (!dirStream.ref.closed) {
-                dirStream.ref.closed = true;
-                int res = invokeNode.callInt(lib, NativeFunctions.call_closedir, dirStream.ref.nativePtr, dirStream.ref.needsRewind ? 1 : 0);
+        synchronized (dirStream.lock) {
+            if (!dirStream.closed) {
+                dirStream.closed = true;
+                int res = invokeNode.callInt(lib, NativeFunctions.call_closedir, dirStream.nativePtr, dirStream.needsRewind ? 1 : 0);
                 if (res != 0 && LOGGER.isLoggable(Level.INFO)) {
                     log(Level.INFO, "Error occured during closedir, errno=%d", getErrno(invokeNode));
                 }
             }
         }
-        DirStreamRef.removeFromSet(dirStream.ref);
     }
 
     @ExportMessage
@@ -489,12 +479,12 @@ public final class NFIPosixSupport extends PosixSupport {
         Buffer name = Buffer.allocate(DIRENT_NAME_BUF_LENGTH);
         long[] out = new long[2];
         int result;
-        synchronized (dirStream.ref.lock) {
-            if (dirStream.ref.closed) {
+        synchronized (dirStream.lock) {
+            if (dirStream.closed) {
                 return null;
             }
             do {
-                result = invokeNode.callInt(lib, NativeFunctions.call_readdir, dirStream.ref.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
+                result = invokeNode.callInt(lib, NativeFunctions.call_readdir, dirStream.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
             } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         }
         if (result != 0) {
@@ -565,7 +555,6 @@ public final class NFIPosixSupport extends PosixSupport {
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(lib, NativeFunctions.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
         if (ret != 0) {
-            // filename is intentionally not included, see CPython's os_utime_impl
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
@@ -576,7 +565,6 @@ public final class NFIPosixSupport extends PosixSupport {
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(lib, NativeFunctions.call_futimens, fd, wrap(timespec));
         if (ret != 0) {
-            // filename is intentionally not included, see CPython's os_utime_impl
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
@@ -681,55 +669,25 @@ public final class NFIPosixSupport extends PosixSupport {
     // ------------------
     // Objects/handles/pointers
 
-    private static class DirStreamRef extends PhantomReference<DirStream> {
-
-        // all alive references are stored in this set in order to keep them reachable
-        private static final Set<DirStreamRef> dirStreamRefs = Collections.synchronizedSet(new HashSet<>());
-
+    private static class DirStream {
         final long nativePtr;
         final boolean needsRewind;
         final Object lock;
         boolean closed;
 
-        DirStreamRef(DirStream referent, ReferenceQueue<DirStream> queue, long nativePtr, boolean needsRewind) {
-            super(referent, queue);
+        DirStream(long nativePtr, boolean needsRewind) {
             this.nativePtr = nativePtr;
             this.needsRewind = needsRewind;
             this.lock = new Object();
-            addToSet(this);
-        }
-
-        @TruffleBoundary
-        static void addToSet(DirStreamRef ref) {
-            dirStreamRefs.add(ref);
-        }
-
-        @TruffleBoundary
-        static void removeFromSet(DirStreamRef ref) {
-            dirStreamRefs.remove(ref);
         }
 
         @Override
         public String toString() {
-            return "DirStreamStateRef{" +
+            return "DirStream{" +
                             "nativePtr=" + nativePtr +
                             ", needsRewind=" + needsRewind +
                             ", closed=" + closed +
                             '}';
-        }
-    }
-
-    private static class DirStream {
-        final DirStreamRef ref;
-
-        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, boolean needsRewind) {
-            ref = new DirStreamRef(this, queue, nativePtr, needsRewind);
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return "DirStreamState -> " + ref;
         }
     }
 

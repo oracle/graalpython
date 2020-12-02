@@ -55,6 +55,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
+import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -187,6 +188,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+
 import com.sun.security.auth.UnixNumericGroupPrincipal;
 import com.sun.security.auth.UnixNumericUserPrincipal;
 
@@ -310,6 +312,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("_have_functions", core.factory().createList());
         builtinConstants.put("environ", core.factory().createDict());
     }
+
+    // TODO will be replaced by using SharedFinalizer from PR #1316, for now it's static
+    private static final ReferenceQueue<PNfiScandirIterator> dirStreamRefQueue = new ReferenceQueue<>();
 
     @Override
     public void postInitialize(PythonCore core) {
@@ -1804,7 +1809,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return factory().createNfiScandirIterator(posixLib.opendir(getPosixSupport(), path.value), path);
+                return factory().createNfiScandirIterator(posixLib.opendir(getPosixSupport(), path.value), path, dirStreamRefQueue);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1816,7 +1821,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", fd.originalObject);
             try {
-                return factory().createNfiScandirIterator(posixLib.fdopendir(getPosixSupport(), fd.fd), fd);
+                return factory().createNfiScandirIterator(posixLib.fdopendir(getPosixSupport(), fd.fd), fd, dirStreamRefQueue);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }
@@ -2032,6 +2037,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 posixLib.utimeNsAt(getPosixSupport(), dirFd, path.value, timespec, followSymlinks);
             } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -2040,6 +2046,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 posixLib.futimeNs(getPosixSupport(), fd.fd, timespec);
             } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }

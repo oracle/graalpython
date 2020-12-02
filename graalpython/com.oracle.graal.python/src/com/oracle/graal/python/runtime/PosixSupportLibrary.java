@@ -147,6 +147,9 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract boolean isatty(Object receiver, int fd);
 
     /**
+     * Caller is responsible for calling {@link #closedir(Object, Object)} to free the allocated
+     * resources.
+     *
      * @return an opaque directory stream object to be used in calls to {@code readdir} and
      *         {@code closedir}
      */
@@ -154,11 +157,15 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Object fdopendir(Object receiver, int fd) throws PosixException;
 
+    /**
+     * Implementations must deal with this being called more than once.
+     */
     public abstract void closedir(Object receiver, Object dirStream);
 
     /**
      * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods or
-     *         {@code null} when there are no more items
+     *         {@code null} when there are no more items or if the stream has been closed by
+     *         {@code closedir}.
      */
     public abstract Object readdir(Object receiver, Object dirStream) throws PosixException;
 
