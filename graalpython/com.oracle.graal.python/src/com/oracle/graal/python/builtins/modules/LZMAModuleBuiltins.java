@@ -409,10 +409,6 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LZMADecompressorNode extends LZMANode {
 
-        @Child private GetItemNode getItemNode;
-
-        @Child private IsBuiltinClassProfile keyErrorProfile;
-
         @Specialization
         PLZMADecompressor doCreate(VirtualFrame frame, Object cls, Object formatObj, Object memlimitObj, Object filters,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {

@@ -1585,7 +1585,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
             try {
                 int ndim = castToIntNode.execute(ndimObj);
                 int itemsize = castToIntNode.execute(itemsizeObj);
@@ -1627,7 +1627,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (!lib.isNull(bufferStructPointer)) {
                     managedBuffer = new ManagedBuffer(bufferStructPointer);
                 }
-                PMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
+                PMemoryView memoryview = factory().createMemoryView(context, managedBuffer, owner, len, readonly, itemsize,
                                 BufferFormat.forMemoryView(format),
                                 format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);

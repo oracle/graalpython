@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,20 +38,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.modules.io;
 
-import java.util.ArrayList;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
+
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = "_io")
 public class IOModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return IOModuleBuiltinsFactory.getFactories();
+    }
+
+    public static final int DEFAULT_BUFFER_SIZE = 8 * 1024;
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonModule ioModule = core.lookupBuiltinModule("_io");
+        PythonAbstractClass bufferediobase = (PythonAbstractClass) ioModule.getAttribute("BufferedIOBase");
+        core.lookupType(PBufferedReader).setSuperClass(bufferediobase);
+    }
+
+    @Builtin(name = "BufferedReader", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedReader)
+    @GenerateNodeFactory
+    public abstract static class BufferedReaderNode extends PythonBuiltinNode {
+        @Specialization
+        public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see BufferedReaderBuiltins.InitNode
+            return factory().createBufferedReader(cls);
+        }
     }
 }

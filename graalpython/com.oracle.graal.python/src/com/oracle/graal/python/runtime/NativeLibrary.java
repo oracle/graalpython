@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,11 +44,10 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NativeLibraryFactory.InvokeNativeFunctionNodeGen;
+import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -106,6 +105,18 @@ public class NativeLibrary {
         }
     }
 
+    /**
+     * This is a helper exception that will be thrown in case a library is {@link #optional} and not
+     * available.
+     */
+    public static class NativeLibraryCannotBeLoaded extends PythonControlFlowException {
+        private static final NativeLibraryCannotBeLoaded INSTANCE = new NativeLibraryCannotBeLoaded();
+        private static final long serialVersionUID = 6066722947025284374L;
+
+        private NativeLibraryCannotBeLoaded() {
+        }
+    }
+
     private final int functionsCount;
     private final String name;
     private final NFIBackend nfiBackend;
@@ -116,17 +127,19 @@ public class NativeLibrary {
      * fails.
      */
     private final String noNativeAccessHelp;
+    private final boolean optional;
 
     private volatile Object[] cachedFunctions;
     private volatile Object cachedLibrary;
     private volatile InteropLibrary cachedLibraryInterop;
     private volatile Object dummy;
 
-    public NativeLibrary(String name, int functionsCount, NFIBackend nfiBackend, String noNativeAccessHelp) {
+    public NativeLibrary(String name, int functionsCount, NFIBackend nfiBackend, String noNativeAccessHelp, boolean optional) {
         this.functionsCount = functionsCount;
         this.name = name;
         this.nfiBackend = nfiBackend;
         this.noNativeAccessHelp = noNativeAccessHelp;
+        this.optional = optional;
     }
 
     private Object getCachedLibrary(PythonContext context) {
@@ -136,8 +149,11 @@ public class NativeLibrary {
             synchronized (this) {
                 if (cachedLibrary == null) {
                     Object lib = loadLibrary(context);
-                    cachedLibraryInterop = InteropLibrary.getUncached(lib);
-                    cachedLibrary = lib;
+                    if (lib != null) {
+                        // order matters due to multi-threading cases.
+                        cachedLibraryInterop = InteropLibrary.getUncached(lib);
+                        cachedLibrary = lib;
+                    }
                 }
             }
         }
@@ -188,32 +204,39 @@ public class NativeLibrary {
 
     private Object loadLibrary(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
-        if (!context.getEnv().isNativeAccessAllowed()) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError,
+        if (context.getEnv().isNativeAccessAllowed()) {
+            String path = getLibPath(context);
+            String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
+            }
+            Source loadSrc = Source.newBuilder("nfi", src, "load:" + name).internal(true).build();
+            try {
+                return context.getEnv().parseInternal(loadSrc).call();
+            } catch (RuntimeException ex) {
+                Level level = optional ? Level.FINE : Level.SEVERE;
+                if (LOGGER.isLoggable(level)) {
+                    LOGGER.log(level, ex, () -> String.format("Error while opening shared library at '%s'.\nFull NFI source: %s.", path, src));
+                }
+                if (!optional) {
+                    throw new RuntimeException(String.format(
+                                    "Cannot load supporting native library '%s'. " +
+                                                    "Either the shared library file does not exist, or your system may be missing some dependencies. " +
+                                                    "Turn on logging with --log.%s.level=INFO for more details. %s",
+                                    name,
+                                    NativeLibrary.class.getName(),
+                                    noNativeAccessHelp));
+                }
+            }
+        } else {
+            throw new RuntimeException(String.format(
                             "Cannot load supporting native library '%s' because the native access is not allowed. " +
                                             "The native access should be allowed when running GraalPython via the graalpython command. " +
                                             "If you are embedding GraalPython using the Context API, make sure to allow native access using 'allowNativeAccess(true)'. %s",
                             name,
-                            noNativeAccessHelp);
+                            noNativeAccessHelp));
         }
-        String path = getLibPath(context);
-        String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
-        if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
-        }
-        Source loadSrc = Source.newBuilder("nfi", src, "load:" + name).internal(true).build();
-        try {
-            return context.getEnv().parseInternal(loadSrc).call();
-        } catch (UnsatisfiedLinkError ex) {
-            LOGGER.log(Level.SEVERE, ex, () -> String.format("Error while opening shared library at '%s'.\nFull NFI source: %s.", path, src));
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError,
-                            "Cannot load supporting native library '%s'. " +
-                                            "Either the shared library file does not exist, or your system may be missing some dependencies. " +
-                                            "Turn on logging with --log.%s.level=INFO for more details. %s",
-                            name,
-                            NativeLibrary.class.getName(),
-                            noNativeAccessHelp);
-        }
+        throw NativeLibraryCannotBeLoaded.INSTANCE;
     }
 
     private String getLibPath(PythonContext context) {
@@ -224,17 +247,32 @@ public class NativeLibrary {
         return file.getPath();
     }
 
-    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, String noNativeAccessHelp) {
-        return create(name, functions, NFIBackend.NATIVE, noNativeAccessHelp);
+    protected Object callUncached(PythonContext context, NativeFunction f, Object... args) {
+        CompilerAsserts.neverPartOfCompilation();
+        final Object lib = getCachedLibrary(context);
+        if (lib != null) {
+            try {
+                Object symbol = cachedLibraryInterop.readMember(lib, f.name());
+                Object function = InteropLibrary.getUncached(symbol).invokeMember(symbol, "bind", f.signature());
+                return InteropLibrary.getUncached(function).execute(function, args);
+            } catch (Exception e) {
+                throw CompilerDirectives.shouldNotReachHere(f.name(), e);
+            }
+        }
+        return null;
     }
 
-    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, NFIBackend nfiBackendName, String noNativeAccessHelp) {
-        return new TypedNativeLibrary<>(name, functions.length, nfiBackendName, noNativeAccessHelp);
+    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, String noNativeAccessHelp, boolean canIgnore) {
+        return create(name, functions, NFIBackend.NATIVE, noNativeAccessHelp, canIgnore);
+    }
+
+    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, NFIBackend nfiBackendName, String noNativeAccessHelp, boolean canIgnore) {
+        return new TypedNativeLibrary<>(name, functions.length, nfiBackendName, noNativeAccessHelp, canIgnore);
     }
 
     public static final class TypedNativeLibrary<T extends Enum<T> & NativeFunction> extends NativeLibrary {
-        public TypedNativeLibrary(String name, int functionsCount, NFIBackend nfiBackendName, String noNativeAccessHelp) {
-            super(name, functionsCount, nfiBackendName, noNativeAccessHelp);
+        public TypedNativeLibrary(String name, int functionsCount, NFIBackend nfiBackendName, String noNativeAccessHelp, boolean canIgnore) {
+            super(name, functionsCount, nfiBackendName, noNativeAccessHelp, canIgnore);
         }
     }
 
@@ -269,6 +307,14 @@ public class NativeLibrary {
         public <T extends Enum<T> & NativeFunction> int callInt(TypedNativeLibrary<T> lib, T function, Object... args) {
             try {
                 return ensureResultInterop().asInt(call(lib, function, args));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(function.name(), e);
+            }
+        }
+
+        public <T extends Enum<T> & NativeFunction> String callString(TypedNativeLibrary<T> lib, T function, Object... args) {
+            try {
+                return ensureResultInterop().asString(call(lib, function, args));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(function.name(), e);
             }
@@ -341,7 +387,7 @@ public class NativeLibrary {
         public InteropLibrary ensureResultInterop() {
             if (resultInterop == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                resultInterop = insert(InteropLibrary.getFactory().createDispatched(2));
+                resultInterop = insert(InteropLibrary.getFactory().createDispatched(3));
             }
             return resultInterop;
         }

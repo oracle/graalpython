@@ -50,6 +50,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -91,7 +93,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     // Cached hash value, required to compy with CPython's semantics
     private int cachedHash = -1;
 
-    public PMemoryView(Object cls, Shape instanceShape, MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+    public PMemoryView(Object cls, Shape instanceShape, PythonContext context, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
@@ -109,14 +111,13 @@ public final class PMemoryView extends PythonBuiltinObject {
         this.suboffsets = suboffsets;
         this.flags = flags;
         if (managedBuffer != null) {
-            createReference(references, managedBuffer);
+            createReference(context.getSharedFinalizer(), managedBuffer);
         }
     }
 
     @TruffleBoundary
-    private void createReference(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer) {
-        this.reference = new BufferReference(this, managedBuffer, references.queue);
-        references.set.add(this.reference);
+    private void createReference(AsyncHandler.SharedFinalizer sharedFinalizer, ManagedBuffer managedBuffer) {
+        this.reference = new BufferReference(this, managedBuffer, sharedFinalizer);
     }
 
     // From CPython init_strides_from_shape

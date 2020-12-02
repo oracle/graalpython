@@ -37,7 +37,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
@@ -214,8 +213,8 @@ public class PZipImporter extends PythonBuiltinObject {
      * @return code
      * @throws IOException
      */
-    @CompilerDirectives.TruffleBoundary
-    private String getCode(String filenameAndSuffix) throws IOException {
+    @TruffleBoundary
+    public static String getCodeFromArchive(String filenameAndSuffix, String archive) throws IOException {
         ZipFile zip = null;
         try {
             zip = new ZipFile(archive);
@@ -237,7 +236,7 @@ public class PZipImporter extends PythonBuiltinObject {
             reader.close();
             return code.toString();
         } catch (IOException e) {
-            throw new IOException("Can not read code from " + makePackagePath(filenameAndSuffix), e);
+            throw e;
         } finally {
             if (zip != null) {
                 try {
@@ -323,8 +322,12 @@ public class PZipImporter extends PythonBuiltinObject {
 
             boolean isPackage = entry.type.contains(EntryType.IS_PACKAGE);
 
-            String code = "";
-            code = getCode(searchPath);
+            String code;
+            try {
+                code = getCodeFromArchive(searchPath, archive);
+            } catch (IOException e) {
+                throw new IOException("Can not read code from " + makePackagePath(searchPath), e);
+            }
             return new ModuleCodeData(code, isPackage, fullSearchPath);
         }
         return null;

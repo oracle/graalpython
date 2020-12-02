@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.PythonLanguage.getCore;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -195,7 +196,6 @@ public abstract class BytesNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ToBytesNode extends PNodeWithRaise {
-        private static final String DEFAULT_FORMAT = "expected a bytes-like object, %p found";
 
         private final PythonBuiltinClassType errorType;
         private final String errorMessageFormat;
@@ -235,7 +235,7 @@ public abstract class BytesNodes {
         }
 
         public static ToBytesNode create() {
-            return ToBytesNodeGen.create(TypeError, DEFAULT_FORMAT);
+            return ToBytesNodeGen.create(TypeError, EXPECTED_BYTESLIKE_GOT_P);
         }
 
         public static ToBytesNode create(PythonBuiltinClassType errorType, String errorMessageFormat) {
@@ -380,6 +380,7 @@ public abstract class BytesNodes {
             return (end - start) + start;
         }
 
+        @TruffleBoundary(allowInlining = true)
         @Override
         protected int findSubSequence(byte[] haystack, byte[] needle, int len2, int start, int end) {
             // TODO implement a more efficient algorithm
@@ -391,6 +392,7 @@ public abstract class BytesNodes {
             return -1;
         }
 
+        @TruffleBoundary(allowInlining = true)
         @Override
         protected int findElement(byte[] haystack, byte sub, int start, int end) {
             for (int i = end - 1; i >= start; i--) {

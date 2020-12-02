@@ -37,6 +37,8 @@ import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.io.PBuffered;
+import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -90,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -129,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
+import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -403,19 +405,19 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
     }
 
-    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+    public PMemoryView createMemoryView(PythonContext context, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize, format, formatString,
+        return trace(new PMemoryView(cls, getShape(cls), context, managedBuffer, owner, len, readonly, itemsize, format, formatString,
                         ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
-    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+    public PMemoryView createMemoryView(PythonContext context, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize,
+        return trace(new PMemoryView(cls, getShape(cls), context, managedBuffer, owner, len, readonly, itemsize,
                         BufferFormat.forMemoryView(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
@@ -932,11 +934,35 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMMap(clazz, getShape(clazz), channel, length, offset));
     }
 
-    public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
+    public ZLibCompObject createJavaZLibCompObject(Object clazz, Object stream, int level, int wbits, int strategy, byte[] zdict) {
+        return trace(ZLibCompObject.createJava(clazz, getShape(clazz), stream, level, wbits, strategy, zdict));
+    }
+
+    public ZLibCompObject createJavaZLibCompObject(Object clazz, Object stream, int wbits, byte[] zdict) {
+        return trace(ZLibCompObject.createJava(clazz, getShape(clazz), stream, wbits, zdict));
+    }
+
+    public ZLibCompObject createNativeZLibCompObject(Object clazz, Object zst, NFIZlibSupport zlibSupport) {
+        return trace(ZLibCompObject.createNative(clazz, getShape(clazz), zst, zlibSupport));
     }
 
     public PLZMADecompressor createLZMADecompressor(Object clazz, int format, int memlimit) {
         return trace(new PLZMADecompressor(clazz, getShape(clazz), format, memlimit));
+    }
+
+    public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+        return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
+    }
+
+    public PBuffered createBufferedReader(Object clazz) {
+        return trace(PBuffered.createBufferedReader(clazz, getShape(clazz)));
+    }
+
+    public PBuffered createBufferWriter(Object clazz) {
+        return trace(PBuffered.createBufferedWriter(clazz, getShape(clazz)));
+    }
+
+    public PBuffered createBufferRandom(Object clazz) {
+        return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
     }
 }

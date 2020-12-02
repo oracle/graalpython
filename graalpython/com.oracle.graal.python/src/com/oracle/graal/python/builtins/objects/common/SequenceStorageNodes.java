@@ -40,6 +40,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -62,6 +63,11 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
@@ -1416,6 +1422,52 @@ public abstract class SequenceStorageNodes {
         }
     }
 
+    @ImportStatic(PGuards.class)
+    public abstract static class BytesMemcpyNode extends PNodeWithContext {
+
+        public abstract void execute(VirtualFrame frame, Object dest, int destOffset, byte[] src, int srcOffset, int len);
+
+        protected static boolean isByteSequenceStorage(PByteArray bytes) {
+            return bytes.getSequenceStorage() instanceof ByteSequenceStorage;
+        }
+
+        protected static boolean isSimple(Object bytes) {
+            return bytes instanceof PByteArray && isByteSequenceStorage((PByteArray) bytes);
+        }
+
+        @Specialization(guards = "isByteSequenceStorage(dest)")
+        void doBytes(PByteArray dest, int destOffset, byte[] src, int srcOffset, int len,
+                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
+                        @Cached ConditionProfile profile) {
+            if (profile.profile(len > 0)) {
+                byte[] internal = (byte[]) internalArray.execute(dest.getSequenceStorage());
+                PythonUtils.arraycopy(src, srcOffset, internal, destOffset, len);
+            }
+        }
+
+        @Specialization
+        void doBytes(PArray dest, int destOffset, byte[] src, int srcOffset, int len,
+                        @Cached ConditionProfile profile) {
+            if (profile.profile(len > 0)) {
+                PythonUtils.arraycopy(src, srcOffset, dest.getBuffer(), destOffset, len);
+            }
+        }
+
+        @Specialization(guards = {"!isSimple(dest)", "!isArray(dest)"}, limit = "2")
+        void doGeneric(VirtualFrame frame, Object dest, int destOffset, byte[] src, int srcOffset, int len,
+                        @Cached PythonObjectFactory factory,
+                        @CachedLibrary("dest") PythonObjectLibrary lib) {
+            PSlice slice = factory.createIntSlice(destOffset, destOffset + len, 1);
+            PBytes bytes;
+            if (src.length != len) {
+                bytes = factory.createBytes(Arrays.copyOfRange(src, srcOffset, srcOffset + len));
+            } else {
+                bytes = factory.createBytes(src);
+            }
+            lib.lookupAndCallRegularMethod(dest, frame, __SETITEM__, slice, bytes);
+        }
+    }
+
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
     abstract static class SetStorageSliceNode extends Node {
@@ -2086,9 +2138,37 @@ public abstract class SequenceStorageNodes {
     }
 
     /**
-     * Use this node to get the internal byte array of the storage (if possible). It will avoid
-     * copying any data but this also means that the returned byte array may be larger than the
-     * number of actual elements. So, you must also consider the sequence storage's size.
+     * Will try to get the internal byte[]. Otherwise, it will get a copy. Please note that the
+     * actual length of the storage and the internal storage might differ.
+     */
+    public abstract static class GetInternalBytesNode extends PNodeWithContext {
+
+        public abstract byte[] execute(Object bytes);
+
+        protected static boolean isByteSequenceStorage(PBytesLike bytes) {
+            return bytes.getSequenceStorage() instanceof ByteSequenceStorage;
+        }
+
+        protected static boolean isSimple(Object bytes) {
+            return bytes instanceof PBytesLike && isByteSequenceStorage((PBytesLike) bytes);
+        }
+
+        @Specialization(guards = "isByteSequenceStorage(bytes)")
+        byte[] doBytes(PBytesLike bytes,
+                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray) {
+            return (byte[]) internalArray.execute(bytes.getSequenceStorage());
+        }
+
+        @Specialization(guards = "!isSimple(bytes)")
+        byte[] doGeneric(Object bytes,
+                        @Cached BytesNodes.ToBytesNode toBytesNode) {
+            return toBytesNode.execute(bytes);
+        }
+    }
+
+    /**
+     * Use this node to get the internal byte array of the storage (if possible) to avoid copying.
+     * Otherwise, it will create a copy with the exact size of the stored data.
      */
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
@@ -2983,12 +3063,7 @@ public abstract class SequenceStorageNodes {
             }
         };
 
-        public static final Supplier<GeneralizationNode> CACHED_SUPPLIER = new Supplier<GeneralizationNode>() {
-            @Override
-            public GeneralizationNode get() {
-                return new ByteArrayGeneralizationNode();
-            }
-        };
+        public static final Supplier<GeneralizationNode> CACHED_SUPPLIER = () -> new ByteArrayGeneralizationNode();
 
         @Override
         public SequenceStorage execute(SequenceStorage toGeneralize, @SuppressWarnings("unused") Object indicationValue) {
@@ -3148,10 +3223,7 @@ public abstract class SequenceStorageNodes {
                             (value instanceof Byte || value instanceof Integer || value instanceof Long)) {
                 return false;
             }
-            if (value instanceof SequenceStorage && isAssignCompatibleNode.execute(s, (SequenceStorage) value)) {
-                return false;
-            }
-            return true;
+            return !(value instanceof SequenceStorage) || !isAssignCompatibleNode.execute(s, (SequenceStorage) value);
         }
 
         public static ListGeneralizationNode create() {
@@ -3751,8 +3823,7 @@ public abstract class SequenceStorageNodes {
                         @Cached ConditionProfile shortCircuitProfile,
                         @Cached LenNode selfLenNode,
                         @Cached SetLenNode setLenNode,
-                        @Cached MemMoveNode memove,
-                        @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode) {
+                        @Cached MemMoveNode memove) {
             int length = selfLenNode.execute(store);
             int sliceLength = sinfo.sliceLength;
 
@@ -3792,8 +3863,7 @@ public abstract class SequenceStorageNodes {
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached LenNode selfLenNode,
                         @Cached SetLenNode setLenNode,
-                        @Cached MemMoveNode memove,
-                        @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode) {
+                        @Cached MemMoveNode memove) {
             multipleSteps(store, sinfo, selfLenNode, setLenNode, ensureCapacityNode, memove);
         }
 

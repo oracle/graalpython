@@ -40,29 +40,26 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import java.lang.ref.PhantomReference;
-import java.lang.ref.ReferenceQueue;
+import com.oracle.graal.python.runtime.AsyncHandler;
 
-class BufferReference extends PhantomReference<PMemoryView> {
-    private final ManagedBuffer managedBuffer;
-    private boolean released;
+class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
-    public BufferReference(PMemoryView referent, ManagedBuffer managedBuffer, ReferenceQueue<PMemoryView> q) {
-        super(referent, q);
+    public BufferReference(PMemoryView referent, ManagedBuffer managedBuffer, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, managedBuffer, sharedFinalizer);
         assert managedBuffer != null;
         managedBuffer.incrementExports();
-        this.managedBuffer = managedBuffer;
     }
 
     public ManagedBuffer getManagedBuffer() {
-        return managedBuffer;
+        return (ManagedBuffer) getReference();
     }
 
-    public boolean isReleased() {
-        return released;
-    }
-
-    public void markReleased() {
-        this.released = true;
+    @Override
+    public AsyncHandler.AsyncAction release() {
+        ManagedBuffer buffer = getManagedBuffer();
+        if (buffer.decrementExports() == 0) {
+            return new MemoryViewBuiltins.NativeBufferReleaseCallback(this);
+        }
+        return null;
     }
 }

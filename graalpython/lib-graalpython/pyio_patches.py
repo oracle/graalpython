@@ -71,7 +71,6 @@ for module in [_io, io]:
     setattr(module, 'BufferedRandom', _pyio.BufferedRandom)
     setattr(module, 'BufferedRWPair', _pyio.BufferedRWPair)
     setattr(module, 'BufferedWriter', _pyio.BufferedWriter)
-    setattr(module, 'BufferedReader', _pyio.BufferedReader)
     setattr(module, 'StringIO', _pyio.StringIO)
     setattr(module, '_IOBase', _pyio.IOBase)
     setattr(module, 'BufferedIOBase', _pyio.BufferedIOBase)
@@ -83,7 +82,7 @@ for module in [_io, io]:
 
 setattr(builtins, 'open', open)
 
-sys.stdin = _pyio.TextIOWrapper(_pyio.BufferedReader(sys.stdin), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
+sys.stdin = _pyio.TextIOWrapper(_io.BufferedReader(sys.stdin), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
 sys.stdin.mode = "r"
 sys.__stdin__ = sys.stdin
 sys.stdout = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stdout), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
