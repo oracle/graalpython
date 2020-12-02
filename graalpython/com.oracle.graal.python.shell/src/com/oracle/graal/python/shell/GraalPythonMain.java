@@ -859,7 +859,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     }
 
-    private void setupTerminal(ConsoleHandler consoleHandler) {
+    private static void setupTerminal(ConsoleHandler consoleHandler) {
         consoleHandler.setupReader(() -> false, () -> 0, (item) -> {
         }, (pos) -> null, (pos, item) -> {
         }, (pos) -> {
