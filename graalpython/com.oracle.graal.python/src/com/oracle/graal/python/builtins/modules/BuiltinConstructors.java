@@ -1699,7 +1699,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isNativeClass(self)")
         Object doNativeObjectDirect(VirtualFrame frame, Object self, Object[] varargs, PKeyword[] kwargs,
-                                      @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode) {
+                        @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode) {
             checkExcessArgs(self, varargs, kwargs);
             if ((getTypeFlagsNode.execute(self) & TypeFlags.IS_ABSTRACT) != 0) {
                 throw getReportAbstractClassNode().execute(frame, self);
