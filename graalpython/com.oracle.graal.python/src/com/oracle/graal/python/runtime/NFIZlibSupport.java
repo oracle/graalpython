@@ -333,7 +333,7 @@ public class NFIZlibSupport {
 
     public void notAvailable() {
         if (available) {
-            CompilerAsserts.neverPartOfCompilation("Checking NFIZlibSupport availability should only be done during Initialization.");
+            CompilerAsserts.neverPartOfCompilation("Checking NFIZlibSupport availability should only be done during initialization.");
             available = false;
         }
     }
@@ -343,7 +343,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      *
      * @return char*
      */
@@ -352,7 +352,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      *
      * @return char*
      */
@@ -361,7 +361,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream* zst
      * @return double
      */
@@ -370,7 +370,7 @@ public class NFIZlibSupport {
     }
 
     /**
-     * 
+     *
      * @param zst zlib_stream* zst
      *
      */

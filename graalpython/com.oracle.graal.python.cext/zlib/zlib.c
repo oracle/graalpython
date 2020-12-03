@@ -44,7 +44,7 @@
  * see cpython/Modules/zlibmodule.c
  */
 
-// #define DEBUG 500
+#define DEBUG 500
 // #define BENCHMARK
 
 #include <limits.h>
@@ -57,7 +57,7 @@
 // Integer.MAX_INT
 #define GRAALPYTHON_MAX_SIZE (INT_MAX)
 
-#ifdef DEBUG
+#ifndef NDEBUG
     #include <stdio.h>
     #include <stdarg.h>
     static void debug_log(int level, char *file, int line, char *format, ...) {

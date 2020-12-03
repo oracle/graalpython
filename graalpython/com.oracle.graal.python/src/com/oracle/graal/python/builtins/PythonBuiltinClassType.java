@@ -138,6 +138,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PLZMADecompressor("LZMADecompressor", "_lzma"),
     LsprofProfiler("Profiler", "_lsprof"),
     PStruct("Struct", "_struct"),
+    BZ2Compressor("BZ2Compressor", "_bz2"),
+    BZ2Decompressor("BZ2Decompressor", "_bz2"),
     ZlibCompress("Compress", "zlib"),
     ZlibDecompress("Decompress", "zlib"),
     PBufferedReader("BufferedReader", "_io"),

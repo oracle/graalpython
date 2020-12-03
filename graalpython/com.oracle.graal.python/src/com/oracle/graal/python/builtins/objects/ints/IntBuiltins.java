@@ -1138,12 +1138,12 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean absBoolean(boolean arg) {
-            return arg;
+        static int absBoolean(boolean arg) {
+            return arg ? 1 : 0;
         }
 
         @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
-        int absInt(int arg) throws OverflowException {
+        static int absInt(int arg) throws OverflowException {
             int result = Math.abs(arg);
             if (result < 0) {
                 throw OverflowException.INSTANCE;
@@ -1152,13 +1152,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "absInt")
-        long absIntOvf(int arg) {
+        static long absIntOvf(int arg) {
             // Math.abs(Integer#MIN_VALUE) returns Integer#MIN_VALUE
             return Math.abs((long) arg);
         }
 
         @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
-        long absLong(long arg) throws OverflowException {
+        static long absLong(long arg) throws OverflowException {
             long result = Math.abs(arg);
             if (result < 0) {
                 throw OverflowException.INSTANCE;

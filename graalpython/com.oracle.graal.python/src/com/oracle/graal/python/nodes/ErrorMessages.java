@@ -650,6 +650,19 @@ public abstract class ErrorMessages {
     public static final String INCOMPLETE_OR_TRUNCATED_STREAM = "incomplete or truncated stream";
     public static final String S_MUST_BE_GREATER_THAN_ZERO = "%s must be greater than zero";
 
+    // bz2 errors
+    public static final String REPEATED_CALL_TO_FLUSH = "Repeated call to flush()";
+    public static final String COMPRESSOR_HAS_BEEN_FLUSHED = "Compressor has been flushed";
+    public static final String COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9 = "compresslevel must be between 1 and 9";
+    public static final String END_OF_STREAM_ALREADY_REACHED = "End of stream already reached";
+    public static final String INVALID_PARAMETERS_PASSED_TO_LIBBZIP2 = "Internal error - invalid parameters passed to libbzip2";
+    public static final String INVALID_DATA_STREAM = "Invalid data stream";
+    public static final String UNKNOWN_IO_ERROR = "Unknown I/O error";
+    public static final String COMPRESSED_FILE_ENDED_BEFORE_EOS = "Compressed file ended before the logical end-of-stream was detected";
+    public static final String INVALID_SEQUENCE_OF_COMMANDS = "Internal error - Invalid sequence of commands sent to libbzip2";
+    public static final String LIBBZIP2_WAS_NOT_COMPILED_CORRECTLY = "libbzip2 was not compiled correctly";
+    public static final String UNRECOGNIZED_ERROR_FROM_LIBBZIP2_D = "Unrecognized error from libbzip2: %d";
+
     // io errors
     public static final String IO_S_INVALID_LENGTH = "raw %s returned invalid length %d (should have been between 0 and %d)";
     public static final String IO_S_SHOULD_RETURN_BYTES = "%s should return bytes";

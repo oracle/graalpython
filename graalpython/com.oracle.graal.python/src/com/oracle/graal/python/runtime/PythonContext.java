@@ -215,6 +215,7 @@ public final class PythonContext {
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
 
     @CompilationFinal private NFIZlibSupport nativeZlib;
+    @CompilationFinal private NFIBz2Support nativeBz2lib;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -336,6 +337,10 @@ public final class PythonContext {
 
     public NFIZlibSupport getNFIZlibSupport() {
         return nativeZlib;
+    }
+
+    public NFIBz2Support getNFIBz2Support() {
+        return nativeBz2lib;
     }
 
     public TruffleLanguage.Env getEnv() {
@@ -505,6 +510,7 @@ public final class PythonContext {
 
     private void setupRuntimeInformation(boolean isPatching) {
         nativeZlib = NFIZlibSupport.createNative(this, "");
+        nativeBz2lib = NFIBz2Support.createNative(this, "");
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
