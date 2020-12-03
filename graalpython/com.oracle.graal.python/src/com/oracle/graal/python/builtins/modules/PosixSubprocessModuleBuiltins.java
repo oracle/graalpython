@@ -206,7 +206,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 } else {
                     argStrings.set(0, path);
                 }
-                TruffleFile executableFile = getSafeTruffleFile(truffleEnv, argStrings.get(0));
+                TruffleFile executableFile = cwdFile.resolve(argStrings.get(0));
                 if (executableFile.isExecutable()) {
                     try {
                         return exec(argStrings, cwdFile, envMap, p2cwrite, p2cread, c2pwrite, c2pread, errwrite, errpipe_write, resources, errread);
@@ -344,6 +344,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached CastToListNode castArgs,
                         @Cached CastToListNode castExecList,
                         @Cached CastToListNode castFdsToKeep,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary cwdLib,
                         @Cached CastToJavaStringNode castCwd,
                         @Cached CastToListNode castEnv,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
@@ -352,7 +353,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
             } else {
                 try {
-                    actualCwd = castCwd.execute(cwd);
+                    actualCwd = castCwd.execute(cwdLib.asPathWithState(cwd, PArguments.getThreadState(frame)));
                 } catch (CannotCastException e) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", cwd);
                 }

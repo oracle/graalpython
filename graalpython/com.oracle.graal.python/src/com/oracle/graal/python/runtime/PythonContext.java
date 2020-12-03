@@ -107,6 +107,7 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
+    private volatile boolean finalizing;
 
     private static final class PythonThreadState {
 
@@ -717,7 +718,14 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public void runShutdownHooks() {
+    public void finalizeContext() {
+        finalizing = true;
+        shutdownThreads();
+        runShutdownHooks();
+    }
+
+    @TruffleBoundary
+    private void runShutdownHooks() {
         handler.shutdown();
         // run atExitHooks in reverse order they were registered
         MapCursor<Object, AtExitHook> cursor = atExitHooks.getEntries();
@@ -741,7 +749,7 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public void shutdownThreads() {
+    private void shutdownThreads() {
         LOGGER.fine("shutting down threads");
         PDict importedModules = getImportedModules();
         HashingStorage dictStorage = GetDictStorageNode.getUncached().execute(importedModules);
@@ -1104,5 +1112,9 @@ public final class PythonContext {
 
     public AsyncHandler.SharedFinalizer getSharedFinalizer() {
         return sharedFinalizer;
+    }
+
+    public boolean isFinalizing() {
+        return finalizing;
     }
 }

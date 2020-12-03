@@ -287,7 +287,7 @@ def known_packages():
 
     @pip_package()
     def certifi(**kwargs):
-        install_from_pypi("certifi==2019.9.11", **kwargs)
+        install_from_pypi("certifi==2020.11.8", **kwargs)
 
     @pip_package()
     def idna(**kwargs):
@@ -364,6 +364,44 @@ def known_packages():
                 scipy_build_env[key] = os.environ[key]
         install_from_pypi("scipy==1.3.1", env=scipy_build_env, **kwargs)
 
+    @pip_package()
+    def cycler(**kwargs):
+        six(**kwargs)
+        install_from_pypi("cycler==0.10.0", **kwargs)
+
+    @pip_package()
+    def cppy(**kwargs):
+        install_from_pypi("cppy==1.1.0", **kwargs)
+
+    @pip_package()
+    def cassowary(**kwargs):
+        install_from_pypi("cassowary==0.5.2", **kwargs)
+
+    @pip_package()
+    def Pillow(**kwargs):
+        setuptools(**kwargs)
+        build_env = {"MAX_CONCURRENCY": "0"}
+        install_from_pypi("Pillow==6.2.0", build_cmd=["build_ext", "--disable-jpeg"], env=build_env, **kwargs)
+        
+    @pip_package()
+    def matplotlib(**kwargs):
+        setuptools(**kwargs)
+        certifi(**kwargs)
+        cycler(**kwargs)
+        cassowary(**kwargs)
+        pyparsing(**kwargs)
+        dateutil(**kwargs)
+        numpy(**kwargs)
+        Pillow(**kwargs)
+
+        def download_freetype(extracted_dir):
+            target_dir = os.path.join(extracted_dir, "build")
+            os.makedirs(target_dir, exist_ok=True)
+            package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://sourceforge.net/projects/freetype/files/freetype2/2.6.1/%s.tar.gz")
+            _download_with_curl_and_extract(target_dir, package_pattern % "freetype-2.6.1")
+
+        install_from_pypi("matplotlib==3.3.2", pre_install_hook=download_freetype, **kwargs)
+
     return locals()
 
 
@@ -375,17 +413,46 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None):
+def _download_with_curl_and_extract(dest_dir, url):
     name = url[url.rfind("/")+1:]
+
+    downloaded_path = os.path.join(dest_dir, name)
+
+    # first try direct connection
+    if run_cmd(["curl", "-L", "-o", downloaded_path, url], failOnError=False) != 0:
+        # honor env var 'HTTP_PROXY', 'HTTPS_PROXY', and 'NO_PROXY'
+        env = os.environ
+        curl_opts = []
+        using_proxy = False
+        if url.startswith("http://") and "HTTP_PROXY" in env:
+            curl_opts += ["--proxy", env["HTTP_PROXY"]]
+            using_proxy = True
+        elif url.startswith("https://") and "HTTPS_PROXY" in env:
+            curl_opts += ["--proxy", env["HTTPS_PROXY"]]
+            using_proxy = True
+        if using_proxy and "NO_PROXY" in env:
+            curl_opts += ["--noproxy", env["NO_PROXY"]]
+        run_cmd(["curl", "-L"] + curl_opts + ["-o", downloaded_path, url], msg="Download error")
+
+    if name.endswith(".tar.gz"):
+        run_cmd(["tar", "xzf", downloaded_path, "-C", dest_dir], msg="Error extracting tar.gz")
+        bare_name = name[:-len(".tar.gz")]
+    elif name.endswith(".tar.bz2"):
+        run_cmd(["tar", "xjf", downloaded_path, "-C", dest_dir], msg="Error extracting tar.bz2")
+        bare_name = name[:-len(".tar.bz2")]
+    elif name.endswith(".zip"):
+        run_cmd(["unzip", "-u", downloaded_path, "-d", dest_dir], msg="Error extracting zip")
+        bare_name = name[:-len(".zip")]
+    else:
+        xit("Unknown file type: %s" % name)
+
+    return bare_name
+
+
+def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None, pre_install_hook=None, build_cmd=[]):
     tempdir = tempfile.mkdtemp()
 
-    # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
     os_env = os.environ
-    curl_opts = []
-    if url.startswith("http://") and "HTTP_PROXY" in os_env:
-        curl_opts += ["--proxy", os_env["HTTP_PROXY"]]
-    elif url.startswith("https://") and "HTTPS_PROXY" in os_env:
-        curl_opts += ["--proxy", os_env["HTTPS_PROXY"]]
 
     # honor env var 'CFLAGS' and the explicitly passed env
     setup_env = os_env.copy()
@@ -393,27 +460,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     cflags = os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
     setup_env['CFLAGS'] = cflags if cflags else ""
 
-    if run_cmd(["curl", "-L", "-o", os.path.join(tempdir, name), url], failOnError=False) != 0:
-        # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
-        env = os.environ
-        curl_opts = []
-        if url.startswith("http://") and "HTTP_PROXY" in env:
-            curl_opts += ["--proxy", env["HTTP_PROXY"]]
-        elif url.startswith("https://") and "HTTPS_PROXY" in env:
-            curl_opts += ["--proxy", env["HTTPS_PROXY"]]
-        run_cmd(["curl", "-L"] + curl_opts + ["-o", os.path.join(tempdir, name), url], msg="Download error")
-
-    if name.endswith(".tar.gz"):
-        run_cmd(["tar", "xzf", os.path.join(tempdir, name), "-C", tempdir], msg="Error extracting tar.gz")
-        bare_name = name[:-len(".tar.gz")]
-    elif name.endswith(".tar.bz2"):
-        run_cmd(["tar", "xjf", os.path.join(tempdir, name), "-C", tempdir], msg="Error extracting tar.bz2")
-        bare_name = name[:-len(".tar.bz2")]
-    elif name.endswith(".zip"):
-        run_cmd(["unzip", "-u", os.path.join(tempdir, name), "-d", tempdir], msg="Error extracting zip")
-        bare_name = name[:-len(".zip")]
-    else:
-        xit("Unknown file type: %s" % name)
+    bare_name = _download_with_curl_and_extract(tempdir, url)
 
     file_realpath = os.path.dirname(os.path.realpath(__file__))
     patches_dir = os.path.join(Path(file_realpath).parent, 'patches', package)
@@ -433,11 +480,14 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
         os.path.join(tempdir, bare_name, subdir)
         run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, subdir), "-p1", "-i", patch_file_path])
 
+    if pre_install_hook:
+        pre_install_hook(os.path.join(tempdir, bare_name))
+
     if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
         user_arg = ["--user"]
     else:
         user_arg = []
-    status = run_cmd([sys.executable, "setup.py", "install"] + user_arg + extra_opts, env=setup_env,
+    status = run_cmd([sys.executable, "setup.py"] + build_cmd + ["install"] + user_arg + extra_opts, env=setup_env,
                      cwd=os.path.join(tempdir, bare_name))
     if status != 0 and not ignore_errors:
         xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
@@ -472,7 +522,7 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 # end of code duplicated in pip_hook.py
 
-def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env={}):
+def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env=None, pre_install_hook=None, build_cmd=[]):
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
 
@@ -499,9 +549,26 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
                     url = url_info["url"]
                     break
 
+    # make copy of env
+    env = env.copy() if env is not None else os.environ.copy()
+    from distutils.sysconfig import get_config_var
+
+    def set_if_exists(env_var, conf_var):
+        conf_value = get_config_var(conf_var)
+        if conf_value:
+            env.setdefault(env_var, conf_value)
+
+    set_if_exists("CC", "CC")
+    set_if_exists("CXX", "CXX")
+    set_if_exists("AR", "AR")
+    set_if_exists("RANLIB", "RANLIB")
+    set_if_exists("CFLAGS", "CFLAGS")
+    set_if_exists("LDFLAGS", "CCSHARED")
+
     if url:
         _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags,
-                          ignore_errors=ignore_errors, env=env, version=version)
+                          ignore_errors=ignore_errors, env=env, version=version, pre_install_hook=pre_install_hook,
+                          build_cmd=build_cmd)
     else:
         xit("Package not found: '%s'" % package)
 

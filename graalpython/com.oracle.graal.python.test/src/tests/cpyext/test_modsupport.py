@@ -428,3 +428,14 @@ class TestModsupport(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_Py_BuildValue = CPyExtFunction(
+        lambda args: {args[1]: args[2], args[3]: args[4]},
+        lambda: (
+            ('{O:O, O:O}', 'hello', 'world', 'foo', 'bar'),
+        ),
+        resultspec="O",
+        argspec="sOOOO",
+        arguments=["char* fmt", "PyObject* a", "PyObject* b", "PyObject* c", "PyObject* d"],
+        cmpfunc=unhandled_error_compare
+    )
+

@@ -59,7 +59,7 @@ libhpy_name = "libhpy"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
-relative_rpath = "@loader_path" if darwin_native else r"\$ORIGIN"
+relative_rpath = "@loader_path" if darwin_native else r"$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
 is_managed = 'managed' in SOABI
@@ -164,9 +164,10 @@ if threaded:
             logger.debug("Compiling {!s}".format(src))
             self._compile(obj, src, ext, cc_args, extra_postargs, pp_opts)
 
-        if len(objects) > 1:
-            logger.debug("Compiling {} objects in parallel.".format(len(objects)))
-            pool = SimpleThreadPool()
+        n_objects = len(objects)
+        if n_objects > 1:
+            logger.debug("Compiling {} objects in parallel.".format(n_objects))
+            pool = SimpleThreadPool(min(n_objects, os.cpu_count()))
             pool.start_thread_pool(_single_compile)
             pool.put_job(objects)
             pool.wait_until_finished()

@@ -84,12 +84,19 @@ if sys.platform == 'darwin':
     _cfg_target = None
     _cfg_target_split = None
 
+# Begin Truffle change
+_subprocess_module = None
+# END Truffle change
+
 def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0):
     log.info(' '.join(cmd))
     if dry_run:
         return
     # TODO: Begin Truffle change
-    status = os.system(' '.join(cmd))
+    global _subprocess_module
+    if not _subprocess_module:
+        import subprocess as _subprocess_module
+    status = _subprocess_module.run(cmd).returncode
     if status != 0:
         raise DistutilsExecError( "command %r failed with exit status %d" % (cmd, status))
     return

@@ -171,6 +171,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -725,6 +726,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object run(PBaseException exception, Object object,
                         @Cached WriteUnraisableNode writeUnraisableNode) {
             writeUnraisableNode.execute(null, exception, null, (object instanceof PNone) ? PNone.NONE : object);
+            getContext().setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
     }
@@ -3826,6 +3828,30 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(frame, e);
                 return getNativeNullNode.execute();
             }
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Bytes_CheckEmbeddedNull", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleBytesCheckEmbeddedNull extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static int doBytes(PBytes bytes,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached GetItemScalarNode getItemScalarNode) {
+
+            SequenceStorage sequenceStorage = bytes.getSequenceStorage();
+            int len = lenNode.execute(sequenceStorage);
+            try {
+                for (int i = 0; i < len; i++) {
+                    if (getItemScalarNode.executeInt(sequenceStorage, i) == 0) {
+                        return -1;
+                    }
+                }
+            } catch (ClassCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("bytes object contains non-int value");
+            }
+            return 0;
         }
     }
 }
