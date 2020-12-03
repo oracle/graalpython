@@ -102,6 +102,9 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
@@ -310,7 +313,7 @@ public final class Python3Core implements PythonCore {
         c = null;
     }
 
-    private static PythonBuiltins[] initializeBuiltins() {
+    private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
@@ -442,6 +445,11 @@ public final class Python3Core implements PythonCore {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
         }
+        if (nativeAccessAllowed) {
+            builtins.add(new BZ2CompressorBuiltins());
+            builtins.add(new BZ2DecompressorBuiltins());
+            builtins.add(new BZ2ModuleBuiltins());
+        }
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
@@ -473,9 +481,9 @@ public final class Python3Core implements PythonCore {
 
     private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
 
-    public Python3Core(PythonParser parser) {
+    public Python3Core(PythonParser parser, boolean isNativeSupportAllowed) {
         this.parser = parser;
-        this.builtins = initializeBuiltins();
+        this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
     }
 

@@ -37,6 +37,7 @@ import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -932,6 +933,14 @@ public abstract class PythonObjectFactory extends Node {
 
     public PMMap createMMap(Object clazz, SeekableByteChannel channel, long length, long offset) {
         return trace(new PMMap(clazz, getShape(clazz), channel, length, offset));
+    }
+
+    public BZ2Object.BZ2Compressor createBZ2Compressor(Object clazz) {
+        return trace(BZ2Object.createCompressor(clazz, getShape(clazz)));
+    }
+
+    public BZ2Object.BZ2Decompressor createBZ2Decompressor(Object clazz) {
+        return trace(BZ2Object.createDecompressor(clazz, getShape(clazz)));
     }
 
     public ZLibCompObject createJavaZLibCompObject(Object clazz, Object stream, int level, int wbits, int strategy, byte[] zdict) {

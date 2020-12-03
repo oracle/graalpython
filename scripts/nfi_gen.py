@@ -97,8 +97,7 @@ public class NFI{lib_name}Support {{
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFI{lib_name}Support.class);
 
-{var_defs}
-{enum_def}
+{var_defs}{enum_def}
 {class_init}
 {static_functions}
 {functions}
@@ -194,8 +193,7 @@ gc_finalizer_template = """
     }}
 """
 
-enum_def_template = """
-    enum {lib_name}NativeFunctions implements NativeLibrary.NativeFunction {{
+enum_def_template = """    enum {lib_name}NativeFunctions implements NativeLibrary.NativeFunction {{
 {enums};
 
         private final String signature;
@@ -233,7 +231,7 @@ java_function = """    /**
 """
 
 java_static_function = """    /**
-     * 
+     *
 {params_doc}
 {return_doc}
      */
@@ -434,7 +432,10 @@ def generate_nfi_support_class(cmd, lib_name, c_source_path, sys_lib, to_path):
                 )
             java_funcs.append(java_func)
 
-    var_defs = '\n'.join([var_def_template.format(name=name, value=value) for name, value in nfi_vars])
+    var_defs = ''
+    if nfi_vars:
+        var_defs = '\n'.join([var_def_template.format(name=name, value=value) for name, value in nfi_vars])
+        var_defs += '\n\n'
     enum_vals_str = '\n'.join(enum_vals)
     enum_def = enum_def_template.format(
         lib_name=lib_name,
