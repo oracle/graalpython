@@ -70,7 +70,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static final String MIME_TYPE = "text/x-python";
 
     // provided by GraalVM bash launchers, ignored in native image mode
-    private static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+    protected static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
 
     private static long startupWallClockTime = -1;
     private static long startupNanoTime = -1;
