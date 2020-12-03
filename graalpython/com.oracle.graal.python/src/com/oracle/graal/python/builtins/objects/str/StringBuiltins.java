@@ -1958,7 +1958,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = "isidentifier", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsIdentifierNode extends PythonUnaryBuiltinNode {
+    public abstract static class IsIdentifierNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doString(String self) {
             return getCore().getParser().isIdentifier(getCore(), self);

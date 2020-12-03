@@ -86,7 +86,7 @@ public abstract class PRaiseNode extends Node {
      * specified {@code type} as exception class.
      */
     public final PException raiseNumberTooLarge(Object type, Object result) {
-        return execute(type, PNone.NO_VALUE, "cannot fit '%p' into an index-sized integer", new Object[]{result});
+        return execute(type, PNone.NO_VALUE, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, new Object[]{result});
     }
 
     public final PException raiseHasNoLength(Object result) {

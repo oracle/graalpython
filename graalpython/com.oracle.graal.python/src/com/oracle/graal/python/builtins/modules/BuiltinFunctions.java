@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -159,6 +160,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -231,18 +233,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int absInt(boolean arg) {
+        public int absBoolean(boolean arg) {
             return arg ? 1 : 0;
-        }
-
-        @Specialization
-        public int absInt(int arg) {
-            return Math.abs(arg);
-        }
-
-        @Specialization
-        public long absInt(long arg) {
-            return Math.abs(arg);
         }
 
         @Specialization
@@ -749,6 +741,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
+
+        // code.h
+        private static final int CO_NESTED = 0x0010;
+        private static final int CO_FUTURE_DIVISION = 0x20000;
+        private static final int CO_FUTURE_ABSOLUTE_IMPORT = 0x40000;
+        private static final int CO_FUTURE_WITH_STATEMENT = 0x80000;
+        private static final int CO_FUTURE_PRINT_FUNCTION = 0x100000;
+        private static final int CO_FUTURE_UNICODE_LITERALS = 0x200000;
+
+        private static final int CO_FUTURE_BARRY_AS_BDFL = 0x400000;
+        private static final int CO_FUTURE_GENERATOR_STOP = 0x800000;
+        private static final int CO_FUTURE_ANNOTATIONS = 0x1000000;
+
+        // compile.h
+        private static final int PyCF_MASK = CO_FUTURE_DIVISION | CO_FUTURE_ABSOLUTE_IMPORT | CO_FUTURE_WITH_STATEMENT | CO_FUTURE_PRINT_FUNCTION | CO_FUTURE_UNICODE_LITERALS |
+                        CO_FUTURE_BARRY_AS_BDFL | CO_FUTURE_GENERATOR_STOP | CO_FUTURE_ANNOTATIONS;
+        private static final int PyCF_MASK_OBSOLETE = CO_NESTED;
+
+        private static final int PyCF_DONT_IMPLY_DEDENT = 0x0200;
+        private static final int PyCF_ONLY_AST = 0x0400;
+        private static final int PyCF_TYPE_COMMENTS = 0x1000;
+
         /**
          * Decides wether this node should attempt to map the filename to a URI for the benefit of
          * Truffle tooling
@@ -771,7 +785,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+        PCode compile(String expression, String filename, String mode, int kwFlags, Object kwDontInherit, int kwOptimize) {
             String code = expression;
             PythonContext context = getContext();
             ParserMode pm;
@@ -809,6 +823,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(limit = "3")
         PCode generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @Cached CastToJavaStringNode castStr,
+                        @Cached CastToJavaIntExactNode castInt,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
@@ -822,8 +837,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.ARG_S_MUST_BE_S_NOT_P, "compile()", "mode", "str", wMode);
             }
+            int flags = 0;
+            if (kwFlags != PNone.NO_VALUE) {
+                try {
+                    flags = castInt.execute(kwFlags);
+                } catch (CannotCastException e) {
+                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
+                }
+                if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_DONT_IMPLY_DEDENT | PyCF_ONLY_AST | PyCF_TYPE_COMMENTS)) > 0) {
+                    throw raise(ValueError, "compile(): unrecognised flags");
+                }
+            }
+            int optimize = 0;
+            if (kwOptimize != PNone.NO_VALUE) {
+                try {
+                    optimize = castInt.execute(kwOptimize);
+                } catch (CannotCastException e) {
+                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
+                }
+                if (optimize < -1 || optimize > 2) {
+                    throw raise(TypeError, "compile(): invalid optimize value", kwOptimize);
+                }
+            }
             String source = sourceAsString(wSource, filename, interopLib, lib, handleDecodingErrorNode);
-            return compile(source, filename, mode, kwFlags, kwDontInherit, kwOptimize);
+            if (source.indexOf(0) > -1) {
+                throw raise(ValueError, "source code string cannot contain null bytes");
+            }
+            return compile(source, filename, mode, flags, kwDontInherit, optimize);
         }
 
         // modeled after _Py_SourceAsString
@@ -1532,6 +1572,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // ord(c)
     @Builtin(name = ORD, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class OrdNode extends PythonBuiltinNode {
 
         @Specialization
@@ -1565,6 +1606,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }
             return castNode.execute(getItemNode.execute(frame, chr.getSequenceStorage(), 0));
+        }
+
+        @Specialization(guards = {"!isString(obj)", "!isBytes(obj)"})
+        public Object ord(@SuppressWarnings("unused") Object obj) {
+            throw raise(TypeError, ErrorMessages.S_EXPECTED_STRING_OF_LEN_BUT_P, "ord()", "1", "obj");
         }
     }
 
@@ -1763,14 +1809,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
         Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
-                        @SuppressWarnings("unused") @CachedLibrary("x") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(x, frame, __ROUND__);
+                        @CachedLibrary("x") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
+                        @Cached BranchProfile noRound) {
+            Object method = lib.lookupAttributeOnType(x, __ROUND__);
+            if (method == PNone.NO_VALUE) {
+                noRound.enter();
+                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
+            }
+            return methodLib.callUnboundMethod(method, frame, x);
         }
 
         @Specialization(guards = "!isNoValue(n)", limit = "1")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @SuppressWarnings("unused") @CachedLibrary("x") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(x, frame, __ROUND__, n);
+                        @CachedLibrary("x") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
+                        @Cached BranchProfile noRound) {
+            Object method = lib.lookupAttributeOnType(x, __ROUND__);
+            if (method == PNone.NO_VALUE) {
+                noRound.enter();
+                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
+            }
+            return methodLib.callUnboundMethod(method, frame, x, n);
         }
     }
 
@@ -1929,7 +1989,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleNone", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("createBinaryProfile()") ConditionProfile hasStart) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasStart,
+                        @Cached BranchProfile stringStart,
+                        @Cached BranchProfile bytesStart,
+                        @Cached BranchProfile byteArrayStart) {
+            if (PGuards.isString(start)) {
+                stringStart.enter();
+                throw raise(TypeError, ErrorMessages.CANT_SUM_STRINGS);
+            } else if (start instanceof PBytes) {
+                bytesStart.enter();
+                throw raise(TypeError, ErrorMessages.CANT_SUM_BYTES);
+            } else if (start instanceof PByteArray) {
+                byteArrayStart.enter();
+                throw raise(TypeError, ErrorMessages.CANT_SUM_BYTEARRAY);
+            }
             Object iterator = lib.getIteratorWithState(arg1, PArguments.getThreadState(frame));
             return iterateGeneric(frame, iterator, hasStart.profile(start != NO_VALUE) ? start : 0, errorProfile1);
         }

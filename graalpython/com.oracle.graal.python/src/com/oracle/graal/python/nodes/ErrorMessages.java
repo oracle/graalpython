@@ -108,6 +108,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
+    public static final String CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = "can only assign %s to %p.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P = "can only assign non-empty tuple to %p.__bases__, not ()";
     public static final String CAN_ONLY_CONCAT_S_NOT_P_TO_S = "can only concatenate %s (not \"%p\") to %s";
     public static final String CAN_ONLY_JOIN_ITERABLE = "can only join an iterable";
@@ -132,6 +133,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_DELETE_MEMORY = "cannot delete memory";
     public static final String CANNOT_MODIFY_READONLY_MEMORY = "cannot modify read-only memory";
     public static final String CANNOT_EXTEND_INCOMPLETE_P = "Cannot extend an incomplete type '%p'";
+    public static final String CANNOT_FIT_P_INTO_INDEXSIZED_INT = "cannot fit '%p' into an index-sized integer";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
@@ -164,6 +166,9 @@ public abstract class ErrorMessages {
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE = "can't set attributes of %s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE_S = "can't set attributes of built-in/extension type '%s'";
     public static final String CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING = "can't specify a timeout for a non-blocking call";
+    public static final String CANT_SUM_BYTEARRAY = "sum() can't sum bytearray [use b''.join(seq) instead]";
+    public static final String CANT_SUM_BYTES = "sum() can't sum bytes [use b''.join(seq) instead]";
+    public static final String CANT_SUM_STRINGS = "sum() can't sum strings [use ''.join(seq) instead]";
     public static final String CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX = "can't take floor or mod of complex number.";
     public static final String CAPI_SYM_NOT_CALLABLE = "C API symbol %s is not callable";
     public static final String CATCHING_CLS_NOT_ALLOWED = "catching classes that do not inherit from BaseException is not allowed";
@@ -232,6 +237,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_S_NOT_P = "expected %s, not %p";
     public static final String EXPECTED_S_P_FOUND = "expected %s, %p found";
     public static final String EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = "expected str, bytes or os.PathLike object, not %p";
+    public static final String S_EXPECTED_STRING_OF_LEN_BUT_P = "%s expected string of length %s, but %p found";
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
     public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";
@@ -518,6 +524,7 @@ public abstract class ErrorMessages {
     public static final String WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = "__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0";
     public static final String STAR_WANTS_INT = "* wants int";
     public static final String TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = "Too many decimal digits in format string";
+    public static final String SLOTS_MUST_BE_IDENTIFIERS = "__slots__ must be identifiers";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
@@ -602,6 +609,7 @@ public abstract class ErrorMessages {
     public static final String SIGN_NOT_ALLOWED_FOR_STRING_FMT = "Sign not allowed in string format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
+    public static final String CANNOT_ENCODE_CLASSNAME = "'utf-8' codec can't encode class name '%s'";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
     public static final String PRECISION_NOT_ALLOWED_FOR_INT = "Precision not allowed in integer format specifier";
     public static final String SIGN_NOT_ALLOWED_WITH_C_FOR_INT = "Sign not allowed with integer format specifier 'c'";

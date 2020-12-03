@@ -98,7 +98,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -107,6 +106,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
@@ -171,6 +171,8 @@ import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNo
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -259,6 +261,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinConstructors extends PythonBuiltins {
@@ -2213,6 +2216,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetItemsizeNode getItemSize,
                         @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached GetBestBaseClassNode getBestBaseNode,
+                        @Cached IsIdentifierNode isIdentifier,
                         @Cached DictBuiltins.CopyNode copyDict) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
@@ -2229,7 +2233,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
+                                isIdentifier);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2325,7 +2330,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass,
                         PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
-                        LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
+                        LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize,
+                        IsIdentifierNode isIdentifier) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2348,7 +2354,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             assert metaclass != null;
 
-            if (name.indexOf('\0') != -1) {
+            if (!canEncodeUTF8(name)) {
+                throw raise(UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_CLASSNAME, name);
+            }
+            if (containsNullCharacter(name)) {
                 throw raise(ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
             }
 
@@ -2421,6 +2430,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // Check valid slot name
                     if (element instanceof String) {
                         slotName = (String) element;
+                        if (!(boolean) isIdentifier.call(frame, slotName)) {
+                            throw raise(TypeError, ErrorMessages.SLOTS_MUST_BE_IDENTIFIERS);
+                        }
                     } else {
                         throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
@@ -2555,8 +2567,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         doc = ((PString) value).getValue();
                     }
                     if (doc != null) {
-                        if (!canEncode(doc)) {
-                            throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
+                        if (!canEncodeUTF8(doc)) {
+                            throw raise(UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
                         }
                     }
                     pythonClass.setAttribute(key, value);
@@ -2590,11 +2602,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     typeDict.setDictStorage(updatedStore);
                 }
             }
-        }
-
-        @TruffleBoundary
-        private static boolean canEncode(String doc) {
-            return StandardCharsets.UTF_8.newEncoder().canEncode(doc);
         }
 
         @TruffleBoundary
@@ -2637,7 +2644,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // Name mangling: __private becomes _classname__private. This is independent from how
             // the name is used.
             int nlen, plen, ipriv;
-            if (privateobj == null || ident.charAt(0) != '_' || ident.charAt(1) != '_') {
+            if (privateobj == null || ident.equals("_") || ident.charAt(0) != '_' || ident.charAt(1) != '_') {
                 return ident;
             }
             nlen = ident.length();

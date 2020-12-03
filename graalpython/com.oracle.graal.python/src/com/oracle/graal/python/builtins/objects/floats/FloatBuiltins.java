@@ -954,16 +954,22 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long round(double x, @SuppressWarnings("unused") PNone none,
+        Object round(double x, @SuppressWarnings("unused") PNone none,
                         @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile isLongProfile) {
             if (nanProfile.profile(Double.isNaN(x))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }
             if (infProfile.profile(Double.isInfinite(x))) {
                 throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
             }
-            return (long) round(x, 0);
+            double result = round(x, 0);
+            if (isLongProfile.profile(result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
+                return factory().createInt(toBigInteger(result));
+            } else {
+                return (long) result;
+            }
         }
 
         @Fallback
@@ -973,6 +979,11 @@ public final class FloatBuiltins extends PythonBuiltins {
             } else {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__round__", "float", x);
             }
+        }
+
+        @TruffleBoundary
+        private static BigInteger toBigInteger(double d) {
+            return BigDecimal.valueOf(d).toBigInteger();
         }
     }
 

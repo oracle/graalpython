@@ -83,7 +83,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @TruffleBoundary
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass... baseClasses) {
         super(typeClass, classShape);
-        this.name = getBaseName(name);
+        this.name = name;
         this.qualName = name;
 
         this.methodResolutionOrder = new MroSequenceStorage(name, 0);
@@ -125,14 +125,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.setMRO(mro);
         }
         mroInitialized = true;
-    }
-
-    private static String getBaseName(String qname) {
-        int lastDot = qname.lastIndexOf('.');
-        if (lastDot != -1) {
-            return qname.substring(lastDot + 1);
-        }
-        return qname;
     }
 
     public Assumption getLookupStableAssumption() {

@@ -53,6 +53,8 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PDict extends PHashingCollection {
@@ -143,13 +145,15 @@ public final class PDict extends PHashingCollection {
         static int doSubclassed(PDict self, ThreadState state,
                         @CachedLibrary("self") PythonObjectLibrary plib,
                         @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                        @Shared("gotState") @Cached ConditionProfile gotState,
                         @Exclusive @Cached ConditionProfile hasLen,
                         @Exclusive @Cached ConditionProfile ltZero,
                         @Shared("raise") @Cached PRaiseNode raiseNode,
-                        @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Exclusive @Cached CastToJavaLongLossyNode toLong,
+                        @Exclusive @Cached ConditionProfile ignoreOverflow,
+                        @Exclusive @Cached BranchProfile overflow) {
             // call the generic implementation in the superclass
-            return self.lengthWithState(state, plib, methodLib, gotState, hasLen, ltZero, raiseNode, lib);
+            return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow);
         }
     }
 
