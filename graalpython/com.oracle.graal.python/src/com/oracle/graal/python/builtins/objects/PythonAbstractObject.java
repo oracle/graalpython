@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
@@ -76,7 +77,6 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
@@ -84,6 +84,9 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -622,11 +625,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         return executeNode.execute(this, arguments);
     }
 
+    @TruffleBoundary
     private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
-        for (Object k : o.getStorage().getShape().getKeys()) {
+        HashingStorage dict;
+        if (PythonObjectLibrary.getUncached().hasDict(o)) {
+            dict = PythonObjectLibrary.getUncached().getDict(o).getDictStorage();
+        } else {
+            dict = new DynamicObjectStorage(o); // temporary wrapper makes the rest of the code
+                                                // easier
+        }
+        for (HashingStorage.DictEntry e : HashingStorageLibrary.getUncached().entries(dict)) {
             String strKey;
-            if (k instanceof String) {
-                strKey = (String) k;
+            if (e.getKey() instanceof String) {
+                strKey = (String) e.getKey();
             } else {
                 continue;
             }
