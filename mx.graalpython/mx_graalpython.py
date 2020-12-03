@@ -1436,6 +1436,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             language='python',
         )
     ],
+    priority=5
 ))
 
 
