@@ -66,6 +66,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_CALLING_SET_NAME
 import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
@@ -180,6 +181,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
@@ -190,6 +192,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -199,6 +203,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -1629,10 +1634,33 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private SplitArgsNode splitArgsNode;
         @Child private LookupAttributeInMRONode lookupInit;
         @Child private LookupAttributeInMRONode lookupNew;
+        @Child private ReportAbstractClassNode reportAbstractClassNode;
         @CompilationFinal private ValueProfile profileInit;
         @CompilationFinal private ValueProfile profileNew;
         @CompilationFinal private ValueProfile profileInitFactory;
         @CompilationFinal private ValueProfile profileNewFactory;
+
+        abstract static class ReportAbstractClassNode extends PNodeWithContext {
+            public abstract PException execute(VirtualFrame frame, Object type);
+
+            @Specialization
+            static PException report(VirtualFrame frame, Object type,
+                            @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                            @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                            @Cached CastToJavaStringNode cast,
+                            @Cached ListNodes.ConstructListNode constructListNode,
+                            @Cached PRaiseNode raiseNode) {
+                PList list = constructListNode.execute(readAttributeFromObjectNode.execute(type, __ABSTRACTMETHODS__));
+                int methodCount = lib.lengthWithFrame(list, frame);
+                lib.lookupAndCallRegularMethod(list, frame, "sort");
+                String joined = cast.execute(lib.lookupAndCallRegularMethod(", ", frame, "join", list));
+                throw raiseNode.raise(TypeError, "Can't instantiate abstract class %N with abstract method%s %s", type, methodCount > 1 ? "s" : "", joined);
+            }
+
+            public static ReportAbstractClassNode create() {
+                return BuiltinConstructorsFactory.ObjectNodeFactory.ReportAbstractClassNodeGen.create();
+            }
+        }
 
         @Override
         public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -1644,8 +1672,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.needsNativeAllocation()"})
-        Object doManagedObject(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
+        Object doManagedObject(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs) {
             checkExcessArgs(self, varargs, kwargs);
+            if (self.isAbstractClass()) {
+                throw getReportAbstractClassNode().execute(frame, self);
+            }
             return factory().createPythonObject(self);
         }
 
@@ -1656,16 +1687,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
-        Object doNativeObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
+        Object doNativeObjectIndirect(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("create()") GetMroNode getMroNode) {
             checkExcessArgs(self, varargs, kwargs);
+            if (self.isAbstractClass()) {
+                throw getReportAbstractClassNode().execute(frame, self);
+            }
             Object nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
             return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
         }
 
         @Specialization(guards = "isNativeClass(self)")
-        Object doNativeObjectIndirect(Object self, Object[] varargs, PKeyword[] kwargs) {
+        Object doNativeObjectDirect(VirtualFrame frame, Object self, Object[] varargs, PKeyword[] kwargs,
+                                      @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode) {
             checkExcessArgs(self, varargs, kwargs);
+            if ((getTypeFlagsNode.execute(self) & TypeFlags.IS_ABSTRACT) != 0) {
+                throw getReportAbstractClassNode().execute(frame, self);
+            }
             return callNativeGenericNewNode(self, varargs, kwargs);
         }
 
@@ -1749,6 +1787,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
                 }
             }
+        }
+
+        private ReportAbstractClassNode getReportAbstractClassNode() {
+            if (reportAbstractClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportAbstractClassNode = insert(ReportAbstractClassNode.create());
+            }
+            return reportAbstractClassNode;
         }
     }
 

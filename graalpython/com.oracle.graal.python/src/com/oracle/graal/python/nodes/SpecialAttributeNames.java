@@ -79,4 +79,5 @@ public abstract class SpecialAttributeNames {
     public static final String __WEAKLISTOFFSET__ = "__weaklistoffset__";
     public static final String __ALL__ = "__all__";
     public static final String __FLAGS__ = "__flags__";
+    public static final String __ABSTRACTMETHODS__ = "__abstractmethods__";
 }

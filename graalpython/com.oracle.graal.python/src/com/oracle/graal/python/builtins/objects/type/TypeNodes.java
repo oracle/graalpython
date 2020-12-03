@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCL
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_VECTORCALL;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
@@ -267,6 +268,10 @@ public abstract class TypeNodes {
             // The HAVE_GC is inherited. But we do not mimic this behavior in every detail, so it
             // should be fine to just set it.
             long result = DEFAULT | HEAPTYPE | BASETYPE | HAVE_GC;
+
+            if (clazz.isAbstractClass()) {
+                result |= IS_ABSTRACT;
+            }
 
             // flags are inherited
             MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);

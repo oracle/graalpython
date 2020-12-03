@@ -27,12 +27,14 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FLAGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
@@ -65,12 +67,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -98,7 +100,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -1251,6 +1252,39 @@ public class TypeBuiltins extends PythonBuiltins {
                 return getTypeFlagsNode.execute(self);
             }
             throw raise(PythonErrorType.TypeError, "descriptor '__flags__' for 'type' objects doesn't apply to '%p' object", self);
+        }
+    }
+
+    @Builtin(name = __ABSTRACTMETHODS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class AbstracMethodsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        Object get(Object self, @SuppressWarnings("unused") PNone none,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) {
+            // Avoid returning this descriptor
+            if (!isSameTypeNode.execute(self, PythonBuiltinClassType.PythonClass)) {
+                Object result = readAttributeFromObjectNode.execute(self, __ABSTRACTMETHODS__);
+                if (result != PNone.NO_VALUE) {
+                    return result;
+                }
+            }
+            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, GetNameNode.getUncached().execute(self), __ABSTRACTMETHODS__);
+        }
+
+        @Specialization(guards = "!isNoValue(value)", limit = "3")
+        static Object set(VirtualFrame frame, PythonClass self, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+            writeAttributeToObjectNode.execute(self, __ABSTRACTMETHODS__, value);
+            self.setAbstractClass(lib.isTrue(value, frame));
+            return PNone.NONE;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object set(Object self, Object value) {
+            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));
         }
     }
 }

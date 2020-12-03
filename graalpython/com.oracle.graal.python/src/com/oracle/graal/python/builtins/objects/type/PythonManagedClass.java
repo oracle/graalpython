@@ -65,6 +65,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @CompilationFinal private MroSequenceStorage methodResolutionOrder;
 
+    private boolean abstractClass;
+
     private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
     @CompilationFinal private Shape instanceShape;
     private String name;
@@ -174,6 +176,14 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public boolean isAbstractClass() {
+        return abstractClass;
+    }
+
+    public void setAbstractClass(boolean abstractClass) {
+        this.abstractClass = abstractClass;
     }
 
     private boolean computeNeedsNativeAllocation() {
