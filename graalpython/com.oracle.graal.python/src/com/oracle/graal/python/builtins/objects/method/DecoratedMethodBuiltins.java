@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISABSTRACTMETHOD__;
 
 import java.util.List;
 
@@ -66,8 +67,10 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PClassmethod})
 public class DecoratedMethodBuiltins extends PythonBuiltins {
@@ -132,6 +135,21 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         protected Object setDict(@SuppressWarnings("unused") PDecoratedMethod self, Object mapping) {
             throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        }
+    }
+
+    @Builtin(name = __ISABSTRACTMETHOD__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class IsAbstractMethodNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean isAbstract(VirtualFrame frame, PDecoratedMethod self,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached ConditionProfile hasAttrProfile) {
+            Object result = lib.lookupAttribute(self.getCallable(), frame, __ISABSTRACTMETHOD__);
+            if (hasAttrProfile.profile(result != PNone.NO_VALUE)) {
+                return lib.isTrue(result, frame);
+            }
+            return false;
         }
     }
 }

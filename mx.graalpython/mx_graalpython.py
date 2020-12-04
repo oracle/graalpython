@@ -1166,8 +1166,9 @@ def python_style_checks(args):
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
     if os.environ.get("ECLIPSE_EXE"):
-        mx.command_function("eclipseformat")([])
-    mx.command_function("spotbugs")([])
+        mx.command_function("eclipseformat")(["--primary"])
+    if "--no-spotbugs" not in args:
+        mx.command_function("spotbugs")([])
 
 
 def python_checkcopyrights(args):
@@ -2061,7 +2062,7 @@ mx.update_commands(SUITE, {
     'deploy-binary-if-master': [deploy_binary_if_master, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [import-name, default: truffle]'],
-    'python-style': [python_style_checks, '[--fix]'],
+    'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
