@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
@@ -83,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -1255,9 +1255,9 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ABSTRACTMETHODS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __ABSTRACTMETHODS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
-    abstract static class AbstracMethodsNode extends PythonBinaryBuiltinNode {
+    abstract static class AbstractMethodsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         Object get(Object self, @SuppressWarnings("unused") PNone none,
                         @Cached IsSameTypeNode isSameTypeNode,
@@ -1272,13 +1272,32 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, GetNameNode.getUncached().execute(self), __ABSTRACTMETHODS__);
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "3")
-        static Object set(VirtualFrame frame, PythonClass self, Object value,
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"}, limit = "3")
+        Object set(VirtualFrame frame, PythonClass self, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached IsSameTypeNode isSameTypeNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
-            writeAttributeToObjectNode.execute(self, __ABSTRACTMETHODS__, value);
-            self.setAbstractClass(lib.isTrue(value, frame));
-            return PNone.NONE;
+            if (!isSameTypeNode.execute(self, PythonBuiltinClassType.PythonClass)) {
+                writeAttributeToObjectNode.execute(self, __ABSTRACTMETHODS__, value);
+                self.setAbstractClass(lib.isTrue(value, frame));
+                return PNone.NONE;
+            }
+            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object delete(PythonClass self, @SuppressWarnings("unused") DescriptorDeleteMarker value,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+            if (!isSameTypeNode.execute(self, PythonBuiltinClassType.PythonClass)) {
+                if (readAttributeFromObjectNode.execute(self, __ABSTRACTMETHODS__) != PNone.NO_VALUE) {
+                    writeAttributeToObjectNode.execute(self, __ABSTRACTMETHODS__, PNone.NO_VALUE);
+                    self.setAbstractClass(false);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));
         }
 
         @Fallback
