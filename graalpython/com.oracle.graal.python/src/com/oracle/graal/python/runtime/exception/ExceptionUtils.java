@@ -40,10 +40,21 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -127,6 +138,52 @@ public final class ExceptionUtils {
         ListIterator<String> listIterator = stack.listIterator(stack.size());
         while (listIterator.hasPrevious()) {
             System.err.println(listIterator.previous());
+        }
+    }
+
+    /**
+     * This function is kind-of analogous to PyErr_PrintEx
+     */
+    @TruffleBoundary
+    public static void printExceptionTraceback(PythonContext context, PBaseException pythonException) {
+        Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException);
+        PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
+        Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
+
+        Object hook = context.getCore().lookupBuiltinModule("sys").getAttribute(BuiltinNames.EXCEPTHOOK);
+        if (hook != PNone.NO_VALUE) {
+            try {
+                // Note: it is important to pass frame 'null' because that will cause the
+                // CallNode to tread the invoke like a foreign call and access the top frame ref
+                // in the context.
+                CallNode.getUncached().execute(null, hook, new Object[]{type, pythonException, tb}, PKeyword.EMPTY_KEYWORDS);
+            } catch (PException internalError) {
+                // More complex handling of errors in exception printing is done in our
+                // Python code, if we get here, we just fall back to the launcher
+                throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+            }
+        } else {
+            try {
+                context.getEnv().err().write("sys.excepthook is missing\n".getBytes());
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+        }
+    }
+
+    @TruffleBoundary
+    public static void printJavaStackTrace(PException e) {
+        LazyTraceback traceback = e.getTraceback();
+        while (traceback != null && traceback.getNextChain() != null) {
+            traceback = traceback.getNextChain();
+        }
+        if (traceback != null) {
+            PException exception = traceback.getException();
+            if (exception.getCause() != null && exception.getCause().getStackTrace().length != 0) {
+                exception.getCause().printStackTrace();
+            } else {
+                exception.printStackTrace();
+            }
         }
     }
 }

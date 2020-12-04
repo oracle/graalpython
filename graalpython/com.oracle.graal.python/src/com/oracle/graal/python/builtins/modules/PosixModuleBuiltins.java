@@ -953,7 +953,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 options.remove(StandardOpenOption.CREATE_NEW);
                 options.remove(StandardOpenOption.DELETE_ON_CLOSE);
                 options.add(StandardOpenOption.CREATE);
-                getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
+                getContext().registerAtexitHook(new FileDeleteShutdownHook(truffleFile));
             }
 
             fc = truffleFile.newByteChannel(options, attributes);

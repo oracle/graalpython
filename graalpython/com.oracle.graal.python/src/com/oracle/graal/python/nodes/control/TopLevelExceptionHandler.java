@@ -44,8 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionE
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 
-import java.io.IOException;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -53,21 +51,16 @@ import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackN
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -93,11 +86,6 @@ public class TopLevelExceptionHandler extends RootNode {
     private final SourceSection sourceSection;
     @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
-
-    @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
-    @Child private CallNode exceptionHookCallNode = CallNode.create();
-    @Child private GetExceptionTracebackNode getExceptionTracebackNode;
-    @Child private PythonObjectFactory pythonObjectFactory;
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
@@ -129,48 +117,62 @@ public class TopLevelExceptionHandler extends RootNode {
         return context.get();
     }
 
-    private PythonObjectFactory factory() {
-        if (pythonObjectFactory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pythonObjectFactory = insert(PythonObjectFactory.create());
-        }
-        return pythonObjectFactory;
-    }
-
     @Override
     public Object execute(VirtualFrame frame) {
         if (exception != null) {
-            printExc(frame, exception.getEscapedException());
-            return null;
+            throw handlePythonException(exception.getEscapedException());
         } else {
             assert getContext().getCurrentException() == null;
             try {
                 return run(frame);
             } catch (PException e) {
                 assert !PArguments.isPythonFrame(frame);
-                PBaseException pythonException = e.getEscapedException();
-                printExc(frame, pythonException);
-                return null;
+                throw handlePythonException(e.getEscapedException());
             } catch (StackOverflowError e) {
-                PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
-                PBaseException pythonException = pe.getUnreifiedException();
-                printExc(frame, pythonException);
-                return null;
+                PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
+                PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
+                throw handlePythonException(pe.getEscapedException());
             } catch (Exception e) {
-                handleException(e);
+                handleJavaException(e);
                 throw e;
             }
         }
     }
 
     @TruffleBoundary
-    private void handleException(Exception e) {
+    private PException handlePythonException(PBaseException pythonException) {
+        if (IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException), SystemExit)) {
+            handleSystemExit(pythonException);
+        }
+        if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
+            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException);
+            PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
+            Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
+
+            PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
+            sys.setAttribute(BuiltinNames.LAST_TYPE, type);
+            sys.setAttribute(BuiltinNames.LAST_VALUE, pythonException);
+            sys.setAttribute(BuiltinNames.LAST_TRACEBACK, tb);
+
+            ExceptionUtils.printExceptionTraceback(getContext(), pythonException);
+            if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
+                ExceptionUtils.printJavaStackTrace(pythonException.getException());
+            }
+            if (!getSourceSection().getSource().isInteractive()) {
+                throw new PythonExitException(this, 1);
+            }
+        }
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+    }
+
+    @TruffleBoundary
+    private void handleJavaException(Exception e) {
         try {
             boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
             if (!exitException) {
                 ExceptionUtils.printPythonLikeStackTrace(e);
                 if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
-                    printStackTrace(e);
+                    e.printStackTrace();
                 }
             }
         } catch (UnsupportedMessageException unsupportedMessageException) {
@@ -183,59 +185,8 @@ public class TopLevelExceptionHandler extends RootNode {
         return sourceSection;
     }
 
-    /**
-     * This function is kind-of analogous to PyErr_PrintEx. TODO (timfel): Figure out if we should
-     * move this somewhere else
-     */
-    private void printExc(VirtualFrame frame, PBaseException pythonException) {
-        CompilerDirectives.transferToInterpreter();
-        PythonContext theContext = getContext();
-        PythonCore core = theContext.getCore();
-        if (IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException), SystemExit)) {
-            handleSystemExit(frame, pythonException);
-        }
-
-        PBaseException value = pythonException;
-        Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(value);
-        PTraceback execute = ensureGetTracebackNode().execute(frame, value);
-        Object tb = execute != null ? execute : PNone.NONE;
-
-        PythonModule sys = core.lookupBuiltinModule("sys");
-        sys.setAttribute(BuiltinNames.LAST_TYPE, type);
-        sys.setAttribute(BuiltinNames.LAST_VALUE, value);
-        sys.setAttribute(BuiltinNames.LAST_TRACEBACK, tb);
-
-        Object hook = sys.getAttribute(BuiltinNames.EXCEPTHOOK);
-        if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
-            if (hook != PNone.NO_VALUE) {
-                try {
-                    // Note: it is important to pass frame 'null' because that will cause the
-                    // CallNode to tread the invoke like a foreign call and access the top frame ref
-                    // in the context.
-                    exceptionHookCallNode.execute(null, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
-                } catch (PException internalError) {
-                    // More complex handling of errors in exception printing is done in our
-                    // Python code, if we get here, we just fall back to the launcher
-                    throw pythonException.getExceptionForReraise(pythonException.getTraceback());
-                }
-                if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
-                    printJavaStackTrace(pythonException.getException());
-                }
-                if (!getSourceSection().getSource().isInteractive()) {
-                    throw new PythonExitException(this, 1);
-                }
-            } else {
-                try {
-                    theContext.getEnv().err().write("sys.excepthook is missing\n".getBytes());
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                }
-            }
-        }
-        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
-    }
-
-    private void handleSystemExit(VirtualFrame frame, PBaseException pythonException) {
+    @TruffleBoundary
+    private void handleSystemExit(PBaseException pythonException) {
         PythonContext theContext = getContext();
         if (theContext.getOption(PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
             // Don't exit if -i flag was given and we're not yet running interactively
@@ -255,41 +206,13 @@ public class TopLevelExceptionHandler extends RootNode {
         }
         if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
+            PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
             Object stderr = theContext.getCore().getStderr();
-            Object message = callStrNode.executeObject(frame, pythonException);
-            PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(stderr, null, "write", message);
+            Object message = lib.lookupAndCallSpecialMethod(pythonException, null, __STR__);
+            lib.lookupAndCallRegularMethod(stderr, null, "write", message);
             throw new PythonExitException(this, 1);
         }
         throw pythonException.getExceptionForReraise(pythonException.getTraceback());
-    }
-
-    @TruffleBoundary
-    private static void printJavaStackTrace(PException e) {
-        LazyTraceback traceback = e.getTraceback();
-        while (traceback != null && traceback.getNextChain() != null) {
-            traceback = traceback.getNextChain();
-        }
-        if (traceback != null) {
-            PException exception = traceback.getException();
-            if (exception.getCause() != null && exception.getCause().getStackTrace().length != 0) {
-                exception.getCause().printStackTrace();
-            } else {
-                exception.printStackTrace();
-            }
-        }
-    }
-
-    @TruffleBoundary
-    private static void printStackTrace(Throwable e) {
-        e.printStackTrace();
-    }
-
-    private GetExceptionTracebackNode ensureGetTracebackNode() {
-        if (getExceptionTracebackNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getExceptionTracebackNode = insert(GetExceptionTracebackNode.create());
-        }
-        return getExceptionTracebackNode;
     }
 
     private Object run(VirtualFrame frame) {
