@@ -62,12 +62,7 @@ import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
     public static void main(String[] args) {
-        if (GraalPythonMain.startupNanoTime == -1) {
-            GraalPythonMain.startupNanoTime = System.nanoTime();
-        }
-        if (GraalPythonMain.startupWallClockTime == -1) {
-            GraalPythonMain.startupWallClockTime = System.currentTimeMillis();
-        }
+        GraalPythonMain.setStartupTime();
         new GraalPythonMain().launch(args);
     }
 
@@ -75,7 +70,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static final String MIME_TYPE = "text/x-python";
 
     // provided by GraalVM bash launchers, ignored in native image mode
-    private static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+    protected static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
 
     private static long startupWallClockTime = -1;
     private static long startupNanoTime = -1;
@@ -102,6 +97,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean dontWriteBytecode = false;
     private String warnOptions = null;
     private String checkHashPycsMode = "default";
+
+    protected static void setStartupTime() {
+        if (GraalPythonMain.startupNanoTime == -1) {
+            GraalPythonMain.startupNanoTime = System.nanoTime();
+        }
+        if (GraalPythonMain.startupWallClockTime == -1) {
+            GraalPythonMain.startupWallClockTime = System.currentTimeMillis();
+        }
+    }
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {

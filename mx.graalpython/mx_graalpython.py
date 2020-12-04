@@ -72,6 +72,8 @@ SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
+GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
+
 
 if PY3:
     raw_input = input # pylint: disable=redefined-builtin;
@@ -128,7 +130,7 @@ def python(args, **kwargs):
     do_run_python(args, **kwargs)
 
 
-def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, **kwargs):
+def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, **kwargs):
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
         args.insert(0, "--experimental-options")
@@ -177,7 +179,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     if extra_vm_args:
         vm_args += extra_vm_args
 
-    vm_args.append("com.oracle.graal.python.shell.GraalPythonMain")
+    vm_args.append(main_class)
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
@@ -1403,6 +1405,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='Graal.Python',
     short_name='pyn',
+    installable_id='graalpython',
     dir_name='python',
     standalone_dir_name='graalpython-<version>-<graalvm_os>-<arch>',
     license_files=[],
@@ -1425,7 +1428,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         mx_sdk.LanguageLauncherConfig(
             destination='bin/<exe:graalpython>',
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
-            main_class='com.oracle.graal.python.shell.GraalPythonMain',
+            main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
                 '-H:+DetectUserDirectoriesInImageHeap',
@@ -1434,6 +1437,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             language='python',
         )
     ],
+    priority=5
 ))
 
 
