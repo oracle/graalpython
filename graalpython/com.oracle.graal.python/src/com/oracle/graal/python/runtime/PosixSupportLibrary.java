@@ -288,6 +288,31 @@ public abstract class PosixSupportLibrary extends Library {
         }
     }
 
+    // TODO: to be converted to a checked exception, catch in the callers?
+    // TODO: add throws UnsupportedPosixFeatureException to all the methods or identify only some
+    // that may not be unsupported?
+    // This can be used for NFI backend for things that the underlying OS does not support. We will
+    // need a way to query this information too in order to support things like
+    // "os.supports_follow_symlinks"
+    /**
+     * Exception that may be thrown by all the messages. It indicates that given functionality is
+     * not available in given implementation.
+     */
+    public static class UnsupportedPosixFeatureException extends RuntimeException {
+
+        private static final long serialVersionUID = 1846254827094902593L;
+
+        public UnsupportedPosixFeatureException(String message) {
+            super(message);
+        }
+
+        @Override
+        @SuppressWarnings("sync-override")
+        public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
     @ValueType
     public static class Buffer {
         public final byte[] data;

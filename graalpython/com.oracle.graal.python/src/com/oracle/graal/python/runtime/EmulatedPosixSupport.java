@@ -70,6 +70,7 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.LinkOption;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
@@ -99,11 +100,11 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -111,11 +112,13 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -140,6 +143,11 @@ import com.sun.security.auth.UnixNumericGroupPrincipal;
  * emulated implementation. This may result in observable difference in behavior if the attributes
  * change in between the access of the next entry and the query for the value of such attribute.
  * </li>
+ * <li>Resolution of file access/modification times depends on the JDK and the best we can guarantee
+ * is seconds resolution. Some operations may even override nano seconds component of, e.g., access
+ * time, when updating the modification time.</li>
+ * <li>{@code faccessAt} does not support: effective IDs, and no follow symlinks unless the mode is
+ * only F_OK.</li>
  * </ul>
  */
 @ExportLibrary(PosixSupportLibrary.class)
@@ -1008,45 +1016,169 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void utimeNsAt(int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void utimeNsAt(int dirFd, PosixPath path, long[] timespec, boolean followSymlinks,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String pathStr = pathToJavaStr(path);
+        TruffleFile file = resolvePath(dirFd, pathStr, defaultDirFdPofile);
+        setUTimeNode.execute(path, file, timespec, followSymlinks);
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void futimeNs(PosixFd fd, long[] timespec) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void futimeNs(PosixFd fd, long[] timespec,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String path = getFilePath(fd.fd);
+        TruffleFile file = context.getPublicTruffleFileRelaxed(path);
+        setUTimeNode.execute(path, file, timespec, true);
+    }
+
+    @GenerateUncached
+    public abstract static class SetUTimeNode extends Node {
+        abstract void execute(Object fileName, TruffleFile file, long[] timespec, boolean followSymlinks) throws PosixException;
+
+        @Specialization(guards = "timespec == null")
+        static void doCurrentTime(Object fileName, TruffleFile file, long[] timespec, boolean followSymlinks,
+                        @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+            FileTime time = FileTime.fromMillis(System.currentTimeMillis());
+            setFileTimes(fileName, followSymlinks, file, time, time, errBranch);
+        }
+
+        // the second guard is just so that Truffle does not generate dead code that throws
+        // UnsupportedSpecializationException..
+        @Specialization(guards = {"timespec != null", "fileName != null"})
+        static void doGivenTime(Object fileName, TruffleFile file, long[] timespec, boolean followSymlinks,
+                        @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+            FileTime atime = toFileTime(timespec[0], timespec[1]);
+            FileTime mtime = toFileTime(timespec[2], timespec[3]);
+            setFileTimes(fileName, followSymlinks, file, mtime, atime, errBranch);
+        }
+
+        private static void setFileTimes(Object pathname, boolean followSymlinks, TruffleFile file, FileTime mtime, FileTime atime, BranchProfile errBranch) throws PosixException {
+            try {
+                file.setLastAccessTime(atime, getLinkOptions(followSymlinks));
+                file.setLastModifiedTime(mtime, getLinkOptions(followSymlinks));
+            } catch (Exception e) {
+                errBranch.enter();
+                final ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
+                // setLastAccessTime/setLastModifiedTime and NOFOLLOW_LINKS does not work (at least)
+                // on OpenJDK8 on Linux and gives ELOOP error. See some explanation in this thread:
+                // https://stackoverflow.com/questions/17308363/symlink-lastmodifiedtime-in-java-1-7
+                if (errAndMsg.oserror == OSErrorEnum.ELOOP && !followSymlinks) {
+                    throw new UnsupportedPosixFeatureException("utime with 'follow symlinks' flag is not supported");
+                }
+                throw posixException(errAndMsg, pathname);
+            }
+        }
+
+        private static FileTime toFileTime(long seconds, long nanos) {
+            // JDK allows to set only one "time" per one operation, so
+            // UnixFileAttributeViews#setTimes is setting only one of the mtime/atime but internally
+            // it needs to call POSIX utime providing both, so it takes the other from fstat, but
+            // since JDK's fstat wrapper does not support better granularity than seconds, it
+            // will override nanoseconds component that may have been set by our code already.
+            // To make this less confusing, we intentionally ignore the nanoseconds component, even
+            // thought we could set microseconds for one of the mtime/atime (the one that is set
+            // last)
+            return FileTime.from(seconds, TimeUnit.SECONDS);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void renameAt(int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void renameAt(int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        try {
+            TruffleFile newFile = resolvePath(newDirFd, pathToJavaStr(newPath), defaultDirFdPofile);
+            if (newFile.isDirectory()) {
+                throw posixException(OSErrorEnum.EISDIR);
+            }
+            TruffleFile oldFile = resolvePath(oldDirFd, pathToJavaStr(oldPath), defaultDirFdPofile);
+            oldFile.move(newFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) {
+        if (effectiveIds) {
+            errBranch.enter();
+            throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
+        }
+        TruffleFile file = null;
+        try {
+            file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
+        } catch (PosixException e) {
+            // When the dirFd is invalid descriptor, we just return false, like the real faccessat
+            return false;
+        }
+        if (!file.exists(getLinkOptions(followSymlinks))) {
+            return false;
+        }
+        if (mode == F_OK) {
+            // we are supposed to just check the existence
+            return true;
+        }
+        if (!followSymlinks) {
+            // TruffleFile#isExecutable/isReadable/isWriteable does not support LinkOptions, but
+            // that's probably because Java NIO does not support NOFOLLOW_LINKS in permissions check
+            errBranch.enter();
+            throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
+        }
+        boolean result = true;
+        if ((mode & X_OK) != 0) {
+            result = result && file.isExecutable();
+        }
+        if ((mode & R_OK) != 0) {
+            result = result && file.isReadable();
+        }
+        if ((mode & W_OK) != 0) {
+            result = result && file.isWritable();
+        }
+        return result;
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void fchmodat(int dirFd, PosixPath path, int mode, boolean followSymlinks) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void fchmodat(int dirFd, PosixPath path, int mode, boolean followSymlinks,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        TruffleFile file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
+        Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
+        try {
+            file.setPosixPermissions(permissions, getLinkOptions(followSymlinks));
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e), path);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void fchmod(PosixFd fd, int mode) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void fchmod(PosixFd fd, int mode) throws PosixException {
+        String path = getFilePath(fd.fd);
+        if (path == null) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        TruffleFile file = context.getPublicTruffleFileRelaxed(path);
+        Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
+        try {
+            file.setPosixPermissions(permissions);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e), path);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public Object readlinkat(int dirFd, PosixPath path) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public Object readlinkat(int dirFd, PosixPath path,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        TruffleFile file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
+        try {
+            TruffleFile canonicalFile = file.getCanonicalFile();
+            if (file.equals(canonicalFile)) {
+                throw posixException(OSErrorEnum.EINVAL, path);
+            }
+            return canonicalFile.getPath();
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e), path);
+        }
     }
 
     // ------------------
@@ -1132,6 +1264,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (defaultDirFdPofile.profile(dirFd == PosixSupportLibrary.DEFAULT_DIR_FD)) {
             return context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
         } else {
+            TruffleFile file = context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            if (file.isAbsolute()) {
+                // Even if the dirFd is non-existing or otherwise wrong, we should not trigger any
+                // error if the file path is already absolute
+                return file;
+            }
             String dirPath = getFilePathOrDefault(dirFd, null);
             if (dirPath == null) {
                 throw posixException(OSErrorEnum.EBADF);
@@ -1150,13 +1288,18 @@ public final class EmulatedPosixSupport extends PosixResources {
         return filePaths.getOrDefault(fd, defaultValue);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @TruffleBoundary(allowInlining = true)
     private static FileAttribute<Set<PosixFilePermission>> modeToAttributes(int fileMode) {
+        Set<PosixFilePermission> perms = modeToPosixFilePermissions(fileMode);
+        return PosixFilePermissions.asFileAttribute(perms);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static Set<PosixFilePermission> modeToPosixFilePermissions(int fileMode) {
         HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7]));
         perms.addAll(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7]));
         perms.addAll(Arrays.asList(otherBitsToPermission[fileMode & 7]));
-        return PosixFilePermissions.asFileAttribute(perms);
+        return perms;
     }
 
     @TruffleBoundary(allowInlining = true)

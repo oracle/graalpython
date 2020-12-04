@@ -308,8 +308,19 @@ class WithTempFilesTests(unittest.TestCase):
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_utime_basic(self):
+        stat_result = os.stat(TEST_FULL_PATH1)
+        os.utime(TEST_FULL_PATH2, (-952468575.678901234, 1579569825.123456789))         # follows symlink
+        self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
+        os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(stat_result.st_atime_ns, stat_result.st_mtime_ns))
+        self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime - stat_result.st_atime) < 10)
+        with open(TEST_FULL_PATH2, os.O_RDWR) as fd:
+            os.utime(fd, times=(12345, 67890))
+            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java',
+                         'Due to bug in OpenJDK 8 on Linux we cannot set atime/mtime of symlinks')
+    def test_utime_basic_no_follow_symlinks(self):
         stat_result = os.stat(TEST_FULL_PATH1)
         os.utime(TEST_FULL_PATH2, (-952468575.678901234, 1579569825.123456789))         # follows symlink
         self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
@@ -323,20 +334,20 @@ class WithTempFilesTests(unittest.TestCase):
             os.utime(fd, times=(12345, 67890))
             self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     @unittest.skipUnless(sys.platform != 'darwin', 'faccessat on MacOSX does not support follow_symlinks')
     def test_access(self):
         self.assertTrue(os.access(TEST_FULL_PATH2, 0))
+        self.assertTrue(os.access(TEST_FULL_PATH2, 0, dir_fd=1234567890)) # dir_fd should be ignored
         self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd))
         self.assertTrue(os.access(TEST_FULL_PATH2, 0, follow_symlinks=False))
         self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd, follow_symlinks=False))
+        self.assertFalse(os.access(TEST_FILENAME2, 0, dir_fd=1234567890)) # non-existing dir_fd -> False
         os.unlink(TEST_FULL_PATH1)
         self.assertFalse(os.access(TEST_FULL_PATH2, 0))
         self.assertFalse(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd))
         self.assertTrue(os.access(TEST_FULL_PATH2, 0, follow_symlinks=False))
         self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd, follow_symlinks=False))
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_chmod(self):
         orig_mode = os.stat(TEST_FULL_PATH1).st_mode & 0o777
         os.chmod(TEST_FILENAME1, 0o624, dir_fd=self.tmp_fd)
@@ -345,7 +356,6 @@ class WithTempFilesTests(unittest.TestCase):
             os.chmod(fd, orig_mode)
         self.assertEqual(orig_mode, os.stat(TEST_FULL_PATH1).st_mode & 0o777)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_readlink(self):
         self.assertEqual(TEST_FULL_PATH1, os.readlink(TEST_FULL_PATH2))
         self.assertEqual(os.fsencode(TEST_FULL_PATH1), os.readlink(os.fsencode(TEST_FULL_PATH2)))
@@ -392,7 +402,6 @@ class ScandirEmptyTests(unittest.TestCase):
         with os.scandir(TEST_FULL_PATH1) as dir:
             self.assertEqual(0, len([entry for entry in dir]))
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_listdir_empty(self):
         self.assertEqual([], os.listdir(TEST_FULL_PATH1))
 
@@ -562,12 +571,10 @@ class ScandirTests(unittest.TestCase):
         os.unlink(self.abc_path)
         self.assertEqual(stat_res, entry.stat(follow_symlinks=True))
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_listdir(self):
         self.assertEqual(['.abc'], os.listdir(TEST_FULL_PATH1))
         self.assertEqual([b'.abc'], os.listdir(os.fsencode(TEST_FULL_PATH1)))
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_listdir_default_arg(self):
         lst = os.listdir()
         self.assertFalse('.' in lst)
@@ -736,7 +743,6 @@ class RenameTests(unittest.TestCase):
         except (FileNotFoundError, NotADirectoryError):
             pass
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_rename_simple(self):
         os.rename(TEST_FULL_PATH1, self.dst_full_path)
         with self.assertRaises(FileNotFoundError):
@@ -747,7 +753,6 @@ class RenameTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             os.stat(self.dst_full_path)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_rename_with_dirfd(self):
         with open(TEMP_DIR, 0) as tmp_fd:
             os.rename(TEST_FILENAME1, self.dst_full_path, src_dir_fd=tmp_fd)
