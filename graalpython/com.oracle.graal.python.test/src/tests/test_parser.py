@@ -491,6 +491,19 @@ def test_mangled_default_value_param():
     else:
         assert False, "TypeError was not raised"
 
+
+def test_mangled_slots():
+    class SlotClass:
+        __slots__ = ("__mangle_me", "do_not_mangle_me")
+        def __init__(self):
+            self.__mangle_me = 123
+            self.do_not_mangle_me = 456
+
+    b = SlotClass()
+    assert b._SlotClass__mangle_me == 123
+    assert b.do_not_mangle_me == 456
+
+
 def test_method_decorator():
     class S:
         def __init__(self, value):
