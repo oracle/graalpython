@@ -80,7 +80,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int umask(Object receiver, int mask) throws PosixException;
 
-    public abstract int openAt(Object receiver, int dirFd, Object pathname, int flags, int mode) throws PosixException;
+    public abstract int openat(Object receiver, int dirFd, Object pathname, int flags, int mode) throws PosixException;
 
     public abstract void close(Object receiver, int fd) throws PosixException;
 
@@ -111,7 +111,7 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract int[] getTerminalSize(Object receiver, int fd) throws PosixException;
 
     // see stat_struct_to_longs in posix.c for the layout of the array
-    public abstract long[] fstatAt(Object receiver, int dirFd, Object pathname, boolean followSymlinks) throws PosixException;
+    public abstract long[] fstatat(Object receiver, int dirFd, Object pathname, boolean followSymlinks) throws PosixException;
 
     /**
      * Performs operation of fstat(fd).
@@ -125,11 +125,11 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Object[] uname(Object receiver) throws PosixException;
 
-    public abstract void unlinkAt(Object receiver, int dirFd, Object pathname, boolean rmdir) throws PosixException;
+    public abstract void unlinkat(Object receiver, int dirFd, Object pathname, boolean rmdir) throws PosixException;
 
-    public abstract void symlinkAt(Object receiver, Object target, int linkpathDirFd, Object linkpath) throws PosixException;
+    public abstract void symlinkat(Object receiver, Object target, int linkpathDirFd, Object linkpath) throws PosixException;
 
-    public abstract void mkdirAt(Object receiver, int dirFd, Object pathname, int mode) throws PosixException;
+    public abstract void mkdirat(Object receiver, int dirFd, Object pathname, int mode) throws PosixException;
 
     public abstract Object getcwd(Object receiver) throws PosixException;
 
@@ -200,16 +200,16 @@ public abstract class PosixSupportLibrary extends Library {
      *            {@code atime.tv_sec, atime.tv_nsec, mtime.tv_sec, mtime.tv_nsec} or {@code null}
      *            to set both times to 'now'
      */
-    public abstract void utimeNsAt(Object receiver, int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException;
+    public abstract void utimensat(Object receiver, int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException;
 
     /**
      * Equivalent of POSIX {@code futimens()}.
      */
-    public abstract void futimeNs(Object receiver, int fd, long[] timespec) throws PosixException;
+    public abstract void futimens(Object receiver, int fd, long[] timespec) throws PosixException;
 
-    public abstract void renameAt(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
+    public abstract void renameat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
-    public abstract boolean faccessAt(Object receiver, int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks);
+    public abstract boolean faccessat(Object receiver, int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks);
 
     public abstract void fchmodat(Object receiver, int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException;
 

@@ -268,7 +268,7 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                 int dirFd = self.scandirPath instanceof PosixFd ? ((PosixFd) self.scandirPath).fd : PosixSupportLibrary.DEFAULT_DIR_FD;
                 PosixPath posixPath = cachedPosixPathNode.execute(frame, self);
                 try {
-                    long[] rawStat = posixLib.fstatAt(getPosixSupport(), dirFd, posixPath.value, followSymlinks);
+                    long[] rawStat = posixLib.fstatat(getPosixSupport(), dirFd, posixPath.value, followSymlinks);
                     res = PosixModuleBuiltins.createStatResult(factory(), positiveLongProfile, rawStat);
                 } catch (PosixException e) {
                     if (catchNoent && e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {

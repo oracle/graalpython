@@ -290,7 +290,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
-    public int openAt(int dirFd, Object path, int flags, int mode,
+    public int openat(int dirFd, Object path, int flags, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         String pathname = pathToJavaStr(path);
@@ -519,7 +519,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public long[] fstatAt(int dirFd, Object path, boolean followSymlinks,
+    public long[] fstatat(int dirFd, Object path, boolean followSymlinks,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         String pathname = pathToJavaStr(path);
@@ -785,7 +785,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void unlinkAt(int dirFd, Object path, @SuppressWarnings("unused") boolean rmdir,
+    public void unlinkat(int dirFd, Object path, @SuppressWarnings("unused") boolean rmdir,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         String pathname = pathToJavaStr(path);
@@ -807,7 +807,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void symlinkAt(Object target, int linkDirFd, Object link,
+    public void symlinkat(Object target, int linkDirFd, Object link,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         String linkPath = pathToJavaStr(link);
@@ -823,7 +823,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void mkdirAt(int dirFd, Object path, int mode,
+    public void mkdirat(int dirFd, Object path, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         String pathStr = pathToJavaStr(path);
@@ -1011,7 +1011,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void utimeNsAt(int dirFd, Object path, long[] timespec, boolean followSymlinks,
+    public void utimensat(int dirFd, Object path, long[] timespec, boolean followSymlinks,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         String pathStr = pathToJavaStr(path);
@@ -1020,7 +1020,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void futimeNs(int fd, long[] timespec,
+    public void futimens(int fd, long[] timespec,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
         String path = getFilePath(fd);
         TruffleFile file = context.getPublicTruffleFileRelaxed(path);
@@ -1038,8 +1038,6 @@ public final class EmulatedPosixSupport extends PosixResources {
             setFileTimes(followSymlinks, file, time, time, errBranch);
         }
 
-        // the second guard is just so that Truffle does not generate dead code that throws
-        // UnsupportedSpecializationException..
         @Specialization(guards = "timespec != null")
         static void doGivenTime(TruffleFile file, long[] timespec, boolean followSymlinks,
                         @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
@@ -1079,7 +1077,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void renameAt(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
+    public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         try {
             TruffleFile newFile = resolvePath(newDirFd, pathToJavaStr(newPath), defaultDirFdPofile);
@@ -1094,7 +1092,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public boolean faccessAt(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
+    public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @Shared("errorBranch") @Cached BranchProfile errBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) {
         if (effectiveIds) {

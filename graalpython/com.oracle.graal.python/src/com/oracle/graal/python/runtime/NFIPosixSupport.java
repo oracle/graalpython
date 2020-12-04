@@ -181,7 +181,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public int openAt(int dirFd, Object pathname, int flags, int mode,
+    public int openat(int dirFd, Object pathname, int flags, int mode,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int fd = invokeNode.callInt(lib, NativeFunctions.call_openat, dirFd, pathToCString(pathname), flags, mode);
         if (fd < 0) {
@@ -326,7 +326,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public long[] fstatAt(int dirFd, Object pathname, boolean followSymlinks,
+    public long[] fstatat(int dirFd, Object pathname, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[13];
         int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, wrap(out));
@@ -370,7 +370,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void unlinkAt(int dirFd, Object pathname, boolean rmdir,
+    public void unlinkat(int dirFd, Object pathname, boolean rmdir,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_unlinkat, dirFd, pathToCString(pathname), rmdir ? 1 : 0);
         if (result != 0) {
@@ -379,7 +379,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void symlinkAt(Object target, int linkpathDirFd, Object linkpath,
+    public void symlinkat(Object target, int linkpathDirFd, Object linkpath,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_symlinkat, pathToCString(target), linkpathDirFd, pathToCString(linkpath));
         if (result != 0) {
@@ -388,7 +388,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void mkdirAt(int dirFd, Object pathname, int mode,
+    public void mkdirat(int dirFd, Object pathname, int mode,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_mkdirat, dirFd, pathToCString(pathname), mode);
         if (result != 0) {
@@ -550,7 +550,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void utimeNsAt(int dirFd, Object pathname, long[] timespec, boolean followSymlinks,
+    public void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(lib, NativeFunctions.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
@@ -560,7 +560,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void futimeNs(int fd, long[] timespec,
+    public void futimens(int fd, long[] timespec,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(lib, NativeFunctions.call_futimens, fd, wrap(timespec));
@@ -570,7 +570,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void renameAt(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
+    public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_renameat, oldDirFd, pathToCString(oldPath), newDirFd, pathToCString(newPath));
         if (ret != 0) {
@@ -579,7 +579,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public boolean faccessAt(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
+    public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_faccessat, dirFd, pathToCString(path), mode, effectiveIds ? 1 : 0, followSymlinks ? 1 : 0);
         if (ret != 0 && LOGGER.isLoggable(Level.FINE)) {
