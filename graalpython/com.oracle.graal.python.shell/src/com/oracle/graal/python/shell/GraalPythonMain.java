@@ -97,7 +97,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean dontWriteBytecode = false;
     private String warnOptions = null;
     private String checkHashPycsMode = "default";
-    
+
     protected static void setStartupTime() {
         if (GraalPythonMain.startupNanoTime == -1) {
             GraalPythonMain.startupNanoTime = System.nanoTime();
