@@ -1138,7 +1138,7 @@ public class Python3Parser extends Parser {
 			setState(272);
 			match(COLON);
 			 
-			            String name = factory.mangleName(_localctx.n.getText());
+			            String name = factory.mangleNameInCurrentScope(_localctx.n.getText());
 			            ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
 			            String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
 			            ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -1665,7 +1665,7 @@ public class Python3Parser extends Parser {
 			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
 			            }
 			            if (name != null) {
-			                name = factory.mangleName(name);
+			                name = factory.mangleNameInCurrentScope(name);
 			            }
 			            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue);
 			            switch(result) {
@@ -1741,7 +1741,7 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 args.addSplat(name != null ? factory.mangleName(name) : null, type); 
+			 args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, type); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1804,7 +1804,7 @@ public class Python3Parser extends Parser {
 			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
 			            }
 			            if (name != null) {
-			                name = factory.mangleName(name);
+			                name = factory.mangleNameInCurrentScope(name);
 			            }
 			            if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
 			                throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, _localctx, getCurrentToken());
@@ -2255,7 +2255,7 @@ public class Python3Parser extends Parser {
 			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
 			            }
 			            if (name != null) {
-			                name = factory.mangleName(name);
+			                name = factory.mangleNameInCurrentScope(name);
 			            }
 			            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue);
 			            switch(result) {
@@ -2313,7 +2313,7 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 args.addSplat(name != null ? factory.mangleName(name) : null, null);
+			 args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, null);
 			}
 		}
 		catch (RecognitionException re) {
@@ -2353,7 +2353,7 @@ public class Python3Parser extends Parser {
 
 			            String name = (_localctx.NAME!=null?_localctx.NAME.getText():null);
 			            if (name != null) {
-			                name = factory.mangleName(name);
+			                name = factory.mangleNameInCurrentScope(name);
 			            }
 			            if (args.addKwargs(name, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
 			                throw new PythonRecognitionException("duplicate argument '" + (_localctx.NAME!=null?_localctx.NAME.getText():null) + "' in function definition", this, _input, _localctx, getCurrentToken());

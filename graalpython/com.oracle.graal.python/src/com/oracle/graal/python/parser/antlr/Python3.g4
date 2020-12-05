@@ -545,7 +545,7 @@ funcdef
 		'->' test
 	)? ':' 
 	{ 
-            String name = factory.mangleName($n.getText());
+            String name = factory.mangleNameInCurrentScope($n.getText());
             ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
             ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -612,7 +612,7 @@ defparameter [ArgDefListBuilder args]
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
             if (name != null) {
-                name = factory.mangleName(name);
+                name = factory.mangleNameInCurrentScope(name);
             }
             ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue);
             switch(result) {
@@ -633,7 +633,7 @@ splatparameter [ArgDefListBuilder args]
 		NAME { name = $NAME.text; }
 		( ':' test { type = $test.result; } )?
 	)?
-	{ args.addSplat(name != null ? factory.mangleName(name) : null, type); }
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, type); }
 ;
 
 kwargsparameter [ArgDefListBuilder args]
@@ -647,7 +647,7 @@ kwargsparameter [ArgDefListBuilder args]
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
             if (name != null) {
-                name = factory.mangleName(name);
+                name = factory.mangleNameInCurrentScope(name);
             }
             if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, $ctx, getCurrentToken());
@@ -700,7 +700,7 @@ vdefparameter [ArgDefListBuilder args]
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
             if (name != null) {
-                name = factory.mangleName(name);
+                name = factory.mangleNameInCurrentScope(name);
             }
             ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue);
             switch(result) {
@@ -718,7 +718,7 @@ vsplatparameter [ArgDefListBuilder args]
 	'*'
 	{ String name = null; }
 	( NAME { name = $NAME.text; } )?
-	{ args.addSplat(name != null ? factory.mangleName(name) : null, null);}
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, null);}
 ;
 
 vkwargsparameter [ArgDefListBuilder args]
@@ -727,7 +727,7 @@ vkwargsparameter [ArgDefListBuilder args]
 	{
             String name = $NAME.text;
             if (name != null) {
-                name = factory.mangleName(name);
+                name = factory.mangleNameInCurrentScope(name);
             }
             if (args.addKwargs(name, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());

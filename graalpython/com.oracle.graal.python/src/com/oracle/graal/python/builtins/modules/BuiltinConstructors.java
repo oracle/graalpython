@@ -231,6 +231,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContextFactory.ForeignCallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -2497,9 +2498,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     } else {
                         // TODO: check for __weakref__
                         // TODO avoid if native slots are inherited
-                        HiddenPythonKey hiddenSlotKey = new HiddenPythonKey(slotName);
-                        HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
-                        pythonClass.setAttribute(slotName, slotDesc);
+                        try {
+                            String mangledName = PythonSSTNodeFactory.mangleName(name, slotName);
+                            HiddenPythonKey hiddenSlotKey = new HiddenPythonKey(mangledName);
+                            HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
+                            pythonClass.setAttribute(mangledName, slotDesc);
+                        } catch (OverflowException e) {
+                            throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
+                        }
                     }
                     // Make slots into a tuple
                 }
@@ -2663,7 +2669,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     continue;
                 }
 
-                slotName = mangle(className, slotName);
+                try {
+                    slotName = PythonSSTNodeFactory.mangleName(className, slotName);
+                } catch (OverflowException e) {
+                    throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
+                }
                 if (slotName == null) {
                     return null;
                 }
@@ -2684,41 +2694,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             return factory().createTuple(newSlots);
 
-        }
-
-        private String mangle(String privateobj, String ident) {
-            // Name mangling: __private becomes _classname__private. This is independent from how
-            // the name is used.
-            int nlen, plen, ipriv;
-            if (privateobj == null || ident.equals("_") || ident.charAt(0) != '_' || ident.charAt(1) != '_') {
-                return ident;
-            }
-            nlen = ident.length();
-            plen = privateobj.length();
-
-            // Don't mangle __whatever__ or names with dots.
-            if ((ident.charAt(nlen - 1) == '_' && ident.charAt(nlen - 2) == '_') || ident.indexOf('.') != -1) {
-                return ident;
-            }
-
-            // Strip leading underscores from class name
-            ipriv = 0;
-            while (privateobj.charAt(ipriv) == '_') {
-                ipriv++;
-            }
-
-            // Don't mangle if class is just underscores
-            if (ipriv == plen) {
-                return ident;
-            }
-            plen -= ipriv;
-
-            if ((long) plen + nlen >= Integer.MAX_VALUE) {
-                throw raise(OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
-            }
-
-            /* ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes */
-            return "_" + privateobj.substring(ipriv) + ident;
         }
 
         private SequenceStorageNodes.GetItemNode getSlotItemNode() {
