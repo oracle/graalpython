@@ -356,6 +356,8 @@ class WithTempFilesTests(unittest.TestCase):
             os.chmod(fd, orig_mode)
         self.assertEqual(orig_mode, os.stat(TEST_FULL_PATH1).st_mode & 0o777)
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java' or sys.platform != 'darwin',
+                         'TODO: issue with readlink on MacOS')
     def test_readlink(self):
         self.assertEqual(TEST_FULL_PATH1, os.readlink(TEST_FULL_PATH2))
         self.assertEqual(os.fsencode(TEST_FULL_PATH1), os.readlink(os.fsencode(TEST_FULL_PATH2)))
