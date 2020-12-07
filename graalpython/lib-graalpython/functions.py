@@ -106,7 +106,16 @@ def sorted(iterable, key=None, reverse=False):
 @__graalpython__.builtin
 def input(prompt=None):
     import sys
-    print(prompt, end="", flush=True)
+    if(not hasattr(sys, "stdin")):
+        raise RuntimeError('input(): lost sys.stdin')
+    if(not hasattr(sys, "stdout")):
+        raise RuntimeError('input(): lost sys.stdout')
+    if(not hasattr(sys, "stderr")):
+        raise RuntimeError('input(): lost sys.stderr')
+
+    if prompt is not None:
+        print(prompt, end="", flush=hasattr(sys.stdout, "flush"))
+        
     result = []
     while True:
         ch = sys.stdin.read(1)
@@ -115,6 +124,8 @@ def input(prompt=None):
                 break
             result.append(ch)
         else:
+            if(len(result) == 0):
+                raise EOFError('EOF when reading a line')
             break
     return "".join(result)
 

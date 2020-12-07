@@ -80,6 +80,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
@@ -1723,6 +1724,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 readStdout = insert(ReadAttributeFromObjectNode.create());
             }
             Object stdout = readStdout.execute(sys, "stdout");
+            if (stdout instanceof PNone) {
+                throw raise(RuntimeError, ErrorMessages.LOST_SYSSTDOUT);
+            }
             return stdout;
         }
     }
