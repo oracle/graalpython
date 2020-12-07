@@ -60,6 +60,7 @@
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Collection
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Container
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Generator
+*graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Hashable
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Iterable
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Iterator
 *graalpython.lib-python.3.test.test_collections.TestOneTrickPonyABCs.test_Reversible
