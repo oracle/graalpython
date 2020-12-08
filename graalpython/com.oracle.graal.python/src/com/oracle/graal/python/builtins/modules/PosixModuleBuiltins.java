@@ -217,8 +217,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int SEEK_SET = 0;
     private static final int SEEK_CUR = 1;
     private static final int SEEK_END = 2;
-    private static final int SEEK_DATA = 3;
-    private static final int SEEK_HOLE = 4;
+    // private static final int SEEK_DATA = 3;
+    // private static final int SEEK_HOLE = 4;
 
     private static final int WNOHANG = 1;
     private static final int WUNTRACED = 3;
@@ -292,11 +292,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("O_TEMPORARY", TEMPORARY);
         builtinConstants.put("O_TMPFILE", TMPFILE);
         // TODO SEEK_* were removed in master
-        builtinConstants.put("SEEK_SET", SEEK_SET);
-        builtinConstants.put("SEEK_CUR", SEEK_CUR);
-        builtinConstants.put("SEEK_END", SEEK_END);
-        builtinConstants.put("SEEK_DATA", SEEK_DATA);
-        builtinConstants.put("SEEK_HOLE", SEEK_HOLE);
+        // builtinConstants.put("SEEK_SET", SEEK_SET);
+        // builtinConstants.put("SEEK_CUR", SEEK_CUR);
+        // builtinConstants.put("SEEK_END", SEEK_END);
+        // builtinConstants.put("SEEK_DATA", SEEK_DATA);
+        // builtinConstants.put("SEEK_HOLE", SEEK_HOLE);
 
         builtinConstants.put("WNOHANG", WNOHANG);
         builtinConstants.put("WUNTRACED", WUNTRACED);

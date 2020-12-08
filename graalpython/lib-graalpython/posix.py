@@ -40,7 +40,7 @@
 from _descriptor import make_named_tuple_class
 
 
-stat_result_c = make_named_tuple_class("stat_result", [
+stat_result = make_named_tuple_class("stat_result", [
     "st_mode", "st_ino", "st_dev", "st_nlink",
     "st_uid", "st_gid", "st_size",
     None, None, None,
@@ -48,22 +48,22 @@ stat_result_c = make_named_tuple_class("stat_result", [
     "st_atime_ns", "st_mtime_ns", "st_ctime_ns"
 ], 10)
 
-stat_result_c.__qualname__ = 'stat_result'
-stat_result_c.__name__ = 'stat_result'
-stat_result_c.__module__ = 'os'
+stat_result.__qualname__ = 'stat_result'
+stat_result.__name__ = 'stat_result'
+stat_result.__module__ = 'os'
 
-def stat_result(data):
-    if len(data) == 10:
-        return stat_result_c(data + tuple(float(x) for x in data[7:10]) + tuple(x * 1000000000 for x in data[7:10]))
-    else:
-        return stat_result_c(data)
+
+def legacy_stat_result(data):
+    assert len(data) == 10
+    return stat_result(data + tuple(float(x) for x in data[7:10]) + tuple(x * 1000000000 for x in data[7:10]))
+
 
 old_stat = stat
 
 
 @__graalpython__.builtin
 def stat(filename, follow_symlinks=True):
-    return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
+    return legacy_stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
 
 old_nfi_stat = nfi_stat
 @__graalpython__.builtin
@@ -83,7 +83,7 @@ def nfi_fstat(fd):
 
 __dir_entry_old_stat = DirEntry.stat
 def __dir_entry_stat(self, follow_symlinks=True):
-    return stat_result(__dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
+    return legacy_stat_result(__dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
 DirEntry.stat = __dir_entry_stat
 
 __nfi_dir_entry_old_stat = nfi_DirEntry.stat
@@ -98,7 +98,7 @@ def lstat(filename):
         from sys import executable as graal_python_executable
         if filename == graal_python_executable:
             return stat_result((0,0,0,0,0,0,0,0,0,0))
-    return stat_result(old_stat(filename, False))
+    return legacy_stat_result(old_stat(filename, False))
 
 
 old_fstat = fstat
@@ -106,7 +106,7 @@ old_fstat = fstat
 
 @__graalpython__.builtin
 def fstat(fd):
-    return stat_result(old_fstat(fd))
+    return legacy_stat_result(old_fstat(fd))
 
 
 @__graalpython__.builtin
@@ -191,9 +191,3 @@ old_nfi_get_terminal_size = nfi_get_terminal_size
 @__graalpython__.builtin
 def nfi_get_terminal_size(fd=None):
     return terminal_size(old_nfi_get_terminal_size() if fd is None else old_nfi_get_terminal_size(fd))
-
-def execl(file, *args):
-    """execl(file, *args)
-    Execute the executable file with argument list args, replacing the
-    current process. """
-    execv(file, args)
