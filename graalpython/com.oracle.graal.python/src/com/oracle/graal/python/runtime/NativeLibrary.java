@@ -142,10 +142,6 @@ public class NativeLibrary {
         this.optional = optional;
     }
 
-    public NFIBackend getNfiBackend() {
-        return nfiBackend;
-    }
-
     private Object getCachedLibrary(PythonContext context) {
         if (cachedLibrary == null) {
             // This should be a one-off thing for each context
@@ -209,7 +205,7 @@ public class NativeLibrary {
     private Object loadLibrary(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
         if (context.getEnv().isNativeAccessAllowed()) {
-            String path = getLibPath(context);
+            String path = getLibPath(context, name);
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
@@ -243,7 +239,7 @@ public class NativeLibrary {
         throw NativeLibraryCannotBeLoaded.INSTANCE;
     }
 
-    private String getLibPath(PythonContext context) {
+    public static String getLibPath(PythonContext context, String name) {
         CompilerAsserts.neverPartOfCompilation();
         String libPythonName = name + ImpModuleBuiltins.ExtensionSuffixesNode.getSoAbi(context);
         TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());

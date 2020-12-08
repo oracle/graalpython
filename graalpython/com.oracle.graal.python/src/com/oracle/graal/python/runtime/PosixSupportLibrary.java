@@ -245,6 +245,11 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Buffer getPathAsBytes(Object receiver, Object path);
 
+    /**
+     * Exception that indicates POSIX level error associated with numeric code. If the message is
+     * known, it may be included in the exception, otherwise it can be queried using
+     * {@link #strerror(Object, int)}.
+     */
     public static class PosixException extends Exception {
 
         private static final long serialVersionUID = -115762483478883093L;
@@ -267,15 +272,11 @@ public abstract class PosixSupportLibrary extends Library {
         }
     }
 
-    // TODO: to be converted to a checked exception, catch in the callers?
-    // TODO: add throws UnsupportedPosixFeatureException to all the methods or identify only some
-    // that may not be unsupported?
-    // This can be used for NFI backend for things that the underlying OS does not support. We will
-    // need a way to query this information too in order to support things like
-    // "os.supports_follow_symlinks"
     /**
      * Exception that may be thrown by all the messages. It indicates that given functionality is
-     * not available in given implementation.
+     * not available in given implementation. In the future, there will be methods to query if
+     * certain feature is supported or not, but even then this exception may be thrown for other
+     * features.
      */
     public static class UnsupportedPosixFeatureException extends RuntimeException {
 
@@ -292,6 +293,9 @@ public abstract class PosixSupportLibrary extends Library {
         }
     }
 
+    /**
+     * Simple wrapper that allows exchanging byte buffers with the outside world.
+     */
     @ValueType
     public static class Buffer {
         public final byte[] data;
