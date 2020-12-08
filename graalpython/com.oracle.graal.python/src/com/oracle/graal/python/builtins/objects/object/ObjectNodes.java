@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.SHOULD_RETURN_A_NOT_B;
 import static com.oracle.graal.python.nodes.ErrorMessages.SHOULD_RETURN_TYPE_A_NOT_TYPE_B;
 import static com.oracle.graal.python.nodes.ErrorMessages.SLOTNAMES_SHOULD_BE_A_NOT_B;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NEWOBJ_EX__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NEWOBJ__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTNAMES__;
@@ -65,11 +66,14 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithState;
@@ -117,178 +121,191 @@ public abstract class ObjectNodes {
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
-    abstract static class GetNewArgsDispatchNode extends Node {
+    abstract static class GetNewArgsNode extends Node {
         public abstract Pair<Object, Object> execute(VirtualFrame frame, Object obj);
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Pair<Object, Object> dispatch(VirtualFrame frame, Object obj,
-                        @Cached GetNewArgsNode getNewArgsNode,
+                        @Cached GetNewArgsInternalNode getNewArgsInternalNode,
                         @CachedLibrary(value = "obj") PythonObjectLibrary pol) {
             Object getNewArgsExAttr = pol.lookupAttribute(obj, frame, __GETNEWARGS_EX__);
             Object getNewArgsAttr = pol.lookupAttribute(obj, frame, __GETNEWARGS__);
-            return getNewArgsNode.execute(frame, getNewArgsExAttr, getNewArgsAttr);
-        }
-    }
-
-    abstract static class GetNewArgsNode extends BaseReduceNode {
-        public abstract Pair<Object, Object> execute(VirtualFrame frame, Object getNewArgsExAttr, Object getNewArgsAttr);
-
-        @Specialization(guards = "!isNoValue(getNewArgsExAttr)")
-        Pair<Object, Object> doNewArgsEx(VirtualFrame frame, Object getNewArgsExAttr, @SuppressWarnings("unused") Object getNewArgsAttr,
-                        @Cached IsBuiltinClassProfile newargsProfile,
-                        @Cached IsBuiltinClassProfile argsProfile,
-                        @Cached IsBuiltinClassProfile kwargsProfile,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            Object newargs = pol.callObject(getNewArgsExAttr, frame);
-            if (!isTuple(newargs, newargsProfile)) {
-                throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS_EX__, "tuple", newargs);
-            }
-            int length = pol.length(newargs);
-            if (length != 2) {
-                throw raise(ValueError, SHOULD_RETURN_A_NOT_B, __GETNEWARGS_EX__, "tuple of length 2", length);
-            }
-
-            SequenceStorage sequenceStorage = getSequenceStorageNode.execute(newargs);
-            Object args = getItemNode.execute(frame, sequenceStorage, 0);
-            Object kwargs = getItemNode.execute(frame, sequenceStorage, 1);
-
-            if (!isTuple(args, argsProfile)) {
-                throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
-            }
-            if (!isDict(kwargs, kwargsProfile)) {
-                throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "second item of the tuple returned by __getnewargs_ex__", "dict", kwargs);
-            }
-
-            return Pair.create(args, kwargs);
+            return getNewArgsInternalNode.execute(frame, getNewArgsExAttr, getNewArgsAttr);
         }
 
-        @Specialization(guards = "!isNoValue(getNewArgsAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
-        Pair<Object, Object> doNewArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone getNewArgsExAttr, Object getNewArgsAttr,
-                        @Cached IsBuiltinClassProfile argsProfile,
-                        @CachedLibrary(value = "getNewArgsAttr") PythonObjectLibrary pol) {
-            Object args = pol.callObject(getNewArgsAttr, frame);
-            if (!isTuple(args, argsProfile)) {
-                throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS__, "tuple", args);
+        abstract static class GetNewArgsInternalNode extends BaseReduceNode {
+            public abstract Pair<Object, Object> execute(VirtualFrame frame, Object getNewArgsExAttr, Object getNewArgsAttr);
+
+            @Specialization(guards = "!isNoValue(getNewArgsExAttr)")
+            Pair<Object, Object> doNewArgsEx(VirtualFrame frame, Object getNewArgsExAttr, @SuppressWarnings("unused") Object getNewArgsAttr,
+                            @Cached IsBuiltinClassProfile newargsProfile,
+                            @Cached IsBuiltinClassProfile argsProfile,
+                            @Cached IsBuiltinClassProfile kwargsProfile,
+                            @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                            @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                            @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                Object newargs = pol.callObject(getNewArgsExAttr, frame);
+                if (!isTuple(newargs, newargsProfile)) {
+                    throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS_EX__, "tuple", newargs);
+                }
+                int length = pol.length(newargs);
+                if (length != 2) {
+                    throw raise(ValueError, SHOULD_RETURN_A_NOT_B, __GETNEWARGS_EX__, "tuple of length 2", length);
+                }
+
+                SequenceStorage sequenceStorage = getSequenceStorageNode.execute(newargs);
+                Object args = getItemNode.execute(frame, sequenceStorage, 0);
+                Object kwargs = getItemNode.execute(frame, sequenceStorage, 1);
+
+                if (!isTuple(args, argsProfile)) {
+                    throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
+                }
+                if (!isDict(kwargs, kwargsProfile)) {
+                    throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "second item of the tuple returned by __getnewargs_ex__", "dict", kwargs);
+                }
+
+                return Pair.create(args, kwargs);
             }
-            return Pair.create(args, PNone.NONE);
+
+            @Specialization(guards = "!isNoValue(getNewArgsAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
+            Pair<Object, Object> doNewArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone getNewArgsExAttr, Object getNewArgsAttr,
+                            @Cached IsBuiltinClassProfile argsProfile,
+                            @CachedLibrary(value = "getNewArgsAttr") PythonObjectLibrary pol) {
+                Object args = pol.callObject(getNewArgsAttr, frame);
+                if (!isTuple(args, argsProfile)) {
+                    throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS__, "tuple", args);
+                }
+                return Pair.create(args, PNone.NONE);
+            }
+
+            @Specialization
+            Pair<Object, Object> doHasNeither(@SuppressWarnings("unused") PNone getNewArgsExAttr, @SuppressWarnings("unused") PNone getNewArgsAttr) {
+                return Pair.create(PNone.NONE, PNone.NONE);
+            }
         }
 
-        @Specialization
-        Pair<Object, Object> doHasNeither(@SuppressWarnings("unused") PNone getNewArgsExAttr, @SuppressWarnings("unused") PNone getNewArgsAttr) {
-            return Pair.create(PNone.NONE, PNone.NONE);
-        }
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
-    abstract static class GetSlotNamesDispatchNode extends Node {
+    abstract static class GetSlotNamesNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object cls, Object copyReg);
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object dispatch(VirtualFrame frame, Object cls, Object copyReg,
-                        @Cached GetSlotNamesNode getSlotNamesNode,
-                        @CachedLibrary(value = "cls") PythonObjectLibrary pol) {
-            Object slotNamesAttr = pol.lookupAttribute(cls, frame, __SLOTNAMES__);
-            return getSlotNamesNode.execute(frame, cls, copyReg, slotNamesAttr);
-        }
-    }
-
-    abstract static class GetSlotNamesNode extends BaseReduceNode {
-        public abstract Object execute(VirtualFrame frame, Object cls, Object copyReg, Object slotNamesAttr);
-
-        @Specialization(guards = "!isNoValue(slotNamesAttr)")
-        Object getSlotNames(Object cls, @SuppressWarnings("unused") Object copyReg, Object slotNamesAttr,
-                        @Cached IsBuiltinClassProfile slotnamesProfile) {
-            Object names = slotNamesAttr;
-            if (!PGuards.isNone(names) && !isList(names, slotnamesProfile)) {
-                throw raise(TypeError, SLOTNAMES_SHOULD_BE_A_NOT_B, cls, "list or None", names);
+                        @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
+                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
+                        @CachedLibrary(value = "cls") PythonObjectLibrary pol,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
+            Object slotNames = PNone.NO_VALUE;
+            Object clsDict = pol.lookupAttribute(cls, frame, __DICT__);
+            if (!PGuards.isNoValue(clsDict)) {
+                HashingStorage hashingStorage = getHashingStorageNode.execute(frame, clsDict);
+                Object item = hashLib.getItem(hashingStorage, __SLOTNAMES__);
+                if (item != null) {
+                    slotNames = item;
+                }
             }
-            return names;
+            return getSlotNamesInternalNode.execute(frame, cls, copyReg, slotNames);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object getCopyRegSlotNames(VirtualFrame frame, Object cls, Object copyReg, @SuppressWarnings("unused") PNone slotNamesAttr,
-                        @Cached IsBuiltinClassProfile slotnamesProfile,
-                        @CachedLibrary(value = "copyReg") PythonObjectLibrary pol) {
-            Object names = pol.lookupAndCallRegularMethod(copyReg, frame, "_slotnames", cls);
-            if (!PGuards.isNone(names) && !isList(names, slotnamesProfile)) {
-                throw raise(TypeError, COPYREG_SLOTNAMES);
+        abstract static class GetSlotNamesInternalNode extends BaseReduceNode {
+            public abstract Object execute(VirtualFrame frame, Object cls, Object copyReg, Object slotNames);
+
+            @Specialization(guards = "!isNoValue(slotNames)")
+            Object getSlotNames(Object cls, @SuppressWarnings("unused") Object copyReg, Object slotNames,
+                            @Cached IsBuiltinClassProfile slotnamesProfile) {
+                Object names = slotNames;
+                if (!PGuards.isNone(names) && !isList(names, slotnamesProfile)) {
+                    throw raise(TypeError, SLOTNAMES_SHOULD_BE_A_NOT_B, cls, "list or None", names);
+                }
+                return names;
             }
-            return names;
+
+            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+            Object getCopyRegSlotNames(VirtualFrame frame, Object cls, Object copyReg, @SuppressWarnings("unused") PNone slotNames,
+                            @Cached IsBuiltinClassProfile slotnamesProfile,
+                            @CachedLibrary(value = "copyReg") PythonObjectLibrary pol) {
+                Object names = pol.lookupAndCallRegularMethod(copyReg, frame, "_slotnames", cls);
+                if (!PGuards.isNone(names) && !isList(names, slotnamesProfile)) {
+                    throw raise(TypeError, COPYREG_SLOTNAMES);
+                }
+                return names;
+            }
         }
+
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
-    abstract static class GetStateDispatchNode extends Node {
+    abstract static class GetStateNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object obj, boolean required, Object copyReg);
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object dispatch(VirtualFrame frame, Object obj, boolean required, Object copyReg,
-                        @Cached GetStateNode getStateNode,
+                        @Cached GetStateInternalNode getStateInternalNode,
                         @CachedLibrary(value = "obj") PythonObjectLibrary pol) {
             Object getStateAttr = pol.lookupAttribute(obj, frame, __GETSTATE__);
-            return getStateNode.execute(frame, obj, required, copyReg, getStateAttr);
-        }
-    }
-
-    abstract static class GetStateNode extends BaseReduceNode {
-        public abstract Object execute(VirtualFrame frame, Object obj, boolean required, Object copyReg, Object getStateAttr);
-
-        @Specialization(guards = "!isNoValue(getStateAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
-        Object getState(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") boolean required, @SuppressWarnings("unused") Object copyReg, Object getStateAttr,
-                        @CachedLibrary(value = "getStateAttr") PythonObjectLibrary pol) {
-            return pol.callObject(getStateAttr, frame);
+            return getStateInternalNode.execute(frame, obj, required, copyReg, getStateAttr);
         }
 
-        @Specialization
-        Object getStateFromSlots(VirtualFrame frame, Object obj, boolean required, Object copyReg, @SuppressWarnings("unused") PNone getStateAttr,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
-                        @Cached TypeNodes.GetItemsizeNode getItemsizeNode,
-                        @Cached CastToJavaStringNode toJavaStringNode,
-                        @Cached GetSlotNamesDispatchNode getSlotNamesNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-            Object state;
-            Object type = pol.getLazyPythonClass(obj);
-            if (required && getItemsizeNode.execute(type) != 0) {
-                throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
+        abstract static class GetStateInternalNode extends BaseReduceNode {
+            public abstract Object execute(VirtualFrame frame, Object obj, boolean required, Object copyReg, Object getStateAttr);
+
+            @Specialization(guards = "!isNoValue(getStateAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
+            Object getState(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") boolean required, @SuppressWarnings("unused") Object copyReg, Object getStateAttr,
+                            @CachedLibrary(value = "getStateAttr") PythonObjectLibrary pol) {
+                return pol.callObject(getStateAttr, frame);
             }
 
-            state = pol.getDict(obj);
-            if (state == null) {
-                state = PNone.NONE;
-            }
+            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+            Object getStateFromSlots(VirtualFrame frame, Object obj, boolean required, Object copyReg, @SuppressWarnings("unused") PNone getStateAttr,
+                            @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                            @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
+                            @Cached TypeNodes.GetItemsizeNode getItemsizeNode,
+                            @Cached CastToJavaStringNode toJavaStringNode,
+                            @Cached GetSlotNamesNode getSlotNamesNode,
+                            @CachedLibrary(value = "obj") PythonObjectLibrary pol,
+                            @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                Object state;
+                Object type = pol.getLazyPythonClass(obj);
+                if (required && getItemsizeNode.execute(type) != 0) {
+                    throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
+                }
 
-            // we skip the assert that type is a type since we are certain of that in this case
-            Object slotnames = getSlotNamesNode.execute(frame, type, copyReg);
-            // TODO check basicsize typeobject.c:4213
+                state = pol.lookupAttribute(obj, frame, __DICT__);
+                if (PGuards.isNoValue(state)) {
+                    state = PNone.NONE;
+                }
 
-            if (!PGuards.isNone(slotnames) && pol.length(slotnames) > 0) {
-                SequenceStorage sequenceStorage = getSequenceStorageNode.execute(slotnames);
-                Object[] names = toArrayNode.execute(sequenceStorage);
+                // we skip the assert that type is a type since we are certain of that in this case
+                Object slotnames = getSlotNamesNode.execute(frame, type, copyReg);
+                // TODO check basicsize typeobject.c:4213
 
-                PDict slots = factory().createDict();
-                boolean haveSlots = false;
-                for (Object o : names) {
-                    try {
-                        String name = toJavaStringNode.execute(o);
-                        Object value = pol.lookupAttribute(obj, frame, name);
-                        if (!PGuards.isNoValue(value)) {
-                            hlib.setItem(slots.getDictStorage(), name, value);
-                            haveSlots = true;
+                if (!PGuards.isNone(slotnames)) {
+                    SequenceStorage sequenceStorage = getSequenceStorageNode.execute(slotnames);
+                    Object[] names = toArrayNode.execute(sequenceStorage);
+                    if (names.length > 0) {
+                        HashingStorage slotsStorage = EconomicMapStorage.create(names.length);
+                        boolean haveSlots = false;
+                        for (Object o : names) {
+                            try {
+                                String name = toJavaStringNode.execute(o);
+                                Object value = pol.lookupAttribute(obj, frame, name);
+                                if (!PGuards.isNoValue(value)) {
+                                    hlib.setItem(slotsStorage, name, value);
+                                    haveSlots = true;
+                                }
+                            } catch (CannotCastException cce) {
+                                throw raise(TypeError, ATTR_NAME_MUST_BE_STRING, o);
+                            }
                         }
-                    } catch (CannotCastException cce) {
-                        throw raise(TypeError, ATTR_NAME_MUST_BE_STRING, o);
+                        if (haveSlots) {
+                            state = factory().createTuple(new Object[]{state, factory().createDict(slotsStorage)});
+                        }
                     }
                 }
-                if (haveSlots) {
-                    state = factory().createTuple(new Object[]{state, slots});
-                }
-            }
 
-            return state;
+                return state;
+            }
         }
     }
 
@@ -297,10 +314,11 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "proto >= 2")
         public Object reduceNewObj(VirtualFrame frame, Object obj, @SuppressWarnings("unused") int proto,
+                        @Cached ConditionProfile newObjProfile,
                         @Cached ConditionProfile hasArgsProfile,
-                        @Cached IsBuiltinClassProfile objProfile,
-                        @Cached GetNewArgsDispatchNode getNewArgsNode,
-                        @Cached GetStateDispatchNode getStateNode,
+                        @Cached GetNewArgsNode getNewArgsNode,
+                        @Cached GetStateNode getStateNode,
+                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
@@ -317,7 +335,7 @@ public abstract class ObjectNodes {
 
             boolean hasargs = args != PNone.NONE;
 
-            if (kwargs == PNone.NONE || pol.length(kwargs) == 0) {
+            if (newObjProfile.profile(kwargs == PNone.NONE || pol.length(kwargs) == 0)) {
                 newobj = pol.lookupAttribute(copyReg, frame, __NEWOBJ__);
                 Object[] newargsVals;
                 if (hasArgsProfile.profile(hasargs)) {
@@ -337,8 +355,8 @@ public abstract class ObjectNodes {
                 throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
             }
 
-            boolean objIsDict = isDict(obj, objProfile);
-            boolean objIsList = isList(obj, objProfile);
+            boolean objIsList = isSubClassNode.executeWith(frame, cls, PythonBuiltinClassType.PList);
+            boolean objIsDict = isSubClassNode.executeWith(frame, cls, PythonBuiltinClassType.PDict);
             boolean required = !hasargs && !objIsDict && !objIsList;
 
             Object state = getStateNode.execute(frame, obj, required, copyReg);
