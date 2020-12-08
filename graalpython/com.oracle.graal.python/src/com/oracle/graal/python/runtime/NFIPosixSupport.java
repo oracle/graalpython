@@ -129,27 +129,21 @@ public final class NFIPosixSupport extends PosixSupport {
         PosixNativeFunction(String signature) {
             this.signature = signature;
         }
-
-        public String signature() {
-            return signature;
-        }
     }
 
     protected static final class InvokeNativeFunction extends Node {
-        private static final InvokeNativeFunction UNCACHED = new InvokeNativeFunction(InteropLibrary.getUncached(), InteropLibrary.getUncached(), InteropLibrary.getUncached());
+        private static final InvokeNativeFunction UNCACHED = new InvokeNativeFunction(InteropLibrary.getUncached(), InteropLibrary.getUncached());
 
-        @Child private InteropLibrary libraryInterop;
         @Child private InteropLibrary functionInterop;
         @Child private InteropLibrary resultInterop;
 
-        public InvokeNativeFunction(InteropLibrary libraryInterop, InteropLibrary functionInterop, InteropLibrary resultInterop) {
-            this.libraryInterop = libraryInterop;
+        public InvokeNativeFunction(InteropLibrary functionInterop, InteropLibrary resultInterop) {
             this.functionInterop = functionInterop;
             this.resultInterop = resultInterop;
         }
 
         public static InvokeNativeFunction create() {
-            return new InvokeNativeFunction(InteropLibrary.getFactory().createDispatched(1), InteropLibrary.getFactory().createDispatched(2), null);
+            return new InvokeNativeFunction(InteropLibrary.getFactory().createDispatched(2), null);
         }
 
         public static InvokeNativeFunction getUncached() {
@@ -160,9 +154,8 @@ public final class NFIPosixSupport extends PosixSupport {
             if (injectBranchProbability(SLOWPATH_PROBABILITY, posix.nfiLibrary == null)) {
                 loadLibrary(posix);
             }
-            Object library = posix.nfiLibrary;
             if (injectBranchProbability(SLOWPATH_PROBABILITY, posix.cachedFunctions.get(function.ordinal()) == null)) {
-                loadFunction(posix, library, function);
+                loadFunction(posix, posix.nfiLibrary, function);
             }
             Object funObject = posix.cachedFunctions.get(function.ordinal());
             try {
@@ -188,6 +181,7 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
 
+        @TruffleBoundary
         private static void loadLibrary(NFIPosixSupport posix) {
             String path = NativeLibrary.getLibPath(posix.context, SUPPORTING_NATIVE_LIB_NAME);
             String withClause = posix.nfiBackend.equals("native") ? "" : "with " + posix.nfiBackend;
@@ -204,11 +198,13 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
 
-        private void loadFunction(NFIPosixSupport posix, Object library, PosixNativeFunction function) {
+        @TruffleBoundary
+        private static void loadFunction(NFIPosixSupport posix, Object library, PosixNativeFunction function) {
             Object unbound;
             try {
-                unbound = libraryInterop.readMember(library, function.name());
-                posix.cachedFunctions.set(function.ordinal(), InteropLibrary.getUncached().invokeMember(unbound, "bind", function.signature));
+                InteropLibrary interop = InteropLibrary.getUncached();
+                unbound = interop.readMember(library, function.name());
+                posix.cachedFunctions.set(function.ordinal(), interop.invokeMember(unbound, "bind", function.signature));
             } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException e) {
                 throw CompilerDirectives.shouldNotReachHere(function.name(), e);
             }
