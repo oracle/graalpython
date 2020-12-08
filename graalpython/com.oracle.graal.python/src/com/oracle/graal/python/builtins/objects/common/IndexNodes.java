@@ -132,6 +132,10 @@ public abstract class IndexNodes {
             return create(ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS);
         }
 
+        public static NormalizeIndexNode forPop() {
+            return create(ErrorMessages.POP_INDEX_OUT_OF_RANGE);
+        }
+
         public static NormalizeIndexNode forRange() {
             return create(ErrorMessages.RANGE_OUT_OF_BOUNDS);
         }

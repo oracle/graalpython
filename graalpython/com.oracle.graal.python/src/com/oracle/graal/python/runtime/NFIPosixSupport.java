@@ -137,7 +137,8 @@ public final class NFIPosixSupport extends PosixSupport {
         lib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME, NativeFunctions.values(), backend,
                         "You can switch to pure Java emulated POSIX support, " +
                                         "which does not require native access privilege, by passing option " +
-                                        "'--python.PosixModuleBackend=java'.");
+                                        "'--python.PosixModuleBackend=java'.",
+                        false);
     }
 
     public static NFIPosixSupport createNative(PythonContext context) {

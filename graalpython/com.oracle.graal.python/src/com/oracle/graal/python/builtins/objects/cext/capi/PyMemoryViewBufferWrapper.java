@@ -164,6 +164,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
                         @Cached SequenceNodes.SetSequenceStorageNode setStorage,
                         @Shared("pointerAdd") @Cached CExtNodes.PointerAddNode pointerAddNode,
                         @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
+            // TODO GR-21120: Add support for PArray
             PSequence owner = (PSequence) object.getOwner();
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(owner));
             if (nativeStorage == null) {

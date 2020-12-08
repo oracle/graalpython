@@ -25,39 +25,63 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.nio.ByteOrder;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.array.PArray.MachineFormat;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "array")
 public final class ArrayModuleBuiltins extends PythonBuiltins {
@@ -67,235 +91,311 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         return ArrayModuleBuiltinsFactory.getFactories();
     }
 
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonModule arrayModule = core.lookupBuiltinModule("array");
+        arrayModule.setAttribute("ArrayType", core.lookupType(PythonBuiltinClassType.PArray));
+        arrayModule.setAttribute("typecodes", "bBuhHiIlLqQfd");
+    }
+
     // array.array(typecode[, initializer])
-    @Builtin(name = "array", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PArray)
+    @Builtin(name = "array", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PArray, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class PythonArrayNode extends PythonBuiltinNode {
+    abstract static class ArrayNode extends PythonVarargsBuiltinNode {
+        @Child private SplitArgsNode splitArgsNode;
 
-        @Specialization(guards = "isNoValue(initializer)")
-        PArray array(Object cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
-            /**
-             * TODO @param typeCode should be a char, not a string
-             */
-            return makeEmptyArray(cls, typeCode.charAt(0));
+        @Specialization(guards = "args.length == 1")
+        Object array2(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
+                        @Cached IsBuiltinClassProfile isNotSubtypeProfile,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast,
+                        @Cached ArrayNodeInternal arrayNodeInternal) {
+            checkKwargs(cls, kwargs, isNotSubtypeProfile);
+            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], "array() argument 1 must be a unicode character, not %p", args[0]), PNone.NO_VALUE);
         }
 
-        @Specialization
-        PArray arrayWithRangeInitializer(Object cls, String typeCode, PIntRange range) {
-            if (!typeCode.equals("i")) {
-                typeError(typeCode, range);
+        @Specialization(guards = "args.length == 2")
+        Object array3(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
+                        @Cached IsBuiltinClassProfile isNotSubtypeProfile,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast,
+                        @Cached ArrayNodeInternal arrayNodeInternal) {
+            checkKwargs(cls, kwargs, isNotSubtypeProfile);
+            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], "array() argument 1 must be a unicode character, not %p", args[0]), args[1]);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object error(Object cls, Object[] args, PKeyword[] kwargs) {
+            if (args.length < 2) {
+                throw raise(TypeError, "%s() takes at least %d arguments (%d given)", "array", 2, args.length);
+            } else {
+                throw raise(TypeError, "%s() takes at most %d arguments (%d given)", "array", 3, args.length);
             }
-
-            int[] intArray = new int[range.getIntLength()];
-
-            int start = range.getIntStart();
-            int stop = range.getIntStop();
-            int step = range.getIntStep();
-
-            int index = 0;
-            for (int i = start; i < stop; i += step) {
-                intArray[index++] = i;
-            }
-
-            return factory().createArray(cls, intArray);
         }
 
-        @Specialization
-        PArray arrayWithSequenceInitializer(Object cls, String typeCode, String str) {
-            if (!typeCode.equals("c")) {
-                typeError(typeCode, str);
-            }
-
-            return factory().createArray(cls, str.toCharArray());
-        }
-
-        protected boolean isIntArray(String typeCode) {
-            return typeCode.charAt(0) == 'i';
-        }
-
-        protected boolean isLongArray(String typeCode) {
-            return typeCode.charAt(0) == 'l';
-        }
-
-        protected boolean isByteArray(String typeCode) {
-            return typeCode.charAt(0) == 'b';
-        }
-
-        protected boolean isCharArray(String typeCode) {
-            return typeCode.charAt(0) == 'B';
-        }
-
-        protected boolean isDoubleArray(String typeCode) {
-            return typeCode.charAt(0) == 'd';
-        }
-
-        @Specialization(guards = "isByteArray(typeCode)", limit = "getCallSiteInlineCacheMaxDepth()")
-        PArray arrayByteInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @Cached("createCast()") CastToByteNode castToByteNode,
-                        @CachedLibrary("initializer") PythonObjectLibrary lib,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached SequenceNodes.LenNode lenNode) {
-            Object iter = lib.getIteratorWithFrame(initializer, frame);
-            int i = 0;
-            byte[] byteArray = new byte[lenNode.execute(initializer)];
-
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = nextNode.execute(frame, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
+        private void checkKwargs(Object cls, PKeyword[] kwargs, IsBuiltinClassProfile isNotSubtypeProfile) {
+            if (isNotSubtypeProfile.profileClass(cls, PythonBuiltinClassType.PArray)) {
+                if (kwargs.length != 0) {
+                    throw raise(TypeError, "array.array() takes no keyword arguments");
                 }
-                byteArray[i++] = castToByteNode.execute(frame, nextValue);
+            }
+        }
+
+        @Override
+        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (splitArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                splitArgsNode = insert(SplitArgsNode.create());
+            }
+            return execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
+        }
+
+        @ImportStatic(PGuards.class)
+        abstract static class ArrayNodeInternal extends Node {
+            @Child private PRaiseNode raiseNode;
+            @Child private PythonObjectFactory factory;
+            @CompilationFinal private ValueProfile formatProfile = ValueProfile.createIdentityProfile();
+
+            public abstract PArray execute(VirtualFrame frame, Object cls, String typeCode, Object initializer);
+
+            @Specialization(guards = "isNoValue(initializer)")
+            PArray array(Object cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
+                BufferFormat format = getFormatChecked(typeCode);
+                return getFactory().createArray(cls, typeCode, format);
             }
 
-            return factory().createArray(cls, byteArray);
-        }
-
-        @Specialization(guards = "isCharArray(typeCode)")
-        PArray arrayCharInitializer(Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] byteArray = toByteArrayNode.execute(getSequenceStorageNode.execute(initializer));
-            return factory().createArray(cls, byteArray);
-        }
-
-        @Specialization(guards = "isIntArray(typeCode)", limit = "getCallSiteInlineCacheMaxDepth()")
-        PArray arrayIntInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @CachedLibrary("initializer") PythonObjectLibrary lib,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached SequenceNodes.LenNode lenNode) {
-            Object iter = lib.getIteratorWithFrame(initializer, frame);
-            int i = 0;
-
-            int[] intArray = new int[lenNode.execute(initializer)];
-
-            while (true) {
-                Object nextValue;
+            @Specialization
+            PArray arrayWithRangeInitializer(Object cls, String typeCode, PIntRange range,
+                            @Cached ArrayNodes.PutValueNode putValueNode) {
+                BufferFormat format = getFormatChecked(typeCode);
+                PArray array;
                 try {
-                    nextValue = nextNode.execute(frame, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
+                    array = getFactory().createArray(cls, typeCode, format, range.getIntLength());
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raise(MemoryError);
                 }
-                if (nextValue instanceof Integer) {
-                    intArray[i++] = (int) nextValue;
+
+                int start = range.getIntStart();
+                int stop = range.getIntStop();
+                int step = range.getIntStep();
+
+                for (int index = 0, value = start; value < stop; index++, value += step) {
+                    putValueNode.execute(null, array, index, value);
+                }
+
+                return array;
+            }
+
+            @Specialization
+            PArray arrayWithBytesInitializer(VirtualFrame frame, Object cls, String typeCode, PBytesLike bytes,
+                            @Cached ArrayBuiltins.FromBytesNode fromBytesNode) {
+                PArray array = getFactory().createArray(cls, typeCode, getFormatChecked(typeCode));
+                fromBytesNode.execute(frame, array, bytes);
+                return array;
+            }
+
+            @Specialization(guards = "isString(initializer)")
+            PArray arrayWithStringInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
+                            @Cached CastToJavaStringNode cast,
+                            @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode) {
+                BufferFormat format = getFormatChecked(typeCode);
+                if (format != BufferFormat.UNICODE) {
+                    throw raise(TypeError, "cannot use a str to initialize an array with typecode '%s'", typeCode);
+                }
+                PArray array = getFactory().createArray(cls, typeCode, format);
+                fromUnicodeNode.execute(frame, array, cast.execute(initializer));
+                return array;
+            }
+
+            @Specialization
+            PArray arrayArrayInitializer(VirtualFrame frame, Object cls, String typeCode, PArray initializer,
+                            @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached ArrayNodes.GetValueNode getValueNode) {
+                BufferFormat format = getFormatChecked(typeCode);
+                try {
+                    PArray array = getFactory().createArray(cls, typeCode, format, initializer.getLength());
+                    for (int i = 0; i < initializer.getLength(); i++) {
+                        putValueNode.execute(frame, array, i, getValueNode.execute(initializer, i));
+                    }
+                    return array;
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raise(MemoryError);
+                }
+            }
+
+            @Specialization
+            PArray arraySequenceInitializer(VirtualFrame frame, Object cls, String typeCode, PSequence initializer,
+                            @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                            @Cached SequenceStorageNodes.LenNode lenNode,
+                            @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                BufferFormat format = getFormatChecked(typeCode);
+                SequenceStorage storage = getSequenceStorageNode.execute(initializer);
+                int length = lenNode.execute(storage);
+                try {
+                    PArray array = getFactory().createArray(cls, typeCode, format, length);
+                    for (int i = 0; i < length; i++) {
+                        putValueNode.execute(frame, array, i, getItemNode.execute(storage, i));
+                    }
+                    return array;
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raise(MemoryError);
+                }
+            }
+
+            @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)"}, limit = "3")
+            PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
+                            @CachedLibrary("initializer") PythonObjectLibrary lib,
+                            @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached GetNextNode nextNode,
+                            @Cached IsBuiltinClassProfile errorProfile) {
+                Object iter = lib.getIteratorWithFrame(initializer, frame);
+
+                BufferFormat format = getFormatChecked(typeCode);
+                PArray array = getFactory().createArray(cls, typeCode, format);
+
+                int length = 0;
+                while (true) {
+                    Object nextValue;
+                    try {
+                        nextValue = nextNode.execute(frame, iter);
+                    } catch (PException e) {
+                        e.expectStopIteration(errorProfile);
+                        break;
+                    }
+                    try {
+                        length = PythonUtils.addExact(length, 1);
+                        array.resizeStorage(length);
+                    } catch (OverflowException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raise(MemoryError);
+                    }
+                    putValueNode.execute(frame, array, length - 1, nextValue);
+                }
+
+                array.setLength(length);
+                return array;
+            }
+
+            private BufferFormat getFormatChecked(String typeCode) {
+                if (typeCode.length() != 1) {
+                    throw raise(TypeError, "array() argument 1 must be a unicode character, not str");
+                }
+                BufferFormat format = BufferFormat.forArray(typeCode);
+                if (format == null) {
+                    throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                }
+                return formatProfile.profile(format);
+            }
+
+            private PException raise(PythonBuiltinClassType type, String message, Object... args) {
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                throw raiseNode.raise(type, message, args);
+            }
+
+            private PException raise(PythonBuiltinClassType type) {
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                throw raiseNode.raise(type);
+            }
+
+            private PythonObjectFactory getFactory() {
+                if (factory == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    factory = insert(PythonObjectFactory.create());
+                }
+                return factory;
+            }
+        }
+    }
+
+    @Builtin(name = "_array_reconstructor", minNumOfPositionalArgs = 4, numOfPositionalOnlyArgs = 4, parameterNames = {"arrayType", "typeCode", "mformatCode", "items"})
+    @ArgumentClinic(name = "typeCode", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "mformatCode", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @GenerateNodeFactory
+    abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
+        @Specialization(guards = "mformatCode == cachedCode")
+        Object reconstructCached(VirtualFrame frame, Object arrayType, String typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
+                        @Cached("mformatCode") int cachedCode,
+                        @Cached("createIdentityProfile()") ValueProfile formatProfile,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
+                        @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ArrayBuiltins.ByteSwapNode byteSwapNode) {
+            BufferFormat format = BufferFormat.forArray(typeCode);
+            if (format == null) {
+                throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+            }
+            return doReconstruct(frame, arrayType, typeCode, cachedCode, bytes, lib, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format));
+        }
+
+        @Specialization(replaces = "reconstructCached")
+        Object reconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
+                        @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ArrayBuiltins.ByteSwapNode byteSwapNode) {
+            BufferFormat format = BufferFormat.forArray(typeCode);
+            if (format == null) {
+                throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+            }
+            return doReconstruct(frame, arrayType, typeCode, mformatCode, bytes, lib, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format);
+        }
+
+        private Object doReconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes, PythonObjectLibrary lib,
+                        ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
+                        ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format) {
+            if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
+                throw raise(TypeError, "%n is not a subtype of array", arrayType);
+            }
+            MachineFormat machineFormat = MachineFormat.fromCode(mformatCode);
+            if (machineFormat != null) {
+                PArray array;
+                if (machineFormat == MachineFormat.forFormat(format)) {
+                    array = factory().createArray(arrayType, typeCode, machineFormat.format);
+                    fromBytesNode.execute(frame, array, bytes);
                 } else {
-                    throw raise(ValueError, ErrorMessages.ARG_EXPECTED_GOT, "Integer", nextValue);
+                    String newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
+                    array = factory().createArray(arrayType, newTypeCode, machineFormat.format);
+                    if (machineFormat.unicodeEncoding != null) {
+                        Object decoded = lib.lookupAndCallRegularMethod(bytes, frame, "decode", machineFormat.unicodeEncoding);
+                        fromUnicodeNode.execute(frame, array, decoded);
+                    } else {
+                        fromBytesNode.execute(frame, array, bytes);
+                        if (machineFormat.order != ByteOrder.nativeOrder()) {
+                            byteSwapNode.call(frame, array);
+                        }
+                    }
                 }
-            }
-
-            return factory().createArray(cls, intArray);
-        }
-
-        @Specialization(guards = "isLongArray(typeCode)", limit = "getCallSiteInlineCacheMaxDepth()")
-        PArray arrayLongInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @CachedLibrary("initializer") PythonObjectLibrary lib,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached SequenceNodes.LenNode lenNode) {
-            Object iter = lib.getIteratorWithFrame(initializer, frame);
-            int i = 0;
-
-            long[] longArray = new long[lenNode.execute(initializer)];
-
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = nextNode.execute(frame, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
-                }
-                if (nextValue instanceof Number) {
-                    longArray[i++] = longValue((Number) nextValue);
-                } else {
-                    throw raise(ValueError, ErrorMessages.ARG_EXPECTED_GOT, "Integer", nextValue);
-                }
-            }
-
-            return factory().createArray(cls, longArray);
-        }
-
-        @Specialization(guards = "isDoubleArray(typeCode)", limit = "getCallSiteInlineCacheMaxDepth()")
-        PArray arrayDoubleInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @CachedLibrary("initializer") PythonObjectLibrary lib,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached SequenceNodes.LenNode lenNode) {
-            Object iter = lib.getIteratorWithFrame(initializer, frame);
-            int i = 0;
-
-            double[] doubleArray = new double[lenNode.execute(initializer)];
-
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = nextNode.execute(frame, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
-                }
-                if (nextValue instanceof Integer) {
-                    doubleArray[i++] = ((Integer) nextValue).doubleValue();
-                } else if (nextValue instanceof Double) {
-                    doubleArray[i++] = (double) nextValue;
-                } else {
-                    throw raise(ValueError, ErrorMessages.VALUE_EXPECTED, "double");
-                }
-            }
-
-            return factory().createArray(cls, doubleArray);
-        }
-
-        @Specialization
-        PArray arrayWithObjectInitializer(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode) || isCharArray(typeCode))) {
-                // TODO implement support for typecodes: b, B, u, h, H, i, I, l, L, q, Q, f or d
-                throw raise(ValueError, ErrorMessages.BAD_TYPECODE);
-            }
-            throw new RuntimeException("Unsupported initializer " + initializer);
-        }
-
-        @Specialization(guards = "!isString(typeCode)")
-        PArray noArray(@SuppressWarnings("unused") Object cls, Object typeCode, @SuppressWarnings("unused") Object initializer) {
-            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_UNICODE, "array()", 1, typeCode);
-        }
-
-        @TruffleBoundary
-        private static long longValue(Number n) {
-            return n.longValue();
-        }
-
-        private PArray makeEmptyArray(Object cls, char type) {
-            switch (type) {
-                case 'c':
-                case 'b':
-                case 'B':
-                    return factory().createArray(cls, PythonUtils.EMPTY_BYTE_ARRAY);
-                case 'i':
-                    return factory().createArray(cls, PythonUtils.EMPTY_INT_ARRAY);
-                case 'd':
-                    return factory().createArray(cls, PythonUtils.EMPTY_DOUBLE_ARRAY);
-                default:
-                    return null;
+                return array;
+            } else {
+                throw raise(ValueError, "third argument must be a valid machine format code.");
             }
         }
 
-        protected CastToByteNode createCast() {
-            return CastToByteNode.create(val -> {
-                throw raise(OverflowError, ErrorMessages.SIGNED_CHAR_GREATER_THAN_MAX);
-            }, null);
-
+        @Specialization(guards = "!isPBytes(value)")
+        @SuppressWarnings("unused")
+        Object error(Object arrayType, String typeCode, int mformatCode, Object value) {
+            throw raise(TypeError, "fourth argument should be bytes, not %p", value);
         }
 
-        @TruffleBoundary
-        private void typeError(String typeCode, Object initializer) {
-            throw raise(TypeError, ErrorMessages.CANNOT_USE_TO_INITIALIZE_ARRAY, initializer, typeCode);
+        protected static boolean isPBytes(Object obj) {
+            return obj instanceof PBytes;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayModuleBuiltinsClinicProviders.ArrayReconstructorNodeClinicProviderGen.INSTANCE;
         }
     }
 }

@@ -62,6 +62,7 @@ import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
     public static void main(String[] args) {
+        GraalPythonMain.setStartupTime();
         new GraalPythonMain().launch(args);
     }
 
@@ -69,7 +70,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private static final String MIME_TYPE = "text/x-python";
 
     // provided by GraalVM bash launchers, ignored in native image mode
-    private static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+    protected static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+
+    private static long startupWallClockTime = -1;
+    private static long startupNanoTime = -1;
 
     private ArrayList<String> programArgs = null;
     private String commandString = null;
@@ -84,6 +88,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private final boolean stdinIsInteractive = System.console() != null;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
+    private boolean snaptshotStartup = false;
     private VersionAction versionAction = VersionAction.None;
     private List<String> givenArguments;
     private List<String> relaunchArgs;
@@ -92,6 +97,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean dontWriteBytecode = false;
     private String warnOptions = null;
     private String checkHashPycsMode = "default";
+
+    protected static void setStartupTime() {
+        if (GraalPythonMain.startupNanoTime == -1) {
+            GraalPythonMain.startupNanoTime = System.nanoTime();
+        }
+        if (GraalPythonMain.startupWallClockTime == -1) {
+            GraalPythonMain.startupWallClockTime = System.currentTimeMillis();
+        }
+    }
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -246,6 +260,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "--check-hash-based-pycs":
                     i += 1;
                     checkHashPycsMode = arguments.get(i);
+                    break;
+                case "-snapshot-startup":
+                    if (wantsExperimental) {
+                        snaptshotStartup = true;
+                    } else {
+                        unrecognized.add(arg);
+                    }
                     break;
                 default:
                     if (!arg.startsWith("-")) {
@@ -474,6 +495,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         try (Context context = contextBuilder.build()) {
             runVersionAction(versionAction, context.getEngine());
 
+            if (snaptshotStartup) {
+                evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
+            }
+
             if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && stdinIsInteractive))) {
                 print("Python " + evalInternal(context, "import sys; sys.version + ' on ' + sys.platform").asString());
                 if (!noSite) {
@@ -484,7 +509,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
             if (commandString != null || inputFile != null) {
                 try {
-                    evalNonInteractive(context);
+                    evalNonInteractive(context, consoleHandler);
                     rc = 0;
                 } catch (PolyglotException e) {
                     if (!e.isExit()) {
@@ -569,7 +594,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.err.println(e.getMessage());
     }
 
-    private void evalNonInteractive(Context context) throws IOException {
+    private void evalNonInteractive(Context context, ConsoleHandler consoleHandler) throws IOException {
+        // We need to setup the terminal even when not running the REPL because code may request
+        // input from the terminal.
+        setupTerminal(consoleHandler);
+
         Source src;
         if (commandString != null) {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
@@ -832,6 +861,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         () -> clearHistory.execute(),
                         completer);
 
+    }
+
+    private static void setupTerminal(ConsoleHandler consoleHandler) {
+        consoleHandler.setupReader(() -> false, () -> 0, (item) -> {
+        }, (pos) -> null, (pos, item) -> {
+        }, (pos) -> {
+        }, () -> {
+        }, null);
     }
 
     /**

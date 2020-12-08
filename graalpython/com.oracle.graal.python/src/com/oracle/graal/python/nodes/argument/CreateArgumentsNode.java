@@ -329,7 +329,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
             if (too_many_args) {
                 // the node acts as a profile
-                throw handleTooManyArguments(scope_w, callable, signature, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall, handleTooMany);
+                throw handleTooManyArguments(scope_w, callable, signature, co_argcount, co_kwonlyargcount, defaults.length, avail, methodcall, handleTooMany, self instanceof PythonModule ? 1 : 0);
             }
 
             boolean more_filling = input_argcount < co_argcount + co_kwonlyargcount;
@@ -355,8 +355,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         private static PException handleTooManyArguments(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
-                        HandleTooManyArgumentsNode node) {
-            return node.execute(scope_w, callable, signature, co_argcount, co_kwonlyargcount, ndefaults, avail, methodcall);
+                        HandleTooManyArgumentsNode node, int adjustCount) {
+            return node.execute(scope_w, callable, signature, co_argcount, co_kwonlyargcount, ndefaults, avail, methodcall, adjustCount);
         }
 
         private static void fillDefaults(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount, FillDefaultsNode node) {
@@ -372,12 +372,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @GenerateUncached
     protected abstract static class HandleTooManyArgumentsNode extends PNodeWithContext {
 
-        public abstract PException execute(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall);
+        public abstract PException execute(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
+                        int adjustCount);
 
         @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount"})
         @ExplodeLoop
         PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
-                        boolean methodcall,
+                        boolean methodcall, int adjustCount,
                         @Cached PRaiseNode raise,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
             int kwonly_given = 0;
@@ -386,13 +387,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     kwonly_given += 1;
                 }
             }
-
             boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
-            throw raiseTooManyArguments(callable, co_argcount, ndefaults, avail, forgotSelf, kwonly_given, raise);
+            throw raiseTooManyArguments(callable, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
         @Specialization(replaces = "doCached")
-        PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
+        PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
                         @Cached PRaiseNode raise) {
             int kwonly_given = 0;
             for (int i = 0; i < co_kwonlyargcount; i++) {
@@ -400,9 +400,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     kwonly_given += 1;
                 }
             }
-
             boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
-            throw raiseTooManyArguments(callable, co_argcount, ndefaults, avail, forgotSelf, kwonly_given, raise);
+            throw raiseTooManyArguments(callable, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
         private static PException raiseTooManyArguments(Object callable, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
@@ -510,7 +509,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(guards = "upfront >= co_argcount")
         @SuppressWarnings("unused")
         int doNothing(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
-            return upfront;
+            return 0;
         }
 
         protected static ApplyPositionalArguments create() {

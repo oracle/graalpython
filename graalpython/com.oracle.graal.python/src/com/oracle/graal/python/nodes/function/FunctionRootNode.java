@@ -35,6 +35,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -116,8 +117,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
      * Returns a new function that has its signature replaced and whose body has been modified by
      * the given node visitor.
      */
-    public FunctionRootNode rewriteWithNewSignature(Signature newSignature, NodeVisitor nodeVisitor) {
-        ExpressionNode newUninitializedBody = NodeUtil.cloneNode(uninitializedBody);
+    public FunctionRootNode rewriteWithNewSignature(Signature newSignature, NodeVisitor nodeVisitor, Function<ExpressionNode, ExpressionNode> bodyFun) {
+        ExpressionNode newUninitializedBody = bodyFun.apply(NodeUtil.cloneNode(uninitializedBody));
         newUninitializedBody.accept(nodeVisitor);
         return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, true, getFrameDescriptor(), newUninitializedBody, executionCellSlots,
                         newSignature);

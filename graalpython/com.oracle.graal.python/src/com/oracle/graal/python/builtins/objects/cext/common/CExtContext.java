@@ -105,5 +105,4 @@ public abstract class CExtContext {
     public static boolean isMethFastcallWithKeywords(int flags) {
         return (flags & METH_FASTCALL) != 0 && (flags & METH_KEYWORDS) != 0;
     }
-
 }

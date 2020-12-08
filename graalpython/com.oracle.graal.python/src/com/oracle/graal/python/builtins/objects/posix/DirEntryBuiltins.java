@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -118,7 +119,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
 
     @Builtin(name = "is_dir", minNumOfPositionalArgs = 1, keywordOnlyNames = {"follow_symlinks"}, needsFrame = true)
     @GenerateNodeFactory
-    abstract static class IsDirNode extends PythonBinaryBuiltinNode {
+    abstract static class IsDirNode extends PythonBuiltinNode {
         @Specialization
         boolean testBool(PDirEntry self, boolean followSymlinks) {
             return self.getFile().isDirectory(getLinkOption(followSymlinks));

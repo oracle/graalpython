@@ -71,10 +71,12 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_and_no_get
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_class
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_dict
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_doc
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slices
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slot_shadows_class_variable
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_descriptor
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_multiple_inheritance
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_special
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_special2
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_trash
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_special_method_lookup
@@ -100,6 +102,7 @@
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_iter_keys
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_iter_values
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_repr
+*graalpython.lib-python.3.test.test_descr.MiscTests.test_type_lookup_mro_reference
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_extend
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_set_bases_on_self
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_super
@@ -119,4 +122,5 @@
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_wrap_lenfunc_bad_cast
 *graalpython.lib-python.3.test.test_descr.PTypesLongInitTest.test_pytype_long_ready
 *graalpython.lib-python.3.test.test_descr.PicklingTests.test_pickle_slots
+*graalpython.lib-python.3.test.test_descr.PicklingTests.test_reduce_copying
 *graalpython.lib-python.3.test.test_descr.SharedKeyTests.test_subclasses

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,13 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def frombytes(self, bytesLike):
-    for b in bytesLike:
-        self.append(b)
+def public_method():
+    print("I'm public")
 
-
-def fromfile(self, f, n):
-    self.frombytes(f.read(n))
-
-array.frombytes = __graalpython__.builtin_method(frombytes)
-array.fromfile = __graalpython__.builtin_method(fromfile)
+def __private_method():
+    print("I'm private")

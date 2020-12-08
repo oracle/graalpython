@@ -46,37 +46,27 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.lang.ref.ReferenceQueue;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -91,31 +81,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class MemoryViewNodes {
-    static int bytesize(PMemoryView.BufferFormat format) {
-        // TODO fetch from sulong
-        switch (format) {
-            case UNSIGNED_BYTE:
-            case SIGNED_BYTE:
-            case CHAR:
-            case BOOLEAN:
-                return 1;
-            case UNSIGNED_SHORT:
-            case SIGNED_SHORT:
-                return 2;
-            case SIGNED_INT:
-            case UNSIGNED_INT:
-            case FLOAT:
-                return 4;
-            case UNSIGNED_LONG:
-            case SIGNED_LONG:
-            case DOUBLE:
-                return 8;
-        }
-        return -1;
-    }
-
-    static boolean isByteFormat(PMemoryView.BufferFormat format) {
-        return format == PMemoryView.BufferFormat.UNSIGNED_BYTE || format == PMemoryView.BufferFormat.SIGNED_BYTE || format == PMemoryView.BufferFormat.CHAR;
+    static boolean isByteFormat(BufferFormat format) {
+        return format == BufferFormat.UINT_8 || format == BufferFormat.INT_8 || format == BufferFormat.CHAR;
     }
 
     public abstract static class InitFlagsNode extends Node {
@@ -152,253 +119,42 @@ public class MemoryViewNodes {
         }
     }
 
-    @ImportStatic(PMemoryView.BufferFormat.class)
-    abstract static class UnpackValueNode extends Node {
-        // bytes are expected to already have the appropriate length
-        public abstract Object execute(PMemoryView.BufferFormat format, String formatStr, byte[] bytes);
+    @ImportStatic(BufferFormat.class)
+    public abstract static class UnpackValueNode extends PNodeWithRaise {
+        public abstract Object execute(BufferFormat format, String formatStr, byte[] bytes, int offset);
 
-        @Specialization(guards = "format == UNSIGNED_BYTE")
-        static int unpackUnsignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return bytes[0] & 0xFF;
+        @Specialization(guards = "format != OTHER")
+        static Object unpack(BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset,
+                        @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
+            return unpackValueNode.execute(format, bytes, offset);
         }
 
-        @Specialization(guards = "format == SIGNED_BYTE")
-        static int unpackSignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return bytes[0];
-        }
-
-        @Specialization(guards = "format == SIGNED_SHORT")
-        static int unpackSignedShort(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return unpackInt16(bytes);
-        }
-
-        @Specialization(guards = "format == UNSIGNED_SHORT")
-        static int unpackUnsignedShort(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return unpackInt16(bytes) & 0xFFFF;
-        }
-
-        @Specialization(guards = "format == SIGNED_INT")
-        static int unpackSignedInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return unpackInt32(bytes);
-        }
-
-        @Specialization(guards = "format == UNSIGNED_INT")
-        static long unpackUnsignedInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return unpackInt32(bytes) & 0xFFFFFFFFL;
-        }
-
-        @Specialization(guards = "format == SIGNED_LONG")
-        static long unpackSignedLong(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return unpackInt64(bytes);
-        }
-
-        @Specialization(guards = "format == UNSIGNED_LONG")
-        static Object unpackUnsignedLong(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes,
-                        @Cached ConditionProfile needsPIntProfile,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            long signedLong = unpackInt64(bytes);
-            if (needsPIntProfile.profile(signedLong < 0)) {
-                return factory.createInt(PInt.longToUnsignedBigInteger(signedLong));
-            } else {
-                return signedLong;
-            }
-        }
-
-        @Specialization(guards = "format == FLOAT")
-        static double unpackFloat(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return Float.intBitsToFloat(unpackInt32(bytes));
-        }
-
-        @Specialization(guards = "format == DOUBLE")
-        static double unpackDouble(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return Double.longBitsToDouble(unpackInt64(bytes));
-        }
-
-        @Specialization(guards = "format == BOOLEAN")
-        static boolean unpackBoolean(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
-            return bytes[0] != 0;
-        }
-
-        @Specialization(guards = "format == CHAR")
-        static Object unpackChar(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            assert bytes.length == 1;
-            return factory.createBytes(bytes);
-        }
-
-        @Specialization(guards = "format == OTHER")
-        static Object notImplemented(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, @SuppressWarnings("unused") byte[] bytes,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
-        }
-
-        private static short unpackInt16(byte[] bytes) {
-            return (short) ((bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8);
-        }
-
-        private static int unpackInt32(byte[] bytes) {
-            return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24;
-        }
-
-        private static long unpackInt64(byte[] bytes) {
-            return (bytes[0] & 0xFFL) | (bytes[1] & 0xFFL) << 8 | (bytes[2] & 0xFFL) << 16 | (bytes[3] & 0xFFL) << 24 |
-                            (bytes[4] & 0xFFL) << 32 | (bytes[5] & 0xFFL) << 40 | (bytes[6] & 0xFFL) << 48 | (bytes[7] & 0xFFL) << 56;
+        @Fallback
+        @SuppressWarnings("unused")
+        Object notImplemented(BufferFormat format, String formatStr, byte[] bytes, int offset) {
+            throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
     }
 
-    @ImportStatic({PMemoryView.BufferFormat.class, PGuards.class})
-    abstract static class PackValueNode extends Node {
-        @Child private PRaiseNode raiseNode;
+    @ImportStatic({BufferFormat.class, PGuards.class})
+    public abstract static class PackValueNode extends PNodeWithRaise {
         @Child private IsBuiltinClassProfile isOverflowErrorProfile;
 
-        // Output goes to bytes, lenght not checked
-        public abstract void execute(VirtualFrame frame, PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes);
+        public abstract void execute(VirtualFrame frame, BufferFormat format, String formatStr, Object object, byte[] bytes, int offset);
 
-        @Specialization(guards = "format == UNSIGNED_BYTE")
-        void packUnsignedByteInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, int value, byte[] bytes) {
-            assert bytes.length == 1;
-            if (value < 0 || value > 0xFF) {
-                throw valueError(formatStr);
-            }
-            bytes[0] = (byte) value;
-        }
-
-        @Specialization(guards = "format == UNSIGNED_BYTE", replaces = "packUnsignedByteInt", limit = "2")
-        void packUnsignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            assert bytes.length == 1;
-            if (value < 0 || value > 0xFF) {
-                throw valueError(formatStr);
-            }
-            bytes[0] = (byte) value;
-        }
-
-        @Specialization(guards = "format == SIGNED_BYTE", replaces = "packUnsignedByteInt", limit = "2")
-        void packSignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            assert bytes.length == 1;
-            if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
-                throw valueError(formatStr);
-            }
-            bytes[0] = (byte) value;
-        }
-
-        @Specialization(guards = "format == SIGNED_SHORT", limit = "2")
-        void packSignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
-                throw valueError(formatStr);
-            }
-            packInt16((int) value, bytes);
-        }
-
-        @Specialization(guards = "format == UNSIGNED_SHORT", limit = "2")
-        void packUnsignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < 0 || value > (Short.MAX_VALUE << 1) + 1) {
-                throw valueError(formatStr);
-            }
-            packInt16((int) value, bytes);
-        }
-
-        @Specialization(guards = "format == SIGNED_INT")
-        static void packSignedIntInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, int value, byte[] bytes) {
-            packInt32(value, bytes);
-        }
-
-        @Specialization(guards = "format == SIGNED_INT", replaces = "packSignedIntInt", limit = "2")
-        void packSignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
-                throw valueError(formatStr);
-            }
-            packInt32((int) value, bytes);
-        }
-
-        @Specialization(guards = "format == UNSIGNED_INT", replaces = "packSignedIntInt", limit = "2")
-        void packUnsignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < 0 || value > ((long) (Integer.MAX_VALUE) << 1L) + 1L) {
-                throw valueError(formatStr);
-            }
-            packInt32((int) value, bytes);
-        }
-
-        @Specialization(guards = "format == SIGNED_LONG", limit = "2")
-        void packSignedLong(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            assert bytes.length == 8;
-            packInt64(asJavaLong(frame, formatStr, object, lib), bytes);
-        }
-
-        @Specialization(guards = "format == UNSIGNED_LONG", limit = "2")
-        void packUnsignedLong(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @Cached CastToJavaUnsignedLongNode cast,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            assert bytes.length == 8;
+        @Specialization(guards = "format != OTHER")
+        void pack(VirtualFrame frame, BufferFormat format, String formatStr, Object value, byte[] bytes, int offset,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
             try {
-                packInt64(cast.execute(lib.asIndexWithFrame(object, frame)), bytes);
+                packValueNode.execute(frame, format, value, bytes, offset);
             } catch (PException e) {
                 throw processException(e, formatStr);
             }
         }
 
-        @Specialization(guards = "format == FLOAT", limit = "2")
-        void packFloat(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            assert bytes.length == 4;
-            try {
-                packInt32(Float.floatToRawIntBits((float) lib.asJavaDouble(object)), bytes);
-            } catch (PException e) {
-                throw processException(e, formatStr);
-            }
-        }
-
-        @Specialization(guards = "format == DOUBLE", limit = "2")
-        void packDouble(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            assert bytes.length == 8;
-            try {
-                packInt64(Double.doubleToRawLongBits(lib.asJavaDouble(object)), bytes);
-            } catch (PException e) {
-                throw processException(e, formatStr);
-            }
-        }
-
-        @Specialization(guards = "format == BOOLEAN", limit = "2")
-        static void packBoolean(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            assert bytes.length == 1;
-            bytes[0] = lib.isTrue(object, frame) ? (byte) 1 : (byte) 0;
-        }
-
-        @Specialization(guards = "format == CHAR", limit = "2")
-        void packChar(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, PBytes object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                byte[] value = lib.getBufferBytes(object);
-                if (value.length != 1) {
-                    throw valueError(formatStr);
-                }
-                bytes[0] = value[0];
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        @Specialization(guards = {"format == CHAR", "!isBytes(object)"})
-        void packChar(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, @SuppressWarnings("unused") Object object, @SuppressWarnings("unused") byte[] bytes) {
-            throw typeError(formatStr);
-        }
-
-        @Specialization(guards = "format == OTHER")
-        void notImplemented(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, @SuppressWarnings("unused") Object object, @SuppressWarnings("unused") byte[] bytes) {
+        @Fallback
+        @SuppressWarnings("unused")
+        void notImplemented(BufferFormat format, String formatStr, Object object, byte[] bytes, int offset) {
             throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
 
@@ -406,55 +162,9 @@ public class MemoryViewNodes {
             throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
         }
 
-        private PException typeError(String formatStr) {
-            throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_TYPE_FOR_FORMAT_S, formatStr);
-        }
-
         private PException processException(PException e, String formatStr) {
             e.expect(OverflowError, getIsOverflowErrorProfile());
             throw valueError(formatStr);
-        }
-
-        private long asJavaLong(VirtualFrame frame, String formatStr, Object object, PythonObjectLibrary lib) {
-            try {
-                return lib.asJavaLong(object, frame);
-            } catch (PException e) {
-                throw processException(e, formatStr);
-            }
-        }
-
-        private static void packInt16(int value, byte[] bytes) {
-            assert bytes.length == 2;
-            bytes[0] = (byte) value;
-            bytes[1] = (byte) (value >> 8);
-        }
-
-        private static void packInt32(int value, byte[] bytes) {
-            assert bytes.length == 4;
-            bytes[0] = (byte) value;
-            bytes[1] = (byte) (value >> 8);
-            bytes[2] = (byte) (value >> 16);
-            bytes[3] = (byte) (value >> 24);
-        }
-
-        private static void packInt64(long value, byte[] bytes) {
-            assert bytes.length == 8;
-            bytes[0] = (byte) value;
-            bytes[1] = (byte) (value >> 8);
-            bytes[2] = (byte) (value >> 16);
-            bytes[3] = (byte) (value >> 24);
-            bytes[4] = (byte) (value >> 32);
-            bytes[5] = (byte) (value >> 40);
-            bytes[6] = (byte) (value >> 48);
-            bytes[7] = (byte) (value >> 56);
-        }
-
-        private PException raise(PythonBuiltinClassType type, String message, Object... args) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(type, message, args);
         }
 
         private IsBuiltinClassProfile getIsOverflowErrorProfile() {
@@ -500,24 +210,14 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doManagedCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached("len") int cachedLen,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
-            // TODO assumes byte storage
-            SequenceStorage storage = getStorageNode.execute(self.getOwner());
-            for (int i = 0; i < cachedLen; i++) {
-                dest[destOffset + i] = (byte) getItemNode.executeInt(storage, offset + i);
-            }
+                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer) {
+            copyBytesFromBuffer.execute(self.getOwner(), offset, dest, destOffset, cachedLen);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached")
         static void doManagedGeneric(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
-            // TODO assumes byte storage
-            SequenceStorage storage = getStorageNode.execute(self.getOwner());
-            for (int i = 0; i < len; i++) {
-                dest[destOffset + i] = (byte) getItemNode.executeInt(storage, offset + i);
-            }
+                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer) {
+            copyBytesFromBuffer.execute(self.getOwner(), offset, dest, destOffset, len);
         }
     }
 
@@ -555,24 +255,14 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doManagedCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached("len") int cachedLen,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO assumes byte storage
-            SequenceStorage storage = getStorageNode.execute(self.getOwner());
-            for (int i = 0; i < cachedLen; i++) {
-                setItemNode.execute(storage, offset + i, src[srcOffset + i]);
-            }
+                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
+            copyBytesToBuffer.execute(src, srcOffset, self.getOwner(), offset, cachedLen);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached")
         static void doManagedGeneric(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO assumes byte storage
-            SequenceStorage storage = getStorageNode.execute(self.getOwner());
-            for (int i = 0; i < len; i++) {
-                setItemNode.execute(storage, offset + i, src[srcOffset + i]);
-            }
+                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
+            copyBytesToBuffer.execute(src, srcOffset, self.getOwner(), offset, len);
         }
     }
 
@@ -593,7 +283,7 @@ public class MemoryViewNodes {
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
             }
-            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
+            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
         @Specialization(guards = "ptr != null", replaces = "doNativeCached")
@@ -609,36 +299,28 @@ public class MemoryViewNodes {
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
             }
-            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
+            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
         @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
         @ExplodeLoop
         static Object doManagedCached(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached("self.getItemSize()") int cachedItemSize,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer,
                         @Cached UnpackValueNode unpackValueNode) {
-            // TODO assumes byte storage
             byte[] bytes = new byte[cachedItemSize];
-            for (int i = 0; i < cachedItemSize; i++) {
-                bytes[i] = (byte) getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset + i);
-            }
-            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
+            copyBytesFromBuffer.execute(self.getOwner(), offset, bytes, 0, cachedItemSize);
+            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached")
         static Object doManagedGeneric(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer,
                         @Cached UnpackValueNode unpackValueNode) {
-            // TODO assumes byte storage
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
-            for (int i = 0; i < itemSize; i++) {
-                bytes[i] = (byte) getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset + i);
-            }
-            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
+            copyBytesFromBuffer.execute(self.getOwner(), offset, bytes, 0, itemSize);
+            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
     }
 
@@ -652,7 +334,7 @@ public class MemoryViewNodes {
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PackValueNode packValueNode) {
             byte[] bytes = new byte[cachedItemSize];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             try {
                 for (int i = 0; i < cachedItemSize; i++) {
                     lib.writeArrayElement(ptr, offset + i, bytes[i]);
@@ -668,7 +350,7 @@ public class MemoryViewNodes {
                         @Cached PackValueNode packValueNode) {
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             try {
                 for (int i = 0; i < itemSize; i++) {
                     lib.writeArrayElement(ptr, offset + i, bytes[i]);
@@ -683,28 +365,20 @@ public class MemoryViewNodes {
         static void doManagedCached(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @Cached("self.getItemSize()") int cachedItemSize,
                         @Cached PackValueNode packValueNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO assumes bytes storage
+                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
             byte[] bytes = new byte[cachedItemSize];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
-            for (int i = 0; i < cachedItemSize; i++) {
-                setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
-            }
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
+            copyBytesToBuffer.execute(bytes, 0, self.getOwner(), offset, cachedItemSize);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached")
         static void doManagedGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @Cached PackValueNode packValueNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO assumes bytes storage
+                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
-            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
-            for (int i = 0; i < itemSize; i++) {
-                setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
-            }
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
+            copyBytesToBuffer.execute(bytes, 0, self.getOwner(), offset, itemSize);
         }
     }
 
@@ -720,8 +394,7 @@ public class MemoryViewNodes {
     }
 
     @ImportStatic(PGuards.class)
-    abstract static class PointerLookupNode extends Node {
-        @Child private PRaiseNode raiseNode;
+    abstract static class PointerLookupNode extends PNodeWithRaise {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
         @Child private PythonObjectLibrary indexLib;
         @CompilationFinal private ConditionProfile hasSuboffsetsProfile;
@@ -848,14 +521,6 @@ public class MemoryViewNodes {
             return hasSuboffsetsProfile;
         }
 
-        private PException raise(PythonBuiltinClassType type, String message, Object... args) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(type, message, args);
-        }
-
         private CExtNodes.PCallCapiFunction getCallCapiFunction() {
             if (callCapiFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -873,7 +538,9 @@ public class MemoryViewNodes {
         byte[] tobytesCached(PMemoryView self,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Cached ReadBytesAtNode readBytesAtNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached PRaiseNode raiseNode) {
+            self.checkReleased(raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (cachedDimensions == 0) {
                 readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
@@ -886,7 +553,9 @@ public class MemoryViewNodes {
         @Specialization(replaces = "tobytesCached")
         byte[] tobytesGeneric(PMemoryView self,
                         @Cached ReadBytesAtNode readBytesAtNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached PRaiseNode raiseNode) {
+            self.checkReleased(raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (self.getDimensions() == 0) {
                 readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
@@ -963,21 +632,5 @@ public class MemoryViewNodes {
         public static ToJavaBytesFortranOrderNode create() {
             return MemoryViewNodesFactory.ToJavaBytesFortranOrderNodeGen.create();
         }
-    }
-
-    public abstract static class GetBufferReferences extends Node {
-        public abstract BufferReferences execute();
-
-        @Specialization
-        @SuppressWarnings("unchecked")
-        static BufferReferences getRefs(@CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached ReadAttributeFromObjectNode readNode) {
-            return (BufferReferences) readNode.execute(context.getCore().lookupType(PythonBuiltinClassType.PMemoryView), MemoryViewBuiltins.bufferReferencesKey);
-        }
-    }
-
-    public static class BufferReferences {
-        public final ReferenceQueue<PMemoryView> queue = new ReferenceQueue<>();
-        public final Set<BufferReference> set = new HashSet<>();
     }
 }

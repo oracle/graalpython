@@ -315,7 +315,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             options.remove(StandardOpenOption.CREATE_NEW);
             options.remove(StandardOpenOption.DELETE_ON_CLOSE);
             options.add(StandardOpenOption.CREATE);
-            context.registerShutdownHook(new FileDeleteShutdownHook(file));
+            context.registerAtexitHook(new FileDeleteShutdownHook(file));
         } else {
             file = truffleFile;
         }

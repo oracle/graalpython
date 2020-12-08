@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,47 +38,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects;
+package com.oracle.graal.python.builtins.objects.array;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
-@ExportLibrary(PythonObjectLibrary.class)
-public final class PEllipsis extends PythonAbstractObject {
+public abstract class ArrayNodes {
+    public abstract static class GetValueNode extends Node {
+        public abstract Object execute(PArray array, int index);
 
-    public static final PEllipsis INSTANCE = new PEllipsis();
-
-    private PEllipsis() {
+        @Specialization
+        static Object get(PArray array, int index,
+                        @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
+            return unpackValueNode.execute(array.getFormat(), array.getBuffer(), index * array.getFormat().bytesize);
+        }
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        return "Ellipsis";
+    public abstract static class PutValueNode extends Node {
+        public abstract void execute(VirtualFrame frame, PArray array, int index, Object value);
+
+        @Specialization
+        static void put(VirtualFrame frame, PArray array, int index, Object value,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+            packValueNode.execute(frame, array.getFormat(), value, array.getBuffer(), index * array.getFormat().bytesize);
+        }
     }
 
-    @Override
-    public int compareTo(Object o) {
-        return this.hashCode() - o.hashCode();
-    }
+    public abstract static class CheckValueNode extends Node {
+        public abstract void execute(VirtualFrame frame, PArray array, Object value);
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PEllipsis;
-    }
-
-    @ExportMessage
-    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
+        @Specialization
+        static void check(VirtualFrame frame, PArray array, Object value,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+            packValueNode.execute(frame, array.getFormat(), value, new byte[8], 0);
+        }
     }
 }

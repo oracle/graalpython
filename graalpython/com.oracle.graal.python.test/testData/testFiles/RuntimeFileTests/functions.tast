@@ -655,7 +655,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                           PythonObjectFactoryNodeGen SourceSection: None
                                   FunctionBodyNode SourceSection: [3129,3282]`self.__func = func↵ ...`
                                     SetAttributeNodeGen SourceSection: [3129,3147]`self.__func = func`
-                                      Attribute: __func
+                                      Attribute: _map__func
                                       ReadLocalVariableNode SourceSection: [3129,3133]`self`
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -705,7 +705,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     SetAttributeNodeGen SourceSection: [3254,3282]`self.__iterators = i...`
-                                      Attribute: __iterators
+                                      Attribute: _map__iterators
                                       ReadLocalVariableNode SourceSection: [3254,3258]`self`
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -782,7 +782,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                         GetIteratorExpressionNodeGen SourceSection: [3344,3360]`self.__iterators`
                                           GetAttributeNodeGen SourceSection: [3344,3360]`self.__iterators`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: __iterators
+                                              Key: _map__iterators
                                               CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -934,7 +934,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                             PositionalArgumentsNode SourceSection: None
                                               GetAttributeNodeGen SourceSection: [3528,3539]`self.__func`
                                                 GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: __func
+                                                  Key: _map__func
                                                   CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -945,7 +945,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [3542,3558]`self.__iterators`
                                                 GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: __iterators
+                                                  Key: _map__iterators
                                                   CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__

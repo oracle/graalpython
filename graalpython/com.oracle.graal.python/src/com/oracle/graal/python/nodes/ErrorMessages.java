@@ -110,6 +110,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
+    public static final String CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = "can only assign %s to %p.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P = "can only assign non-empty tuple to %p.__bases__, not ()";
     public static final String CAN_ONLY_CONCAT_S_NOT_P_TO_S = "can only concatenate %s (not \"%p\") to %s";
     public static final String CAN_ONLY_JOIN_ITERABLE = "can only join an iterable";
@@ -134,6 +135,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_DELETE_MEMORY = "cannot delete memory";
     public static final String CANNOT_MODIFY_READONLY_MEMORY = "cannot modify read-only memory";
     public static final String CANNOT_EXTEND_INCOMPLETE_P = "Cannot extend an incomplete type '%p'";
+    public static final String CANNOT_FIT_P_INTO_INDEXSIZED_INT = "cannot fit '%p' into an index-sized integer";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
@@ -163,10 +165,14 @@ public abstract class ErrorMessages {
     public static final String CANT_FIND_MODULE = "can't find module '%s'";
     public static final String CANT_MULTIPLY_SEQ_BY_NON_INT = "can't multiply sequence by non-int of type '%p'";
     public static final String CANT_PICKLE_FUNC_OBJS = "can't pickle function objects";
+    public static final String CANT_SET_S_S = "can't set %s.%s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE = "can't set attributes of %s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE_S = "can't set attributes of built-in/extension type '%s'";
     public static final String CANT_SPECIFY_DIRFD_WITHOUT_PATH = "%s: can't specify dir_fd without matching path";
     public static final String CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING = "can't specify a timeout for a non-blocking call";
+    public static final String CANT_SUM_BYTEARRAY = "sum() can't sum bytearray [use b''.join(seq) instead]";
+    public static final String CANT_SUM_BYTES = "sum() can't sum bytes [use b''.join(seq) instead]";
+    public static final String CANT_SUM_STRINGS = "sum() can't sum strings [use ''.join(seq) instead]";
     public static final String CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX = "can't take floor or mod of complex number.";
     public static final String CAPI_SYM_NOT_CALLABLE = "C API symbol %s is not callable";
     public static final String CATCHING_CLS_NOT_ALLOWED = "catching classes that do not inherit from BaseException is not allowed";
@@ -227,6 +233,7 @@ public abstract class ErrorMessages {
     public static final String EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX = "exceptions must derive from BaseException";
     public static final String EXPECTED_ARG_TYPES_S_S_BUT_NOT_P_P = "expected argument types (%s) or (%s) but not (%p, %p)";
     public static final String EXPECTED_AT_MOST_D_ARGS_GOT_D = "%s expected at most %d arguments, got %d";
+    public static final String EXPECTED_BYTESLIKE_GOT_P = "expected a bytes-like object, %p found";
     public static final String EXPECTED_CHARACTER_BUT_STRING_FOUND = "%s expected a character, but string of length %d found";
     public static final String EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = "expected %p.__fspath__() to return str or bytes, not %p";
     public static final String EXPECTED_OBJ_TYPE_S_GOT_P = "expected object of type %s, got %p";
@@ -234,6 +241,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_S_NOT_P = "expected %s, not %p";
     public static final String EXPECTED_S_P_FOUND = "expected %s, %p found";
     public static final String EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = "expected str, bytes or os.PathLike object, not %p";
+    public static final String S_EXPECTED_STRING_OF_LEN_BUT_P = "%s expected string of length %s, but %p found";
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
     public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";
@@ -280,7 +288,7 @@ public abstract class ErrorMessages {
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
     public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
-    public static final String IMPORT_START_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
+    public static final String IMPORT_STAR_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
     public static final String INCOMPLETE_FORMAT = "incomplete format";
     public static final String INDEX_NOT_INT = "%s: index not int";
     public static final String INDEX_OUT_OF_BOUNDS = "index out of bounds";
@@ -328,6 +336,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_PTR_OBJ = "invalid pointer object: %s";
     public static final String INVALID_SYNTAX = "invalid syntax";
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
+    public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
@@ -526,12 +535,14 @@ public abstract class ErrorMessages {
     public static final String WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = "__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0";
     public static final String STAR_WANTS_INT = "* wants int";
     public static final String TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = "Too many decimal digits in format string";
+    public static final String SLOTS_MUST_BE_IDENTIFIERS = "__slots__ must be identifiers";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
+    public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";
@@ -583,6 +594,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_OBJ_IN = "unsupported object in '%s'";
     public static final String UNSUPPORTED_OPERAND_P = "unsupported operand '%p'";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P = "unsupported operand type(s) for %s: '%p' and '%p'";
+    public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT = UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P + ". Did you mean \"print(<message>, file=<output_stream>)\"?";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P = "unsupported operand type(s) for %s(): '%p', '%p', '%p'";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_PR_S_P_AND_P = "unsupported operand type(s) for %s or %s(): '%p' and '%p'";
     public static final String UNSUPPORTED_SIZE_WAS = "unsupported %s size; was: %d";
@@ -593,7 +605,6 @@ public abstract class ErrorMessages {
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL_P = "Was not possible to marshal %p";
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
-    public static final String WHILE_PREPARING_TO_DECOMPRESS_DATA = "while preparing to decompress data";
     public static final String WORK_DIR_NOT_ACCESSIBLE = "working directory %s is not accessible";
     public static final String WRITE_BYTE_OUT_OF_RANGE = "write byte out of range";
     public static final String X_NOT_IN_LIST = "x not in list";
@@ -610,6 +621,7 @@ public abstract class ErrorMessages {
     public static final String SIGN_NOT_ALLOWED_FOR_STRING_FMT = "Sign not allowed in string format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
+    public static final String CANNOT_ENCODE_CLASSNAME = "'utf-8' codec can't encode class name '%s'";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
     public static final String PRECISION_NOT_ALLOWED_FOR_INT = "Precision not allowed in integer format specifier";
     public static final String SIGN_NOT_ALLOWED_WITH_C_FOR_INT = "Sign not allowed with integer format specifier 'c'";
@@ -627,11 +639,53 @@ public abstract class ErrorMessages {
     public static final String UNMAPPABLE_CHARACTER = "unmappable character";
     public static final String MALFORMED_INPUT = "malformed input";
     public static final String SHOULD_HAVE_RETURNED_EXCEPTION = "calling %N should have returned an instance of BaseException, not %p";
-    public static final String STRING_KEYS_MUST_BE_LENGHT_1 = "string keys in translate table must be of length 1";
+    public static final String STRING_KEYS_MUST_BE_LENGTH_1 = "string keys in translate table must be of length 1";
     public static final String KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS = "keys in translate table must be strings or integers";
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
     public static final String CANNOT_INTERN_P = "can't intern %p";
+
+    // zlib errors
+    public static final String WHILE_FLUSHING = "while flushing";
+    public static final String WHILE_S_DATA = "while %s data";
+    public static final String WHILE_FINISHING_S = "while finishing %s";
+    public static final String WHILE_SETTING_ZDICT = "while setting zdict";
+    public static final String WHILE_CREATING_S_OBJECT = "while creating %s object";
+    public static final String INVALID_INITIALIZATION_OPTION = "Invalid initialization option";
+    public static final String CANT_ALLOCATE_MEMORY_FOR_S_OBJECT = "Can't allocate memory for %s object";
+    public static final String OUT_OF_MEMORY_WHILE_S_DATA = "Out of memory while %s data";
+    public static final String WHILE_PREPARING_TO_S_DATA = "while preparing to %s data";
+    public static final String INVALID_DICTIONARY = "Invalid dictionary";
+    public static final String WHILE_COPYING_S_OBJECT = "while copying %s object";
+    public static final String INCONSISTENT_STREAM_STATE = "Inconsistent stream state";
+    public static final String INVALID_INPUT_DATA = "invalid input data";
+    public static final String INCOMPLETE_OR_TRUNCATED_STREAM = "incomplete or truncated stream";
+    public static final String S_MUST_BE_GREATER_THAN_ZERO = "%s must be greater than zero";
+
+    // bz2 errors
+    public static final String REPEATED_CALL_TO_FLUSH = "Repeated call to flush()";
+    public static final String COMPRESSOR_HAS_BEEN_FLUSHED = "Compressor has been flushed";
+    public static final String COMPRESSLEVEL_MUST_BE_BETWEEN_1_AND_9 = "compresslevel must be between 1 and 9";
+    public static final String END_OF_STREAM_ALREADY_REACHED = "End of stream already reached";
+    public static final String INVALID_PARAMETERS_PASSED_TO_LIBBZIP2 = "Internal error - invalid parameters passed to libbzip2";
+    public static final String INVALID_DATA_STREAM = "Invalid data stream";
+    public static final String UNKNOWN_IO_ERROR = "Unknown I/O error";
+    public static final String COMPRESSED_FILE_ENDED_BEFORE_EOS = "Compressed file ended before the logical end-of-stream was detected";
+    public static final String INVALID_SEQUENCE_OF_COMMANDS = "Internal error - Invalid sequence of commands sent to libbzip2";
+    public static final String LIBBZIP2_WAS_NOT_COMPILED_CORRECTLY = "libbzip2 was not compiled correctly";
+    public static final String UNRECOGNIZED_ERROR_FROM_LIBBZIP2_D = "Unrecognized error from libbzip2: %d";
+
+    // io errors
+    public static final String IO_S_INVALID_LENGTH = "raw %s returned invalid length %d (should have been between 0 and %d)";
+    public static final String IO_S_SHOULD_RETURN_BYTES = "%s should return bytes";
+    public static final String CANNOT_FIT_P_IN_OFFSET_SIZE = "cannot fit '%p' into an offset-sized integer";
+    public static final String IO_STREAM_INVALID_POS = "Raw stream returned invalid position %d";
+    public static final String IO_STREAM_DETACHED = "raw stream has been detached";
+    public static final String IO_UNINIT = "I/O operation on uninitialized object";
+    public static final String UNSUPPORTED_WHENCE = "whence value %d unsupported";
+    public static final String IO_CLOSED = "I/O operation on closed file.";
+    public static final String MUST_BE_NON_NEG_OR_NEG_1 = "read length must be non-negative or -1";
+    public static final String BUF_SIZE_POS = "buffer size must be strictly positive";
 
     public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +

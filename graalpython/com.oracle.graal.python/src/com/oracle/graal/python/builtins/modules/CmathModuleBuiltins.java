@@ -16,8 +16,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
@@ -993,11 +993,11 @@ public class CmathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, keywordOnlyNames = {"rel_tol", "abs_tol"})
+    @Builtin(name = "isclose", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, varArgsMarker = true, keywordOnlyNames = {"rel_tol", "abs_tol"})
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    abstract static class IsCloseNode extends PythonQuaternaryBuiltinNode {
+    abstract static class IsCloseNode extends PythonBuiltinNode {
 
         private static final double DEFAULT_REL_TOL = 1e-09;
         private static final double DEFAULT_ABS_TOL = 0;

@@ -27,13 +27,16 @@
 package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
 import java.util.List;
 
@@ -43,8 +46,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -53,8 +60,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -215,6 +225,139 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             return doc;
+        }
+    }
+
+    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class NameNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getName(VirtualFrame frame, PBuiltinMethod method,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            try {
+                return toJavaStringNode.execute(pol.lookupAttributeStrict(method.getFunction(), frame, __NAME__));
+            } catch (CannotCastException cce) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Specialization
+        Object getName(VirtualFrame frame, PMethod method,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            try {
+                return toJavaStringNode.execute(pol.lookupAttributeStrict(method.getFunction(), frame, __NAME__));
+            } catch (CannotCastException cce) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+    }
+
+    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class QualNameNode extends PythonUnaryBuiltinNode {
+        protected boolean isSelfModuleOrNull(PMethod method) {
+            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
+        }
+
+        protected boolean isSelfModuleOrNull(PBuiltinMethod method) {
+            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
+        }
+
+        @Specialization(guards = "isSelfModuleOrNull(method)")
+        Object doSelfIsModule(VirtualFrame frame, PMethod method,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            return getName(frame, method.getFunction(), toJavaStringNode, pol);
+        }
+
+        @Specialization(guards = "isSelfModuleOrNull(method)")
+        Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            return getName(frame, method.getFunction(), toJavaStringNode, pol);
+        }
+
+        @Specialization(guards = "!isSelfModuleOrNull(method)")
+        Object doSelfIsObjet(VirtualFrame frame, PMethod method,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            return getQualName(frame, method.getSelf(), method.getFunction(), isTypeNode, toJavaStringNode, pol);
+        }
+
+        @Specialization(guards = "!isSelfModuleOrNull(method)")
+        Object doSelfIsObjet(VirtualFrame frame, PBuiltinMethod method,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            return getQualName(frame, method.getSelf(), method.getFunction(), isTypeNode, toJavaStringNode, pol);
+        }
+
+        private Object getQualName(VirtualFrame frame, Object self, Object func, TypeNodes.IsTypeNode isTypeNode, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
+            Object type = isTypeNode.execute(self) ? self : pol.getLazyPythonClass(self);
+
+            try {
+                String typeQualName = toJavaStringNode.execute(pol.lookupAttributeStrict(type, frame, __QUALNAME__));
+                return PythonUtils.format("%s.%s", typeQualName, getName(frame, func, toJavaStringNode, pol));
+            } catch (CannotCastException cce) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __QUALNAME__, "unicode object");
+            }
+        }
+
+        private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
+            return toJavaStringNode.execute(pol.lookupAttribute(func, frame, __NAME__));
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonBuiltinNode {
+        protected boolean isSelfModuleOrNull(PMethod method) {
+            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
+        }
+
+        protected boolean isSelfModuleOrNull(PBuiltinMethod method) {
+            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
+        }
+
+        @Specialization(guards = "isSelfModuleOrNull(method)")
+        Object doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            return getName(frame, method.getFunction(), toJavaStringNode, pol);
+        }
+
+        @Specialization(guards = "isSelfModuleOrNull(method)")
+        Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            return getName(frame, method.getFunction(), toJavaStringNode, pol);
+        }
+
+        @Specialization(guards = "!isSelfModuleOrNull(method)")
+        Object doSelfIsObjet(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            PythonModule builtins = getCore().getBuiltins();
+            Object getattr = pol.lookupAttributeStrict(builtins, frame, GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, pol)});
+            return factory().createTuple(new Object[]{getattr, args});
+        }
+
+        @Specialization(guards = "!isSelfModuleOrNull(method)")
+        Object doSelfIsObjet(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
+                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            PythonModule builtins = getCore().getBuiltins();
+            Object getattr = pol.lookupAttributeStrict(builtins, frame, GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, pol)});
+            return factory().createTuple(new Object[]{getattr, args});
+        }
+
+        private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
+            return toJavaStringNode.execute(pol.lookupAttribute(func, frame, __NAME__));
         }
     }
 }

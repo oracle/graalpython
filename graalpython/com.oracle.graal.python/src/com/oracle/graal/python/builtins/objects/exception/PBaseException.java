@@ -226,7 +226,7 @@ public final class PBaseException extends PythonObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return getFormattedMessage(null);
+        return getFormattedMessage(PythonObjectLibrary.getUncached());
     }
 
     public LazyTraceback internalReifyException(PFrame.Reference curFrameInfo) {

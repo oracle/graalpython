@@ -65,6 +65,9 @@
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_dont_copy_file_onto_symlink_to_itself
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_make_archive
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_make_archive_cwd
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_make_archive_owner_group
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_make_tarball
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_make_tarfile_in_curdir
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_make_zipfile
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_make_zipfile_in_curdir
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_on_error
@@ -80,6 +83,10 @@
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_rmtree_works_on_junctions
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_rmtree_works_on_symlinks
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_tarfile_root_owner
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_tarfile_vs_tar
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_unpack_archive_bztar
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_unpack_archive_gztar
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_unpack_archive_tar
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_unpack_archive_xztar
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_unpack_archive_zip
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_unpack_registry

@@ -36,6 +36,7 @@ PATH_BENCH = os.path.join(_BASE_PATH, 'com.oracle.graal.python.benchmarks')
 PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
 PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
+PATH_WARMUP = os.path.join(_BASE_PATH, 'warmup')
 PATH_INTEROP = os.path.join(_BASE_PATH, 'host_interop')
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -44,6 +45,7 @@ PATH_INTEROP = os.path.join(_BASE_PATH, 'host_interop')
 #
 # ----------------------------------------------------------------------------------------------------------------------
 # the argument list contains both the harness and benchmark args
+ITER_100 = ['-i', '100']
 ITER_50 = ['-i', '50']
 ITER_35 = ['-i', '35']
 ITER_25 = ['-i', '25']
@@ -182,6 +184,13 @@ MACRO_BENCHMARKS = {
 }
 
 
+WARMUP_BENCHMARKS = {
+    'gcbench': ITER_100 + ["--startup=1,10,100"] + ['10'] ,
+    'binarytrees3': ITER_100 + ["--startup=1,10,100"] + ['18'],
+    'pads-integerpartitions': ITER_100  + ["--startup=1,10,100"] + ['700'],
+}
+
+
 INTEROP_BENCHMARKS = {
     'euler_java': ITER_10 + ['200'],
     'image-magix': ITER_10 + ['10000'],
@@ -210,6 +219,10 @@ BENCHMARKS = {
     "meso": [PATH_MESO, MESO_BENCHMARKS],
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
     "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
+}
+
+WARMUP_BENCHMARKS = {
+    "python-warmup": [PATH_WARMUP, WARMUP_BENCHMARKS],
 }
 
 JBENCHMARKS = {

@@ -45,18 +45,25 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -75,17 +82,16 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "register", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonVarargsBuiltinNode {
-        private static class AtExitCallTarget extends RootNode {
+        private static class AtExitRootNode extends RootNode {
             @Child private CallNode callNode = CallNode.create();
 
             private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
 
-            protected AtExitCallTarget(TruffleLanguage<?> language) {
+            protected AtExitRootNode(TruffleLanguage<?> language) {
                 super(language);
             }
 
             @Override
-            @SuppressWarnings("try")
             public Object execute(VirtualFrame frame) {
                 PythonContext context = contextRef.get();
                 context.setTopFrameInfo(PFrame.Reference.EMPTY);
@@ -99,9 +105,26 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
                 // from the context.
                 try {
                     return callNode.execute(null, callable, arguments, keywords);
+                } catch (PException e) {
+                    handleException(context, e);
+                    throw e;
                 } finally {
                     context.popTopFrameInfo();
                     context.setCaughtException(null);
+                }
+            }
+
+            @TruffleBoundary
+            private static void handleException(PythonContext context, PException e) {
+                PBaseException pythonException = e.getEscapedException();
+                PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                if (!IsBuiltinClassProfile.profileClassSlowPath(lib.getLazyPythonClass(pythonException), PythonBuiltinClassType.SystemExit)) {
+                    lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Error in atexit._run_exitfuncs:\n");
+                    try {
+                        ExceptionUtils.printExceptionTraceback(context, pythonException);
+                    } catch (PException pe) {
+                        lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Failed to print traceback\n");
+                    }
                 }
             }
         }
@@ -109,8 +132,8 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             CompilerDirectives.transferToInterpreter();
-            AtExitCallTarget atExitCallTarget = new AtExitCallTarget(getContext().getLanguage());
-            getContext().registerShutdownHook(callable, arguments, keywords, PythonUtils.getOrCreateCallTarget(atExitCallTarget));
+            AtExitRootNode atExitRootNode = new AtExitRootNode(getContext().getLanguage());
+            getContext().registerAtexitHook(callable, arguments, keywords, PythonUtils.getOrCreateCallTarget(atExitRootNode));
             return callable;
         }
     }
@@ -120,7 +143,36 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object register(Object callable) {
-            getContext().deregisterShutdownHook(callable);
+            getContext().unregisterAtexitHook(callable);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_clear")
+    @GenerateNodeFactory
+    abstract static class ClearNode extends PythonBuiltinNode {
+        @Specialization
+        Object clear() {
+            getContext().clearAtexitHooks();
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_ncallbacks")
+    @GenerateNodeFactory
+    abstract static class NCallbacksNode extends PythonBuiltinNode {
+        @Specialization
+        int get() {
+            return getContext().getAtexitHookCount();
+        }
+    }
+
+    @Builtin(name = "_run_exitfuncs")
+    @GenerateNodeFactory
+    abstract static class RunExitfuncsNode extends PythonBuiltinNode {
+        @Specialization
+        Object run() {
+            getContext().runAtexitHooks();
             return PNone.NONE;
         }
     }

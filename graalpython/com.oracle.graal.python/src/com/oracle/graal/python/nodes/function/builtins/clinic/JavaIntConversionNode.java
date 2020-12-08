@@ -47,9 +47,11 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -65,12 +67,13 @@ public abstract class JavaIntConversionNode extends IntConversionBaseNode {
     int doOthers(VirtualFrame frame, Object value,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached BranchProfile isFloatProfile,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
+                    @CachedLibrary("value") PythonObjectLibrary lib,
+                    @Cached CastToJavaLongLossyNode castToLongNode) {
         if (isSubtypeNode.execute(lib.getLazyPythonClass(value), PythonBuiltinClassType.PFloat)) {
             isFloatProfile.enter();
             throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
         }
-        long result = lib.asJavaLong(value, frame);
+        long result = castToLongNode.execute(lib.asPIntWithState(value, PArguments.getThreadState(frame)));
         if (!fitsInInt(result)) {
             throw raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
         }

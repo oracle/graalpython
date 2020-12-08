@@ -291,6 +291,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("O_SYNC", SYNC);
         builtinConstants.put("O_TEMPORARY", TEMPORARY);
         builtinConstants.put("O_TMPFILE", TMPFILE);
+        // TODO SEEK_* were removed in master
         builtinConstants.put("SEEK_SET", SEEK_SET);
         builtinConstants.put("SEEK_CUR", SEEK_CUR);
         builtinConstants.put("SEEK_END", SEEK_END);
@@ -983,7 +984,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 options.remove(StandardOpenOption.CREATE_NEW);
                 options.remove(StandardOpenOption.DELETE_ON_CLOSE);
                 options.add(StandardOpenOption.CREATE);
-                getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
+                getContext().registerAtexitHook(new FileDeleteShutdownHook(truffleFile));
             }
 
             fc = truffleFile.newByteChannel(options, attributes);
@@ -2867,10 +2868,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ReplaceNode extends RenameNode {
     }
 
-    @Builtin(name = "urandom", minNumOfPositionalArgs = 1)
+    @Builtin(name = "urandom", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"size"})
+    @ArgumentClinic(name = "size", conversion = ClinicConversion.Index, defaultValue = "0")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class URandomNode extends PythonBuiltinNode {
+    abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
         private static SecureRandom secureRandom;
 
         private static SecureRandom createRandomInstance() {
@@ -2892,9 +2894,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(bytes);
         }
 
-        @Fallback
-        Object urandomError(Object size) {
-            throw raise(TypeError, ErrorMessages.ARG_EXPECTED_GOT, "integer", size);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.URandomNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -3097,7 +3099,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dirFd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
                     "\nReturn a string representing the path to which the symbolic link points.\n")
     @GenerateNodeFactory
-    abstract static class ReadlinkNode extends PythonBinaryBuiltinNode {
+    abstract static class ReadlinkNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
         String readlink(VirtualFrame frame, Object str, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("str") PythonObjectLibrary lib) {

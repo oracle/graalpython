@@ -62,14 +62,13 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
@@ -1139,12 +1138,12 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean pos(boolean arg) {
-            return arg;
+        static int absBoolean(boolean arg) {
+            return arg ? 1 : 0;
         }
 
         @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
-        int pos(int arg) throws OverflowException {
+        static int absInt(int arg) throws OverflowException {
             int result = Math.abs(arg);
             if (result < 0) {
                 throw OverflowException.INSTANCE;
@@ -1152,13 +1151,14 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization
-        long posOvf(int arg) {
+        @Specialization(replaces = "absInt")
+        static long absIntOvf(int arg) {
+            // Math.abs(Integer#MIN_VALUE) returns Integer#MIN_VALUE
             return Math.abs((long) arg);
         }
 
         @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
-        long pos(long arg) throws OverflowException {
+        static long absLong(long arg) throws OverflowException {
             long result = Math.abs(arg);
             if (result < 0) {
                 throw OverflowException.INSTANCE;
@@ -1166,23 +1166,23 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(rewriteOn = IllegalArgumentException.class)
-        PInt posOvf(long arg) throws IllegalArgumentException {
+        @Specialization(replaces = "absLong")
+        PInt absLongOvf(long arg) {
             long result = Math.abs(arg);
             if (result < 0) {
-                return factory().createInt(op(PInt.longToBigInteger(arg)));
+                return factory().createInt(absBigInteger(PInt.longToBigInteger(arg)));
             } else {
                 return factory().createInt(PInt.longToBigInteger(arg));
             }
         }
 
         @Specialization
-        PInt pos(PInt arg) {
-            return factory().createInt(op(arg.getValue()));
+        PInt absPInt(PInt arg) {
+            return factory().createInt(absBigInteger(arg.getValue()));
         }
 
         @TruffleBoundary
-        static BigInteger op(BigInteger value) {
+        static BigInteger absBigInteger(BigInteger value) {
             return value.abs();
         }
     }
@@ -2399,19 +2399,6 @@ public class IntBuiltins extends PythonBuiltins {
             return fromPBytes(cl, bytes, byteorder, false);
         }
 
-        // from PArray
-        @Specialization
-        Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, boolean signed,
-                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return compute(cl, fromSequenceStorageNode.execute(frame, array.getSequenceStorage()), byteorder, signed);
-        }
-
-        @Specialization
-        Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return fromPArray(frame, cl, array, byteorder, false, fromSequenceStorageNode);
-        }
-
         // from buffer
         @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
         Object fromBuffer(Object cl, Object buffer, String byteorder, boolean signed,
@@ -2804,6 +2791,25 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends IntNode {
+    }
+
+    @Builtin(name = SpecialMethodNames.__GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doI(int self) {
+            return factory().createTuple(new Object[]{factory().createInt(self)});
+        }
+
+        @Specialization
+        Object doL(long self) {
+            return factory().createTuple(new Object[]{factory().createInt(self)});
+        }
+
+        @Specialization
+        Object getPI(PInt self) {
+            return factory().createTuple(new Object[]{factory().createInt(self.getValue())});
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__FLOAT__, minNumOfPositionalArgs = 1)

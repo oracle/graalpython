@@ -39,7 +39,7 @@
  * SOFTWARE.
  */
 #include "hpy.h"
-#include <polyglot.h>
+#include <graalvm/llvm/polyglot.h>
 #include <truffle.h>
 
 #include <wchar.h>

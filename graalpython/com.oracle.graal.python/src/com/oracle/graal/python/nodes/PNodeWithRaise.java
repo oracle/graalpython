@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,20 +38,55 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.nodes;
 
-import java.util.ArrayList;
-import java.util.List;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 
-@CoreFunctions(defineModule = "_io")
-public class IOModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+public class PNodeWithRaise extends PNodeWithContext {
+    @Child private PRaiseNode raiseNode;
+
+    protected final PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isAdoptable()) {
+                raiseNode = insert(PRaiseNode.create());
+            } else {
+                raiseNode = PRaiseNode.getUncached();
+            }
+        }
+        return raiseNode;
+    }
+
+    public PException raise(PythonBuiltinClassType type, String string) {
+        return getRaiseNode().raise(type, string);
+    }
+
+    public PException raise(Object exceptionType) {
+        return getRaiseNode().raise(exceptionType);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
+        return getRaiseNode().raise(type, cause, format, arguments);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
+        return getRaiseNode().raise(type, format, arguments);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, Object... arguments) {
+        return getRaiseNode().raise(type, arguments);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, Exception e) {
+        return getRaiseNode().raise(type, e);
+    }
+
+    public final PException raiseOverflow() {
+        return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
     }
 }

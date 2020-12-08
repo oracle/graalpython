@@ -68,8 +68,12 @@ public final class ReferenceStack<T> implements Iterable<T> {
 
     @SuppressWarnings("unchecked")
     public T get(int idx) {
-        assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        return (T) nativeObjectWrapperList[idx];
+        if (0 <= idx && idx < nativeObjectWrapperList.length) {
+            return (T) nativeObjectWrapperList[idx];
+        } else {
+            assert false : "incorrect reference ID";
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")

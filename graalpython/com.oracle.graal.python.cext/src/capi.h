@@ -44,7 +44,7 @@
 #define MUST_INLINE __attribute__((always_inline)) inline
 #define NO_INLINE __attribute__((noinline))
 
-#include <polyglot.h>
+#include <graalvm/llvm/polyglot.h>
 
 #include "Python.h"
 #include <truffle.h>
@@ -382,12 +382,10 @@ extern PyObject* wrapped_null;
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
-/* STR */
-__attribute__((always_inline)) PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va);
-
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
+void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 
 /* Like 'memcpy' but can read/write from/to managed objects. */
 int bytes_copy2mem(char* target, char* source, size_t nbytes);

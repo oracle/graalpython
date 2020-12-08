@@ -80,6 +80,7 @@
 #include "modsupport.h"
 #include "tupleobject.h"
 #include "structseq.h"
+#include "namespaceobject.h"
 #include "structmember.h"
 #include "pytime.h"
 #include "pymem.h"

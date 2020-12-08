@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -175,7 +176,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_magic")
     @GenerateNodeFactory
     public abstract static class GetMagic extends PythonBuiltinNode {
-        static final int MAGIC_NUMBER = 3413;
+        static final int MAGIC_NUMBER = 21000 + SerializationUtils.VERSION * 10;
 
         @Child private IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
         @Child private PythonObjectLibrary pol = PythonObjectLibrary.getFactory().createDispatched(1);
@@ -231,11 +232,27 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             public final Object[] formatArgs;
 
             ImportException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+                /*
+                 * We use the super constructor that initializes the cause to null. Without that,
+                 * the cause would be this exception itself. This helps escape analysis: it avoids
+                 * the circle of an object pointing to itself. We also do not need a message, so we
+                 * use the constructor that also allows us to set the message to null.
+                 */
+                super(null, null);
                 this.cause = cause;
                 this.name = name;
                 this.path = path;
                 this.formatString = formatString;
                 this.formatArgs = formatArgs;
+            }
+
+            /**
+             * For performance reasons, this exception does not record any stack trace information.
+             */
+            @SuppressWarnings("sync-override")
+            @Override
+            public synchronized Throwable fillInStackTrace() {
+                return this;
             }
         }
 

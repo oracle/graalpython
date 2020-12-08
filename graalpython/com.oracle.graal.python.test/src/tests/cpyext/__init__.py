@@ -201,6 +201,7 @@ c_template_void = """
 static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
     PyObject* ___arg;
     {argumentdeclarations};
+#ifndef NOARGS
     if (!PyArg_ParseTuple(args, "O", &___arg)) {{
         return NULL;
     }}
@@ -214,6 +215,7 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
     else {{
         {singleargumentname} = ___arg;
     }}
+#endif
 #endif
     {callfunction}({argumentnames});
     return Py_BuildValue("{resultspec}", {resultval});

@@ -865,11 +865,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         private final Object nativeSpace;
         private final Object destroyFunc;
 
-        public GraalHPyHandleReference(int id, Object referent, ReferenceQueue<Object> q, Object nativeSpace, Object desctroyFunc) {
+        public GraalHPyHandleReference(int id, Object referent, ReferenceQueue<Object> q, Object nativeSpace, Object destroyFunc) {
             super(referent, q);
             this.id = id;
             this.nativeSpace = nativeSpace;
-            this.destroyFunc = desctroyFunc;
+            this.destroyFunc = destroyFunc;
         }
 
         public Object getNativeSpace() {

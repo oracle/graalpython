@@ -30,9 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -40,7 +38,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -57,13 +54,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -124,58 +118,6 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
 
         protected static GetAttributeNode createGetAttributeNode() {
             return GetAttributeNode.create(SpecialAttributeNames.__NAME__, null);
-        }
-    }
-
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        String doBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
-            String name;
-            try {
-                name = castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction()));
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-            return doMethod(name, self.getSelf());
-        }
-
-        @Specialization
-        String doBuiltinMethod(VirtualFrame frame, PMethod self,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
-            String name;
-            try {
-                name = castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction()));
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-            return doMethod(name, self.getSelf());
-        }
-
-        private String doMethod(String name, Object owner) {
-            if (owner == null || owner == PNone.NONE || owner instanceof PythonModule) {
-                return name;
-            }
-            throw raiseCannotPickle();
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object obj) {
-            throw raiseCannotPickle();
-        }
-
-        protected static GetAttributeNode createGetAttributeNode() {
-            return GetAttributeNode.create(SpecialAttributeNames.__NAME__, null);
-        }
-
-        private PException raiseCannotPickle() {
-            throw raise(TypeError, ErrorMessages.CANT_PICKLE_FUNC_OBJS);
         }
     }
 

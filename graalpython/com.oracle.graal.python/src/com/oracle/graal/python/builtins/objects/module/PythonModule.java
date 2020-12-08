@@ -41,16 +41,18 @@ import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
 @ImportStatic(HiddenAttributes.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonModule extends PythonObject {
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);

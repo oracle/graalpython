@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -65,6 +66,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
 
     private final String name;
@@ -72,10 +74,14 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final Object enclosingType;
     private final RootCallTarget callTarget;
     private final Signature signature;
-    @CompilationFinal(dimensions = 1) private final PNone[] defaults;
+    @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
     public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
+        this(lang, name, enclosingType, generateDefaults(numDefaults), null, callTarget);
+    }
+
+    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, RootCallTarget callTarget) {
         super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang));
         this.name = name;
         if (enclosingType != null) {
@@ -86,13 +92,23 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
         this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
-        this.defaults = new PNone[numDefaults];
-        Arrays.fill(getDefaults(), PNone.NO_VALUE);
+        this.defaults = defaults;
+        this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
+    }
+
+    private static PKeyword[] generateKwDefaults(Signature signature) {
         String[] keywordNames = signature.getKeywordNames();
-        this.kwDefaults = new PKeyword[keywordNames.length];
+        PKeyword[] kwDefaults = new PKeyword[keywordNames.length];
         for (int i = 0; i < keywordNames.length; i++) {
             kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
         }
+        return kwDefaults;
+    }
+
+    private static Object[] generateDefaults(int numDefaults) {
+        Object[] defaults = new Object[numDefaults];
+        Arrays.fill(defaults, PNone.NO_VALUE);
+        return defaults;
     }
 
     public RootNode getFunctionRootNode() {
@@ -161,7 +177,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
     }
 
-    public PNone[] getDefaults() {
+    public Object[] getDefaults() {
         return defaults;
     }
 

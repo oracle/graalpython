@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import java.math.BigDecimal;
+
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
@@ -66,7 +68,7 @@ public class FloatUtils {
      * followed by a digit and removes them. Does not create a copy if the original String does not
      * need any cleanup. Combines _PyUnicode_TransformDecimalAndSpaceToASCII and
      * _Py_string_to_number_with_underscores.
-     * 
+     *
      * @param src the String to transform
      * @return the transformed String, {@code src} if the input does not need cleanup or
      *         {@code null} if there are invalid underscores or unicode characters other than
@@ -145,7 +147,7 @@ public class FloatUtils {
      * </ul>
      * Implements PyOS_string_to_double and _PyOS_ascii_strtod except error handling and handling of
      * locale-specific decimal point.
-     * 
+     *
      * @param str the string to parse
      * @param start starting position in the string
      * @param len length of the string
@@ -217,9 +219,15 @@ public class FloatUtils {
             return null;
         }
         try {
-            return new StringToDoubleResult(Double.parseDouble(str.substring(start, i)), i);
+            String substr = str.substring(start, i);
+            double d = Double.parseDouble(substr);
+            if (!Double.isFinite(d)) {
+                d = new BigDecimal(substr).doubleValue();
+            }
+            return new StringToDoubleResult(d, i);
         } catch (NumberFormatException e) {
-            // Should not happen since the input to Double.parseDouble should be correct
+            // Should not happen since the input to Double.parseDouble() / BigDecimal(String) should
+            // be correct
             return null;
         }
     }

@@ -25,13 +25,15 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -39,14 +41,17 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public final class PByteArray extends PBytesLike {
+
+    private volatile int exports;
 
     public PByteArray(Object cls, Shape instanceShape, byte[] bytes) {
         super(cls, instanceShape, bytes);
@@ -92,6 +97,20 @@ public final class PByteArray extends PBytesLike {
 
     public final void reverse() {
         store.reverse();
+    }
+
+    public int getExports() {
+        return exports;
+    }
+
+    public void setExports(int exports) {
+        this.exports = exports;
+    }
+
+    public void checkCanResize(PythonBuiltinBaseNode node) {
+        if (exports != 0) {
+            throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+        }
     }
 
     @ExportMessage

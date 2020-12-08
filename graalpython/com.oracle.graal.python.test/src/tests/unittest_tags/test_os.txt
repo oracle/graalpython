@@ -131,6 +131,7 @@
 *graalpython.lib-python.3.test.test_os.StatAttributeTests.test_access_denied
 *graalpython.lib-python.3.test.test_os.StatAttributeTests.test_file_attributes
 *graalpython.lib-python.3.test.test_os.StatAttributeTests.test_stat_block_device
+*graalpython.lib-python.3.test.test_os.StatAttributeTests.test_stat_result_pickle
 *graalpython.lib-python.3.test.test_os.StatAttributeTests.test_statvfs_attributes
 *graalpython.lib-python.3.test.test_os.StatAttributeTests.test_statvfs_result_pickle
 *graalpython.lib-python.3.test.test_os.TermsizeTests.test_does_not_crash

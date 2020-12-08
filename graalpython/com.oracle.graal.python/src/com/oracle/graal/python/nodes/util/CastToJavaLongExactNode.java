@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -64,13 +65,18 @@ public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
         return CastToJavaLongExactNodeGen.getUncached();
     }
 
-    @Specialization
-    protected long toLong(PInt x) {
+    @Specialization(rewriteOn = OverflowException.class)
+    protected static long toLongNoOverflow(PInt x) throws OverflowException {
+        return x.longValueExact();
+    }
+
+    @Specialization(replaces = "toLongNoOverflow")
+    protected static long toLong(PInt x,
+                    @Cached PRaiseNode raiseNode) {
         try {
             return x.longValueExact();
         } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_BE_INTEPRETED_AS_LONG, x, x);
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
         }
     }
 }

@@ -100,6 +100,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -480,4 +481,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return SysModuleBuiltinsFactory.AuditNodeGen.create();
         }
     }
+
+    @Builtin(name = "is_finalizing")
+    @GenerateNodeFactory
+    public abstract static class IsFinalizingNode extends PythonBuiltinNode {
+        @Specialization
+        static boolean doGeneric(
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.isFinalizing();
+        }
+    }
+
 }

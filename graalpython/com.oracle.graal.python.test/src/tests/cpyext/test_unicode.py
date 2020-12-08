@@ -75,6 +75,15 @@ def _reference_unicode_escape(args):
     return _codecs.unicode_escape_encode(args[0])[0]
 
 
+def _reference_fromformat(args):
+    fmt = args[0]
+    fmt_args = args[1:]
+    # replace specifiers
+    for s in ["%ld", "%li", "%lu", "%lld", "%lli", "%llu"]:
+        fmt = fmt.replace(s, "%d")
+    return fmt % fmt_args
+
+
 class CustomString(str):
     pass
 
@@ -128,7 +137,7 @@ class TestPyUnicode(CPyExtTestCase):
     )
 
     test_PyUnicode_FromFormat0 = CPyExtFunction(
-        lambda args: args[0] % tuple(args[1:]),
+        _reference_fromformat,
         lambda: (
             ("hello, world!",),
         ),
@@ -143,19 +152,17 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PyUnicode_FromFormat3 = CPyExtFunction(
-        lambda args: args[0] % tuple(args[1:]),
+    test_PyUnicode_FromFormat4 = CPyExtFunction(
+        _reference_fromformat,
         lambda: (
-            ("word0: %s; word1: %s; int: %d", "hello", "world", 1234),
+            ("word0: %s; word1: %s; int: %d; long long: %lld", "hello", "world", 1234, 1234),
+            ("word0: %s; word1: %s; int: %d; long long: %lld", "hello", "world", 1234, (1<<44)+123),
         ),
-        code="""PyObject* wrap_PyUnicode_FromFormat3(char* fmt, char* arg0, char* arg1, int n) {
-            return PyUnicode_FromFormat(fmt, arg0, arg1, n);
-        }
-        """,
+        code="typedef long long longlong_t;",
         resultspec="O",
-        argspec='sssi',
-        arguments=["char* fmt", "char* arg0", "char* arg1", "int n"],
-        callfunction="wrap_PyUnicode_FromFormat3",
+        argspec='sssiL',
+        arguments=["char* fmt", "char* arg0", "char* arg1", "int n", "longlong_t l"],
+        callfunction="PyUnicode_FromFormat",
         cmpfunc=unhandled_error_compare
     )
 

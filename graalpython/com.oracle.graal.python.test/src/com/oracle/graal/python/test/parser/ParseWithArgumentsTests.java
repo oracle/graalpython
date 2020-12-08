@@ -117,7 +117,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
     public void testAbsGlobal() throws Exception {
         Source source = createSource("abs(arg1)");
         CallTarget target = context.getEnv().parsePublic(source, "arg1");
-        assertEquals(10, target.call(-10));
+        assertEquals(10, (int) target.call(-10));
     }
 
     private static Source createSource(String code) {

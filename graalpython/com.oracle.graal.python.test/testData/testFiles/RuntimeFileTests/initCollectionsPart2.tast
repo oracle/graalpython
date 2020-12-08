@@ -2670,7 +2670,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 31 slots [__init__, __repr__, __lt__, __le__, __eq__, __gt__, __ge__, __cast, __contains__, __len__, __getitem__, __setitem__, __delitem__, __add__, __radd__, __iadd__, __mul__, __rmul__, __imul__, append, insert, pop, remove, clear, copy, count, index, reverse, sort, extend, __doc__]
+              FrameDescriptor: 31 slots [__init__, __repr__, __lt__, __le__, __eq__, __gt__, __ge__, _UserList__cast, __contains__, __len__, __getitem__, __setitem__, __delitem__, __add__, __radd__, __iadd__, __mul__, __rmul__, __imul__, append, insert, pop, remove, clear, copy, count, index, reverse, sort, extend, __doc__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -3304,7 +3304,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        FunctionDefinitionNode Name: __cast SourceSection: None
+                        FunctionDefinitionNode Name: _UserList__cast SourceSection: None
                           Arguments: None
                           KwArguments: None
                           Documentation: None
@@ -3313,7 +3313,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                             FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [7066,7163]`def __cast(self, oth...`
-                            Name: __cast
+                            Name: _UserList__cast
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, other
                             CelVars: None

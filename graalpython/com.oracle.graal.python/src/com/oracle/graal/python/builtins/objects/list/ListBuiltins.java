@@ -52,6 +52,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.math.BigInteger;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -82,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -97,6 +99,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -111,6 +114,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -127,6 +131,11 @@ public class ListBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
+        builtinConstants.put(__DOC__, //
+                        "Built-in mutable sequence.\n" + //
+                                        "\n" + //
+                                        "If no argument is given, the constructor creates a new empty list.\n" + //
+                                        "The argument must be an iterable if specified.");
         this.builtinConstants.put(__HASH__, PNone.NONE);
     }
 
@@ -141,24 +150,29 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object repr(VirtualFrame frame, PList self,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem) {
+            SequenceStorage storage = self.getSequenceStorage();
+            int length = lenNode.execute(storage);
+            if (length == 0) {
+                return "[]";
+            }
+            if (!ctxt.reprEnter(self)) {
+                return "[...]";
+            }
+
             StringBuilder result = PythonUtils.newStringBuilder();
             PythonUtils.append(result, "[");
-            SequenceStorage storage = self.getSequenceStorage();
             boolean initial = true;
             Object value;
             Object reprString;
-            for (int index = 0; index < lenNode.execute(storage); index++) {
+            for (int index = 0; index < length; index++) {
                 value = getItem.execute(frame, storage, index);
-                if (self != value) {
-                    reprString = repr.executeObject(frame, value);
-                    if (reprString instanceof PString) {
-                        reprString = ((PString) reprString).getValue();
-                    }
-                } else {
-                    reprString = "[...]";
+                reprString = repr.executeObject(frame, value);
+                if (reprString instanceof PString) {
+                    reprString = ((PString) reprString).getValue();
                 }
                 if (reprString instanceof String) {
                     if (initial) {
@@ -171,6 +185,7 @@ public class ListBuiltins extends PythonBuiltins {
                     raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprString);
                 }
             }
+            ctxt.reprLeave(self);
             return PythonUtils.sbToString(PythonUtils.append(result, "]"));
         }
     }

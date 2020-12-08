@@ -21,6 +21,7 @@
 *graalpython.lib-python.3.test.test_contextlib.LockContextTestCase.testWithSemaphore
 *graalpython.lib-python.3.test.test_contextlib.NullcontextTestCase.test_nullcontext
 *graalpython.lib-python.3.test.test_contextlib.TestAbstractContextManager.test_enter
+*graalpython.lib-python.3.test.test_contextlib.TestAbstractContextManager.test_exit_is_abstract
 *graalpython.lib-python.3.test.test_contextlib.TestAbstractContextManager.test_structural_subclassing
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_contextdecorator
 *graalpython.lib-python.3.test.test_contextlib.TestContextDecorator.test_contextdecorator_as_mixin

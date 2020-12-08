@@ -40,9 +40,14 @@
  */
 package com.oracle.graal.python.runtime;
 
+import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -64,8 +69,10 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -127,6 +134,7 @@ public class AsyncHandler {
     }
 
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(4, new ThreadFactory() {
+        @Override
         public Thread newThread(Runnable r) {
             Thread t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
@@ -147,6 +155,7 @@ public class AsyncHandler {
             this.actionSupplier = actionSupplier;
         }
 
+        @Override
         public void run() {
             AsyncAction asyncAction = actionSupplier.get();
             if (asyncAction != null) {
@@ -291,5 +300,119 @@ public class AsyncHandler {
 
     public void shutdown() {
         executorService.shutdownNow();
+    }
+
+    public static class SharedFinalizer {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SharedFinalizer.class);
+
+        private final PythonContext pythonContext;
+        private final ReferenceQueue<Object> queue = new ReferenceQueue<>();
+
+        /**
+         * This is a Set of references to keep them alive after their gc collected referents.
+         */
+        private final ConcurrentMap<FinalizableReference, FinalizableReference> liveReferencesSet = new ConcurrentHashMap<>();
+
+        public SharedFinalizer(PythonContext context) {
+            this.pythonContext = context;
+        }
+
+        /**
+         * Finalizable references is a utility class for freeing resources that {@link Runtime#gc()}
+         * is unaware of, such as of heap allocation through native interface. Resources that can be
+         * freed with {@link Runtime#gc()} should not extend this class.
+         */
+        public abstract static class FinalizableReference extends PhantomReference<Object> {
+            private final Object reference;
+            private boolean released;
+
+            public FinalizableReference(Object referent, Object reference, SharedFinalizer sharedFinalizer) {
+                super(referent, sharedFinalizer.queue);
+                assert reference != null;
+                this.reference = reference;
+                addLiveReference(sharedFinalizer, this);
+            }
+
+            /**
+             * We'll keep a reference for the FinalizableReference object until the async handler
+             * schedule the collect process.
+             */
+            @TruffleBoundary
+            private static void addLiveReference(SharedFinalizer sharedFinalizer, FinalizableReference ref) {
+                sharedFinalizer.liveReferencesSet.put(ref, ref);
+            }
+
+            /**
+             * 
+             * @return the undelying reference which is usually a native pointer.
+             */
+            public final Object getReference() {
+                return reference;
+            }
+
+            public final boolean isReleased() {
+                return released;
+            }
+
+            /**
+             * Mark the FinalizableReference as freed in case it has been freed elsewhare. This will
+             * avoid double-freeing the reference.
+             */
+            public final void markReleased() {
+                this.released = true;
+            }
+
+            /**
+             * This implements the proper way to free the allocated resources associated with the
+             * reference.
+             */
+            public abstract AsyncHandler.AsyncAction release();
+        }
+
+        static class SharedFinalizerErrorCallback implements AsyncHandler.AsyncAction {
+
+            private final Exception exception;
+            private final FinalizableReference referece; // problematic reference
+
+            SharedFinalizerErrorCallback(FinalizableReference referece, Exception e) {
+                this.exception = e;
+                this.referece = referece;
+            }
+
+            @Override
+            public void execute(PythonContext context) {
+                LOGGER.severe(String.format("Error during async action for %s caused by %s", referece.getClass().getSimpleName(), exception.getMessage()));
+            }
+        }
+
+        /**
+         * We register the Async action once on the first encounter of a creation of
+         * {@link FinalizableReference}. This will reduce unnecessary Async thread load when there
+         * isn't any enqueued references.
+         */
+        public void registerAsyncAction() {
+            pythonContext.registerAsyncAction(() -> {
+                Reference<? extends Object> reference = null;
+                try {
+                    reference = queue.remove();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                if (reference instanceof FinalizableReference) {
+                    FinalizableReference object = (FinalizableReference) reference;
+                    try {
+                        liveReferencesSet.remove(object);
+                        if (object.isReleased()) {
+                            return null;
+                        }
+                        return object.release();
+                    } catch (Exception e) {
+                        return new SharedFinalizerErrorCallback(object, e);
+                    }
+                }
+                return null;
+            });
+
+        }
     }
 }

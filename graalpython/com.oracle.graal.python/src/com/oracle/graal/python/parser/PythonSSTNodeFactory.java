@@ -44,6 +44,7 @@ package com.oracle.graal.python.parser;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -58,10 +59,15 @@ import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.ArgListBuilder;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.parser.sst.BlockSSTNode;
+import com.oracle.graal.python.parser.sst.BooleanLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.CallSSTNode;
 import com.oracle.graal.python.parser.sst.ClassSSTNode;
 import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.DecoratorSSTNode;
 import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
+import com.oracle.graal.python.parser.sst.FloatLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.parser.sst.ForSSTNode;
 import com.oracle.graal.python.parser.sst.FunctionDefSSTNode;
@@ -69,16 +75,21 @@ import com.oracle.graal.python.parser.sst.GeneratorFactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.GetAttributeSSTNode;
 import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
 import com.oracle.graal.python.parser.sst.ImportSSTNode;
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.ReturnSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.StarSSTNode;
 import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.parser.sst.SubscriptSSTNode;
+import com.oracle.graal.python.parser.sst.TernaryIfSSTNode;
 import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
@@ -112,6 +123,16 @@ public final class PythonSSTNodeFactory {
         return scopeEnvironment;
     }
 
+    public void throwSyntaxError(int startOffset, int endOffset, String message, Object... messageParams) {
+        throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), message, messageParams);
+    }
+
+    public SSTNode createDecorator(String name, ArgListBuilder arg, int startOffset, int endOffset) {
+        int dotIndex = name.indexOf('.');
+        String mangledName = dotIndex == -1 ? mangleNameInCurrentScope(name) : mangleNameInCurrentScope(name.substring(0, dotIndex)) + name.substring(dotIndex);
+        return new DecoratorSSTNode(mangledName, arg, startOffset, endOffset);
+    }
+
     public SSTNode createImport(String name, String asName, int startOffset, int endOffset) {
         String varName;
         if (asName != null) {
@@ -125,6 +146,7 @@ public final class PythonSSTNodeFactory {
                 // create local variable just for the top module
                 varName = name.substring(0, dotIndex);
             }
+            varName = mangleNameInCurrentScope(varName);
         }
         scopeEnvironment.createLocal(varName);
         return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
@@ -135,19 +157,93 @@ public final class PythonSSTNodeFactory {
             for (String[] asName : asNames) {
                 scopeEnvironment.createLocal(asName[1] == null ? asName[0] : asName[1]);
             }
+        } else {
+            if (!scopeEnvironment.atModuleLevel()) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.IMPORT_STAR_ONLY_ALLOWED_AT_MODULE_LEVEL);
+            }
         }
 
         return new ImportFromSSTNode(scopeEnvironment.getCurrentScope(), from, asNames, startOffset, endOffset);
     }
 
+    public String mangleNameInCurrentScope(String name) {
+        if (cannotBeMangled(name)) {
+            return name;
+        }
+        // then name can be mangled if is under class
+        ScopeInfo scope = scopeEnvironment.getCurrentScope();
+        while (scope != null && scope.getScopeKind() != ScopeKind.Class) {
+            scope = scope.getParent();
+        }
+
+        if (scope != null) {
+            try {
+                return mangleName(scope.getScopeId(), name);
+            } catch (OverflowException e) {
+                throw errors.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
+            }
+        }
+        return name;
+    }
+
+    /**
+     * Tests if the provided identifier is a candidate for name mangling.
+     */
+    @TruffleBoundary
+    private static boolean cannotBeMangled(String identifier) {
+        int len = identifier.length();
+        // Don't mangle __whatever__ or names with dots.
+        return len < 3 || identifier.charAt(0) != '_' || identifier.charAt(1) != '_' || (identifier.charAt(len - 1) == '_' && identifier.charAt(len - 2) == '_') || identifier.indexOf('.') != -1;
+    }
+
+    /**
+     * Implements semantics of {@code parser.c:_Py_Mangle}
+     */
+    @TruffleBoundary
+    public static String mangleName(String privateobj, String ident) throws OverflowException {
+        // Name mangling: __private becomes _classname__private. This is independent from how
+        // the name is used.
+        if (cannotBeMangled(ident)) {
+            return ident;
+        }
+        // The length of 'privateobj' must be checked because if someone uses the 'type' constructor
+        // it's allowed to pass an empty name.
+        String privateobjStripped;
+        if (privateobj.length() > 0 && privateobj.charAt(0) == '_') {
+            // trim leading '_'
+            int index = 1;
+            int scopeNameLen = privateobj.length();
+            while (index < scopeNameLen && privateobj.charAt(index) == '_') {
+                index++;
+            }
+            privateobjStripped = index != scopeNameLen ? privateobj.substring(index) : null;
+        } else {
+            privateobjStripped = privateobj;
+        }
+        if (privateobjStripped != null) {
+            if ((long) privateobjStripped.length() + ident.length() >= Integer.MAX_VALUE) {
+                throw OverflowException.INSTANCE;
+            }
+            // ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes
+            return '_' + privateobjStripped + ident;
+        }
+        return ident;
+    }
+
     public VarLookupSSTNode createVariableLookup(String name, int start, int stop) {
-        scopeEnvironment.addSeenVar(name);
-        return new VarLookupSSTNode(name, start, stop);
+        String mangleName = mangleNameInCurrentScope(name);
+        scopeEnvironment.addSeenVar(mangleName);
+        return new VarLookupSSTNode(mangleName, start, stop);
     }
 
     public SSTNode createClassDefinition(String name, ArgListBuilder baseClasses, SSTNode body, int start, int stop) {
         // scopeEnvironment.createLocal(name);
         return new ClassSSTNode(scopeEnvironment.getCurrentScope(), name, baseClasses, body, start, stop);
+    }
+
+    public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset) {
+        String mangledName = mangleNameInCurrentScope(name);
+        return new GetAttributeSSTNode(receiver, mangledName, startOffset, endOffset);
     }
 
     public SSTNode registerGlobal(String[] names, int startOffset, int endOffset) {
@@ -191,11 +287,19 @@ public final class PythonSSTNodeFactory {
         return new SimpleSSTNode(SimpleSSTNode.Type.EMPTY, startOffset, endOffset);
     }
 
+    public ReturnSSTNode createReturn(SSTNode value, int startOffset, int endOffset) {
+        if (!scopeEnvironment.isInFunctionScope()) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.RETURN_OUTSIDE_FUNC);
+        }
+        return new ReturnSSTNode(value, startOffset, endOffset);
+    }
+
     public WithSSTNode createWith(SSTNode expression, SSTNode target, SSTNode body, int start, int end) {
-        String name;
-        if (target instanceof VarLookupSSTNode) {
-            name = ((VarLookupSSTNode) target).getName();
-            scopeEnvironment.createLocal(name);
+        if (target != null) {
+            checkAssignable(target, target.getStartOffset(), target.getEndOffset());
+            if (target instanceof VarLookupSSTNode) {
+                scopeEnvironment.createLocal(((VarLookupSSTNode) target).getName());
+            }
         }
         return new WithSSTNode(expression, target, body, start, end);
     }
@@ -203,6 +307,7 @@ public final class PythonSSTNodeFactory {
     public SSTNode createForComprehension(boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType, int lineNumber,
                     int level, int startOffset, int endOffset) {
         for (SSTNode variable : variables) {
+            checkAssignable(variable, variable.getStartOffset(), variable.getEndOffset());
             declareVar(variable);
         }
         return new ForComprehensionSSTNode(scopeEnvironment.getCurrentScope(), async, target, name, variables, iterator, conditions, resultType, lineNumber, level, startOffset, endOffset);
@@ -210,16 +315,16 @@ public final class PythonSSTNodeFactory {
 
     public SSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int start, int stop) {
         for (SSTNode variable : lhs) {
+            checkAssignable(variable, start, stop);
             declareVar(variable);
+        }
+        if (lhs.length == 1 && lhs[0] instanceof StarSSTNode) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(start, stop), ErrorMessages.STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE);
         }
         return new AssignmentSSTNode(lhs, rhs, start, stop);
     }
 
     public SSTNode createAnnAssignment(SSTNode lhs, SSTNode type, SSTNode rhs, int start, int end) {
-        declareVar(lhs);
-        if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
-            scopeEnvironment.getCurrentScope().setHasAnnotations(true);
-        }
         // checking if the annotation has the right target
         if (!(lhs instanceof VarLookupSSTNode || lhs instanceof GetAttributeSSTNode || lhs instanceof SubscriptSSTNode)) {
             if (lhs instanceof CollectionSSTNode) {
@@ -232,12 +337,99 @@ public final class PythonSSTNodeFactory {
             }
             throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), ErrorMessages.ILLEGAL_TARGET_FOR_ANNOTATION);
         }
+        checkAssignable(lhs, start, end);
+        declareVar(lhs);
+        if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
+            scopeEnvironment.getCurrentScope().setHasAnnotations(true);
+        }
         return new AnnAssignmentSSTNode(lhs, type, rhs, start, end);
     }
 
     public SSTNode createAugAssignment(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {
+        // checking if the augment assingment is valid
+        checkAssignable(lhs, startOffset, endOffset);
+        if (!(lhs instanceof VarLookupSSTNode || lhs instanceof GetAttributeSSTNode || lhs instanceof SubscriptSSTNode)) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT);
+        }
         declareVar(lhs);
         return new AugAssignmentSSTNode(lhs, operation, rhs, startOffset, endOffset);
+    }
+
+    private void checkForbiddenName(String name, int startOffset, int endOffset) {
+        if (BuiltinNames.__DEBUG__.equals(name)) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, BuiltinNames.__DEBUG__);
+        }
+    }
+
+    private void checkAssignable(SSTNode lhs, int startOffset, int endOffset) {
+        if (lhs instanceof VarLookupSSTNode) {
+            checkForbiddenName(((VarLookupSSTNode) lhs).getName(), startOffset, endOffset);
+        } else if (lhs instanceof GetAttributeSSTNode) {
+            checkForbiddenName(((GetAttributeSSTNode) lhs).getName(), startOffset, endOffset);
+        } else if (lhs instanceof StarSSTNode) {
+            checkAssignable(((StarSSTNode) lhs).getValue(), startOffset, endOffset);
+        } else if (lhs instanceof BinaryArithmeticSSTNode) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "operator");
+        } else if (lhs instanceof SimpleSSTNode) {
+            SimpleSSTNode.Type type = ((SimpleSSTNode) lhs).getType();
+            if (type == SimpleSSTNode.Type.ELLIPSIS) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "Ellipsis");
+            } else if (type == SimpleSSTNode.Type.NONE) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "None");
+            }
+        } else if (lhs instanceof CallSSTNode) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), ErrorMessages.CANNOT_ASSIGN_TO, "function call");
+        } else if (lhs instanceof BooleanLiteralSSTNode) {
+            if (((BooleanLiteralSSTNode) lhs).getValue()) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "True");
+            } else {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "False");
+            }
+        } else if (lhs instanceof FloatLiteralSSTNode || lhs instanceof NumberLiteralSSTNode || lhs instanceof StringLiteralSSTNode) {
+            if (lhs instanceof StringLiteralSSTNode.FormatStringLiteralSSTNode) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "f-string expression");
+            }
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "literal");
+        } else if (lhs instanceof CollectionSSTNode) {
+            CollectionSSTNode collectionNode = (CollectionSSTNode) lhs;
+            PythonBuiltinClassType type = collectionNode.getType();
+            if (type == PythonBuiltinClassType.PDict) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "dict display");
+            } else if (type == PythonBuiltinClassType.PSet) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "set display");
+            }
+            for (SSTNode node : collectionNode.getValues()) {
+                checkAssignable(node, startOffset, endOffset);
+            }
+        } else if (lhs instanceof YieldExpressionSSTNode) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "yield expression");
+        } else if (lhs instanceof ForComprehensionSSTNode) {
+            PythonBuiltinClassType resultType = ((ForComprehensionSSTNode) lhs).getResultType();
+            if (resultType == PythonBuiltinClassType.PGenerator) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "generator expression");
+            }
+            String calleeName;
+            switch (resultType) {
+                case PList:
+                    calleeName = BuiltinNames.LIST;
+                    break;
+                case PSet:
+                    calleeName = BuiltinNames.SET;
+                    break;
+                case PDict:
+                    calleeName = BuiltinNames.DICT;
+                    break;
+                default:
+                    calleeName = null;
+            }
+            if (calleeName == null) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "comprehension");
+            } else {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO_COMPREHENSION, calleeName);
+            }
+        } else if (lhs instanceof TernaryIfSSTNode) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "conditional expression");
+        }
     }
 
     private void declareVar(SSTNode value) {
@@ -261,6 +453,7 @@ public final class PythonSSTNodeFactory {
 
     public ForSSTNode createForSSTNode(SSTNode[] targets, SSTNode iterator, SSTNode body, boolean containsContinue, int startOffset, int endOffset) {
         for (SSTNode target : targets) {
+            checkAssignable(target, target.getStartOffset(), target.getEndOffset());
             createLocalVariable(target);
         }
         return new ForSSTNode(targets, iterator, body, containsContinue, startOffset, endOffset);

@@ -42,6 +42,8 @@
 
 #include <stdio.h>
 
+#define FLAG_SIZE_T 1
+
 static int getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg) {
     if (PyObject_GetBuffer(arg, view, PyBUF_SIMPLE) != 0) {
         *errmsg = "bytes-like object";
@@ -96,10 +98,24 @@ static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {
     }
 
 /* just a renaming to avoid name clash with Java types */
-typedef char       char_t;
-typedef float      float_t;
-typedef double     double_t;
+typedef void*              void_ptr_t;
+typedef char               char_t;
+typedef float              float_t;
+typedef double             double_t;
+typedef int                int_t;
+typedef unsigned int       uint_t;
+typedef long               long_t;
+typedef unsigned long      ulong_t;
+typedef long long          longlong_t;
+typedef unsigned long long ulonglong_t;
 
+REGISTER_BASIC_TYPE(void_ptr_t);
+REGISTER_BASIC_TYPE(int_t);
+REGISTER_BASIC_TYPE(uint_t);
+REGISTER_BASIC_TYPE(long_t);
+REGISTER_BASIC_TYPE(ulong_t);
+REGISTER_BASIC_TYPE(longlong_t);
+REGISTER_BASIC_TYPE(ulonglong_t);
 REGISTER_BASIC_TYPE(int64_t);
 REGISTER_BASIC_TYPE(int32_t);
 REGISTER_BASIC_TYPE(int16_t);
@@ -114,6 +130,7 @@ REGISTER_BASIC_TYPE(PyObject);
 REGISTER_BASIC_TYPE(float_t);
 REGISTER_BASIC_TYPE(double_t);
 REGISTER_BASIC_TYPE(Py_ssize_t);
+REGISTER_BASIC_TYPE(size_t);
 
 /* For pointers, make them look like an array of size 1 such that it is
    possible to dereference the pointer by accessing element 0. */
@@ -272,7 +289,7 @@ typedef struct _build_stack {
     struct _build_stack* prev;
 } build_stack;
 
-MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list va) {
+MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list va, int flags) {
     PyObject* (*converter)(void*) = NULL;
     int offset = 0;
     char argchar[2] = {'\0'};
@@ -328,8 +345,36 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
             }
             break;
         case 'u':
-            fprintf(stderr, "error: unsupported format 'u'\n");
-            break;
+        {
+            PyObject *v;
+            Py_UNICODE *u = va_arg(va, Py_UNICODE *);
+            Py_ssize_t n;
+            if (format[format_idx + 1] == '#') {
+                if (flags & FLAG_SIZE_T)
+                    n = va_arg(va, Py_ssize_t);
+                else {
+                    n = va_arg(va, int);
+                    if (PyErr_WarnEx(PyExc_DeprecationWarning,
+                                "PY_SSIZE_T_CLEAN will be required for '#' formats", 1)) {
+                        return NULL;
+                    }
+                }
+                format_idx++;
+            } else {
+                n = -1;
+            }
+            if (u == NULL) {
+                v = Py_None;
+                Py_INCREF(v);
+            }
+            else {
+                if (n < 0) {
+                    n = wcslen(u);
+                }
+                v = PyUnicode_FromWideChar(u, n);
+            }
+            return v;
+        }
         case 'i':
         case 'b':
         case 'h':
@@ -452,12 +497,14 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
             break;
         case ':':
         case ',':
+        case ' ':
             if (v->prev == NULL) {
                 PyErr_SetString(PyExc_SystemError, "':' without '{' in Py_BuildValue");
             }
             break;
         default:
-            fprintf(stderr, "error: unsupported format starting at %d : '%s'\n", format_idx, format);
+            PyErr_SetString(PyExc_SystemError, "bad format char passed to Py_BuildValue");
+            return NULL;
         }
         c = format[++format_idx];
     }
@@ -479,18 +526,18 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
 }
 
 PyObject* Py_VaBuildValue(const char *format, va_list va) {
-    return _Py_VaBuildValue_SizeT(format, va);
+    return _PyTruffle_BuildValue(format, va, FLAG_SIZE_T);
 }
 
 PyObject* _Py_VaBuildValue_SizeT(const char *format, va_list va) {
-    return _PyTruffle_BuildValue(format, va);
+    return _PyTruffle_BuildValue(format, va, FLAG_SIZE_T);
 }
 
 NO_INLINE
 PyObject* Py_BuildValue(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    PyObject* result = _PyTruffle_BuildValue(format, args);
+    PyObject* result = _PyTruffle_BuildValue(format, args, 0);
     va_end(args);
     return result;
 }
@@ -499,7 +546,7 @@ NO_INLINE
 PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    PyObject* result = _PyTruffle_BuildValue(format, args);
+    PyObject* result = _PyTruffle_BuildValue(format, args, FLAG_SIZE_T);
     va_end(args);
     return result;
 }

@@ -157,7 +157,7 @@ public class KeywordsStorage extends HashingStorage {
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            long hash = self.getHashWithState(key, lib, state, gotState);
+            long hash = getHashWithState(key, lib, state, gotState);
             for (int i = 0; i < self.keywords.length; i++) {
                 String currentKey = self.keywords[i].getName();
                 long keyHash;
@@ -295,6 +295,7 @@ public class KeywordsStorage extends HashingStorage {
 
         public abstract void nextIndex();
 
+        @Override
         public Object next() {
             if (hasNext()) {
                 Object result = storage.keywords[index].getName();

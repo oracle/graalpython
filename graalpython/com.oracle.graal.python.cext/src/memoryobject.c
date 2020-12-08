@@ -121,9 +121,9 @@ PyObject* PyTruffle_MemoryViewFromObject(PyObject *v) {
                 polyglot_from_string(buffer->format ? buffer->format : "B", "ascii"),
                 buffer->ndim,
                 polyglot_from_i8_array(buffer->buf, buffer->len),
-                buffer->shape ? polyglot_from_size_array(buffer->shape, ndim) : NULL,
-                buffer->strides ? polyglot_from_size_array(buffer->strides, ndim) : NULL,
-                buffer->suboffsets ? polyglot_from_size_array(buffer->suboffsets, ndim) : NULL);
+                buffer->shape ? polyglot_from_size_array((int64_t*)buffer->shape, ndim) : NULL,
+                buffer->strides ? polyglot_from_size_array((int64_t*)buffer->strides, ndim) : NULL,
+                buffer->suboffsets ? polyglot_from_size_array((int64_t*)buffer->suboffsets, ndim) : NULL);
         if (!needs_release) {
             free(buffer);
         }
@@ -164,9 +164,9 @@ PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
             polyglot_from_string(buffer->format ? buffer->format : "B", "ascii"),
             buffer->ndim,
             polyglot_from_i8_array(buffer->buf, buffer->len),
-            buffer->shape ? polyglot_from_size_array(buffer->shape, ndim) : NULL,
-            buffer->strides ? polyglot_from_size_array(buffer->strides, ndim) : NULL,
-            buffer->suboffsets ? polyglot_from_size_array(buffer->suboffsets, ndim) : NULL);
+            buffer->shape ? polyglot_from_size_array((int64_t*)buffer->shape, ndim) : NULL,
+            buffer->strides ? polyglot_from_size_array((int64_t*)buffer->strides, ndim) : NULL,
+            buffer->suboffsets ? polyglot_from_size_array((int64_t*)buffer->suboffsets, ndim) : NULL);
 }
 
 PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags) {

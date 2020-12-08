@@ -55,11 +55,12 @@ import mx_subst
 import mx_urlrewrites
 import mx_graalpython_bisect
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, JBENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
-    PythonInteropBenchmarkSuite
+    CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
+    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite
 
 
 if not sys.modules.get("__main__"):
@@ -70,6 +71,8 @@ if not sys.modules.get("__main__"):
 SUITE = mx.suite('graalpython')
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
+
+GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
 
 if PY3:
@@ -127,7 +130,7 @@ def python(args, **kwargs):
     do_run_python(args, **kwargs)
 
 
-def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, **kwargs):
+def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, **kwargs):
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
         args.insert(0, "--experimental-options")
@@ -144,7 +147,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         elif check_vm_env == '0':
             check_vm()
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -176,7 +179,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     if extra_vm_args:
         vm_args += extra_vm_args
 
-    vm_args.append("com.oracle.graal.python.shell.GraalPythonMain")
+    vm_args.append(main_class)
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
@@ -212,8 +215,7 @@ def punittest(ars):
                 # test leaks with shared engine Python code only
                 run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
                 # test leaks with shared engine when some C module code is involved
-                # Not working due to GR-26175
-                # run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
+                run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
         ]):
             mx.abort(1)
 
@@ -373,7 +375,7 @@ def update_unittest_tags(args):
         mx.warn("Potential regressions:\n" + '\n'.join(x[1] for x in diff))
 
 
-AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]
+AOT_INCOMPATIBLE_TESTS = ["test_interop.py", "test_jarray.py"]
 
 
 class GraalPythonTags(object):
@@ -522,10 +524,12 @@ def graalpytest(args):
     cmd_args += testfiles
     if args.filter:
         cmd_args += ["-k", args.filter]
+    env = os.environ.copy()
+    env['PYTHONHASHSEED'] = '0'
     if args.python:
-        return mx.run([args.python] + cmd_args, nonZeroIsFatal=True)
+        return mx.run([args.python] + cmd_args, nonZeroIsFatal=True, env=env)
     else:
-        return do_run_python(cmd_args)
+        return do_run_python(cmd_args, env=env)
 
 
 def _list_graalpython_unittests(paths=None, exclude=None):
@@ -564,6 +568,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
     exclude = exclude or []
     if env is None:
         env = os.environ.copy()
+    env['PYTHONHASHSEED'] = '0'
 
     # list of excluded tests
     if aot_compatible:
@@ -645,8 +650,10 @@ def graalpython_gate_runner(args, tasks):
                     exe = os.path.join(exe, "python")
                 else:
                     exe = "python3"
+                env = os.environ.copy()
+                env['PYTHONHASHSEED'] = '0'
                 test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
-                mx.run(test_args, nonZeroIsFatal=True)
+                mx.run(test_args, nonZeroIsFatal=True, env=env)
             mx.run(["env"])
             run_python_unittests(python_gvm())
 
@@ -1165,8 +1172,9 @@ def python_style_checks(args):
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
     if os.environ.get("ECLIPSE_EXE"):
-        mx.command_function("eclipseformat")([])
-    mx.command_function("spotbugs")([])
+        mx.command_function("eclipseformat")(["--primary"])
+    if "--no-spotbugs" not in args:
+        mx.command_function("spotbugs")([])
 
 
 def python_checkcopyrights(args):
@@ -1204,7 +1212,7 @@ def _python_checkpatchfiles():
             content = listfile.read()
         patchfile_pattern = re.compile(r"lib-graalpython/patches/([^/]+)/(sdist|whl)/.*\.patch")
         checked = set()
-        allowed_licenses = ["MIT", "BSD", "MIT license"]
+        allowed_licenses = ["MIT", "BSD", "MIT license", "PSF"]
         for line in content.split("\n"):
             match = patchfile_pattern.search(line)
             if match:
@@ -1404,13 +1412,15 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='Graal.Python',
     short_name='pyn',
+    installable_id='graalpython',
     dir_name='python',
     standalone_dir_name='graalpython-<version>-<graalvm_os>-<arch>',
     license_files=[],
     third_party_license_files=[],
-    dependencies=['pynl', 'Truffle', 'Sulong', 'LLVM.org toolchain', 'TRegex'],
+    dependencies=['pynl', 'Truffle', 'LLVM Runtime Native', 'LLVM.org toolchain', 'TRegex'],
     standalone_dependencies={
-        'Sulong': ('lib/sulong', ['bin/<exe:lli>']),
+        'LLVM Runtime Core': ('lib/sulong', []),
+        'LLVM Runtime Native': ('lib/sulong', []),
         'LLVM.org toolchain': ('lib/llvm-toolchain', []),
         'Graal.Python license files': ('', []),
     },
@@ -1425,15 +1435,16 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         mx_sdk.LanguageLauncherConfig(
             destination='bin/<exe:graalpython>',
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
-            main_class='com.oracle.graal.python.shell.GraalPythonMain',
-            # build_args=['-H:+RemoveSaturatedTypeFlows'],
+            main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
                 '-H:+DetectUserDirectoriesInImageHeap',
+                '-H:+RemoveSaturatedTypeFlows',
             ],
             language='python',
         )
     ],
+    priority=5
 ))
 
 
@@ -1457,6 +1468,9 @@ def _register_vms(namespace):
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
     ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI_TIER, extra_polyglot_args=[
+        '--experimental-options', '--engine.MultiTier=true',
+    ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=[
         '--llvm.managed',
     ]), SUITE, 10)
@@ -1468,10 +1482,15 @@ def _register_vms(namespace):
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
     ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI_TIER, extra_polyglot_args=[
+        '--experimental-options', '--engine.MultiTier=true',
+    ]), SUITE, 10)
 
 
 def _register_bench_suites(namespace):
     for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
+        mx_benchmark.add_bm_suite(py_bench_suite)
+    for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
     for java_bench_suite in PythonInteropBenchmarkSuite.get_benchmark_suites(JBENCHMARKS):
         mx_benchmark.add_bm_suite(java_bench_suite)
@@ -2008,11 +2027,11 @@ def run_leak_launcher(input_args, out=None):
     env = os.environ.copy()
     env.setdefault("GRAAL_PYTHONHOME", _dev_pythonhome())
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG', 'GRAALPYTHON_UNIT_TESTS']
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
-    jdk = mx.get_jdk(tag=None)
+    jdk = get_jdk()
     vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
     retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=out)
     if retval == 0:
@@ -2022,7 +2041,7 @@ def run_leak_launcher(input_args, out=None):
         # rerun once with heap dumping enabled
         out = mx.OutputCapture()
         run_leak_launcher(["--keep-dump"] + input_args, out=out)
-        path = out.data.strip().split("Dump file:")[2].strip()
+        path = out.data.strip().partition("Dump file:")[2].strip()
         if path:
             save_path = os.path.join(SUITE.dir, "dumps", "leak_test")
             try:
@@ -2049,7 +2068,7 @@ mx.update_commands(SUITE, {
     'deploy-binary-if-master': [deploy_binary_if_master, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [import-name, default: truffle]'],
-    'python-style': [python_style_checks, '[--fix]'],
+    'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],

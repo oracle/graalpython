@@ -42,9 +42,9 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -96,6 +96,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         if (isHiddenKey(key) || self instanceof PythonManagedClass || self instanceof PFunction || self instanceof PDecoratedMethod || self instanceof PythonModule ||
                         self instanceof PBaseException) {
             return true;
+        }
+        if ((self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) != 0) {
+            return false;
         }
         return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
     }

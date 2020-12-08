@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -119,7 +120,10 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                         @Cached NameNode nameNode,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode,
                         @Cached CastToJavaStringNode castToStringNode) {
-            return "<DirEntry " + castToStringNode.execute(reprNode.executeObject(frame, nameNode.call(frame, self))) + ">";
+            StringBuilder sb = PythonUtils.newStringBuilder("<DirEntry ");
+            PythonUtils.append(sb, castToStringNode.execute(reprNode.executeObject(frame, nameNode.call(frame, self))));
+            PythonUtils.append(sb, '>');
+            return PythonUtils.sbToString(sb);
         }
     }
 

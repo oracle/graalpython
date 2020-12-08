@@ -48,6 +48,10 @@ stat_result_c = make_named_tuple_class("stat_result", [
     "st_atime_ns", "st_mtime_ns", "st_ctime_ns"
 ], 10)
 
+stat_result_c.__qualname__ = 'stat_result'
+stat_result_c.__name__ = 'stat_result'
+stat_result_c.__module__ = 'os'
+
 def stat_result(data):
     if len(data) == 10:
         return stat_result_c(data + tuple(float(x) for x in data[7:10]) + tuple(x * 1000000000 for x in data[7:10]))

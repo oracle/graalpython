@@ -74,7 +74,7 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
     tokens.offer(t);
   }
 
-  int codePointDelta = 0; // keeps the lenght of code points that have more chars that one. 
+  int codePointDelta = 0; // keeps the length of code points that have more chars that one.
 
   @Override
   public Token nextToken() {
@@ -115,7 +115,7 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
     // `a = '𝔘𝔫𝔦𝔠𝔬𝔡𝔢'`
     // then the range of the string literal (from CodePoiintStream) is [4, 13],
     // but the java string substring(4,13)  returns `'𝔘𝔫𝔦𝔠`, because every
-    // the letter is represented with code point of lenght 2. The problem is 
+    // the letter is represented with code point of length 2. The problem is
     // that we don't work in python implementation with code point stream, 
     // but just with the strings. So the lexer converts the ranges of tokens 
     // to the "string" representation. 
@@ -253,20 +253,16 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
 
 @parser::header
 {
-import com.oracle.graal.python.builtins.objects.PEllipsis;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
-import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.parser.sst.*;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 
@@ -410,6 +406,10 @@ import java.util.Arrays;
     	// ignores ctx
         return getStopIndex(this._input.get(this._input.index() - 1));
     }
+
+    private boolean isForbiddenName(String name) {
+        return "True".equals(name) || "False".equals(name) || "None".equals(name) || "__debug__".equals(name);
+    }
 }
 
 /*
@@ -514,7 +514,7 @@ decorator:
         } else {
             factory.getScopeEnvironment().addSeenVar(dottedName);
         }
-        push( new DecoratorSSTNode(dottedName, args, getStartIndex($ctx), getLastIndex($ctx))); 
+        push( factory.createDecorator(dottedName, args, getStartIndex($ctx), getLastIndex($ctx)));
     }
 ;
 
@@ -545,7 +545,7 @@ funcdef
 		'->' test
 	)? ':' 
 	{ 
-            String name = $n.getText(); 
+            String name = factory.mangleNameInCurrentScope($n.getText());
             ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
             ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -607,12 +607,19 @@ defparameter [ArgDefListBuilder args]
 	( ':' test { type = $test.result; } )?
 	( '=' test { defValue = $test.result; } )?
 	{ 
-            ArgDefListBuilder.AddParamResult result = args.addParam($NAME.text, type, defValue); 
+            String name = $NAME.text;
+            if (isForbiddenName(name)) {
+                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+            }
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
                 case DUPLICATED_ARGUMENT:
-                    throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
+                    throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, $ctx, getCurrentToken());
             } 
             
         }
@@ -626,7 +633,7 @@ splatparameter [ArgDefListBuilder args]
 		NAME { name = $NAME.text; }
 		( ':' test { type = $test.result; } )?
 	)?
-	{ args.addSplat(name, type); }
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, type); }
 ;
 
 kwargsparameter [ArgDefListBuilder args]
@@ -635,8 +642,15 @@ kwargsparameter [ArgDefListBuilder args]
 	{ SSTNode type = null; }
 	( ':' test { type = $test.result; } )?
 	{ 
-            if (args.addKwargs($NAME.text, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
-                throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
+            String name = $NAME.text;
+            if (isForbiddenName(name)) {
+                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+            }
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+                throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
         }
 ;
@@ -681,12 +695,19 @@ vdefparameter [ArgDefListBuilder args]
 	{ SSTNode defValue = null; }
 	( '=' test { defValue = $test.result; } )?
 	{ 
-            ArgDefListBuilder.AddParamResult result = args.addParam($NAME.text, null, defValue); 
+            String name = $NAME.text;
+            if (isForbiddenName(name)) {
+                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+            }
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
                 case DUPLICATED_ARGUMENT:
-                    throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
+                    throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
             
         }
@@ -697,14 +718,18 @@ vsplatparameter [ArgDefListBuilder args]
 	'*'
 	{ String name = null; }
 	( NAME { name = $NAME.text; } )?
-	{ args.addSplat(name, null);}
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, null);}
 ;
 
 vkwargsparameter [ArgDefListBuilder args]
 :
 	'**' NAME
 	{
-            if (args.addKwargs($NAME.text, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+            String name = $NAME.text;
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            if (args.addKwargs(name, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
         }
@@ -780,11 +805,7 @@ expr_stmt
                     if (start == start()) {
                         push(new ExpressionStatementSSTNode(value));
                     } else {
-                        SSTNode[] lhs = getArray(start, SSTNode[].class);
-                        if (lhs.length == 1 && lhs[0] instanceof StarSSTNode) {
-                            throw new PythonRecognitionException("starred assignment target must be in a list or tuple", this, _input, $ctx, $ctx.start);
-                        }
-                        push(factory.createAssignment(lhs, value, getStartIndex(_localctx), rhsStopIndex));
+                        push(factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex(_localctx), rhsStopIndex));
                     }
                 }
 	)
@@ -858,7 +879,7 @@ return_stmt
 	'return'
 	{ SSTNode value = null; }
 	( testlist_star_expr { value = $testlist_star_expr.result; } )?
-	{ push(new ReturnSSTNode(value, getStartIndex($ctx), getLastIndex($ctx)));}
+	{ push(factory.createReturn(value, getStartIndex($ctx), getLastIndex($ctx)));}
 ;
 
 yield_stmt
@@ -1351,7 +1372,7 @@ atom_expr returns [SSTNode result]
 		| '.' NAME 
                 {   
                     assert $NAME != null;
-                    $result = new GetAttributeSSTNode($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
+                    $result = factory.createGetAttribute($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
                 }
 	)*
 ;
@@ -1683,12 +1704,16 @@ argument [ArgListBuilder args] returns [SSTNode result]
                    scopeEnvironment.popScope();
                 }
 	|
-                { String name = getCurrentToken().getText();
-                  if (getCurrentToken().getType() != NAME) {
-                    throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
-                  }
-                  // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
-                  boolean isNameAsVariableInScope = scopeEnvironment.getCurrentScope().getSeenVars() == null ? false : scopeEnvironment.getCurrentScope().getSeenVars().contains(name);
+                {
+                    String name = getCurrentToken().getText();
+                    if (isForbiddenName(name)) {
+                        factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+                    }
+                    if (getCurrentToken().getType() != NAME) {
+                        throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+                    }
+                    // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
+                    boolean isNameAsVariableInScope = scopeEnvironment.getCurrentScope().getSeenVars() == null ? false : scopeEnvironment.getCurrentScope().getSeenVars().contains(name);
                 }
 		n=test 
                 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,6 +61,10 @@ public class SimpleSSTNode extends SSTNode {
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public Type getType() {
+        return type;
     }
 
 }

@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -45,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -54,10 +56,10 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -74,11 +76,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -202,11 +206,18 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         public String repr(VirtualFrame frame, PTuple self,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create()") SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("createRepr()") BuiltinFunctions.ReprNode reprNode) {
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
+            if (len == 0) {
+                return "()";
+            }
+            if (!ctxt.reprEnter(self)) {
+                return "(...)";
+            }
             StringBuilder buf = PythonUtils.newStringBuilder();
             PythonUtils.append(buf, "(");
             for (int i = 0; i < len - 1; i++) {
@@ -223,6 +234,7 @@ public class TupleBuiltins extends PythonBuiltins {
             }
 
             PythonUtils.append(buf, ")");
+            ctxt.reprLeave(self);
             return PythonUtils.sbToString(buf);
         }
 
@@ -493,6 +505,15 @@ public class TupleBuiltins extends PythonBuiltins {
         @Fallback
         Object genericHash(@SuppressWarnings("unused") Object self) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PTuple doIt(PTuple self) {
+            return factory().createTuple(new Object[]{factory().createTuple(self.getSequenceStorage())});
         }
     }
 }

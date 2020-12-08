@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCL
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_VECTORCALL;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.IS_ABSTRACT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
@@ -268,6 +269,10 @@ public abstract class TypeNodes {
             // should be fine to just set it.
             long result = DEFAULT | HEAPTYPE | BASETYPE | HAVE_GC;
 
+            if (clazz.isAbstractClass()) {
+                result |= IS_ABSTRACT;
+            }
+
             // flags are inherited
             MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);
             int n = SequenceStorageNodes.LenNode.getUncached().execute(mroStorage);
@@ -316,8 +321,8 @@ public abstract class TypeNodes {
         @Specialization
         static MroSequenceStorage doPythonClass(PythonManagedClass obj,
                         @Cached("createBinaryProfile()") ConditionProfile notInitialized) {
-            if (!notInitialized.profile(obj.getMethodResolutionOrder().isInitialized())) {
-                obj.getMethodResolutionOrder().setInternalArrayObject(TypeNodes.ComputeMroNode.doSlowPath(obj, false));
+            if (!notInitialized.profile(obj.isMROInitialized())) {
+                obj.setMRO(TypeNodes.ComputeMroNode.doSlowPath(obj, false));
             }
             return obj.getMethodResolutionOrder();
         }
@@ -1612,8 +1617,13 @@ public abstract class TypeNodes {
                 case PBuiltinClassMethod:
                 case PScandirIterator:
                 case PDirEntry:
+                case BZ2Compressor:
+                case BZ2Decompressor:
                 case PLZMACompressor:
                 case PLZMADecompressor:
+                case ZlibCompress:
+                case ZlibDecompress:
+                case PBufferedReader:
                 case LsprofProfiler:
                 case PStruct:
                 case PBaseException:

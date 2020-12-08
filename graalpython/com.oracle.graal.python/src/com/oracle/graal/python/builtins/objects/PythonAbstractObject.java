@@ -76,6 +76,7 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
@@ -133,6 +134,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -234,16 +236,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void writeMember(String key, Object value,
-                    @Exclusive @Cached PInteropSubscriptAssignNode setItemNode,
+                    @Shared("setItemNode") @Cached PInteropSubscriptAssignNode setItemNode,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
-                    @Cached PInteropSetAttributeNode writeNode,
+                    @Cached PInteropSetAttributeNode setAttributeNode,
                     @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
         try {
             String attrKey = getAttributeKey.execute(key);
             if (attrKey != null) {
-                writeNode.execute(this, attrKey, value);
+                setAttributeNode.execute(this, attrKey, value);
                 return;
             }
 
@@ -255,14 +257,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
             if (this instanceof PythonObject) {
                 if (objectHasAttribute(this, key)) {
-                    writeNode.execute(this, key, value);
+                    setAttributeNode.execute(this, key, value);
                     return;
                 }
             }
             if (isAbstractMapping(dataModelLibrary)) {
                 setItemNode.execute(this, key, value);
             } else {
-                writeNode.execute(this, key, value);
+                setAttributeNode.execute(this, key, value);
             }
         } catch (PException e) {
             e.expectAttributeError(attrErrorProfile);
@@ -346,7 +348,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public void writeArrayElement(long key, Object value,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
-                    @Exclusive @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
+                    @Shared("setItemNode") @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
         if (dataModelLibrary.isSequence(this)) {
             try {
                 setItemNode.execute(this, key, value);
@@ -644,25 +646,32 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public int lengthWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached ConditionProfile ltZero,
                     @Shared("raise") @Cached PRaiseNode raiseNode,
-                    @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                    @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached CastToJavaLongLossyNode toLong,
+                    @Exclusive @Cached ConditionProfile ignoreOverflow,
+                    @Exclusive @Cached BranchProfile overflow) {
         Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
         if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
             Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
-            int len;
-            if (gotState.profile(state == null)) {
-                len = lib.asSize(lenResult);
-            } else {
-                len = lib.asSizeWithState(lenResult, state);
+            // the following mimics typeobject.c#slot_sq_length()
+            // - PyNumber_Index is called first
+            // - checked if negative
+            // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
+            lenResult = lib.asIndexWithState(lenResult, state);
+            long longResult;
+            try {
+                longResult = toLong.execute(lenResult); // this is a lossy cast
+                if (ltZero.profile(longResult < 0)) {
+                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
+                }
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
             }
-            if (ltZero.profile(len < 0)) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
-            } else {
-                return len;
-            }
+            return longToInt(longResult, overflow, ignoreOverflow, OverflowError, raiseNode, lenResult);
         } else {
             throw raiseNode.raiseHasNoLength(this);
         }
@@ -771,7 +780,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongExactNode castToLong) {
+                    @Exclusive @Cached CastUnsignedToJavaLongNode castUnsignedToJavaLongNode) {
         Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
         if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
@@ -780,7 +789,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
         // hash call is always a plain long, forcibly and lossy read from memory.
         try {
-            return castToLong.execute(result);
+            return castUnsignedToJavaLongNode.execute(result);
         } catch (CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
         }
@@ -1104,6 +1113,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
         }
+        return longToInt(longResult, overflow, ignoreOverflow, type, raise, result);
+    }
+
+    private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, Object type, PRaiseNode raise, Object result) throws PException {
         try {
             return PInt.intValueExact(longResult);
         } catch (OverflowException e) {
@@ -1866,13 +1879,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         static void doSpecialObject(PythonAbstractObject primary, Object key, Object value,
+                        @Cached PForeignToPTypeNode convert,
                         @Cached PInteropGetAttributeNode getAttributeNode,
                         @Cached CallBinaryMethodNode callSetItemNode,
                         @Cached ConditionProfile profile) throws UnsupportedMessageException {
 
             Object attrSetitem = getAttributeNode.execute(primary, __SETITEM__);
             if (profile.profile(attrSetitem != PNone.NO_VALUE)) {
-                callSetItemNode.executeObject(attrSetitem, key, value);
+                callSetItemNode.executeObject(attrSetitem, key, convert.executeConvert(value));
             } else {
                 throw UnsupportedMessageException.create();
             }
@@ -1889,15 +1903,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         public abstract void execute(Object primary, String attrName, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
 
         @Specialization
-        public void doSpecialObject(PythonAbstractObject primary, String attrName, Object value,
+        public static void doSpecialObject(PythonAbstractObject primary, String attrName, Object value,
+                        @Cached PForeignToPTypeNode convert,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallTernaryMethodNode callSetAttrNode,
                         @Cached ConditionProfile profile,
                         @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object attrGetattribute = lookupSetAttrNode.execute(primary, SpecialMethodNames.__SETATTR__);
-            if (profile.profile(attrGetattribute != PNone.NO_VALUE)) {
+            Object attrSetattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.__SETATTR__);
+            if (profile.profile(attrSetattr != PNone.NO_VALUE)) {
                 try {
-                    callSetAttrNode.execute(null, attrGetattribute, primary, attrName, value);
+                    callSetAttrNode.execute(null, attrSetattr, primary, attrName, convert.executeConvert(value));
                 } catch (PException e) {
                     e.expectAttributeError(attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
@@ -2085,9 +2100,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public TriState isIdenticalOrUndefined(Object other,
+    public TriState isIdenticalOrUndefined(Object otherInterop,
+                    @Cached PForeignToPTypeNode convert,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib,
                     @CachedLibrary("this") PythonObjectLibrary objectLib) {
+        Object other = convert.executeConvert(otherInterop);
         if (this == other) {
             return TriState.TRUE;
         } else if (otherLib.hasIdentity(other)) {
@@ -2104,28 +2121,39 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
      * {@code tp_iter} for every user class.
      */
     @ExportMessage
-    public Object getIteratorWithState(ThreadState state,
-                    @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
-                    @Cached PythonObjectFactory factory,
-                    @Shared("raise") @Cached PRaiseNode raise) {
-        Object v = plib.getDelegatedValue(this);
-        Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(this, __ITER__));
-        if (iterMethod != PNone.NONE) {
-            if (iterMethod != PNone.NO_VALUE) {
-                Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
-                if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
-                    return iterObj;
-                }
+    public static class GetIteratorWithState {
+        public static final ValueProfile createIterMethodProfile() {
+            if (singleContextAssumption().isValid()) {
+                return ValueProfile.createIdentityProfile();
             } else {
-                Object getItemAttrObj = plib.lookupAttributeOnType(this, __GETITEM__);
-                if (getItemAttrObj != PNone.NO_VALUE) {
-                    return factory.createSequenceIterator(v);
-                }
+                return ValueProfile.createClassProfile();
             }
         }
-        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
+
+        @Specialization
+        public static Object getIteratorWithState(PythonAbstractObject self, ThreadState state,
+                        @Cached("createIterMethodProfile()") ValueProfile iterMethodProfile,
+                        @CachedLibrary("self") PythonObjectLibrary plib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
+                        @Cached PythonObjectFactory factory,
+                        @Shared("raise") @Cached PRaiseNode raise) {
+            Object v = plib.getDelegatedValue(self);
+            Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(self, __ITER__));
+            if (iterMethod != PNone.NONE) {
+                if (iterMethod != PNone.NO_VALUE) {
+                    Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
+                    if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
+                        return iterObj;
+                    }
+                } else {
+                    Object getItemAttrObj = plib.lookupAttributeOnType(self, __GETITEM__);
+                    if (getItemAttrObj != PNone.NO_VALUE) {
+                        return factory.createSequenceIterator(v);
+                    }
+                }
+            }
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, self);
+        }
     }
 }

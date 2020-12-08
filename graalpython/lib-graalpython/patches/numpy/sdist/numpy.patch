@@ -127,19 +127,6 @@ index 544b8b35f..799f669e6 100644
  
  def _get_machar(ftype):
      """ Get MachAr instance or MachAr-like instance
-diff --git a/numpy/core/include/numpy/ndarraytypes.h b/numpy/core/include/numpy/ndarraytypes.h
-index b0b749c80..2d8e8c05f 100644
---- a/numpy/core/include/numpy/ndarraytypes.h
-+++ b/numpy/core/include/numpy/ndarraytypes.h
-@@ -412,7 +412,7 @@ typedef int (PyArray_ScanFunc)(FILE *fp, void *dptr,
- typedef int (PyArray_FromStrFunc)(char *s, void *dptr, char **endptr,
-                                   struct _PyArray_Descr *);
- 
--typedef int (PyArray_FillFunc)(void *, npy_intp, void *);
-+typedef void (PyArray_FillFunc)(void *, npy_intp, void *);
- 
- typedef int (PyArray_SortFunc)(void *, npy_intp, void *);
- typedef int (PyArray_ArgSortFunc)(void *, npy_intp *, npy_intp, void *);
 diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
 index f837df112..d3ce70ddd 100644
 --- a/numpy/core/setup_common.py

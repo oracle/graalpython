@@ -140,11 +140,14 @@ if __name__ == "__main__":
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
     retag = False
     maxrepeats = 4
+    tout = "240"
     for arg in sys.argv[1:]:
         if arg == "--retag":
             retag = True
         elif arg.startswith("--maxrepeats="):
             maxrepeats = int(arg.partition("=")[2])
+        elif arg.startswith("--timeout="):
+            tout = arg.partition("=")[2]
         elif arg == "--help":
             print(sys.argv[0] + " [--retag] [--maxrepeats=n] [glob]")
         else:
@@ -174,7 +177,7 @@ if __name__ == "__main__":
             else:
                 testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
-            cmd = [timeout, "-s", "9", "240"] + executable
+            cmd = [timeout, "-s", "9", tout] + executable
             if repeat == 0:
                 # Allow catching Java exceptions in the first iteration only, so that subsequent iterations
                 # (there will be one even if everything succeeds) filter out possible false-passes caused by
@@ -220,7 +223,7 @@ if __name__ == "__main__":
                     f.write("\n")
             if not passing_tests:
                 os.unlink(tagfile)
-                print("No successful tests remaining")
+                print("No successful tests detected (you can try to increase the timeout by using --timeout=NNN)")
                 break
 
             if p.returncode == 0:

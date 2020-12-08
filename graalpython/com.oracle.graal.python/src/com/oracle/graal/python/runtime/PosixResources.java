@@ -208,7 +208,7 @@ public class PosixResources extends PosixSupport {
         inodes = new HashMap<>();
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     @Override
     public void setEnv(Env env) {
         synchronized (files) {
@@ -250,14 +250,15 @@ public class PosixResources extends PosixSupport {
         return false;
     }
 
+    /**
+     * ATTENTION: This method must be used in a synchronized block (sync on {@link #files}) until.
+     */
     @TruffleBoundary
     private void dupFD(int fd1, int fd2) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd1, null);
         if (channelWrapper != null) {
-            synchronized (files) {
-                channelWrapper.cnt += 1;
-                files.put(fd2, channelWrapper);
-            }
+            channelWrapper.cnt += 1;
+            files.put(fd2, channelWrapper);
         }
     }
 
@@ -266,7 +267,7 @@ public class PosixResources extends PosixSupport {
         return channelWrapper != null && channelWrapper.isStandardStream;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public Channel getFileChannel(int fd, ValueProfile classProfile) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
         if (channelWrapper != null) {
@@ -275,7 +276,7 @@ public class PosixResources extends PosixSupport {
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public FileLock getFileLock(int fd) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
         if (channelWrapper != null) {
@@ -284,7 +285,7 @@ public class PosixResources extends PosixSupport {
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public void setFileLock(int fd, FileLock lock) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
         if (channelWrapper != null) {
@@ -292,7 +293,7 @@ public class PosixResources extends PosixSupport {
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public Channel getFileChannel(int fd) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
         if (channelWrapper != null) {
@@ -315,7 +316,7 @@ public class PosixResources extends PosixSupport {
         return null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public void close(int fd) {
         try {
             removeFD(fd);
@@ -325,9 +326,11 @@ public class PosixResources extends PosixSupport {
 
     @TruffleBoundary
     public int openSocket(PSocket socket) {
-        int fd = nextFreeFd();
-        addFD(fd, socket);
-        return fd;
+        synchronized (files) {
+            int fd = nextFreeFd();
+            addFD(fd, socket);
+            return fd;
+        }
     }
 
     @TruffleBoundary
@@ -335,7 +338,7 @@ public class PosixResources extends PosixSupport {
         addFD(fd, socket);
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public void fdopen(int fd, Channel fc) {
         files.get(fd).channel = fc;
     }
@@ -347,33 +350,39 @@ public class PosixResources extends PosixSupport {
      * @param fc the newly created Channel
      * @return the file descriptor associated with the new Channel
      */
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int open(TruffleFile path, Channel fc) {
-        int fd = nextFreeFd();
-        addFD(fd, fc, path.getAbsoluteFile().getPath());
-        return fd;
+        synchronized (files) {
+            int fd = nextFreeFd();
+            addFD(fd, fc, path.getAbsoluteFile().getPath());
+            return fd;
+        }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int dup(int fd) {
-        int dupFd = nextFreeFd();
-        dupFD(fd, dupFd);
-        return dupFd;
+        synchronized (files) {
+            int dupFd = nextFreeFd();
+            dupFD(fd, dupFd);
+            return dupFd;
+        }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int dup2(int fd, int fd2) throws IOException {
-        removeFD(fd2);
-        dupFD(fd, fd2);
-        return fd2;
+        synchronized (files) {
+            removeFD(fd2);
+            dupFD(fd, fd2);
+            return fd2;
+        }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public boolean fsync(int fd) {
         return files.getOrDefault(fd, null) != null;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public void ftruncate(int fd, long size) throws IOException {
         Channel channel = getFileChannel(fd);
         if (channel instanceof SeekableByteChannel) {
@@ -381,44 +390,49 @@ public class PosixResources extends PosixSupport {
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     public int[] pipe() throws IOException {
-        Pipe pipe = Pipe.open();
-        int readFD = nextFreeFd();
-        addFD(readFD, pipe.source());
-
-        int writeFD = nextFreeFd();
-        addFD(writeFD, pipe.sink());
-
-        return new int[]{readFD, writeFD};
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private int nextFreeFd() {
         synchronized (files) {
-            int fd1 = files.firstKey();
-            for (int fd2 : files.keySet()) {
-                if (fd2 == fd1) {
-                    continue;
-                }
-                if (fd2 - fd1 > 1) {
-                    return fd1 + 1;
-                } else {
-                    fd1 = fd2;
-                }
-            }
-            return files.lastKey() + 1;
+            Pipe pipe = Pipe.open();
+            int readFD = nextFreeFd();
+            addFD(readFD, pipe.source());
+
+            int writeFD = nextFreeFd();
+            addFD(writeFD, pipe.sink());
+
+            return new int[]{readFD, writeFD};
         }
     }
 
-    @TruffleBoundary(allowInlining = true)
+    /**
+     * ATTENTION: This method must be used in a synchronized block (sync on {@link #files}) until
+     * the gained file descriptors are written to the map. Otherwise, concurrent threads may get the
+     * same FDs.
+     */
+    @TruffleBoundary
+    private int nextFreeFd() {
+        int fd1 = files.firstKey();
+        for (int fd2 : files.keySet()) {
+            if (fd2 == fd1) {
+                continue;
+            }
+            if (fd2 - fd1 > 1) {
+                return fd1 + 1;
+            } else {
+                fd1 = fd2;
+            }
+        }
+        return files.lastKey() + 1;
+    }
+
+    @TruffleBoundary
     public int registerChild(Process child) {
         int pid = nextFreePid();
         children.set(pid, child);
         return pid;
     }
 
-    @TruffleBoundary(allowInlining = true)
+    @TruffleBoundary
     private int nextFreePid() {
         synchronized (children) {
             for (int i = 0; i < children.size(); i++) {
