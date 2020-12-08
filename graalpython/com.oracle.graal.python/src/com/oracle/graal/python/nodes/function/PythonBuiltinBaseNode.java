@@ -177,7 +177,15 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
     }
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
-        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), e.getFilename1(), e.getFilename2());
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+    }
+
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, null);
+    }
+
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, filename2);
     }
 
     public final PException raiseOSError(VirtualFrame frame, int code, String message) {

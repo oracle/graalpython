@@ -82,7 +82,8 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
         }
 
         static void closedir(PNfiScandirIterator self, Object posixSupport, PosixSupportLibrary posixLib) {
-            posixLib.closedir(posixSupport, self.dirStream);
+            posixLib.closedir(posixSupport, self.ref.dirStream);
+            PNfiScandirIterator.DirStreamRef.removeFromSet(self.ref);
         }
     }
 
@@ -102,7 +103,7 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
         PNfiDirEntry next(VirtualFrame frame, PNfiScandirIterator self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                Object dirEntryData = posixLib.readdir(getPosixSupport(), self.dirStream);
+                Object dirEntryData = posixLib.readdir(getPosixSupport(), self.ref.dirStream);
                 if (dirEntryData == null) {
                     CloseNode.closedir(self, getPosixSupport(), posixLib);
                     throw raise(PythonBuiltinClassType.StopIteration);

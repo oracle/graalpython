@@ -37,6 +37,7 @@ import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -131,7 +132,6 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -948,8 +948,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
-    public PNfiScandirIterator createNfiScandirIterator(Object dirStream, PosixFileHandle path) {
-        return trace(new PNfiScandirIterator(PythonBuiltinClassType.PNfiScandirIterator, PythonBuiltinClassType.PNfiScandirIterator.getInstanceShape(getLanguage()), dirStream, path));
+    public PNfiScandirIterator createNfiScandirIterator(Object dirStream, PosixFileHandle path, ReferenceQueue<PNfiScandirIterator> queue) {
+        return trace(new PNfiScandirIterator(PythonBuiltinClassType.PNfiScandirIterator, PythonBuiltinClassType.PNfiScandirIterator.getInstanceShape(getLanguage()), dirStream, path, queue));
     }
 
     public PNfiDirEntry createNfiDirEntry(Object dirEntryData, PosixFileHandle path) {

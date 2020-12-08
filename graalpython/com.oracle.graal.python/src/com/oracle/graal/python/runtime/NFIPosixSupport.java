@@ -40,15 +40,9 @@
  */
 package com.oracle.graal.python.runtime;
 
-import java.lang.ref.PhantomReference;
-import java.lang.ref.ReferenceQueue;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NFIBackend;
@@ -56,11 +50,7 @@ import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
@@ -69,7 +59,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
@@ -84,8 +73,6 @@ public final class NFIPosixSupport extends PosixSupport {
     private static final int PATH_MAX = 4096;
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
-
-    private final ReferenceQueue<DirStream> dirStreamRefQueue = new ReferenceQueue<>();
 
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
@@ -151,7 +138,6 @@ public final class NFIPosixSupport extends PosixSupport {
                         "You can switch to pure Java emulated POSIX support, " +
                                         "which does not require native access privilege, by passing option " +
                                         "'--python.PosixModuleBackend=java'.");
-        // TODO registerAsyncAction - use SharedFinalizer from PR #1316
     }
 
     public static NFIPosixSupport createNative(PythonContext context) {
@@ -195,20 +181,13 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public int openAt(int dirFd, PosixPath pathname, int flags, int mode,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            int fd = invokeNode.callInt(lib, NativeFunctions.call_openat, dirFd, pathToCString(pathname), flags, mode);
-            if (fd >= 0) {
-                return fd;
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno, pathname.originalObject);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+    public int openat(int dirFd, Object pathname, int flags, int mode,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int fd = invokeNode.callInt(lib, NativeFunctions.call_openat, dirFd, pathToCString(pathname), flags, mode);
+        if (fd < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
+        return fd;
     }
 
     @ExportMessage
@@ -221,39 +200,25 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public Buffer read(int fd, long length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         Buffer buffer = Buffer.allocate(length);
-        while (true) {
-            setErrno(invokeNode, 0);
-            long n = invokeNode.callLong(lib, NativeFunctions.call_read, fd, wrap(buffer), length);
-            if (n >= 0) {
-                return buffer.withLength(n);
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+        setErrno(invokeNode, 0);        // TODO CPython does this, but do we need it?
+        long n = invokeNode.callLong(lib, NativeFunctions.call_read, fd, wrap(buffer), length);
+        if (n < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
+        return buffer.withLength(n);
     }
 
     @ExportMessage
     public long write(int fd, Buffer data,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            setErrno(invokeNode, 0);
-            long n = invokeNode.callLong(lib, NativeFunctions.call_write, fd, wrap(data), data.length);
-            if (n >= 0) {
-                return n;
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        setErrno(invokeNode, 0);        // TODO CPython does this, but do we need it?
+        long n = invokeNode.callLong(lib, NativeFunctions.call_write, fd, wrap(data), data.length);
+        if (n < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
+        return n;
     }
 
     @ExportMessage
@@ -316,35 +281,19 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public void ftruncate(int fd, long length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            int res = invokeNode.callInt(lib, NativeFunctions.call_ftruncate, fd, length);
-            if (res == 0) {
-                return;
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(lib, NativeFunctions.call_ftruncate, fd, length);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 
     @ExportMessage
     public void fsync(int fd,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            int res = invokeNode.callInt(lib, NativeFunctions.call_fsync, fd);
-            if (res == 0) {
-                return;
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(lib, NativeFunctions.call_fsync, fd);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 
@@ -377,32 +326,25 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public long[] fstatAt(int dirFd, PosixPath pathname, boolean followSymlinks,
+    public long[] fstatat(int dirFd, Object pathname, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[13];
         int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, wrap(out));
         if (res != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return out;
     }
 
     @ExportMessage
-    public long[] fstat(int fd, Object filename, boolean handleEintr,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+    public long[] fstat(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[13];
-        while (true) {
-            int res = invokeNode.callInt(lib, NativeFunctions.call_fstat, fd, wrap(out));
-            if (res == 0) {
-                return out;
-            }
-            int errno = getErrno(invokeNode);
-            if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno, filename);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+        int res = invokeNode.callInt(lib, NativeFunctions.call_fstat, fd, wrap(out));
+        if (res != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
+        return out;
     }
 
     @ExportMessage
@@ -428,29 +370,29 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void unlinkAt(int dirFd, PosixPath pathname, boolean rmdir,
+    public void unlinkat(int dirFd, Object pathname, boolean rmdir,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_unlinkat, dirFd, pathToCString(pathname), rmdir ? 1 : 0);
         if (result != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
     @ExportMessage
-    public void symlinkAt(PosixPath target, int linkpathDirFd, PosixPath linkpath,
+    public void symlinkat(Object target, int linkpathDirFd, Object linkpath,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_symlinkat, pathToCString(target), linkpathDirFd, pathToCString(linkpath));
         if (result != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), target.originalObject, linkpath.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
     @ExportMessage
-    public void mkdirAt(int dirFd, PosixPath pathname, int mode,
+    public void mkdirat(int dirFd, Object pathname, int mode,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_mkdirat, dirFd, pathToCString(pathname), mode);
         if (result != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -472,27 +414,20 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void chdir(PosixPath path,
+    public void chdir(Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_chdir, pathToCString(path));
         if (result != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
     @ExportMessage
-    public void fchdir(int fd, Object pathname, boolean handleEintr,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            if (invokeNode.callInt(lib, NativeFunctions.call_fchdir, fd) == 0) {
-                return;
-            }
-            int errno = getErrno(invokeNode);
-            if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno, pathname);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+    public void fchdir(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_fchdir, fd);
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -503,39 +438,38 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public Object opendir(PosixPath path,
+    public Object opendir(Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long ptr = invokeNode.callLong(lib, NativeFunctions.call_opendir, pathToCString(path));
         if (ptr == 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
-        return new DirStream(dirStreamRefQueue, ptr, false);
+        return new DirStream(ptr, false);
     }
 
     @ExportMessage
-    public Object fdopendir(PosixFd fd,
+    public Object fdopendir(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        long ptr = invokeNode.callLong(lib, NativeFunctions.call_fdopendir, fd.fd);
+        long ptr = invokeNode.callLong(lib, NativeFunctions.call_fdopendir, fd);
         if (ptr == 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
-        return new DirStream(dirStreamRefQueue, ptr, true);
+        return new DirStream(ptr, true);
     }
 
     @ExportMessage
     public void closedir(Object dirStreamObj,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         DirStream dirStream = (DirStream) dirStreamObj;
-        synchronized (dirStream.ref.lock) {
-            if (!dirStream.ref.closed) {
-                dirStream.ref.closed = true;
-                int res = invokeNode.callInt(lib, NativeFunctions.call_closedir, dirStream.ref.nativePtr, dirStream.ref.needsRewind ? 1 : 0);
+        synchronized (dirStream.lock) {
+            if (!dirStream.closed) {
+                dirStream.closed = true;
+                int res = invokeNode.callInt(lib, NativeFunctions.call_closedir, dirStream.nativePtr, dirStream.needsRewind ? 1 : 0);
                 if (res != 0 && LOGGER.isLoggable(Level.INFO)) {
                     log(Level.INFO, "Error occured during closedir, errno=%d", getErrno(invokeNode));
                 }
             }
         }
-        DirStreamRef.removeFromSet(dirStream.ref);
     }
 
     @ExportMessage
@@ -545,12 +479,12 @@ public final class NFIPosixSupport extends PosixSupport {
         Buffer name = Buffer.allocate(DIRENT_NAME_BUF_LENGTH);
         long[] out = new long[2];
         int result;
-        synchronized (dirStream.ref.lock) {
-            if (dirStream.ref.closed) {
+        synchronized (dirStream.lock) {
+            if (dirStream.closed) {
                 return null;
             }
             do {
-                result = invokeNode.callInt(lib, NativeFunctions.call_readdir, dirStream.ref.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
+                result = invokeNode.callInt(lib, NativeFunctions.call_readdir, dirStream.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
             } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         }
         if (result != 0) {
@@ -573,8 +507,8 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public static class DirEntryGetPath {
         @Specialization(guards = "endsWithSlash(scandirPath)")
-        static Buffer withSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry, PosixPath scandirPath) {
-            Buffer scandirPathBuffer = (Buffer) scandirPath.value;
+        static Buffer withSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
+            Buffer scandirPathBuffer = (Buffer) scandirPath;
             int pathLen = scandirPathBuffer.data.length;
             int nameLen = (int) dirEntry.name.length;
             byte[] buf = new byte[pathLen + nameLen];
@@ -584,8 +518,8 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @Specialization(guards = "!endsWithSlash(scandirPath)")
-        static Buffer withoutSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry, PosixPath scandirPath) {
-            Buffer scandirPathBuffer = (Buffer) scandirPath.value;
+        static Buffer withoutSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
+            Buffer scandirPathBuffer = (Buffer) scandirPath;
             int pathLen = scandirPathBuffer.data.length;
             int nameLen = (int) dirEntry.name.length;
             byte[] buf = new byte[pathLen + 1 + nameLen];
@@ -595,8 +529,8 @@ public final class NFIPosixSupport extends PosixSupport {
             return Buffer.wrap(buf);
         }
 
-        protected static boolean endsWithSlash(PosixPath path) {
-            Buffer b = (Buffer) path.value;
+        protected static boolean endsWithSlash(Object path) {
+            Buffer b = (Buffer) path;
             return b.data[b.data.length - 1] == PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
         }
     }
@@ -616,38 +550,36 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void utimeNsAt(int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks,
+    public void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(lib, NativeFunctions.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
         if (ret != 0) {
-            // filename is intentionally not included, see CPython's os_utime_impl
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
     @ExportMessage
-    public void futimeNs(PosixFd fd, long[] timespec,
+    public void futimens(int fd, long[] timespec,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         assert timespec == null || timespec.length == 4;
-        int ret = invokeNode.callInt(lib, NativeFunctions.call_futimens, fd.fd, wrap(timespec));
+        int ret = invokeNode.callInt(lib, NativeFunctions.call_futimens, fd, wrap(timespec));
         if (ret != 0) {
-            // filename is intentionally not included, see CPython's os_utime_impl
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
     @ExportMessage
-    public void renameAt(int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath,
+    public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_renameat, oldDirFd, pathToCString(oldPath), newDirFd, pathToCString(newPath));
         if (ret != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), oldPath.originalObject, newPath.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
     @ExportMessage
-    public boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks,
+    public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_faccessat, dirFd, pathToCString(path), mode, effectiveIds ? 1 : 0, followSymlinks ? 1 : 0);
         if (ret != 0 && LOGGER.isLoggable(Level.FINE)) {
@@ -657,30 +589,30 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void fchmodat(int dirFd, PosixPath path, int mode, boolean followSymlinks,
+    public void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_fchmodat, dirFd, pathToCString(path), mode, followSymlinks ? 1 : 0);
         if (ret != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
     @ExportMessage
-    public void fchmod(PosixFd fd, int mode,
+    public void fchmod(int fd, int mode,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int ret = invokeNode.callInt(lib, NativeFunctions.call_fchmod, fd.fd, mode);
+        int ret = invokeNode.callInt(lib, NativeFunctions.call_fchmod, fd, mode);
         if (ret != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
     @ExportMessage
-    public Object readlinkat(int dirFd, PosixPath path,
+    public Object readlinkat(int dirFd, Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         Buffer buffer = Buffer.allocate(PATH_MAX);
         long n = invokeNode.callLong(lib, NativeFunctions.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX);
         if (n < 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return buffer.withLength(n);
     }
@@ -715,14 +647,8 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public PBytes getPathAsBytes(Object path, PythonObjectFactory factory) {
-        Buffer result = (Buffer) path;
-        if (result.length > Integer.MAX_VALUE) {
-            // sanity check that it is safe to cast result.length to int, to be removed once
-            // we support large arrays
-            throw CompilerDirectives.shouldNotReachHere("Posix path cannot fit into a Java array");
-        }
-        return factory.createBytes(result.data, 0, (int) result.length);
+    public Buffer getPathAsBytes(Object path) {
+        return (Buffer) path;
     }
 
     @TruffleBoundary
@@ -743,55 +669,25 @@ public final class NFIPosixSupport extends PosixSupport {
     // ------------------
     // Objects/handles/pointers
 
-    private static class DirStreamRef extends PhantomReference<DirStream> {
-
-        // all alive references are stored in this set in order to keep them reachable
-        private static final Set<DirStreamRef> dirStreamRefs = Collections.synchronizedSet(new HashSet<>());
-
+    private static class DirStream {
         final long nativePtr;
         final boolean needsRewind;
         final Object lock;
         boolean closed;
 
-        DirStreamRef(DirStream referent, ReferenceQueue<DirStream> queue, long nativePtr, boolean needsRewind) {
-            super(referent, queue);
+        DirStream(long nativePtr, boolean needsRewind) {
             this.nativePtr = nativePtr;
             this.needsRewind = needsRewind;
             this.lock = new Object();
-            addToSet(this);
-        }
-
-        @TruffleBoundary
-        static void addToSet(DirStreamRef ref) {
-            dirStreamRefs.add(ref);
-        }
-
-        @TruffleBoundary
-        static void removeFromSet(DirStreamRef ref) {
-            dirStreamRefs.remove(ref);
         }
 
         @Override
         public String toString() {
-            return "DirStreamStateRef{" +
+            return "DirStream{" +
                             "nativePtr=" + nativePtr +
                             ", needsRewind=" + needsRewind +
                             ", closed=" + closed +
                             '}';
-        }
-    }
-
-    private static class DirStream {
-        final DirStreamRef ref;
-
-        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, boolean needsRewind) {
-            ref = new DirStreamRef(this, queue, nativePtr, needsRewind);
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return "DirStreamState -> " + ref;
         }
     }
 
@@ -832,15 +728,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno) throws PosixException {
-        throw newPosixException(invokeNode, errno, null, null);
-    }
-
-    private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename) throws PosixException {
-        throw newPosixException(invokeNode, errno, filename, null);
-    }
-
-    private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename1, Object filename2) throws PosixException {
-        throw new PosixException(errno, strerror(errno, invokeNode), filename1, filename2);
+        throw new PosixException(errno, strerror(errno, invokeNode));
     }
 
     private Object wrap(byte[] bytes) {
@@ -868,8 +756,8 @@ public final class NFIPosixSupport extends PosixSupport {
         return buf.length;
     }
 
-    private Object pathToCString(PosixPath path) {
-        return bufferToCString((Buffer) path.value);
+    private Object pathToCString(Object path) {
+        return bufferToCString((Buffer) path);
     }
 
     private Object bufferToCString(Buffer path) {

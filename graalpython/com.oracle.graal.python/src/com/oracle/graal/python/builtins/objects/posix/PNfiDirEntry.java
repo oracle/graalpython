@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.truffle.api.object.Shape;
 
 public class PNfiDirEntry extends PythonBuiltinObject {
