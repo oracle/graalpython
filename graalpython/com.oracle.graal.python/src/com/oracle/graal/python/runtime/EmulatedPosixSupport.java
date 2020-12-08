@@ -1038,7 +1038,9 @@ public final class EmulatedPosixSupport extends PosixResources {
             setFileTimes(followSymlinks, file, time, time, errBranch);
         }
 
-        @Specialization(guards = "timespec != null")
+        // the second guard is just so that Truffle does not generate dead code that throws
+        // UnsupportedSpecializationException..
+        @Specialization(guards = {"timespec != null", "file != null"})
         static void doGivenTime(TruffleFile file, long[] timespec, boolean followSymlinks,
                         @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
             FileTime atime = toFileTime(timespec[0], timespec[1]);

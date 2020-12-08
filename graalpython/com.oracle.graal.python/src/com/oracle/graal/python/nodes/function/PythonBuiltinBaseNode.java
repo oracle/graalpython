@@ -188,7 +188,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, filename2);
     }
 
-
     public final PException raiseOSError(VirtualFrame frame, int code, String message) {
         return getConstructAndRaiseNode().raiseOSError(frame, code, message, null, null);
     }
