@@ -345,6 +345,7 @@ public abstract class ErrorMessages {
     public static final String ISNT_IN_BYTES_LITERAL = "%s is not in bytes literal";
     public static final String ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = "issubclass() arg 2 must be a class or tuple of classes";
     public static final String ITER_RETURNED_NON_ITERABLE = "iter() returned non-iterator of type '%p'";
+    public static final String ITER_V_MUST_BE_CALLABLE = "iter(v, w): v must be callable";
     public static final String KEYWORD_NAMES_MUST_BE_STR_GOT_P = "keyword names must be str, get %p";
     public static final String KEYWORDS_MUST_BE_STRINGS = "%s() keywords must be strings";
     public static final String KLASS_ARG_IS_NOT_HOST_OBJ = "klass argument '%p' is not a host object";
