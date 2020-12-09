@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PList;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTuple;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
@@ -76,9 +73,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -93,21 +94,73 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ObjectNodes {
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    abstract static class FastIsListSubClassNode extends Node {
+        abstract boolean execute(VirtualFrame frame, Object object);
 
-    static boolean isSubclass(VirtualFrame frame, BuiltinFunctions.IsSubClassNode isSubClassNode, Object clsA, Object clsB) {
-        return isSubClassNode.executeWith(frame, clsA, clsB);
+        @Specialization
+        @SuppressWarnings("unused")
+        public boolean isList(VirtualFrame frame, PList object) {
+            return true;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public boolean isList(VirtualFrame frame, Object object,
+                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+                        @Cached IsBuiltinClassProfile objProfile,
+                        @CachedLibrary(value = "object") PythonObjectLibrary pol) {
+            Object type = pol.getLazyPythonClass(object);
+            if (objProfile.profileClass(type, PythonBuiltinClassType.PList)) {
+                return true;
+            }
+            return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PList);
+        }
     }
 
-    public static boolean isListSubClass(VirtualFrame frame, BuiltinFunctions.IsSubClassNode isSubClassNode, Object object, PythonObjectLibrary pol) {
-        return isSubclass(frame, isSubClassNode, pol.getLazyPythonClass(object), PList);
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    abstract static class FastIsTupleSubClassNode extends Node {
+        abstract boolean execute(VirtualFrame frame, Object object);
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public boolean isList(VirtualFrame frame, PTuple object) {
+            return true;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public boolean isList(VirtualFrame frame, Object object,
+                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+                        @Cached IsBuiltinClassProfile objProfile,
+                        @CachedLibrary(value = "object") PythonObjectLibrary pol) {
+            Object type = pol.getLazyPythonClass(object);
+            if (objProfile.profileClass(type, PythonBuiltinClassType.PDict)) {
+                return true;
+            }
+            return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PDict);
+        }
     }
 
-    public static boolean isDictSubClass(VirtualFrame frame, BuiltinFunctions.IsSubClassNode isSubClassNode, Object object, PythonObjectLibrary pol) {
-        return isSubclass(frame, isSubClassNode, pol.getLazyPythonClass(object), PDict);
-    }
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    abstract static class FastIsDictSubClassNode extends Node {
+        abstract boolean execute(VirtualFrame frame, Object object);
 
-    public static boolean isTupleSubClass(VirtualFrame frame, BuiltinFunctions.IsSubClassNode isSubClassNode, Object object, PythonObjectLibrary pol) {
-        return isSubclass(frame, isSubClassNode, pol.getLazyPythonClass(object), PTuple);
+        @Specialization
+        @SuppressWarnings("unused")
+        public boolean isList(VirtualFrame frame, PDict object) {
+            return true;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public boolean isList(VirtualFrame frame, Object object,
+                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+                        @Cached IsBuiltinClassProfile objProfile,
+                        @CachedLibrary(value = "object") PythonObjectLibrary pol) {
+            Object type = pol.getLazyPythonClass(object);
+            if (objProfile.profileClass(type, PythonBuiltinClassType.PList)) {
+                return true;
+            }
+            return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PList);
+        }
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
@@ -128,12 +181,13 @@ public abstract class ObjectNodes {
 
             @Specialization(guards = "!isNoValue(getNewArgsExAttr)")
             Pair<Object, Object> doNewArgsEx(VirtualFrame frame, Object getNewArgsExAttr, @SuppressWarnings("unused") Object getNewArgsAttr,
-                            @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+                            @Cached FastIsTupleSubClassNode isTupleSubClassNode,
+                            @Cached FastIsDictSubClassNode isDictSubClassNode,
                             @Cached SequenceStorageNodes.GetItemNode getItemNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
                 Object newargs = pol.callObject(getNewArgsExAttr, frame);
-                if (!isTupleSubClass(frame, isSubClassNode, newargs, pol)) {
+                if (!isTupleSubClassNode.execute(frame, newargs)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS_EX__, "tuple", newargs);
                 }
                 int length = pol.length(newargs);
@@ -145,22 +199,22 @@ public abstract class ObjectNodes {
                 Object args = getItemNode.execute(frame, sequenceStorage, 0);
                 Object kwargs = getItemNode.execute(frame, sequenceStorage, 1);
 
-                if (!isTupleSubClass(frame, isSubClassNode, args, pol)) {
+                if (!isTupleSubClassNode.execute(frame, args)) {
                     throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
                 }
-                if (!isDictSubClass(frame, isSubClassNode, kwargs, pol)) {
+                if (!isDictSubClassNode.execute(frame, kwargs)) {
                     throw raise(TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "second item of the tuple returned by __getnewargs_ex__", "dict", kwargs);
                 }
 
                 return Pair.create(args, kwargs);
             }
 
-            @Specialization(guards = "!isNoValue(getNewArgsAttr)")
+            @Specialization(guards = "!isNoValue(getNewArgsAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
             Pair<Object, Object> doNewArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone getNewArgsExAttr, Object getNewArgsAttr,
-                            @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                            @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                            @Cached FastIsTupleSubClassNode isTupleSubClassNode,
+                            @CachedLibrary(value = "getNewArgsAttr") PythonObjectLibrary pol) {
                 Object args = pol.callObject(getNewArgsAttr, frame);
-                if (!isTupleSubClass(frame, isSubClassNode, args, pol)) {
+                if (!isTupleSubClassNode.execute(frame, args)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS__, "tuple", args);
                 }
                 return Pair.create(args, PNone.NONE);
@@ -199,23 +253,22 @@ public abstract class ObjectNodes {
         abstract static class GetSlotNamesInternalNode extends PNodeWithState {
             public abstract Object execute(VirtualFrame frame, Object cls, Object copyReg, Object slotNames);
 
-            @Specialization(guards = "!isNoValue(slotNames)", limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization(guards = "!isNoValue(slotNames)")
             Object getSlotNames(VirtualFrame frame, Object cls, @SuppressWarnings("unused") Object copyReg, Object slotNames,
-                            @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                            @CachedLibrary(value = "slotNames") PythonObjectLibrary pol) {
+                            @Cached FastIsListSubClassNode isListSubClassNode) {
                 Object names = slotNames;
-                if (!PGuards.isNone(names) && !isListSubClass(frame, isSubClassNode, names, pol)) {
+                if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, names)) {
                     throw raise(TypeError, SLOTNAMES_SHOULD_BE_A_NOT_B, cls, "list or None", names);
                 }
                 return names;
             }
 
-            @Specialization
+            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
             Object getCopyRegSlotNames(VirtualFrame frame, Object cls, Object copyReg, @SuppressWarnings("unused") PNone slotNames,
-                            @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                            @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                            @Cached FastIsListSubClassNode isListSubClassNode,
+                            @CachedLibrary(value = "copyReg") PythonObjectLibrary pol) {
                 Object names = pol.lookupAndCallRegularMethod(copyReg, frame, "_slotnames", cls);
-                if (!PGuards.isNone(names) && !isListSubClass(frame, isSubClassNode, names, pol)) {
+                if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, names)) {
                     throw raise(TypeError, COPYREG_SLOTNAMES);
                 }
                 return names;
