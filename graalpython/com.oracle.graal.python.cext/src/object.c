@@ -527,7 +527,7 @@ int PyObject_GenericSetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
 }
 
 Py_hash_t PyObject_Hash(PyObject* obj) {
-    return UPCALL_I(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), native_to_java(obj));
+    return UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), native_to_java(obj));
 }
 
 UPCALL_ID(PyObject_HashNotImplemented);
