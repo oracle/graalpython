@@ -184,8 +184,6 @@ class TestPyObject(CPyExtTestCase):
         def __hash__(self):
             return 42
 
-    __MyObject_SINGLETON = MyObject()
-
     test_PyObject_CallMethod = CPyExtFunction(
         lambda args: getattr(args[0], args[1])(args[3], args[4]),
         lambda: (
@@ -405,17 +403,7 @@ class TestPyObject(CPyExtTestCase):
         lambda: ([], 1, 42, "abc", {}, type),
     )
     test_PyObject_GenericGetAttr = test_PyObject_GetAttr
-    test_PyObject_Hash = CPyExtFunction(
-        lambda arg: hash(arg),
-        lambda: (42, TestPyObject.__MyObject_SINGLETON),
-        resultspec="i"
-    )
-    # test_PyObject_HashNotImplemented = CPyExtFunction(
-    #     SystemError,
-    #     (42, MyObject),
-    #     resultspec="i",
-    #     cmpfunc=lambda x,y: type(x)==type(y) if (isinstance(x,BaseException) and isinstance(y,BaseException)) else x==y
-    # )
+
     test_PyObject_IsTrue = CPyExtFunction(
         lambda arg: 1 if bool(arg) else 0,
         lambda: (1, 0, -1, {}, [], [1]),
