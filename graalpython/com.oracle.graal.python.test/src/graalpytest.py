@@ -717,7 +717,7 @@ if __name__ == "__main__":
         else:
             idx += 1
 
-    if argv[1] == "-v":
+    if len(argv) > 1 and argv[1] == "-v":
         verbose = True
         paths = argv[2:]
     else:
