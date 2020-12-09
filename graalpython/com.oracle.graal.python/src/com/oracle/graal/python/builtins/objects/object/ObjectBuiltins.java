@@ -112,7 +112,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -807,7 +806,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object doit(VirtualFrame frame, Object obj,
-                        @Cached CastToJavaLongExactNode toJavaLongExactNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             Object cls = pol.getLazyPythonClass(obj);
             long size = 0;
@@ -818,10 +816,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (clsItemsize == PNone.NO_VALUE || objLen == PNone.NO_VALUE) {
                     size = 0;
                 } else {
-                    size = toJavaLongExactNode.execute(clsItemsize) * pol.length(obj);
+                    size = pol.asJavaLong(clsItemsize) * pol.length(obj);
                 }
             }
-            size += toJavaLongExactNode.execute(pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
+            size += pol.asJavaLong(pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
             return size;
         }
     }
