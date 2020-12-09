@@ -41,10 +41,13 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.ImportStatic;
 
+@ImportStatic({PythonOptions.class, PGuards.class})
 public abstract class PNodeWithState extends PNodeWithContext {
     @Child private PythonObjectFactory objectFactory;
     @Child private PRaiseNode raiseNode;
