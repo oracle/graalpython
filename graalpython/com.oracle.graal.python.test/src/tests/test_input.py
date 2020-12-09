@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,44 +45,18 @@ def assert_raises(err, fn, *args, **kwargs):
         raised = True
     assert raised
     
-class Foo():
-    def __str__(self):
-        assert True
-        return ""
-
-    def __repr__(self):
-        assert False
-        return 42
-
-
-def test_print_calls_str_not_repr():
-    print(Foo())
-
-def test_print_no_stdout_err_in():
+def test_print_no_stdin_stderr():
     import sys
-    sout = sys.stdout
-    try:
-        del sys.stdout
-        assert_raises(RuntimeError, print, 'a', {'flush' : False})
-        assert_raises(RuntimeError, print, 'a', {'flush' : True})
+    sin = sys.stdin
+    serr = sys.stderr
+    try:       
+        del sys.stdin
+        assert_raises(RuntimeError, input)
+        sys.stdin = sin
         
+        del sys.stderr
+        assert_raises(RuntimeError, input)        
     finally:
-        sys.stdout = sout
+        sys.stdin = sin
+        sys.stderr = serr
     
-def test_print_no_flush_impl():
-    import sys
-    sout = sys.stdout
-    try:
-        class SOUT:
-            def write(self, line):
-                pass
-        sys.stdout = SOUT()
-        print('a', flush=False)
-        try:
-            print('a', flush=True)
-        except AttributeError:
-            pass
-        else:
-            assert False
-    finally:
-        sys.stdout = sout
