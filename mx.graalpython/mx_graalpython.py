@@ -55,12 +55,12 @@ import mx_subst
 import mx_urlrewrites
 import mx_graalpython_bisect
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
     CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
-    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite
+    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, PythonParserBenchmarkSuite
 
 
 if not sys.modules.get("__main__"):
@@ -1412,7 +1412,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='Graal.Python',
     short_name='pyn',
-    installable_id='graalpython',
+    installable_id='python',
     dir_name='python',
     standalone_dir_name='graalpython-<version>-<graalvm_os>-<arch>',
     license_files=[],
@@ -1494,6 +1494,8 @@ def _register_bench_suites(namespace):
         mx_benchmark.add_bm_suite(py_bench_suite)
     for java_bench_suite in PythonInteropBenchmarkSuite.get_benchmark_suites(JBENCHMARKS):
         mx_benchmark.add_bm_suite(java_bench_suite)
+    for parser_bench_suite in PythonParserBenchmarkSuite.get_benchmark_suites(PARSER_BENCHMARKS):
+        mx_benchmark.add_bm_suite(parser_bench_suite)
 
 
 class CharsetFilteringPariticpant:

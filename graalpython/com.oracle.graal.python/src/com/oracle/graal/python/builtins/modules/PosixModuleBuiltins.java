@@ -966,6 +966,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object openMode(VirtualFrame frame, Object pathArg, long flags, long fileMode, @SuppressWarnings("unused") PNone dir_fd,
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String pathname = lib.asPath(pathArg);
+            if (pathname.indexOf(0) > -1) {
+                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            }
             Set<StandardOpenOption> options = flagsToOptions((int) flags);
             FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes((int) fileMode);
             try {
