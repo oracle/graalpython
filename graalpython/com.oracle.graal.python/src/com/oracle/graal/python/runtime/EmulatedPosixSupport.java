@@ -1171,6 +1171,8 @@ public final class EmulatedPosixSupport extends PosixResources {
                 throw posixException(OSErrorEnum.EINVAL);
             }
             return canonicalFile.getPath();
+        } catch (PosixException e) {
+            throw e;
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
         }

@@ -47,12 +47,16 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -64,8 +68,10 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.llvm.api.Toolchain;
 
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
@@ -78,6 +84,8 @@ public final class NFIPosixSupport extends PosixSupport {
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
     private static final int PATH_MAX = 4096;
+
+    private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
 
@@ -181,9 +189,35 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
 
+        // Temporary - will be replaced with something else when we move this to Truffle
+        private static String getLibPath(PythonContext context) {
+            CompilerAsserts.neverPartOfCompilation();
+
+            String os = PythonUtils.getPythonOSName();
+            String multiArch = PythonUtils.getPythonArch() + "-" + os;
+            String cacheTag = "graalpython-38";
+            Env env = context.getEnv();
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(GraalPythonModuleBuiltins.LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            String toolchainId = toolchain.getIdentifier();
+
+            // only use '.dylib' if we are on 'Darwin-native'
+            String soExt;
+            if ("darwin".equals(os) && "native".equals(toolchainId)) {
+                soExt = ".dylib";
+            } else {
+                soExt = ".so";
+            }
+
+            String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
+            TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
+            TruffleFile file = homePath.resolve(libPythonName);
+            return file.getPath();
+        }
+
         @TruffleBoundary
         private static void loadLibrary(NFIPosixSupport posix) {
-            String path = NativeLibrary.getLibPath(posix.context, SUPPORTING_NATIVE_LIB_NAME);
+            String path = getLibPath(posix.context);
             String withClause = posix.nfiBackend.equals("native") ? "" : "with " + posix.nfiBackend;
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", withClause, path);
             Source loadSrc = Source.newBuilder("nfi", src, "load:" + SUPPORTING_NATIVE_LIB_NAME).internal(true).build();
@@ -291,9 +325,10 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public Buffer read(int fd, long length,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Buffer buffer = Buffer.allocate(length);
+        long count = Math.min(length, MAX_READ);
+        Buffer buffer = Buffer.allocate(count);
         setErrno(invokeNode, 0);        // TODO CPython does this, but do we need it?
-        long n = invokeNode.callLong(this, PosixNativeFunction.call_read, fd, wrap(buffer), length);
+        long n = invokeNode.callLong(this, PosixNativeFunction.call_read, fd, wrap(buffer), count);
         if (n < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
