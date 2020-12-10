@@ -2619,7 +2619,6 @@ public abstract class CExtNodes {
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") AsPythonObjectBaseNode asPythonObject,
                         @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
-            assert isNativeTypeObject(self);
             return asPythonObject.execute(callGetTpDictNode.call(getterName, toSulong.execute(self)));
         }
 
@@ -2629,7 +2628,6 @@ public abstract class CExtNodes {
                         @Cached AsPythonObjectNode asPythonObject,
                         @Cached WrapVoidPtrNode wrapVoidPtrNode,
                         @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
-            assert isNativeTypeObject(self);
             Object value = callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self));
             if (memberName.getType() == NativeMemberType.OBJECT) {
                 return asPythonObject.execute(value);
