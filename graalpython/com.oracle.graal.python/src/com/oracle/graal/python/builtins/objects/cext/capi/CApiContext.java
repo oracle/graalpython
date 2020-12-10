@@ -51,11 +51,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -263,6 +263,11 @@ public final class CApiContext extends CExtContext {
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(long l) {
         assert CApiGuards.isSmallLong(l);
         return getCachedPrimitiveNativeWrapper((int) l);
+    }
+
+    @Override
+    protected String[] getKnownCacheSymbols() {
+        return NativeCAPISymbols.getValues();
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {

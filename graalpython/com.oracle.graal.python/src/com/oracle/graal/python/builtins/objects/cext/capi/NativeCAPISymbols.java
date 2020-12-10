@@ -43,8 +43,10 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import java.lang.reflect.Field;
 
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.object.Shape;
 
 @SuppressWarnings("unused")
 public abstract class NativeCAPISymbols {
@@ -166,5 +168,9 @@ public abstract class NativeCAPISymbols {
             }
         }
         return false;
+    }
+
+    public static String[] getValues() {
+        return values;
     }
 }

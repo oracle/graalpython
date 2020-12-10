@@ -56,13 +56,14 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -81,6 +82,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -101,6 +103,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -119,7 +123,8 @@ public abstract class CExtCommonNodes {
         static Object doReceiverCachedIdentity(CExtContext nativeContext, String name,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
                         @Cached("name") String cachedName,
-                        @Cached("importCAPISymbolUncached(nativeContext, name)") Object sym) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, name)") Object sym) {
             return sym;
         }
 
@@ -132,21 +137,29 @@ public abstract class CExtCommonNodes {
         static Object doReceiverCached(CExtContext nativeContext, String name,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
                         @Cached("name") String cachedName,
-                        @Cached("importCAPISymbolUncached(nativeContext, name)") Object sym) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, name)") Object sym) {
             return sym;
         }
 
-        @Specialization(replaces = {"doReceiverCachedIdentity", "doReceiverCached"}, //
-                        limit = "1")
-        static Object doWithContext(CExtContext nativeContext, String name,
-                        @CachedLibrary("nativeContext.getLLVMLibrary()") InteropLibrary interopLib,
-                        @Cached PRaiseNode raiseNode) {
-            return importCAPISymbol(raiseNode, interopLib, nativeContext.getLLVMLibrary(), name);
+        @Specialization(replaces = {"doReceiverCachedIdentity", "doReceiverCached"}, limit = "1")
+        static Object doWithSymbolCache(CExtContext nativeContext, String name,
+                        @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
+                        @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, name, PNone.NO_VALUE);
+            if (nativeSymbol == PNone.NO_VALUE) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, name);
+                dynamicObjectLib.put(symbolCache, name, nativeSymbol);
+                dynamicObjectLib.updateShape(symbolCache);
+            }
+            return nativeSymbol;
         }
 
-        protected static Object importCAPISymbolUncached(CExtContext nativeContext, String name) {
+        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, String name) {
             Object capiLibrary = nativeContext.getLLVMLibrary();
-            return importCAPISymbol(PRaiseNode.getUncached(), InteropLibrary.getFactory().getUncached(capiLibrary), capiLibrary, name);
+            return importCAPISymbol(raiseNode, InteropLibrary.getFactory().getUncached(capiLibrary), capiLibrary, name);
         }
 
         private static Object importCAPISymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
