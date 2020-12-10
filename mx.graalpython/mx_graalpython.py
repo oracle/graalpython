@@ -1406,7 +1406,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='Graal.Python',
     short_name='pyn',
-    installable_id='graalpython',
+    installable_id='python',
     dir_name='python',
     standalone_dir_name='graalpython-<version>-<graalvm_os>-<arch>',
     license_files=[],
