@@ -1354,9 +1354,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return lib.getIteratorWithFrame(object, frame);
         }
 
-        @Specialization(guards = "!isNoValue(sentinel)")
-        Object iter(Object callable, Object sentinel) {
+        @Specialization(guards = {"lib.isCallable(callable)", "!isNoValue(sentinel)"}, limit = "1")
+        Object iter(Object callable, Object sentinel,
+                        @SuppressWarnings("unused") @CachedLibrary("callable") PythonObjectLibrary lib) {
             return factory().createSentinelIterator(callable, sentinel);
+        }
+
+        @Specialization(guards = {"!lib.isCallable(callable)", "!isNoValue(sentinel)"}, limit = "1")
+        @SuppressWarnings("unused")
+        Object iterNotCallable(Object callable, Object sentinel,
+                        @CachedLibrary("callable") PythonObjectLibrary lib) {
+            throw raise(TypeError, ErrorMessages.ITER_V_MUST_BE_CALLABLE);
         }
     }
 
