@@ -839,13 +839,14 @@ public class ObjectBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     public abstract static class ReduceExNode extends PythonBuiltinNode {
+        static final Object REDUCE_FACTORY = ObjectBuiltinsFactory.ReduceNodeFactory.getInstance();
+
         @Specialization
         @SuppressWarnings("unused")
         Object doit(VirtualFrame frame, Object obj, int proto,
                         @Cached ConditionProfile reduceProfile,
                         @Cached ObjectNodes.CommonReduceNode commonReduceNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            Object REDUCE_FACTORY = ObjectBuiltinsFactory.ReduceNodeFactory.getInstance();
             Object _reduce = pol.lookupAttribute(obj, frame, __REDUCE__);
             if (reduceProfile.profile(_reduce != PNone.NO_VALUE)) {
                 // Check if __reduce__ has been overridden:
