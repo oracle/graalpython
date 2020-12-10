@@ -1131,6 +1131,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callIndexNode;
         @Child private LookupAndCallUnaryNode callTruncNode;
         @Child private LookupAndCallUnaryNode callReprNode;
+        @Child private WarnNode warnNode;
 
         @TruffleBoundary
         private static Object stringToIntInternal(String num, int base) {
@@ -1517,7 +1518,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // If a subclass of int is returned by __int__ or __index__, a conversion to int is
             // performed and a DeprecationWarning should be triggered (see PyNumber_Long).
             if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
-                // TODO deprecation warning
+                getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                ErrorMessages.P_RETURNED_NON_P,
+                                obj, "__int__/__index__", "int", result, "int");
                 if (PGuards.isPInt(result)) {
                     result = ((PInt) result).getValue();
                 } else if (PGuards.isBoolean(result)) {
@@ -1573,6 +1576,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 callTruncNode = insert(LookupAndCallUnaryNode.create(__TRUNC__));
             }
             return callTruncNode.executeObject(frame, obj);
+        }
+
+        private WarnNode getWarnNode() {
+            if (warnNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                warnNode = insert(WarnNode.create());
+            }
+            return warnNode;
         }
 
         private String toString(PBytesLike pByteArray) {
