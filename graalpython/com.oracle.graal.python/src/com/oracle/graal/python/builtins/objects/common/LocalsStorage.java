@@ -158,7 +158,7 @@ public class LocalsStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
             CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
-            long hash = self.getHashWithState(key, lib, state, gotState);
+            long hash = getHashWithState(key, lib, state, gotState);
             for (FrameSlot slot : self.frame.getFrameDescriptor().getSlots()) {
                 Object currentKey = slot.getIdentifier();
                 if (currentKey instanceof String) {

@@ -37,6 +37,9 @@ import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
+import com.oracle.graal.python.builtins.modules.io.PBuffered;
+import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -90,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -129,10 +131,9 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
+import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -140,6 +141,8 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
@@ -403,20 +406,26 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
     }
 
-    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
-                    int len, boolean readonly, int itemsize, PMemoryView.BufferFormat format, String formatString, int ndim, Object bufPointer,
+    public PMemoryView createMemoryView(PythonContext context, ManagedBuffer managedBuffer, Object owner,
+                    int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize, format, formatString,
+        return trace(new PMemoryView(cls, getShape(cls), context, managedBuffer, owner, len, readonly, itemsize, format, formatString,
                         ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
-    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+    public PMemoryView createMemoryView(PythonContext context, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize,
-                        PMemoryView.BufferFormat.fromString(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
+        return trace(new PMemoryView(cls, getShape(cls), context, managedBuffer, owner, len, readonly, itemsize,
+                        BufferFormat.forMemoryView(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
+    }
+
+    public PMemoryView createMemoryViewForManagedObject(Object object, int itemsize, int length, boolean readonly, String format) {
+        return createMemoryView(null, null, object, length * itemsize, readonly, itemsize, format, 1,
+                        null, 0, new int[]{length}, new int[]{itemsize}, null,
+                        PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
     }
 
     public final PMethod createMethod(Object cls, Object self, Object function) {
@@ -682,28 +691,18 @@ public abstract class PythonObjectFactory extends Node {
      * Arrays
      */
 
-    public PArray createArray(Object cls, byte[] array) {
-        return trace(new PArray(cls, getShape(cls), new ByteSequenceStorage(array)));
+    public PArray createArray(Object cls, String formatString, BufferFormat format) {
+        assert format != null;
+        return trace(new PArray(cls, getShape(cls), formatString, format));
     }
 
-    public PArray createArray(Object cls, int[] array) {
-        return trace(new PArray(cls, getShape(cls), new IntSequenceStorage(array)));
+    public PArray createArray(String formatString, BufferFormat format, int length) throws OverflowException {
+        return createArray(PythonBuiltinClassType.PArray, formatString, format, length);
     }
 
-    public PArray createArray(Object cls, double[] array) {
-        return trace(new PArray(cls, getShape(cls), new DoubleSequenceStorage(array)));
-    }
-
-    public PArray createArray(Object cls, char[] array) {
-        return trace(new PArray(cls, getShape(cls), new CharSequenceStorage(array)));
-    }
-
-    public PArray createArray(Object cls, long[] array) {
-        return trace(new PArray(cls, getShape(cls), new LongSequenceStorage(array)));
-    }
-
-    public PArray createArray(Object cls, SequenceStorage store) {
-        return trace(new PArray(cls, getShape(cls), store));
+    public PArray createArray(Object cls, String formatString, BufferFormat format, int length) throws OverflowException {
+        assert format != null;
+        return trace(new PArray(cls, getShape(cls), formatString, format, length));
     }
 
     public PByteArray createByteArray(Object cls, byte[] array) {
@@ -716,30 +715,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public PByteArray createByteArray(Object cls, SequenceStorage storage) {
         return trace(new PByteArray(cls, getShape(cls), storage));
-    }
-
-    public PArray createArray(byte[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(getLanguage()), new ByteSequenceStorage(array)));
-    }
-
-    public PArray createArray(int[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(getLanguage()), new IntSequenceStorage(array)));
-    }
-
-    public PArray createArray(double[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(getLanguage()), new DoubleSequenceStorage(array)));
-    }
-
-    public PArray createArray(char[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(getLanguage()), new CharSequenceStorage(array)));
-    }
-
-    public PArray createArray(long[] array) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(getLanguage()), new LongSequenceStorage(array)));
-    }
-
-    public PArray createArray(SequenceStorage store) {
-        return trace(new PArray(PythonBuiltinClassType.PArray, PythonBuiltinClassType.PArray.getInstanceShape(getLanguage()), store));
     }
 
     public PByteArray createByteArray(byte[] array) {
@@ -960,11 +935,43 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMMap(clazz, getShape(clazz), channel, length, offset));
     }
 
-    public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
+    public BZ2Object.BZ2Compressor createBZ2Compressor(Object clazz) {
+        return trace(BZ2Object.createCompressor(clazz, getShape(clazz)));
+    }
+
+    public BZ2Object.BZ2Decompressor createBZ2Decompressor(Object clazz) {
+        return trace(BZ2Object.createDecompressor(clazz, getShape(clazz)));
+    }
+
+    public ZLibCompObject createJavaZLibCompObject(Object clazz, Object stream, int level, int wbits, int strategy, byte[] zdict) {
+        return trace(ZLibCompObject.createJava(clazz, getShape(clazz), stream, level, wbits, strategy, zdict));
+    }
+
+    public ZLibCompObject createJavaZLibCompObject(Object clazz, Object stream, int wbits, byte[] zdict) {
+        return trace(ZLibCompObject.createJava(clazz, getShape(clazz), stream, wbits, zdict));
+    }
+
+    public ZLibCompObject createNativeZLibCompObject(Object clazz, Object zst, NFIZlibSupport zlibSupport) {
+        return trace(ZLibCompObject.createNative(clazz, getShape(clazz), zst, zlibSupport));
     }
 
     public PLZMADecompressor createLZMADecompressor(Object clazz, int format, int memlimit) {
         return trace(new PLZMADecompressor(clazz, getShape(clazz), format, memlimit));
+    }
+
+    public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+        return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
+    }
+
+    public PBuffered createBufferedReader(Object clazz) {
+        return trace(PBuffered.createBufferedReader(clazz, getShape(clazz)));
+    }
+
+    public PBuffered createBufferWriter(Object clazz) {
+        return trace(PBuffered.createBufferedWriter(clazz, getShape(clazz)));
+    }
+
+    public PBuffered createBufferRandom(Object clazz) {
+        return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
     }
 }

@@ -77,7 +77,6 @@ public abstract class NativeObjectReferenceArrayWrapper implements TruffleObject
 
     abstract Object get(long i);
 
-    @ExportLibrary(InteropLibrary.class)
     static final class PointerArrayWrapper extends NativeObjectReferenceArrayWrapper {
         PointerArrayWrapper(NativeObjectReference[] data) {
             super(data);
@@ -89,7 +88,6 @@ public abstract class NativeObjectReferenceArrayWrapper implements TruffleObject
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     static final class RefCountArrayWrapper extends NativeObjectReferenceArrayWrapper {
         RefCountArrayWrapper(NativeObjectReference[] data) {
             super(data);

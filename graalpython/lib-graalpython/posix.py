@@ -45,6 +45,9 @@ stat_result = make_named_tuple_class("stat_result", [
     "st_uid", "st_gid", "st_size", "st_atime",
     "st_mtime", "st_ctime"
 ])
+stat_result.__qualname__ = 'stat_result'
+stat_result.__name__ = 'stat_result'
+stat_result.__module__ = 'os'
 stat_result.st_atime_ns = property(lambda s: int(s.st_atime * 1000))
 stat_result.st_mtime_ns = property(lambda s: int(s.st_mtime * 1000))
 
@@ -149,9 +152,3 @@ old_get_terminal_size = get_terminal_size
 @__graalpython__.builtin
 def get_terminal_size(fd = None):
     return terminal_size(old_get_terminal_size(fd))
-
-def execl(file, *args):
-    """execl(file, *args)
-    Execute the executable file with argument list args, replacing the
-    current process. """
-    execv(file, args)

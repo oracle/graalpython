@@ -36,7 +36,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.BufferError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -52,20 +51,22 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ByteArrayGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -159,7 +160,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isPSlice(key) || lib.canBeIndex(key)", limit = "3")
-        Object doSlice(VirtualFrame frame, PBytesLike self, Object key,
+        static Object doSlice(VirtualFrame frame, PBytesLike self, Object key,
                         @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
             return getSequenceItemNode.execute(frame, self.getSequenceStorage(), key);
@@ -187,8 +188,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
-        @Child private PRaiseNode raiseNode = PRaiseNode.create();
-
         @Specialization(guards = {"!isPSlice(idx)", "lib.canBeIndex(idx)"}, limit = "3")
         static PNone doItem(VirtualFrame frame, PByteArray self, Object idx, Object value,
                         @SuppressWarnings("unused") @CachedLibrary("idx") PythonObjectLibrary lib,
@@ -198,35 +197,61 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PNone doSlice(VirtualFrame frame, PByteArray self, PSlice slice, PSequence value,
-                        @Cached("createSetSlice()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.execute(frame, self.getSequenceStorage(), slice, value);
+        PNone doSliceSequence(PByteArray self, PSlice slice, PSequence value,
+                        @Cached ConditionProfile differentLenProfile,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
+                        @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SliceLiteralNode.SliceUnpack unpack,
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            SequenceStorage storage = self.getSequenceStorage();
+            int otherLen = lenNode.execute(getSequenceStorageNode.execute(value));
+            SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
+            SliceInfo info = adjustIndices.execute(lenNode.execute(storage), unadjusted);
+            if (differentLenProfile.profile(info.sliceLength != otherLen)) {
+                self.checkCanResize(this);
+            }
+            setItemSliceNode.execute(storage, info, value, false);
             return PNone.NONE;
         }
 
-        @Specialization(limit = "3")
-        PNone doSlice(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
+        @Specialization(guards = "bufferLib.isBuffer(value)", limit = "3")
+        PNone doSliceBuffer(PByteArray self, PSlice slice, Object value,
                         @CachedLibrary("value") PythonObjectLibrary bufferLib,
-                        @Cached ConditionProfile bufferProfile,
-                        @Cached("createSetSlice()") SequenceStorageNodes.SetItemNode setItemNode) {
-            if (bufferProfile.profile(bufferLib.isBuffer(value))) {
-                try {
-                    PBytes bytes = factory().createBytes(bufferLib.getBufferBytes(value));
-                    setItemNode.execute(frame, self.getSequenceStorage(), slice, bytes);
-                    return PNone.NONE;
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            } else {
-                setItemNode.execute(frame, self.getSequenceStorage(), slice, value);
-                return PNone.NONE;
+                        @Cached ConditionProfile differentLenProfile,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
+                        @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SliceLiteralNode.SliceUnpack unpack,
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            try {
+                PBytes bytes = factory().createBytes(bufferLib.getBufferBytes(value));
+                return doSliceSequence(self, slice, bytes, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
+        }
+
+        @Specialization(replaces = {"doSliceSequence", "doSliceBuffer"})
+        PNone doSliceGeneric(PByteArray self, PSlice slice, Object value,
+                        @Cached ConditionProfile differentLenProfile,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
+                        @Cached SliceLiteralNode.CoerceToIntSlice sliceCast,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SliceLiteralNode.SliceUnpack unpack,
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
+            PList values = constructListNode.execute(value);
+            return doSliceSequence(self, slice, values, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
         }
 
         @Fallback
         @SuppressWarnings("unused")
         Object error(Object self, Object idx, Object value) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", idx);
+            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", idx);
         }
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
@@ -235,10 +260,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             // inside that specialization the conversion of RHS may fail and produce Python level
             // ValueError
             return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), "an integer is required");
-        }
-
-        protected static SequenceStorageNodes.SetItemNode createSetSlice() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), ByteArrayGeneralizationNode.CACHED_SUPPLIER);
         }
     }
 
@@ -251,21 +272,26 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "isByteStorage(self)")
         PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
                         @Cached CastToByteNode toByteNode) {
+            self.checkCanResize(this);
             byte v = toByteNode.execute(frame, value);
             ByteSequenceStorage target = (ByteSequenceStorage) self.getSequenceStorage();
             target.insertByteItem(normalizeIndex(index, target.length()), v);
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isByteStorage(self)", "lib.canBeIndex(index)", "lib.canBeIndex(value)"})
+        @Specialization(guards = {"lib.canBeIndex(index)", "lib.canBeIndex(value)"})
         PNone insert(VirtualFrame frame, PByteArray self, Object index, Object value,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("create(0)") BytesBuiltins.ExpectIntNode toInt,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.InsertItemNode insertItemNode,
                         @Cached CastToByteNode toByteNode) {
+            self.checkCanResize(this);
             byte v = toByteNode.execute(frame, value);
             int idx = toInt.executeInt(frame, index);
-            ByteSequenceStorage target = (ByteSequenceStorage) self.getSequenceStorage();
-            target.insertByteItem(normalizeIndex(idx, target.length()), v);
+            SequenceStorage storage = getSequenceStorageNode.execute(self);
+            insertItemNode.execute(storage, normalizeIndex(idx, lenNode.execute(storage)), v);
             return PNone.NONE;
         }
 
@@ -274,13 +300,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             Object errValue = !lib.canBeIndex(index) ? index : value;
             throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, errValue);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isByteStorage(self)")
-        PNone insert(VirtualFrame frame, PByteArray self, Object index, Object value) {
-            // TODO: (mq) need to check for the number of ob_exports, i.e. reference counter.
-            throw raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
 
         private static int normalizeIndex(int index, int len) {
@@ -325,8 +344,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static PByteArray add(PByteArray self, PBytesLike other,
+        PByteArray add(PByteArray self, PBytesLike other,
                         @Cached SequenceStorageNodes.ConcatNode concatNode) {
+            self.checkCanResize(this);
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
             updateSequenceStorage(self, res);
             return self;
@@ -336,6 +356,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         PByteArray add(PByteArray self, Object buffer,
                         @CachedLibrary("buffer") PythonObjectLibrary bufferLib,
                         @Cached SequenceStorageNodes.ConcatNode concatNode) {
+            self.checkCanResize(this);
             try {
                 PBytes bytes = factory().createBytes(bufferLib.getBufferBytes(buffer));
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), bytes.getSequenceStorage());
@@ -365,6 +386,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         public Object mul(VirtualFrame frame, PByteArray self, int times,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode) {
+            self.checkCanResize(this);
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
             self.setSequenceStorage(res);
             return self;
@@ -375,6 +397,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode,
                         @CachedLibrary("times") PythonObjectLibrary lib) {
+            self.checkCanResize(this);
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), getTimesInt(frame, times, hasFrame, lib));
             self.setSequenceStorage(res);
             return self;
@@ -401,12 +424,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         private static final String NOT_IN_BYTEARRAY = "value not found in bytearray";
 
-        @Specialization(guards = {"isByteStorage(self)", "lib.canBeIndex(value)"})
+        @Specialization(guards = "lib.canBeIndex(value)")
         PNone remove(VirtualFrame frame, PByteArray self, Object value,
                         @Cached BytesNodes.FindNode findNode,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            self.checkCanResize(this);
             SequenceStorage storage = self.getSequenceStorage();
             int len = lenNode.execute(storage);
             int pos = findNode.execute(self.getSequenceStorage(), len, value, 0, len);
@@ -415,13 +439,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             throw raise(ValueError, NOT_IN_BYTEARRAY);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isByteStorage(self)")
-        Object bufferError(PByteArray self, Object value) {
-            // TODO: (mq) need to check for the number of ob_exports, i.e. reference counter.
-            throw raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
 
         @Fallback
@@ -434,31 +451,26 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isByteStorage(self)")
+        @Specialization
         public Object popLast(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone none,
                         @Cached.Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
+            self.checkCanResize(this);
             SequenceStorage store = self.getSequenceStorage();
             Object ret = getItemNode.execute(frame, store, -1);
             deleteNode.execute(frame, store, -1);
             return ret;
         }
 
-        @Specialization(guards = {"isByteStorage(self)", "!isNoValue(idx)", "!isPSlice(idx)"})
+        @Specialization(guards = {"!isNoValue(idx)", "!isPSlice(idx)"})
         public Object doIndex(VirtualFrame frame, PByteArray self, Object idx,
                         @Cached.Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
+            self.checkCanResize(this);
             SequenceStorage store = self.getSequenceStorage();
             Object ret = getItemNode.execute(frame, store, idx);
             deleteNode.execute(frame, store, idx);
             return ret;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isByteStorage(self)")
-        Object bufferError(PByteArray self, Object idx) {
-            // TODO: (mq) need to check for the number of ob_exports, i.e. reference counter.
-            throw raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
 
         @Fallback
@@ -479,18 +491,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isByteStorage(self)")
+        @Specialization
         protected PNone doGeneric(VirtualFrame frame, PByteArray self, Object key,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode) {
+            self.checkCanResize(this);
             deleteNode.execute(frame, self.getSequenceStorage(), key);
             return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isByteStorage(self)")
-        Object bufferError(PByteArray self, Object key) {
-            // TODO: (mq) need to check for the number of ob_exports, i.e. reference counter.
-            throw raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
 
         @SuppressWarnings("unused")
@@ -509,6 +515,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached("createCast()") CastToByteNode toByteNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @SuppressWarnings("unused") @CachedLibrary("arg") PythonObjectLibrary lib) {
+            byteArray.checkCanResize(this);
             appendNode.execute(byteArray.getSequenceStorage(), toByteNode.execute(frame, arg), BytesLikeNoGeneralizationNode.SUPPLIER);
             return PNone.NONE;
         }
@@ -533,9 +540,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ExtendNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static PNone doBytes(VirtualFrame frame, PByteArray self, PBytesLike source,
+        PNone doBytes(VirtualFrame frame, PByteArray self, PBytesLike source,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
+            self.checkCanResize(this);
             int len = lenNode.execute(frame, source);
             extend(frame, self, source, len, extendNode);
             return PNone.NONE;
@@ -548,6 +556,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached("createCast()") BytesNodes.IterableToByteNode toByteNode,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
+            self.checkCanResize(this);
             byte[] b;
             if (bufferProfile.profile(bufferLib.isBuffer(source))) {
                 try {
@@ -596,7 +605,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ReverseNode extends PythonBuiltinNode {
 
         @Specialization
-        public PNone reverse(PByteArray byteArray) {
+        public static PNone reverse(PByteArray byteArray) {
             byteArray.reverse();
             return PNone.NONE;
         }
@@ -611,6 +620,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         public PNone clear(VirtualFrame frame, PByteArray byteArray,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached SliceLiteralNode slice) {
+            byteArray.checkCanResize(this);
             deleteNode.execute(frame, byteArray.getSequenceStorage(), slice.execute(frame, PNone.NONE, PNone.NONE, 1));
             return PNone.NONE;
         }
@@ -644,7 +654,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             try {
                 String str = castToJavaStringNode.execute(strObj);
                 PByteArray byteArray = factory().createByteArray(BytesUtils.fromHex(str, getRaiseNode()));
-                return callNode.varArgExecute(frame, null, new Object[]{cls, byteArray}, new PKeyword[0]);
+                return callNode.varArgExecute(frame, null, new Object[]{cls, byteArray}, PKeyword.EMPTY_KEYWORDS);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
             }
@@ -705,7 +715,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class AllocNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public int alloc(PByteArray byteArray,
+        public static int alloc(PByteArray byteArray,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             // XXX: (mq) We return a fake allocation size.
             // The actual number might useful for manual memory management.

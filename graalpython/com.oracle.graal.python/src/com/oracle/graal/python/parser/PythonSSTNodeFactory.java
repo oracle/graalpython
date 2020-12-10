@@ -65,6 +65,7 @@ import com.oracle.graal.python.parser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.CallSSTNode;
 import com.oracle.graal.python.parser.sst.ClassSSTNode;
 import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.DecoratorSSTNode;
 import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.FloatLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
@@ -87,6 +88,8 @@ import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
@@ -124,6 +127,12 @@ public final class PythonSSTNodeFactory {
         throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), message, messageParams);
     }
 
+    public SSTNode createDecorator(String name, ArgListBuilder arg, int startOffset, int endOffset) {
+        int dotIndex = name.indexOf('.');
+        String mangledName = dotIndex == -1 ? mangleNameInCurrentScope(name) : mangleNameInCurrentScope(name.substring(0, dotIndex)) + name.substring(dotIndex);
+        return new DecoratorSSTNode(mangledName, arg, startOffset, endOffset);
+    }
+
     public SSTNode createImport(String name, String asName, int startOffset, int endOffset) {
         String varName;
         if (asName != null) {
@@ -137,6 +146,7 @@ public final class PythonSSTNodeFactory {
                 // create local variable just for the top module
                 varName = name.substring(0, dotIndex);
             }
+            varName = mangleNameInCurrentScope(varName);
         }
         scopeEnvironment.createLocal(varName);
         return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
@@ -156,14 +166,84 @@ public final class PythonSSTNodeFactory {
         return new ImportFromSSTNode(scopeEnvironment.getCurrentScope(), from, asNames, startOffset, endOffset);
     }
 
+    public String mangleNameInCurrentScope(String name) {
+        if (cannotBeMangled(name)) {
+            return name;
+        }
+        // then name can be mangled if is under class
+        ScopeInfo scope = scopeEnvironment.getCurrentScope();
+        while (scope != null && scope.getScopeKind() != ScopeKind.Class) {
+            scope = scope.getParent();
+        }
+
+        if (scope != null) {
+            try {
+                return mangleName(scope.getScopeId(), name);
+            } catch (OverflowException e) {
+                throw errors.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
+            }
+        }
+        return name;
+    }
+
+    /**
+     * Tests if the provided identifier is a candidate for name mangling.
+     */
+    @TruffleBoundary
+    private static boolean cannotBeMangled(String identifier) {
+        int len = identifier.length();
+        // Don't mangle __whatever__ or names with dots.
+        return len < 3 || identifier.charAt(0) != '_' || identifier.charAt(1) != '_' || (identifier.charAt(len - 1) == '_' && identifier.charAt(len - 2) == '_') || identifier.indexOf('.') != -1;
+    }
+
+    /**
+     * Implements semantics of {@code parser.c:_Py_Mangle}
+     */
+    @TruffleBoundary
+    public static String mangleName(String privateobj, String ident) throws OverflowException {
+        // Name mangling: __private becomes _classname__private. This is independent from how
+        // the name is used.
+        if (cannotBeMangled(ident)) {
+            return ident;
+        }
+        // The length of 'privateobj' must be checked because if someone uses the 'type' constructor
+        // it's allowed to pass an empty name.
+        String privateobjStripped;
+        if (privateobj.length() > 0 && privateobj.charAt(0) == '_') {
+            // trim leading '_'
+            int index = 1;
+            int scopeNameLen = privateobj.length();
+            while (index < scopeNameLen && privateobj.charAt(index) == '_') {
+                index++;
+            }
+            privateobjStripped = index != scopeNameLen ? privateobj.substring(index) : null;
+        } else {
+            privateobjStripped = privateobj;
+        }
+        if (privateobjStripped != null) {
+            if ((long) privateobjStripped.length() + ident.length() >= Integer.MAX_VALUE) {
+                throw OverflowException.INSTANCE;
+            }
+            // ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes
+            return '_' + privateobjStripped + ident;
+        }
+        return ident;
+    }
+
     public VarLookupSSTNode createVariableLookup(String name, int start, int stop) {
-        scopeEnvironment.addSeenVar(name);
-        return new VarLookupSSTNode(name, start, stop);
+        String mangleName = mangleNameInCurrentScope(name);
+        scopeEnvironment.addSeenVar(mangleName);
+        return new VarLookupSSTNode(mangleName, start, stop);
     }
 
     public SSTNode createClassDefinition(String name, ArgListBuilder baseClasses, SSTNode body, int start, int stop) {
         // scopeEnvironment.createLocal(name);
         return new ClassSSTNode(scopeEnvironment.getCurrentScope(), name, baseClasses, body, start, stop);
+    }
+
+    public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset) {
+        String mangledName = mangleNameInCurrentScope(name);
+        return new GetAttributeSSTNode(receiver, mangledName, startOffset, endOffset);
     }
 
     public SSTNode registerGlobal(String[] names, int startOffset, int endOffset) {

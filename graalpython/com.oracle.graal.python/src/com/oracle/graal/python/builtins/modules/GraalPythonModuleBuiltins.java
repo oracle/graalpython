@@ -49,15 +49,24 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
@@ -67,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -191,6 +201,15 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         false, // dev_mode
                         0, // utf8_mode
         }));
+        Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
+        PList executableList = PythonObjectFactory.getUncached().createList(arr);
+        mod.setAttribute("executable_list", executableList);
+    }
+
+    private static Object[] convertToObjectArray(String[] arr) {
+        Object[] objectArr = new Object[arr.length];
+        System.arraycopy(arr, 0, objectArr, 0, arr.length);
+        return objectArr;
     }
 
     @Builtin(name = "cache_module_code", minNumOfPositionalArgs = 3)
@@ -520,6 +539,48 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static long doIt(@SuppressWarnings("unused") Object dummy) {
             return System.currentTimeMillis();
+        }
+    }
+
+    // Internal builtin used for testing: changes strategy of newly allocated set or map
+    @Builtin(name = "set_storage_strategy", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetStorageStrategyNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object doSet(PSet set, String strategyName,
+                        @CachedLanguage PythonLanguage lang) {
+            validate(set.getDictStorage());
+            set.setDictStorage(getStrategy(strategyName, lang));
+            return set;
+        }
+
+        @Specialization
+        Object doDict(PDict dict, String strategyName,
+                        @CachedLanguage PythonLanguage lang) {
+            validate(dict.getDictStorage());
+            dict.setDictStorage(getStrategy(strategyName, lang));
+            return dict;
+        }
+
+        private HashingStorage getStrategy(String name, PythonLanguage lang) {
+            switch (name) {
+                case "empty":
+                    return new EmptyStorage();
+                case "hashmap":
+                    return new HashMapStorage();
+                case "dynamicobject":
+                    return new DynamicObjectStorage(lang);
+                case "economicmap":
+                    return EconomicMapStorage.create();
+                default:
+                    throw raise(PythonBuiltinClassType.ValueError, "Unknown storage strategy name");
+            }
+        }
+
+        private void validate(HashingStorage dictStorage) {
+            if (HashingStorageLibrary.getUncached().length(dictStorage) != 0) {
+                throw raise(PythonBuiltinClassType.ValueError, "Should be used only on newly allocated empty sets");
+            }
         }
     }
 }

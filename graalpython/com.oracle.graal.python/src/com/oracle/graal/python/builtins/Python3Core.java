@@ -65,9 +65,9 @@ import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.JArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
@@ -100,8 +100,16 @@ import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
@@ -115,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -224,7 +233,6 @@ public final class Python3Core implements PythonCore {
                         "str",
                         "type",
                         "_imp",
-                        "array",
                         "_thread",
                         "function",
                         "_functools",
@@ -254,7 +262,6 @@ public final class Python3Core implements PythonCore {
                         "_sysconfig",
                         "_socket",
                         "ctypes",
-                        "zlib",
                         "termios",
                         "zipimport",
                         "mmap",
@@ -306,7 +313,7 @@ public final class Python3Core implements PythonCore {
         c = null;
     }
 
-    private static PythonBuiltins[] initializeBuiltins() {
+    private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
@@ -341,6 +348,8 @@ public final class Python3Core implements PythonCore {
                         new PZipBuiltins(),
                         new EnumerateBuiltins(),
                         new MapBuiltins(),
+                        new NotImplementedBuiltins(),
+                        new EllipsisBuiltins(),
                         new SentinelIteratorBuiltins(),
                         new ForeignIteratorBuiltins(),
                         new GeneratorBuiltins(),
@@ -381,6 +390,7 @@ public final class Python3Core implements PythonCore {
                         new CodecsTruffleModuleBuiltins(),
                         new CollectionsModuleBuiltins(),
                         new JavaModuleBuiltins(),
+                        new JArrayModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
                         new SelectModuleBuiltins(),
@@ -407,6 +417,9 @@ public final class Python3Core implements PythonCore {
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
                         new ZLibModuleBuiltins(),
+                        new ZlibCompressBuiltins(),
+                        new ZlibDecompressBuiltins(),
+                        new BufferedReaderBuiltins(),
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
                         new MMapBuiltins(),
@@ -431,6 +444,11 @@ public final class Python3Core implements PythonCore {
         if (hasProfilerTool) {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
+        }
+        if (nativeAccessAllowed) {
+            builtins.add(new BZ2CompressorBuiltins());
+            builtins.add(new BZ2DecompressorBuiltins());
+            builtins.add(new BZ2ModuleBuiltins());
         }
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -463,9 +481,9 @@ public final class Python3Core implements PythonCore {
 
     private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
 
-    public Python3Core(PythonParser parser) {
+    public Python3Core(PythonParser parser, boolean isNativeSupportAllowed) {
         this.parser = parser;
-        this.builtins = initializeBuiltins();
+        this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
     }
 
@@ -526,6 +544,7 @@ public final class Python3Core implements PythonCore {
                 builtin.postInitialize(this);
             }
 
+            getContext().getSharedFinalizer().registerAsyncAction();
             initialized = true;
         }
     }
@@ -669,10 +688,10 @@ public final class Python3Core implements PythonCore {
     }
 
     private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtinsForObj) {
-        Map<String, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
-        for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
-            String constantName = entry.getKey();
-            obj.setAttribute(constantName, entry.getValue());
+        Map<Object, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
+        for (Map.Entry<Object, Object> entry : builtinConstants.entrySet()) {
+            Object constant = entry.getKey();
+            obj.setAttribute(constant, entry.getValue());
         }
 
         Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtinsForObj.getBuiltinFunctions();

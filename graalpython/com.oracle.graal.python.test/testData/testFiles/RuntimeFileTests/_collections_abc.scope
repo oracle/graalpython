@@ -105,7 +105,7 @@ Scope: []
             FreeVars: Empty
     Scope: MutableMapping
         Kind: Class
-        FrameDescriptor: [__setitem__, pop, __marker, setdefault, clear, update, __slots__, popitem, __delitem__]
+        FrameDescriptor: [__setitem__, pop, _MutableMapping__marker, setdefault, clear, update, __slots__, popitem, __delitem__]
         CellVars: Empty
         FreeVars: Empty
         Scope: setdefault

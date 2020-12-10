@@ -41,7 +41,7 @@ import org.graalvm.options.OptionValues;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PEllipsis;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -108,7 +108,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
                 name = PythonLanguage.NAME, //
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = PythonLanguage.MIME_TYPE, //
-                dependentLanguages = "llvm", //
+                dependentLanguages = {"nfi", "llvm"}, //
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class)
@@ -208,8 +208,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void finalizeContext(PythonContext context) {
-        context.shutdownThreads();
-        context.runShutdownHooks();
+        context.finalizeContext();
         super.finalizeContext(context);
     }
 
@@ -234,7 +233,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected PythonContext createContext(Env env) {
         assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
         this.isWithThread = PythonOptions.isWithThread(env);
-        Python3Core newCore = new Python3Core(new PythonParserImpl(env));
+        Python3Core newCore = new Python3Core(new PythonParserImpl(env), env.isNativeAccessAllowed());
         final PythonContext context = new PythonContext(this, env, newCore);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
@@ -679,6 +678,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             return getEmptyShape();
         }
+    }
+
+    public static Shape getShapeForClassWithoutDict(PythonManagedClass klass) {
+        return Shape.newBuilder(klass.getInstanceShape()).shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG).build();
     }
 
     public Shape getBuiltinTypeInstanceShape(PythonBuiltinClassType type) {

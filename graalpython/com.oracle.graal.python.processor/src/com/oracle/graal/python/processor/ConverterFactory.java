@@ -96,6 +96,7 @@ public class ConverterFactory {
     private static ConverterFactory BuiltinIndex;
     private static ConverterFactory BuiltinSliceIndex;
     private static ConverterFactory BuiltinNone;
+    private static ConverterFactory BuiltinDouble;
 
     public final String fullClassName;
     public final String className;
@@ -121,6 +122,8 @@ public class ConverterFactory {
                 return annotation.defaultValue().isEmpty() ? BuiltinString : BuiltinStringWithDefaultValue;
             case Int:
                 return BuiltinInt;
+            case Double:
+                return BuiltinDouble;
             case CodePoint:
                 return BuiltinCodePoint;
             case Buffer:
@@ -197,6 +200,7 @@ public class ConverterFactory {
         BuiltinString = forBuiltin(elementUtils, "JavaStringConverterNode");
         BuiltinStringWithDefaultValue = forBuiltin(elementUtils, "JavaStringConverterWithDefaultValueNode");
         BuiltinInt = forBuiltin(elementUtils, "JavaIntConversionNode");
+        BuiltinDouble = forBuiltin(elementUtils, "JavaDoubleConversionNode");
         BuiltinCodePoint = forBuiltin(elementUtils, "CodePointConversionNode");
         BuiltinBuffer = forBuiltin(elementUtils, "BufferConversionNode");
         BuiltinIndex = forBuiltin(elementUtils, "IndexConversionNode");

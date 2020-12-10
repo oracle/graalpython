@@ -331,38 +331,6 @@ str.format = strformat
 str.format_map = format_map
 
 
-def count(self, sub, start=None, end=None):
-    selfLeng = len(self)
-    subLeng = len(sub)
-    if start == None:
-        start = 0
-    if selfLeng == 0:
-        if subLeng == 0 and start <= 0:
-            return 1
-        return 0
-    if end == None:
-        end = selfLeng
-    if subLeng == 0:
-        if start <= selfLeng:
-            return len(self[start:end]) + 1
-        return 0
-
-    idx = self.find(sub, start, end)
-    if idx < 0:
-        return 0
-
-    cnt = 1
-    while idx < selfLeng and idx >= 0 and cnt < selfLeng:
-        start = idx + subLeng
-        idx = self.find(sub, start, end)
-        if idx >= 0:
-            cnt += 1
-    return cnt
-
-
-str.count = count
-
-
 def encode(self, encoding="utf-8", errors="strict"):
     """Decode the bytes using the codec registered for encoding.
 

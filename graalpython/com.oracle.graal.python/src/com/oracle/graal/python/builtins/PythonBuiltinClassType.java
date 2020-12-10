@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -36,6 +38,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -45,6 +48,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -56,6 +60,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
@@ -133,6 +138,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PLZMADecompressor("LZMADecompressor", "_lzma"),
     LsprofProfiler("Profiler", "_lsprof"),
     PStruct("Struct", "_struct"),
+    BZ2Compressor("BZ2Compressor", "_bz2"),
+    BZ2Decompressor("BZ2Decompressor", "_bz2"),
+    ZlibCompress("Compress", "zlib"),
+    ZlibDecompress("Decompress", "zlib"),
+    PBufferedReader("BufferedReader", "_io"),
 
     // Errors and exceptions:
 
@@ -219,7 +229,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     private final String name;
     private final String publicInModule;
-    private final String qualifiedName;
+    // This is the name qualified by module used for printing. But the actual __qualname__ is just
+    // plain name without module
+    private final String printName;
     private final boolean basetype;
 
     // initialized in static constructor
@@ -229,9 +241,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.name = name;
         this.publicInModule = publicInModule;
         if (publicInModule != null && publicInModule != BuiltinNames.BUILTINS) {
-            qualifiedName = publicInModule + "." + name;
+            printName = publicInModule + "." + name;
         } else {
-            qualifiedName = name;
+            printName = name;
         }
         this.basetype = basetype;
     }
@@ -256,8 +268,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return name;
     }
 
-    public String getQualifiedName() {
-        return qualifiedName;
+    public String getPrintName() {
+        return printName;
     }
 
     public PythonBuiltinClassType getBase() {
@@ -545,6 +557,17 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
+    public Object lookupAttributeInternal(ThreadState state, String attribName, boolean strict,
+                    @Cached ConditionProfile gotState,
+                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return lookup.execute(frame, this, attribName, strict);
+    }
+
+    @ExportMessage
     static Object getLazyPythonClass(@SuppressWarnings("unused") PythonBuiltinClassType type) {
         return PythonClass;
     }
@@ -601,8 +624,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     static boolean isMetaInstance(PythonBuiltinClassType self, Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(lib.getLazyPythonClass(instance), self);
+        return isSubtype.execute(lib.getLazyPythonClass(convert.executeConvert(instance)), self);
     }
 
     @ExportMessage
@@ -612,7 +636,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     @ExportMessage
     static String getMetaQualifiedName(PythonBuiltinClassType self) {
-        return self.getQualifiedName();
+        return self.getPrintName();
     }
 
     @ExplodeLoop
@@ -632,6 +656,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
      */
     @ExportMessage
     String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
-        return getQualifiedName();
+        return getPrintName();
     }
 }

@@ -112,6 +112,6 @@ public class PythonModuleTests {
         PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
         PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.ABS);
         Object returned = callBuiltin(abs, -42);
-        assertEquals(42, returned);
+        assertEquals(42, (int) returned);
     }
 }

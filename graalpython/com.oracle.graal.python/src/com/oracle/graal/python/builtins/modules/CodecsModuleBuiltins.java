@@ -40,11 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitValue;
+import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
+import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_ERROR_WITH_CODE;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ESCAPE_AT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -60,6 +66,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -69,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -90,6 +98,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -455,7 +464,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
+    @Builtin(name = "__truffle_encode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends EncodeBaseNode {
         @Child private HandleEncodingErrorNode handleEncodingErrorNode;
@@ -532,7 +541,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict', final=False)
-    @Builtin(name = "__truffle_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors", "final"})
+    @Builtin(name = "__truffle_decode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors", "final"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends EncodeBaseNode {
         @Child private GetInternalByteArrayNode toByteArrayNode;
@@ -562,7 +571,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors, @SuppressWarnings("unused") Object finalData) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, bytes);
+            throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, bytes);
         }
 
         Object decodeBytes(PBytesLike input, String encoding, String errors, boolean finalData) {
@@ -626,7 +635,219 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__truffle_lookup", minNumOfPositionalArgs = 1)
+    @Builtin(name = "escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
+    @GenerateNodeFactory
+    abstract static class CodecsEscapeDecodeNode extends EncodeBaseNode {
+        enum Errors {
+            ERR_STRICT,
+            ERR_IGNORE,
+            ERR_REPLACE,
+            ERR_UNKNOWN,
+        }
+
+        private static Errors getErrors(String err) {
+            if (err.equals(STRICT)) {
+                return Errors.ERR_STRICT;
+            } else if (err.equals(REPLACE)) {
+                return Errors.ERR_REPLACE;
+            } else if (err.equals(IGNORE)) {
+                return Errors.ERR_IGNORE;
+            } else {
+                return Errors.ERR_UNKNOWN;
+            }
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object decode(Object data, @SuppressWarnings("unused") PNone errors,
+                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            return decode(data, STRICT, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object decode(Object data, String errors,
+                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            Errors err = getErrors(errors);
+            try {
+                byte[] bytes = pol.getBufferBytes(data);
+                ByteArrayBuffer buffer = new ByteArrayBuffer();
+                for (int i = 0; i < bytes.length; i++) {
+                    char chr = (char) bytes[i];
+                    if (chr != '\\') {
+                        buffer.append(chr);
+                        continue;
+                    }
+
+                    i++;
+                    if (i >= bytes.length) {
+                        throw raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
+                    }
+
+                    chr = (char) bytes[i];
+                    switch (chr) {
+                        case '\n':
+                            break;
+                        case '\\':
+                            buffer.append('\\');
+                            break;
+                        case '\'':
+                            buffer.append('\'');
+                            break;
+                        case '\"':
+                            buffer.append('\"');
+                            break;
+                        case 'b':
+                            buffer.append('\b');
+                            break;
+                        case 'f':
+                            buffer.append('\014');
+                            break; /* FF */
+                        case 't':
+                            buffer.append('\t');
+                            break;
+                        case 'n':
+                            buffer.append('\n');
+                            break;
+                        case 'r':
+                            buffer.append('\r');
+                            break;
+                        case 'v':
+                            buffer.append('\013');
+                            break; /* VT */
+                        case 'a':
+                            buffer.append('\007');
+                            break; /* BEL */
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                            int code = chr - '0';
+                            if (i + 1 < bytes.length) {
+                                char nextChar = (char) bytes[i + 1];
+                                if ('0' <= nextChar && nextChar <= '7') {
+                                    code = (code << 3) + nextChar - '0';
+                                    i++;
+
+                                    if (i + 1 < bytes.length) {
+                                        nextChar = (char) bytes[i + 1];
+                                        if ('0' <= nextChar && nextChar <= '7') {
+                                            code = (code << 3) + nextChar - '0';
+                                            i++;
+                                        }
+                                    }
+                                }
+                            }
+                            buffer.append((char) code);
+                            break;
+                        case 'x':
+                            if (i + 2 < bytes.length) {
+                                int digit1 = digitValue(bytes[i + 1]);
+                                int digit2 = digitValue(bytes[i + 2]);
+                                if (digit1 < 16 && digit2 < 16) {
+                                    buffer.append((digit1 << 4) + digit2);
+                                    i += 2;
+                                    break;
+                                }
+                            }
+                            // invalid hexadecimal digits
+                            if (err == Errors.ERR_STRICT) {
+                                throw raise(ValueError, INVALID_ESCAPE_AT, "\\x", i - 2);
+                            }
+                            if (err == Errors.ERR_REPLACE) {
+                                buffer.append('?');
+                            } else if (err == Errors.ERR_IGNORE) {
+                                // do nothing
+                            } else {
+                                throw raise(ValueError, ENCODING_ERROR_WITH_CODE, errors);
+                            }
+
+                            // skip \x
+                            if (i + 1 < bytes.length && isHexDigit((char) bytes[i + 1])) {
+                                i++;
+                            }
+                            break;
+
+                        default:
+                            buffer.append('\\');
+                            buffer.append(chr);
+                    }
+                }
+
+                return factory().createTuple(new Object[]{
+                                factory().createBytes(buffer.getByteArray()),
+                                pol.getBufferLength(data)
+                });
+            } catch (UnsupportedMessageException e) {
+                throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
+            }
+        }
+
+        private static boolean isHexDigit(char digit) {
+            return ('0' <= digit && digit <= '9') || ('a' <= digit && digit <= 'f') || ('A' <= digit && digit <= 'F');
+        }
+    }
+
+    @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
+    @GenerateNodeFactory
+    abstract static class CodecsEscapeEncodeNode extends EncodeBaseNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object encode(PBytes data, @SuppressWarnings("unused") PNone errors,
+                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            return encode(data, STRICT, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object encode(PBytes data, @SuppressWarnings("unused") String errors,
+                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            try {
+                byte[] bytes = pol.getBufferBytes(data);
+                int size = pol.getBufferLength(data);
+                ByteArrayBuffer buffer = new ByteArrayBuffer();
+                char c;
+                for (byte aByte : bytes) {
+                    // There's at least enough room for a hex escape
+                    c = (char) aByte;
+                    if (c == '\'' || c == '\\') {
+                        buffer.append('\\');
+                        buffer.append(c);
+                    } else if (c == '\t') {
+                        buffer.append('\\');
+                        buffer.append('t');
+                    } else if (c == '\n') {
+                        buffer.append('\\');
+                        buffer.append('n');
+                    } else if (c == '\r') {
+                        buffer.append('\\');
+                        buffer.append('r');
+                    } else if (c < ' ' || c >= 0x7f) {
+                        buffer.append('\\');
+                        buffer.append('x');
+                        buffer.append(HEXDIGITS[(c & 0xf0) >> 4]);
+                        buffer.append(HEXDIGITS[c & 0xf]);
+                    } else {
+                        buffer.append(c);
+                    }
+                }
+
+                return factory().createTuple(new Object[]{
+                                factory().createBytes(buffer.getByteArray()),
+                                size
+                });
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Fallback
+        Object encode(Object data, @SuppressWarnings("unused") Object errors) {
+            throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
+        }
+    }
+
+    @Builtin(name = "__truffle_lookup__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
         @Specialization
@@ -882,11 +1103,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public void replace(int skipInput, char[] chars, int offset, int lenght) {
+        public void replace(int skipInput, char[] chars, int offset, int length) {
             while (outputBuffer.remaining() < chars.length) {
                 grow();
             }
-            outputBuffer.put(chars, offset, lenght);
+            outputBuffer.put(chars, offset, length);
             inputBuffer.position(inputBuffer.position() + skipInput);
         }
 

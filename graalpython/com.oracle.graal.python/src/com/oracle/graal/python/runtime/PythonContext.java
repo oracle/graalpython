@@ -50,8 +50,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import org.graalvm.collections.EconomicMap;
-import org.graalvm.collections.MapCursor;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -107,6 +105,7 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
+    private volatile boolean finalizing;
 
     private static final class PythonThreadState {
 
@@ -184,11 +183,13 @@ public final class PythonContext {
     }
 
     private static final class AtExitHook {
+        final Object callable;
         final Object[] arguments;
         final PKeyword[] keywords;
         final CallTarget ct;
 
-        AtExitHook(Object[] arguments, PKeyword[] keywords, CallTarget ct) {
+        AtExitHook(Object callable, Object[] arguments, PKeyword[] keywords, CallTarget ct) {
+            this.callable = callable;
             this.arguments = arguments;
             this.keywords = keywords;
             this.ct = ct;
@@ -198,7 +199,6 @@ public final class PythonContext {
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";
     static final String LIB_GRAALPYTHON = "/lib-graalpython";
-    static final String CAPI_HOME = "/capi";
     static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
@@ -209,10 +209,13 @@ public final class PythonContext {
     private PythonModule mainModule;
     private final PythonCore core;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
-    private final EconomicMap<Object, AtExitHook> atExitHooks = EconomicMap.create(0);
+    private final List<AtExitHook> atExitHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+
+    @CompilationFinal private NFIZlibSupport nativeZlib;
+    @CompilationFinal private NFIBz2Support nativeBz2lib;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -256,6 +259,7 @@ public final class PythonContext {
     // The context-local resources
     private final PosixResources resources;
     private final AsyncHandler handler;
+    private final AsyncHandler.SharedFinalizer sharedFinalizer;
 
     // decides if we run the async weakref callbacks and destructors
     private boolean gcEnabled = true;
@@ -272,6 +276,7 @@ public final class PythonContext {
         this.env = env;
         this.resources = new PosixResources();
         this.handler = new AsyncHandler(this);
+        this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
         this.resources.setEnv(env);
         this.in = env.in();
@@ -324,6 +329,18 @@ public final class PythonContext {
 
     public PythonModule getBuiltins() {
         return builtinsModule;
+    }
+
+    public boolean isNativeAccessAllowed() {
+        return env.isNativeAccessAllowed();
+    }
+
+    public NFIZlibSupport getNFIZlibSupport() {
+        return nativeZlib;
+    }
+
+    public NFIBz2Support getNFIBz2Support() {
+        return nativeBz2lib;
     }
 
     public TruffleLanguage.Env getEnv() {
@@ -492,6 +509,8 @@ public final class PythonContext {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
+        nativeZlib = NFIZlibSupport.createNative(this, "");
+        nativeBz2lib = NFIBz2Support.createNative(this, "");
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
@@ -690,34 +709,62 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public void registerShutdownHook(ShutdownHook shutdownHook) {
+    public void registerAtexitHook(ShutdownHook shutdownHook) {
         shutdownHooks.add(shutdownHook);
     }
 
     @TruffleBoundary
-    public void registerShutdownHook(Object callable, Object[] arguments, PKeyword[] keywords, CallTarget ct) {
-        atExitHooks.put(callable, new AtExitHook(arguments, keywords, ct));
+    public void registerAtexitHook(Object callable, Object[] arguments, PKeyword[] keywords, CallTarget ct) {
+        atExitHooks.add(new AtExitHook(callable, arguments, keywords, ct));
     }
 
     @TruffleBoundary
-    public void deregisterShutdownHook(Object callable) {
-        atExitHooks.removeKey(callable);
+    public void unregisterAtexitHook(Object callable) {
+        atExitHooks.removeIf(hook -> hook.callable == callable);
+    }
+
+    @TruffleBoundary
+    public void clearAtexitHooks() {
+        atExitHooks.clear();
+    }
+
+    @TruffleBoundary
+    public void finalizeContext() {
+        finalizing = true;
+        shutdownThreads();
+        runShutdownHooks();
+    }
+
+    @TruffleBoundary
+    public int getAtexitHookCount() {
+        return atExitHooks.size();
+    }
+
+    @TruffleBoundary
+    public void runAtexitHooks() {
+        // run atExitHooks in reverse order they were registered
+        PException lastException = null;
+        for (int i = atExitHooks.size() - 1; i >= 0; i--) {
+            AtExitHook hook = atExitHooks.get(i);
+            try {
+                hook.ct.call(hook.callable, hook.arguments, hook.keywords);
+            } catch (PException e) {
+                lastException = e;
+            }
+        }
+        atExitHooks.clear();
+        if (lastException != null) {
+            throw lastException;
+        }
     }
 
     @TruffleBoundary
     public void runShutdownHooks() {
         handler.shutdown();
-        // run atExitHooks in reverse order they were registered
-        MapCursor<Object, AtExitHook> cursor = atExitHooks.getEntries();
-        AtExitHook[] hooks = new AtExitHook[atExitHooks.size()];
-        Object[] callables = new Object[atExitHooks.size()];
-        for (int i = 0; i < hooks.length; i++) {
-            cursor.advance();
-            callables[i] = cursor.getKey();
-            hooks[i] = cursor.getValue();
-        }
-        for (int i = hooks.length - 1; i >= 0; i--) {
-            hooks[i].ct.call(callables[i], hooks[i].arguments, hooks[i].keywords);
+        try {
+            runAtexitHooks();
+        } catch (PException e) {
+            // It was printed already, so just discard
         }
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
@@ -729,7 +776,7 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public void shutdownThreads() {
+    private void shutdownThreads() {
         LOGGER.fine("shutting down threads");
         PDict importedModules = getImportedModules();
         HashingStorage dictStorage = GetDictStorageNode.getUncached().execute(importedModules);
@@ -1088,5 +1135,13 @@ public final class PythonContext {
 
     public void setGcEnabled(boolean flag) {
         gcEnabled = flag;
+    }
+
+    public AsyncHandler.SharedFinalizer getSharedFinalizer() {
+        return sharedFinalizer;
+    }
+
+    public boolean isFinalizing() {
+        return finalizing;
     }
 }

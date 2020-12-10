@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -38,6 +39,7 @@ import com.oracle.truffle.api.object.Shape;
 
 // Corresponds to PyCFunction, but that name is just confusing
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public final class PBuiltinMethod extends PythonBuiltinObject {
 
     private final PBuiltinFunction function;

@@ -135,9 +135,9 @@ def UnicodeEncodeError__init__(self, encoding, object, start, end, reason):
     self.reason = reason
 
 
-def UnicodeEncodeError__str__(self):
+def UnicodeEncodeError__str__(self):    
     if not hasattr(self, 'object'):
-        return ""
+        return BaseException.__str__(self)
     if self.start < len(self.object) and self.start + 1 == self.end:
         badchar = ord(self.object[self.start])
         if badchar <= 0xff:
@@ -178,7 +178,7 @@ def UnicodeEncodeError__init__(self, encoding, object, start, end, reason):
 
 def UnicodeDecodeError__str__(self):
     if not hasattr(self, 'object'):
-        return ""
+        return BaseException.__str__(self)
     if self.start < len(self.object) and self.start + 1 == self.end:
         byte = self.object[self.start]
         return "'%s' codec can't decode byte 0x%02x in position %d: %s" % (self.encoding, byte, self.start, self.reason)
@@ -200,7 +200,7 @@ def UnicodeTranslateError__init__(self, object, start, end, reason):
 
 def UnicodeTranslateError__str__(self):
     if not hasattr(self, 'object'):
-        return ""
+        return BaseException.__str__(self)
     if self.start < len(self.object) and self.start + 1 == self.end:
         badchar = ord(self.object[self.start])
         if badchar <= 0xff:

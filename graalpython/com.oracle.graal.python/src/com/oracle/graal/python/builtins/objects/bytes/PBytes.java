@@ -35,12 +35,14 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public final class PBytes extends PBytesLike {
 
     public PBytes(Object cls, Shape instanceShape, byte[] bytes) {

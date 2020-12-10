@@ -625,3 +625,12 @@ class ExceptionTests(unittest.TestCase):
         self.assertIsNone(e.__context__.__context__)
         self.assertIsNone(e.__cause__)
         self.assertTrue(e.__suppress_context__)
+
+    def test_encoding_err(self):
+        errMsg = ""
+        try:
+            class A: pass
+            A.__name__ = '\udcdc'
+        except UnicodeEncodeError as e:
+            errMsg = str(e)
+        assert len(errMsg) > 0

@@ -74,7 +74,7 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
     tokens.offer(t);
   }
 
-  int codePointDelta = 0; // keeps the lenght of code points that have more chars that one. 
+  int codePointDelta = 0; // keeps the length of code points that have more chars that one.
 
   @Override
   public Token nextToken() {
@@ -115,7 +115,7 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
     // `a = '𝔘𝔫𝔦𝔠𝔬𝔡𝔢'`
     // then the range of the string literal (from CodePoiintStream) is [4, 13],
     // but the java string substring(4,13)  returns `'𝔘𝔫𝔦𝔠`, because every
-    // the letter is represented with code point of lenght 2. The problem is 
+    // the letter is represented with code point of length 2. The problem is
     // that we don't work in python implementation with code point stream, 
     // but just with the strings. So the lexer converts the ranges of tokens 
     // to the "string" representation. 
@@ -253,6 +253,8 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
 
 @parser::header
 {
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -512,7 +514,7 @@ decorator:
         } else {
             factory.getScopeEnvironment().addSeenVar(dottedName);
         }
-        push( new DecoratorSSTNode(dottedName, args, getStartIndex($ctx), getLastIndex($ctx))); 
+        push( factory.createDecorator(dottedName, args, getStartIndex($ctx), getLastIndex($ctx)));
     }
 ;
 
@@ -543,7 +545,7 @@ funcdef
 		'->' test
 	)? ':' 
 	{ 
-            String name = $n.getText(); 
+            String name = factory.mangleNameInCurrentScope($n.getText());
             ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
             ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -609,7 +611,10 @@ defparameter [ArgDefListBuilder args]
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
-            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue); 
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
@@ -628,7 +633,7 @@ splatparameter [ArgDefListBuilder args]
 		NAME { name = $NAME.text; }
 		( ':' test { type = $test.result; } )?
 	)?
-	{ args.addSplat(name, type); }
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, type); }
 ;
 
 kwargsparameter [ArgDefListBuilder args]
@@ -640,6 +645,9 @@ kwargsparameter [ArgDefListBuilder args]
             String name = $NAME.text;
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+            }
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
             }
             if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, $ctx, getCurrentToken());
@@ -691,7 +699,10 @@ vdefparameter [ArgDefListBuilder args]
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
-            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue); 
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
@@ -707,14 +718,18 @@ vsplatparameter [ArgDefListBuilder args]
 	'*'
 	{ String name = null; }
 	( NAME { name = $NAME.text; } )?
-	{ args.addSplat(name, null);}
+	{ args.addSplat(name != null ? factory.mangleNameInCurrentScope(name) : null, null);}
 ;
 
 vkwargsparameter [ArgDefListBuilder args]
 :
 	'**' NAME
 	{
-            if (args.addKwargs($NAME.text, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+            String name = $NAME.text;
+            if (name != null) {
+                name = factory.mangleNameInCurrentScope(name);
+            }
+            if (args.addKwargs(name, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
         }
@@ -1357,7 +1372,7 @@ atom_expr returns [SSTNode result]
 		| '.' NAME 
                 {   
                     assert $NAME != null;
-                    $result = new GetAttributeSSTNode($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
+                    $result = factory.createGetAttribute($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
                 }
 	)*
 ;
@@ -1689,7 +1704,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
                    scopeEnvironment.popScope();
                 }
 	|
-                { 
+                {
                     String name = getCurrentToken().getText();
                     if (isForbiddenName(name)) {
                         factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);

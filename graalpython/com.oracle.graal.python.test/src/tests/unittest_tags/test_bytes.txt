@@ -126,6 +126,7 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_repeat_1char
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_replace
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_replace_int_error
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_resize_forbidden
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_reverse
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_reversed
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_rfind

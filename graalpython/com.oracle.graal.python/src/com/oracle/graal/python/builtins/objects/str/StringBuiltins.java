@@ -821,6 +821,40 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // str.count(str[, start[, end]])
+    @Builtin(name = "count", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class CountNode extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.FindNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public int count(String self, String substr, int start, int end,
+                        @Cached StringNodes.CountNode countNode) {
+            int len = self.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            return countNode.execute(self, substr, begin, last);
+        }
+
+        @Specialization
+        public int count(Object self, Object sub, int start, int end,
+                        @Cached CastToJavaStringCheckedNode castNode,
+                        @Cached StringNodes.CountNode countNode) {
+            String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "count", self);
+            String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
+            int len = strSelf.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            return countNode.execute(strSelf, subStr, begin, last);
+        }
+    }
+
     // str.join(iterable)
     @Builtin(name = "join", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
@@ -912,11 +946,11 @@ public final class StringBuiltins extends PythonBuiltins {
                 } else {
                     String strKey = cast.cast(entry.key, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
                     if (strKey.isEmpty()) {
-                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
                     int codePoint = PString.codePointAt(strKey, 0);
                     if (strKey.length() != PString.charCount(codePoint)) {
-                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
                     destStorage = hlib.setItem(destStorage, codePoint, entry.value);
                 }
@@ -1924,7 +1958,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = "isidentifier", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsIdentifierNode extends PythonUnaryBuiltinNode {
+    public abstract static class IsIdentifierNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doString(String self) {
             return getCore().getParser().isIdentifier(getCore(), self);

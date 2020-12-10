@@ -5,6 +5,22 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 21.0.0
 
+* Implement name mangling for private attributes
+* Correctly raise an AttributeError when a class defines slots, but not dict
+* Fix infinite continuation prompt in REPL when pasting snippets
+* Add jarray module for compatiblity with Jython
+* Fix multiple memory leaks and crashes when running NumPy in a shared engine
+* Improved support for Pandas
+* Initial support for Matplotlib
+* Many fixes to pass the unittests of standard library types and modules:
+  abc, array, builtin, bzip2, decimal, descriptors, difflib, enum, fractions,
+  gzip, memoryview, metaclass, pickle, platform, print, reprlib, statistics,
+  strftime, strtod, sysconfig, userdict, userlist, userstring, zipfile,
+  zipfile64, zlib
+* Improve performance in multiple areas:
+  array, memoryview, unzipping packages, dictionaries with dynamic string keys,
+  string slicing
+
 ## Version 20.3.0
 
 * Fix multiple memory leaks when running Python code in a shared engine.

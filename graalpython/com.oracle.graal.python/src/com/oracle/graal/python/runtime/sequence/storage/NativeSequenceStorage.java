@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 
@@ -104,16 +101,10 @@ public class NativeSequenceStorage extends SequenceStorage {
         return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, len, capacity, ptr);
     }
 
-    /**
-     * Ensure that the current capacity is big enough. If not, we increase capacity to the next
-     * designated size (not necessarily the requested one).
-     */
     @Override
-    public void ensureCapacity(int newCapacity) {
-        if (newCapacity > capacity) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PythonLanguage.getCore().raise(PythonErrorType.BufferError, ErrorMessages.CANNOT_RESIZE_BUFFER);
-        }
+    public void ensureCapacity(@SuppressWarnings("unused") int newCapacity) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("should not reach");
     }
 
     @Override

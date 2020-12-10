@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,20 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.benchmarks.parser;
 
-import java.util.ArrayList;
+import com.oracle.graal.python.parser.PythonParserImpl;
 import java.util.List;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.infra.Blackhole;
 
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.truffle.api.dsl.NodeFactory;
+public class Serializing extends ParserBenchRunner {
 
-@CoreFunctions(defineModule = "_io")
-public class IOModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+    private List<PythonParserImpl.CacheItem> ssts;
+
+    @Setup
+    public void setup() {
+        System.out.println("### setup ...");
+        System.out.println("    Found " + getSources().size() + " Python sources");
+        ssts = getAntlrResults(getSources());
+        System.out.println("    Obtained " + ssts.size() + " Simple Syntax Trees");
     }
+
+    @Benchmark
+    public void execute(Blackhole bh) {
+        for (int n = 0; n < parsingCycles; n++) {
+            for (PythonParserImpl.CacheItem item : ssts) {
+                bh.consume(PythonParserImpl.serialize(item.getAntlrResult(), item.getGlobalScope(), true));
+            }
+        }
+    }
+
 }

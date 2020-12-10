@@ -126,6 +126,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -256,9 +257,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("O_SYNC", SYNC);
         builtinConstants.put("O_TEMPORARY", TEMPORARY);
         builtinConstants.put("O_TMPFILE", TMPFILE);
-        builtinConstants.put("SEEK_SET", SEEK_SET);
-        builtinConstants.put("SEEK_CUR", SEEK_CUR);
-        builtinConstants.put("SEEK_END", SEEK_END);
 
         builtinConstants.put("WNOHANG", WNOHANG);
         builtinConstants.put("WUNTRACED", WUNTRACED);
@@ -937,6 +935,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object openMode(VirtualFrame frame, Object pathArg, long flags, long fileMode, @SuppressWarnings("unused") PNone dir_fd,
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String pathname = lib.asPath(pathArg);
+            if (pathname.indexOf(0) > -1) {
+                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            }
             Set<StandardOpenOption> options = flagsToOptions((int) flags);
             FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes((int) fileMode);
             try {
@@ -955,7 +956,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 options.remove(StandardOpenOption.CREATE_NEW);
                 options.remove(StandardOpenOption.DELETE_ON_CLOSE);
                 options.add(StandardOpenOption.CREATE);
-                getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
+                getContext().registerAtexitHook(new FileDeleteShutdownHook(truffleFile));
             }
 
             fc = truffleFile.newByteChannel(options, attributes);
@@ -1641,10 +1642,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ReplaceNode extends RenameNode {
     }
 
-    @Builtin(name = "urandom", minNumOfPositionalArgs = 1)
+    @Builtin(name = "urandom", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"size"})
+    @ArgumentClinic(name = "size", conversion = ClinicConversion.Index, defaultValue = "0")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class URandomNode extends PythonBuiltinNode {
+    abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
         private static SecureRandom secureRandom;
 
         private static SecureRandom createRandomInstance() {
@@ -1666,9 +1668,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(bytes);
         }
 
-        @Fallback
-        Object urandomError(Object size) {
-            throw raise(TypeError, ErrorMessages.ARG_EXPECTED_GOT, "integer", size);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.URandomNodeClinicProviderGen.INSTANCE;
         }
     }
 

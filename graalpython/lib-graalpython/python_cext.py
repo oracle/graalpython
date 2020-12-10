@@ -283,21 +283,7 @@ def PyObject_LEN(obj):
     return len(obj)
 
 
-def PyTruffle_Object_LEN(obj):
-    return len(to_java(obj))
-
-
 ##################### BYTES
-
-def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
-    if not PyBytes_Check(obj):
-        raise TypeError('expected bytes, {!s} found'.format(type(obj)))
-    result = obj.decode(encoding)
-    for ch in obj:
-        if ch == 0:
-            raise ValueError('embedded null byte')
-    return result
-
 
 def PyBytes_Size(obj):
     return PyObject_Size(obj)
@@ -312,6 +298,7 @@ def PyBytes_Concat(original, newpart):
     return original + newpart
 
 
+@may_raise
 def PyBytes_FromFormat(fmt, args):
     formatted = fmt % args
     return formatted.encode()

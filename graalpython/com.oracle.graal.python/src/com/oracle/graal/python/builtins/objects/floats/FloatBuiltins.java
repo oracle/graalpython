@@ -80,9 +80,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.AsIntegerRatioClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -952,16 +954,22 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long round(double x, @SuppressWarnings("unused") PNone none,
+        Object round(double x, @SuppressWarnings("unused") PNone none,
                         @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile isLongProfile) {
             if (nanProfile.profile(Double.isNaN(x))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }
             if (infProfile.profile(Double.isInfinite(x))) {
                 throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
             }
-            return (long) round(x, 0);
+            double result = round(x, 0);
+            if (isLongProfile.profile(result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
+                return factory().createInt(toBigInteger(result));
+            } else {
+                return (long) result;
+            }
         }
 
         @Fallback
@@ -971,6 +979,11 @@ public final class FloatBuiltins extends PythonBuiltins {
             } else {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__round__", "float", x);
             }
+        }
+
+        @TruffleBoundary
+        private static BigInteger toBigInteger(double d) {
+            return BigDecimal.valueOf(d).toBigInteger();
         }
     }
 
@@ -1511,20 +1524,19 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "as_integer_ratio", minNumOfPositionalArgs = 1)
-    abstract static class AsIntegerRatio extends PythonUnaryBuiltinNode {
+    @Builtin(name = "as_integer_ratio", parameterNames = "x")
+    @ArgumentClinic(name = "x", defaultValue = "0.0", conversion = ClinicConversion.Double)
+    abstract static class AsIntegerRatio extends PythonClinicBuiltinNode {
 
-        @Specialization
-        PTuple getPFloat(PFloat self,
-                        @Shared("nanProfile") @Cached ConditionProfile nanProfile,
-                        @Shared("infProfile") @Cached ConditionProfile infProfile) {
-            return get(self.getValue(), nanProfile, infProfile);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return AsIntegerRatioClinicProviderGen.INSTANCE;
         }
 
         @Specialization
         PTuple get(double self,
-                        @Shared("nanProfile") @Cached ConditionProfile nanProfile,
-                        @Shared("infProfile") @Cached ConditionProfile infProfile) {
+                        @Cached ConditionProfile nanProfile,
+                        @Cached ConditionProfile infProfile) {
             if (nanProfile.profile(Double.isNaN(self))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
             }
@@ -1648,5 +1660,19 @@ public final class FloatBuiltins extends PythonBuiltins {
             return isInteger(pValue.getValue());
         }
 
+    }
+
+    @Builtin(name = SpecialMethodNames.__GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doL(double self) {
+            return factory().createTuple(new Object[]{factory().createFloat(self)});
+        }
+
+        @Specialization
+        Object getPI(PFloat self) {
+            return factory().createTuple(new Object[]{factory().createFloat(self.getValue())});
+        }
     }
 }

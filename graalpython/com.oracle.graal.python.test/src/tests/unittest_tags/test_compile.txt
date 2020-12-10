@@ -18,10 +18,12 @@
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_indentation
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_lambda_doc
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_literals_with_leading_zeroes
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_mangling
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_merge_constants
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_no_ending_newline
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_none_assignment
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_none_keyword_arg
+*graalpython.lib-python.3.test.test_compile.TestSpecifics.test_null_terminated
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_other_newlines
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_path_like_objects
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_peephole_opt_unreachable_code_array_access_in_bounds

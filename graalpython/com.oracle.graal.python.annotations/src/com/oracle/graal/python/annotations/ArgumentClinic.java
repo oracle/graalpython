@@ -135,5 +135,10 @@ public @interface ArgumentClinic {
          * Corresponds to CPython's {@code Py_buffer} converter.
          */
         Buffer,
+        /**
+         * Corresponds to CPython's {@code double} converter. Supports {@link #defaultValue()}, and
+         * {@link #useDefaultForNone()}.
+         */
+        Double,
     }
 }

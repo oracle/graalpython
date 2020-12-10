@@ -25,8 +25,9 @@ import sys
 _warn = sys.modules["_warnings"].warn
 _os = sys.modules.get("posix", sys.modules.get("nt"))
 
-
-DEFAULT_BUFFER_SIZE = 8192
+SEEK_SET = 0
+SEEK_CUR = 1
+SEEK_END = 2
 
 
 class BlockingIOError(OSError):
@@ -363,7 +364,7 @@ class FileIO(_RawIOBase):
             if self.__appending__:
                 # For consistent behaviour, we explicitly seek to the end of file
                 # (otherwise, it might be done only on the first write()).
-                _os.lseek(self.__fd__, 0, _os.SEEK_END)
+                _os.lseek(self.__fd__, 0, SEEK_END)
         except:
             if not fd_is_own:
                 self.__fd__ = -1
@@ -451,7 +452,7 @@ class FileIO(_RawIOBase):
         self._checkClosed()
         if self.__seekable__ < 0:
             try:
-                _os.lseek(self.__fd__, 0, _os.SEEK_CUR)
+                _os.lseek(self.__fd__, 0, SEEK_CUR)
             except OSError:
                 self.__seekable__ = 0
             else:
@@ -563,7 +564,7 @@ def open_code(path):
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# following definitions: patched in the __builtins_patches__ module
+# following definitions: patched in the pyio_patches module
 #
 # ----------------------------------------------------------------------------------------------------------------------
 class _BufferedIOBase(_IOBase):
@@ -579,10 +580,6 @@ class _TextIOBase(_IOBase):
 
 
 class StringIO(_TextIOBase):
-    pass
-
-
-class BufferedReader(_BufferedIOBase):
     pass
 
 
@@ -612,7 +609,7 @@ def open(*args, **kwargs):
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# needed for imports will be patched in the __builtins_patches__ module
+# needed for imports will be patched in the pyio_patches module
 #
 # ----------------------------------------------------------------------------------------------------------------------
 import builtins

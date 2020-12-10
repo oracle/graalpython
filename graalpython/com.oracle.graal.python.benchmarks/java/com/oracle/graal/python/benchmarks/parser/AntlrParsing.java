@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,47 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects;
+package com.oracle.graal.python.benchmarks.parser;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.graal.python.parser.PythonSSTNodeFactory;
+import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.truffle.api.source.Source;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.infra.Blackhole;
 
-@ExportLibrary(PythonObjectLibrary.class)
-public final class PEllipsis extends PythonAbstractObject {
+public class AntlrParsing extends ParserBenchRunner {
 
-    public static final PEllipsis INSTANCE = new PEllipsis();
-
-    private PEllipsis() {
+    @Setup
+    public void setup() {
+        System.out.println("### setup ...");
+        System.out.println("    Found " + getSources().size() + " Python sources");
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        return "Ellipsis";
+    @Benchmark
+    public void execute(Blackhole bh) {
+
+        for (int n = 0; n < parsingCycles; n++) {
+            for (Source source : getSources()) {
+                try {
+                    PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, parser);
+                    bh.consume(parser.parseWithANTLR(PythonParser.ParserMode.File, core, sstFactory, source, null, null));
+                } catch (RuntimeException e) {
+                    // do nothing
+                }
+            }
+        }
     }
 
-    @Override
-    public int compareTo(Object o) {
-        return this.hashCode() - o.hashCode();
-    }
-
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PEllipsis;
-    }
-
-    @ExportMessage
-    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
-    }
 }

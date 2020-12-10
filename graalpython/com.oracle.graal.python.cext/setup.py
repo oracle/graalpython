@@ -59,9 +59,10 @@ libhpy_name = "libhpy"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
-relative_rpath = "@loader_path" if darwin_native else r"\$ORIGIN"
+relative_rpath = "@loader_path" if darwin_native else r"$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
+is_managed = 'managed' in SOABI
 
 # configure logger
 logger = logging.getLogger(__name__)
@@ -163,9 +164,10 @@ if threaded:
             logger.debug("Compiling {!s}".format(src))
             self._compile(obj, src, ext, cc_args, extra_postargs, pp_opts)
 
-        if len(objects) > 1:
-            logger.debug("Compiling {} objects in parallel.".format(len(objects)))
-            pool = SimpleThreadPool()
+        n_objects = len(objects)
+        if n_objects > 1:
+            logger.debug("Compiling {} objects in parallel.".format(n_objects))
+            pool = SimpleThreadPool(min(n_objects, os.cpu_count()))
             pool.start_thread_pool(_single_compile)
             pool.put_job(objects)
             pool.wait_until_finished()
@@ -206,7 +208,7 @@ class CAPIDependency:
         if "==" in package_spec:
             self.package_name, _, self.version = package_spec.rpartition("==")
         else:
-            self.package_name = self.package_spec
+            self.package_name = package_spec
             self.version = None
         self.src_var = src_var
 
@@ -269,6 +271,10 @@ class Bzip2Depedency(CAPIDependency):
         return lib_src_folder
 
     def install(self, build_dir=None):
+        lib_path = os.path.join(self.lib_install_dir, "lib%s.so" % self.lib_name)
+        if os.path.exists(lib_path):
+            # library has been built earlier, so just return the install directory.
+            return self.lib_install_dir
         if not build_dir:
             build_dir = self.build()
 
@@ -290,9 +296,32 @@ class Bzip2Depedency(CAPIDependency):
         shutil.copy(os.path.join(build_dir, self.header_name), dest_include_filename)
 
         # create symlink 'libbz2.so' for linking
-        os.symlink(self.install_name, os.path.join(self.lib_install_dir, "lib%s.so" % self.lib_name))
+        os.symlink(self.install_name, lib_path)
 
         return self.lib_install_dir
+
+
+def _build_deps(deps):
+    libs = []
+    library_dirs = []
+    include_dirs = []
+    for dep in deps:
+        if not dep.conftest():
+            # this will download, build and install the library
+            install_dir = dep.install()
+            assert install_dir == dep.lib_install_dir
+        else:
+            logger.info("conftest for %s passed; not installing", dep.package_name)
+
+        # Whether or not the dependency is already available, we need to link against it.
+        if dep.lib_install_dir:
+            libs.append(dep.lib_name)
+            library_dirs.append(dep.lib_install_dir)
+
+        # If the dependency provides a header file, add the include path
+        if dep.include_install_dir:
+            include_dirs.append(dep.include_install_dir)
+    return libs, library_dirs, include_dirs
 
 
 class NativeBuiltinModule:
@@ -307,27 +336,10 @@ class NativeBuiltinModule:
 
     def __call__(self):
         kwargs = self.kwargs
-        libs = []
-        library_dirs = []
-        include_dirs = []
+
+        libs, library_dirs, include_dirs = _build_deps(self.deps)
         runtime_library_dirs = []
         extra_link_args = []
-        for dep in self.deps:
-            if not dep.conftest():
-                # this will download, build and install the library
-                install_dir = dep.install()
-                assert install_dir == dep.lib_install_dir
-            else:
-                logger.info("conftest for %s passed; not installing", dep.package_name)
-
-            # Whether or not the dependency is already available, we need to link against it.
-            if dep.lib_install_dir:
-                libs.append(dep.lib_name)
-                library_dirs.append(dep.lib_install_dir)
-
-            # If the dependency provides a header file, add the include path
-            if dep.include_install_dir:
-                include_dirs.append(dep.include_install_dir)
 
         libs += kwargs.get("libs", [])
         library_dirs += kwargs.get("library_dirs", [])
@@ -394,6 +406,37 @@ def build_libhpy(capi_home):
         ext_modules=[module],
     )
 
+def build_nativelibsupport(capi_home, subdir, libname, deps=[], **kwargs):
+    if not is_managed:
+        src_dir = os.path.join(__dir__, subdir)
+        files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
+
+        libs, library_dirs, include_dirs = _build_deps(deps)
+        libs += kwargs.get("libs", [])
+        library_dirs += kwargs.get("library_dirs", [])
+        runtime_library_dirs = kwargs.get("runtime_library_dirs", [])
+        include_dirs += kwargs.get("include_dirs", [])
+        extra_link_args = kwargs.get("extra_link_args", [])
+        module = Extension(libname,
+                        sources=files,
+                        libraries=libs,
+                        library_dirs=library_dirs,
+                        extra_compile_args=cflags_warnings + kwargs.get("cflags_warnings", []),
+                        runtime_library_dirs=runtime_library_dirs,
+                        include_dirs=include_dirs,
+                        extra_link_args=extra_link_args,
+
+        )
+        args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
+        setup(
+            script_name='setup' + libname,
+            script_args=args,
+            name=libname,
+            version='1.0',
+            description="Graal Python's native %s support" % subdir,
+            ext_modules=[module],
+        )
+
 
 def build_builtin_exts(capi_home):
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean"]
@@ -427,6 +470,14 @@ def build(capi_home):
 
     try:
         build_libhpy(capi_home)
+        build_nativelibsupport(capi_home, 
+                                subdir="zlib", 
+                                libname="libzsupport", 
+                                libs=['z'])
+        build_nativelibsupport(capi_home, 
+                                subdir="bz2", 
+                                libname="libbz2support", 
+                                deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")])
         build_libpython(capi_home)
         build_builtin_exts(capi_home)
     finally:

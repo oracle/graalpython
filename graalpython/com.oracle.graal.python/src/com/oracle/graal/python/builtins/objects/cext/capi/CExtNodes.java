@@ -50,6 +50,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
@@ -72,12 +75,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CextU
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNativeNullNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TernaryFirstSecondToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.WrapVoidPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
@@ -89,6 +94,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Impo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
+import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -104,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -123,6 +131,8 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -150,12 +160,14 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
@@ -3155,6 +3167,255 @@ public abstract class CExtNodes {
         static int typeCount() {
             CompilerAsserts.neverPartOfCompilation();
             return LLVMType.values().length;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class UnicodeFromFormatNode extends Node {
+        private static Pattern pattern;
+
+        private static Matcher match(String formatStr) {
+            if (pattern == null) {
+                pattern = Pattern.compile("%(?<flags>[-\\+ #0])?(?<width>\\d+)?(\\.(?<prec>\\d+))?(?<len>(l|ll|z))?(?<spec>[%cduixsAUVSR])");
+            }
+            return pattern.matcher(formatStr);
+        }
+
+        public abstract Object execute(String format, Object vaList);
+
+        @Specialization
+        @TruffleBoundary
+        Object doGeneric(String format, Object vaList,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+
+            // helper nodes
+            GetVaArgsNode getVaArgsNode = GetVaArgsNodeGen.getUncached();
+            ToJavaNode toJavaNode = ToJavaNodeGen.getUncached();
+            CastToJavaStringNode castToJavaStringNode = CastToJavaStringNodeGen.getUncached();
+            FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
+            InteropLibrary interopLibrary = InteropLibrary.getUncached();
+            PRaiseNode raiseNode = PRaiseNode.getUncached();
+
+            // set the encapsulating node reference to get a precise error position
+            EncapsulatingNodeReference current = EncapsulatingNodeReference.getCurrent();
+            current.set(this);
+            StringBuilder result = new StringBuilder();
+            int vaArgIdx = 0;
+            try {
+                Matcher matcher = match(format);
+                int cur = 0;
+                while (matcher.find(cur)) {
+                    // not all combinations are valid
+                    boolean valid = false;
+
+                    // add anything before the match
+                    result.append(format, cur, matcher.start());
+
+                    cur = matcher.end();
+
+                    String spec = matcher.group("spec");
+                    String len = matcher.group("len");
+                    int prec = getPrec(matcher.group("prec"));
+                    assert spec.length() == 1;
+                    char la = spec.charAt(0);
+                    switch (la) {
+                        case '%':
+                            // %%
+                            result.append('%');
+                            break;
+                        case 'c':
+                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t);
+                            if (ordinal < 0 || ordinal > 0x110000) {
+                                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "character argument not in range(0x110000)");
+                            }
+                            result.append((char) ordinal);
+                            break;
+                        case 'd':
+                        case 'i':
+                            // %d, %i, %ld, %li, %lld, %lli, %zd, %zi
+                            if (len != null) {
+                                LLVMType llvmType = null;
+                                switch (len) {
+                                    case "ll":
+                                        llvmType = LLVMType.longlong_t;
+                                        break;
+                                    case "l":
+                                        llvmType = LLVMType.long_t;
+                                        break;
+                                    case "z":
+                                        llvmType = LLVMType.Py_ssize_t;
+                                        break;
+                                }
+                                if (llvmType != null) {
+                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, llvmType);
+                                    vaArgIdx++;
+                                    result.append(castToLong(interopLibrary, raiseNode, value));
+                                    valid = true;
+                                }
+                            } else {
+                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t));
+                                vaArgIdx++;
+                                valid = true;
+                            }
+                            break;
+                        case 'u':
+                            // %u, %lu, %llu, %zu
+                            if (len != null) {
+                                LLVMType llvmType = null;
+                                switch (len) {
+                                    case "ll":
+                                        llvmType = LLVMType.ulonglong_t;
+                                        break;
+                                    case "l":
+                                        llvmType = LLVMType.ulong_t;
+                                        break;
+                                    case "z":
+                                        llvmType = LLVMType.size_t;
+                                        break;
+                                }
+                                if (llvmType != null) {
+                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, llvmType);
+                                    vaArgIdx++;
+                                    result.append(castToLong(interopLibrary, raiseNode, value));
+                                    valid = true;
+                                }
+                            } else {
+                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.uint_t)));
+                                vaArgIdx++;
+                                valid = true;
+                            }
+                            break;
+                        case 'x':
+                            // %x
+                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 's':
+                            // %s
+                            Object unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx));
+                            String sValue = castToJavaStringNode.execute(unicodeObj);
+                            try {
+                                if (prec == -1) {
+                                    result.append(sValue);
+                                } else {
+                                    result.append(sValue, 0, Math.min(sValue.length(), prec));
+                                }
+                            } catch (CannotCastException e) {
+                                // That should really not happen because we created the unicode
+                                // object with FromCharPointerNode which guarantees to return a
+                                // String/PString.
+                                throw CompilerDirectives.shouldNotReachHere();
+                            }
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'p':
+                            // %p
+                            result.append("0x").append(Long.toHexString(getPyObject(getVaArgsNode, vaList, vaArgIdx).hashCode()));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'A':
+                            // %A
+                            result.append(callBuiltin(contextRef.get(), BuiltinNames.ASCII, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'U':
+                            // %U
+                            result.append(castToJavaStringNode.execute(getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'V':
+                            // %V
+                            Object pyObjectPtr = getVaArgsNode.getPyObjectPtr(vaList, vaArgIdx);
+                            if (InteropLibrary.getUncached().isNull(pyObjectPtr)) {
+                                unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx + 1));
+                            } else {
+                                unicodeObj = toJavaNode.execute(pyObjectPtr);
+                            }
+                            result.append(castToJavaStringNode.execute(unicodeObj));
+                            vaArgIdx += 2;
+                            valid = true;
+                            break;
+                        case 'S':
+                            // %S
+                            result.append(callBuiltin(contextRef.get(), BuiltinNames.STR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'R':
+                            // %R
+                            result.append(callBuiltin(contextRef.get(), BuiltinNames.REPR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                    }
+                    // this means, we did not detect a valid format specifier, so add the whole
+                    // group
+                    if (!valid) {
+                        result.append(matcher.group());
+                    }
+                }
+                // add anything after the last matched group (or the whole format string if nothing
+                // matched)
+                result.append(format, cur, format.length());
+            } catch (InteropException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Error when accessing variable argument at position %d", vaArgIdx);
+            } finally {
+                current.get();
+            }
+            return result.toString();
+        }
+
+        private static int getPrec(String prec) {
+            if (prec == null) {
+                return -1;
+            }
+            return Integer.parseInt(prec);
+        }
+
+        /**
+         * Read an element from the {@code va_list} with the specified type and cast it to a Java
+         * {@code int}. Throws a {@code SystemError} if this is not possible.
+         */
+        private static int getAndCastToInt(GetVaArgsNode getVaArgsNode, InteropLibrary lib, PRaiseNode raiseNode, Object vaList, int idx, LLVMType llvmType) throws InteropException {
+            Object value = getVaArgsNode.execute(vaList, idx, llvmType);
+            if (lib.fitsInInt(value)) {
+                try {
+                    return lib.asInt(value);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, "%p object cannot be interpreted as integer", value);
+        }
+
+        /**
+         * Cast a value to a Java {@code long}. Throws a {@code SystemError} if this is not
+         * possible.
+         */
+        private static long castToLong(InteropLibrary lib, PRaiseNode raiseNode, Object value) {
+            if (lib.fitsInLong(value)) {
+                try {
+                    return lib.asLong(value);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, "%p object cannot be interpreted as integer", value);
+        }
+
+        private static Object getPyObject(GetVaArgsNode getVaArgsNode, Object vaList, int idx) throws InteropException {
+            return ToJavaNodeGen.getUncached().execute(getVaArgsNode.getPyObjectPtr(vaList, idx));
+        }
+
+        @TruffleBoundary
+        private static Object callBuiltin(PythonContext context, String builtinName, Object object) {
+            Object attribute = PythonObjectLibrary.getUncached().lookupAttribute(context.getBuiltins(), null, builtinName);
+            return CastToJavaStringNodeGen.getUncached().execute(PythonObjectLibrary.getUncached().callObject(attribute, null, object));
         }
     }
 

@@ -237,8 +237,16 @@ public abstract class CExtParseArgumentsNode {
                         return state.close();
                     }
                 case '|':
+                    if (state.restOptional) {
+                        raiseNode.raiseIntWithoutFrame(0, SystemError, "Invalid format string (| specified twice)", c);
+                        throw ParseArgumentsException.raise();
+                    }
                     return state.restOptional();
                 case '$':
+                    if (state.restKeywordsOnly) {
+                        raiseNode.raiseIntWithoutFrame(0, SystemError, "Invalid format string ($ specified twice)", c);
+                        throw ParseArgumentsException.raise();
+                    }
                     return state.restKeywordsOnly();
                 case '!':
                 case '&':
@@ -328,11 +336,11 @@ public abstract class CExtParseArgumentsNode {
         }
 
         ParserState open(PositionalArgStack nestedArgs) {
-            return new ParserState(funName, outIndex, restOptional, true, nestedArgs, nativeContext);
+            return new ParserState(funName, outIndex, restOptional, false, nestedArgs, nativeContext);
         }
 
         ParserState close() {
-            return new ParserState(funName, outIndex, restOptional, true, v.prev, nativeContext);
+            return new ParserState(funName, outIndex, restOptional, false, v.prev, nativeContext);
         }
 
     }
@@ -1275,56 +1283,6 @@ public abstract class CExtParseArgumentsNode {
                 outVarPtrLib.writeArrayElement(outVarPtr, 0, value);
             } catch (InteropException e) {
                 CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-    }
-
-    /**
-     * Gets the pointer to the outVar at the given index. This is basically an access to the varargs
-     * like {@code va_arg(*valist, void *)}
-     */
-    @GenerateUncached
-    @ImportStatic(LLVMType.class)
-    abstract static class GetVaArgsNode extends Node {
-
-        public final Object getInt8Ptr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.int8_ptr_t);
-        }
-
-        public final Object getInt16Ptr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.int16_ptr_t);
-        }
-
-        public final Object getInt32Ptr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.int32_ptr_t);
-        }
-
-        public final Object getInt63Ptr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.int64_ptr_t);
-        }
-
-        public final Object getPyObjectPtr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.PyObject_ptr_t);
-        }
-
-        public final Object getCharPtr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.char_ptr_t);
-        }
-
-        public final Object getPyComplexPtr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.Py_complex_ptr_t);
-        }
-
-        public abstract Object execute(Object valist, int index, LLVMType llvmType) throws InteropException;
-
-        @Specialization(limit = "1")
-        static Object doGeneric(Object valist, int index, LLVMType llvmType,
-                        @CachedLibrary("valist") InteropLibrary valistLib,
-                        @Cached GetLLVMType getLLVMType) throws InteropException {
-            try {
-                return valistLib.invokeMember(valist, "get", index, getLLVMType.execute(llvmType));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }

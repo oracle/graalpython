@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
 import java.util.List;
 
@@ -56,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -174,6 +176,19 @@ public final class MapBuiltins extends PythonBuiltins {
                 }
             }
             return false;
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonBuiltinNode {
+        @Specialization
+        PTuple doit(PMap self, @SuppressWarnings("unused") Object ignored) {
+            Object[] iterators = self.getIterators();
+            Object[] args = new Object[iterators.length + 1];
+            args[0] = self.getFunction();
+            System.arraycopy(iterators, 0, args, 1, iterators.length);
+            return factory().createTuple(new Object[]{PythonBuiltinClassType.PMap, factory().createTuple(args)});
         }
     }
 }

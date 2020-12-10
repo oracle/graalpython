@@ -48,6 +48,7 @@ SUITE = mx.suite("graalpython")
 #
 # ----------------------------------------------------------------------------------------------------------------------
 ENV_PYPY_HOME = "PYPY_HOME"
+ENV_JYTHON_JAR = "JYTHON_JAR"
 VM_NAME_GRAALPYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
 VM_NAME_PYPY = "pypy"
@@ -248,22 +249,55 @@ class PyPyVm(AbstractPythonIterationsControlVm):
         return VM_NAME_PYPY
 
 
-class JythonVm(AbstractPythonIterationsControlVm):
+class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
     JYTHON_INTERPRETER = "jython"
 
-    def __init__(self, config_name, options=None, env=None, iterations=None):
-        super(JythonVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
+    def __init__(self, config_name, options=None, env=None, iterations=None, host_vm=None):
+        AbstractPythonIterationsControlVm.__init__(self, config_name, options=options, env=env, iterations=iterations)
+        GuestVm.__init__(self, host_vm=host_vm)
 
     def override_iterations(self, requested_iterations):
-        return 2
+        return 3
+
+    def hosting_registry(self):
+        return java_vm_registry
 
     @property
     def interpreter(self):
         try:
             return subprocess.check_output("which %s" % JythonVm.JYTHON_INTERPRETER, shell=True).decode().strip()
-        except OSError as e:
+        except Exception as e:
             mx.log_error(e)
-            mx.abort("Error when executing `which jython`!\n")
+            mx.abort("`jython` is neither on the path, nor is {} set!\n".format(ENV_JYTHON_JAR))
+
+    def run(self, cwd, args):
+        jar = mx.get_env(ENV_JYTHON_JAR)
+        if jar:
+            _check_vm_args(self.name(), args)
+            host_vm = self.host_vm()
+
+            vm_args = mx.get_runtime_jvm_args([])
+            vm_args += ["-jar", jar]
+            for a in args[:]:
+                if a.startswith("-D") or a.startswith("-XX"):
+                    vm_args.insert(0, a)
+                    args.remove(a)
+            args = self._override_iterations_args(args)
+            cmd = vm_args + args
+
+            if not self._env:
+                self._env = dict()
+            with environ(self._env):
+                return host_vm.run(cwd, cmd)
+        else:
+            return AbstractPythonIterationsControlVm.run(self, cwd, args)
+
+    def config_name(self):
+        return self._config_name
+
+    def with_host_vm(self, host_vm):
+        return self.__class__(config_name=self._config_name, options=self._options, env=self._env,
+                              iterations=self._iterations, host_vm=host_vm)
 
     def name(self):
         return VM_NAME_JYTHON
@@ -315,7 +349,7 @@ class GraalPythonVm(GuestVm):
         if mx.suite("tools", fatalIfMissing=False):
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
-            dists.append('SULONG')
+            dists.append('SULONG_NATIVE')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
@@ -584,7 +618,7 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
         if mx.suite("tools", fatalIfMissing=False):
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
-            dists.append('SULONG')
+            dists.append('SULONG_NATIVE')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
@@ -658,3 +692,40 @@ class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
             ),
         ]
 
+class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
+     
+    def get_vm_registry(self):
+        return java_vm_registry
+    
+    def get_bench_name(self, benchmarks):
+        return benchmarks[0]
+    
+    def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        vmArgs = self.vmArgs(bmSuiteArgs)
+        dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
+        if mx.suite("tools", fatalIfMissing=False):
+            dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
+        if mx.suite("sulong", fatalIfMissing=False):
+            dists.append('SULONG')
+            if mx.suite("sulong-managed", fatalIfMissing=False):
+                dists.append('SULONG_MANAGED')
+
+        vmArgs += [
+            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
+        ]
+        vmArgs += mx.get_runtime_jvm_args(dists + ['com.oracle.graal.python.benchmarks'], jdk=mx.get_jdk())
+        jmh_entry = ["com.oracle.graal.python.benchmarks.parser.ParserBenchRunner"]
+        runArgs = self.runArgs(bmSuiteArgs)
+
+        bench_name = benchmarks[0]
+        bench_args = self._benchmarks[bench_name]
+        return vmArgs + jmh_entry + runArgs + [bench_name] + bench_args
+        
+    def get_arg(self, bench_name):
+        return " ".join(self._benchmarks[bench_name][1:])
+    
+    @classmethod
+    def get_benchmark_suites(cls, benchmarks):
+        assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
+        return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
+    

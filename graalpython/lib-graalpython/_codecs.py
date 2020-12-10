@@ -77,7 +77,7 @@ def lookup(encoding):
         return result
 
     # Next, try if we have a Java implementation of the encoding
-    if __truffle_lookup(normalized_encoding):
+    if __truffle_lookup__(normalized_encoding):
         import _codecs_truffle
         result = _codecs_truffle.codec_info_for_truffle(normalized_encoding)
     else:
@@ -150,63 +150,53 @@ def lookup_error(errors='strict'):
 
 
 @__graalpython__.builtin
-def escape_encode(data, errors=None):
-    return unicode_escape_encode(data, errors)
-
-
-@__graalpython__.builtin
-def escape_decode(data, errors=None):
-    return unicode_escape_decode(data, errors)
-
-
-@__graalpython__.builtin
 def utf_8_encode(string, errors=None):
-    return __truffle_encode(string, "utf-8", errors)
+    return __truffle_encode__(string, "utf-8", errors)
 
 
 @__graalpython__.builtin
 def utf_8_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-8", errors, final)
+    return __truffle_decode__(string, "utf-8", errors, final)
 
 
 @__graalpython__.builtin
 def utf_7_encode(string, errors=None):
-    return __truffle_encode(string, "utf-7", errors)
+    return __truffle_encode__(string, "utf-7", errors)
 
 
 @__graalpython__.builtin
 def utf_7_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-7", errors, final)
+    return __truffle_decode__(string, "utf-7", errors, final)
 
 
 @__graalpython__.builtin
 def utf_16_encode(string, errors=None, byteorder=0):
-    return __truffle_encode(string, "utf-16", errors)
+    return __truffle_encode__(string, "utf-16", errors)
 
 
 @__graalpython__.builtin
 def utf_16_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-16", errors, final)
+    return __truffle_decode__(string, "utf-16", errors, final)
 
 
 @__graalpython__.builtin
 def utf_16_le_encode(string, errors=None):
-    return __truffle_encode(string, "utf-16-le", errors)
+    return __truffle_encode__(string, "utf-16-le", errors)
 
 
 @__graalpython__.builtin
 def utf_16_le_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-16-le", errors, final)
+    return __truffle_decode__(string, "utf-16-le", errors, final)
 
 
 @__graalpython__.builtin
 def utf_16_be_encode(string, errors=None):
-    return __truffle_encode(string, "utf-16-be", errors)
+    return __truffle_encode__(string, "utf-16-be", errors)
 
 
 @__graalpython__.builtin
 def utf_16_be_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-16-be", errors, final)
+    return __truffle_decode__(string, "utf-16-be", errors, final)
 
 
 @__graalpython__.builtin
@@ -216,32 +206,32 @@ def utf_16_ex_decode(data, errors=None, byteorder=0, final=False):
 
 @__graalpython__.builtin
 def utf_32_encode(string, errors=None, byteorder=0):
-    return __truffle_encode(string, "utf-32", errors)
+    return __truffle_encode__(string, "utf-32", errors)
 
 
 @__graalpython__.builtin
 def utf_32_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-32", errors, final)
+    return __truffle_decode__(string, "utf-32", errors, final)
 
 
 @__graalpython__.builtin
 def utf_32_le_encode(string, errors=None):
-    return __truffle_encode(string, "utf-32-le", errors)
+    return __truffle_encode__(string, "utf-32-le", errors)
 
 
 @__graalpython__.builtin
 def utf_32_le_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-32-le", errors, final)
+    return __truffle_decode__(string, "utf-32-le", errors, final)
 
 
 @__graalpython__.builtin
 def utf_32_be_encode(string, errors=None):
-    return __truffle_encode(string, "utf-32-be", errors)
+    return __truffle_encode__(string, "utf-32-be", errors)
 
 
 @__graalpython__.builtin
 def utf_32_be_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-32-be", errors, final)
+    return __truffle_decode__(string, "utf-32-be", errors, final)
 
 
 @__graalpython__.builtin
@@ -261,42 +251,42 @@ def unicode_internal_decode(obj, errors=None):
 
 @__graalpython__.builtin
 def raw_unicode_escape_encode(string, errors=None):
-    return __truffle_encode(string, "raw_unicode_escape", errors)
+    return __truffle_encode__(string, "raw_unicode_escape", errors)
 
 
 @__graalpython__.builtin
 def raw_unicode_escape_decode(string, errors=None):
-    return __truffle_decode(string, "raw_unicode_escape", errors)
+    return __truffle_decode__(string, "raw_unicode_escape", errors)
 
 
 @__graalpython__.builtin
 def unicode_escape_encode(string, errors=None):
-    return __truffle_encode(string, "unicode_escape", errors)
+    return __truffle_encode__(string, "unicode_escape", errors)
 
 
 @__graalpython__.builtin
 def unicode_escape_decode(string, errors=None):
-    return __truffle_decode(string, "unicode_escape", errors)
+    return __truffle_decode__(string, "unicode_escape", errors)
 
 
 @__graalpython__.builtin
 def latin_1_encode(string, errors=None):
-    return __truffle_encode(string, "latin-1", errors)
+    return __truffle_encode__(string, "latin-1", errors)
 
 
 @__graalpython__.builtin
 def latin_1_decode(string, errors=None):
-    return __truffle_decode(string, "latin-1", errors)
+    return __truffle_decode__(string, "latin-1", errors)
 
 
 @__graalpython__.builtin
 def ascii_encode(string, errors=None):
-    return __truffle_encode(string, "ascii", errors)
+    return __truffle_encode__(string, "ascii", errors)
 
 
 @__graalpython__.builtin
 def ascii_decode(string, errors=None):
-    return __truffle_decode(string, "ascii", errors)
+    return __truffle_decode__(string, "ascii", errors)
 
 
 @__graalpython__.builtin

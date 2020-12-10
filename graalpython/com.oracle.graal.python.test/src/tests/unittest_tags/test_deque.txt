@@ -12,6 +12,7 @@
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_copy
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_copy_method
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_count
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_deepcopy
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_delitem
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_extend
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_extendleft

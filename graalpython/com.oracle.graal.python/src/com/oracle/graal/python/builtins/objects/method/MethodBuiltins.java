@@ -33,8 +33,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -200,17 +199,6 @@ public class MethodBuiltins extends PythonBuiltins {
                         @Cached("create()") GetKeywordDefaultsNode getKeywordDefaultsNode) {
             PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(self);
             return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doGeneric(@SuppressWarnings("unused") Object obj) {
-            // TODO we should not override '__reduce__' but properly distinguish between heap/non
-            // heap types
-            throw raise(TypeError, ErrorMessages.CANT_PICKLE_FUNC_OBJS);
         }
     }
 

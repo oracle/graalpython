@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -162,21 +161,13 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(output);
         }
 
-        @Specialization
-        PBytes a2b(PythonModule self, PArray buffer,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
-
-            return a2b(self, toByteArray.execute(buffer.getSequenceStorage()));
-        }
-
         @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "2")
         PBytes a2b(PythonModule self, Object buffer,
                         @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
-
             try {
                 return a2b(self, bufferLib.getBufferBytes(buffer));
             } catch (UnsupportedMessageException e) {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+                throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
@@ -281,18 +272,11 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "2")
         PBytes b2a(Object buffer,
                         @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
-
             try {
                 return b2a(bufferLib.getBufferBytes(buffer));
             } catch (UnsupportedMessageException e) {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+                throw CompilerDirectives.shouldNotReachHere();
             }
-        }
-
-        @Specialization
-        PBytes b2a(PArray data,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            return b2a(toByteArray.execute(data.getSequenceStorage()));
         }
 
         @Fallback
@@ -316,13 +300,13 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class Crc32Node extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(crc)")
-        long b2a(PBytes data, @SuppressWarnings("unused") PNone crc,
+        static long b2a(PBytes data, @SuppressWarnings("unused") PNone crc,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
             return getCrcValue(toByteArray.execute(data.getSequenceStorage()));
         }
 
         @TruffleBoundary
-        private static final long getCrcValue(byte[] bytes) {
+        private static long getCrcValue(byte[] bytes) {
             CRC32 crc32 = new CRC32();
             crc32.update(bytes);
             return crc32.getValue();

@@ -710,3 +710,11 @@ class defaultdict(dict):
         for k,v in self.items():
             cp[k] = v
         return cp
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        args = tuple() if self.default_factory is None else (self.default_factory,)
+        return type(self), args, None, None, iter(self.items())
+
+
+defaultdict.__module__ = 'collections'

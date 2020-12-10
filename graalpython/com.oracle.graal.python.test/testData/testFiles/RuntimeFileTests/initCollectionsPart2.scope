@@ -335,7 +335,7 @@ Scope: []
             FreeVars: Empty
     Scope: UserList
         Kind: Class
-        FrameDescriptor: [__lt__, __mul__, insert, remove, __delitem__, pop, __imul__, __ge__, __cast, copy, __radd__, clear, count, index, __eq__, __gt__, __iadd__, sort, __contains__, __rmul__, reverse, __le__, __setitem__, extend, __add__, __len__, __repr__, __getitem__, __doc__, __init__, append]
+        FrameDescriptor: [__lt__, __mul__, insert, remove, __delitem__, pop, __imul__, __ge__, copy, _UserList__cast, __radd__, clear, count, index, __eq__, __gt__, __iadd__, sort, __contains__, __rmul__, reverse, __le__, __setitem__, extend, __add__, __len__, __repr__, __getitem__, __doc__, __init__, append]
         CellVars: Empty
         FreeVars: Empty
         Scope: extend
@@ -443,7 +443,7 @@ Scope: []
             FrameDescriptor: [item, self, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-        Scope: __cast
+        Scope: _UserList__cast
             Kind: Function
             FrameDescriptor: [other, self, <return_val>]
             CellVars: Empty

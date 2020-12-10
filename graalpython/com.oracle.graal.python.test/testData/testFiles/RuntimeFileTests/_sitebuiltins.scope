@@ -20,7 +20,7 @@ Scope: []
             FreeVars: Empty
     Scope: _Printer
         Kind: Class
-        FrameDescriptor: [MAXLINES, __call__, __repr__, __doc__, __init__, __setup]
+        FrameDescriptor: [MAXLINES, _Printer__setup, __call__, __repr__, __doc__, __init__]
         CellVars: Empty
         FreeVars: Empty
         Scope: __call__
@@ -33,7 +33,7 @@ Scope: []
             FrameDescriptor: [self, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-        Scope: __setup
+        Scope: _Printer__setup
             Kind: Function
             FrameDescriptor: [filename, data, self, fp, <return_val>]
             CellVars: Empty

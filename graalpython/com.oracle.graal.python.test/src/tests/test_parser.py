@@ -246,3 +246,290 @@ def test_invalid_return_statement():
     assert_raise_syntax_error("class A: return 10\n", "'return' outside function")
 
 
+def test_mangled_class_property():
+    class P:
+        __property = 1
+        def get_property(self):
+            return self.__property
+        def get_mangled_property(self):
+            return self._P__property
+
+    p = P()
+    assert P._P__property == 1
+    assert "_P__property" in dir(P)
+    assert "__property" not in dir(P)
+    assert p._P__property == 1
+    assert "_P__property" in dir(p)
+    assert "__property" not in dir(p)
+    assert p.get_property() == 1
+    assert p.get_mangled_property() == 1
+
+    try:
+        print(P.__property)
+    except AttributeError as ae:
+        pass
+    else:
+        assert False, "AttributeError was not raised"
+
+    try:
+        print(p.__property)
+    except AttributeError as ae:
+        pass
+    else:
+        assert False, "AttributeError was not raised"
+
+    class B:
+        __ = 2
+
+    b = B()
+    assert B.__ == 2
+    assert "__" in dir(B)
+    assert b.__ == 2
+    assert "__" in dir(b)
+
+    class C:
+        ___ = 3
+
+    c = C()
+    assert C.___ == 3
+    assert "___" in dir(C)
+    assert c.___ == 3
+    assert "___" in dir(c)
+
+    class D:
+        _____ = 4
+
+    d = D()
+    assert D._____ == 4
+    assert "_____" in dir(D)
+    assert d._____ == 4
+    assert "_____" in dir(d)
+
+    class E:
+        def __init__(self, value):
+            self.__value = value
+        def getValue(self):
+            return self.__value
+
+    e = E(5)
+    assert e.getValue() == 5
+    assert e._E__value == 5
+    assert "_E__value" in dir(e)
+    assert "__value" not in dir(e) 
+
+    class F:
+        def __init__(self, value):
+            self.__a = value
+        def get(self):
+            return self.__a
+     
+    f = F(5)
+    assert "_F__a" in dir(f)
+    assert "__a" not in dir(f)
+     
+def test_underscore_class_name():
+    class _:
+        __a = 1
+    
+    assert _.__a == 1
+    assert "__a" in dir(_)
+    
+
+def test_mangled_class_method():
+    class A:
+        ___sound = "hello"
+        def __hello(self):
+            return self.___sound
+        def hello(self):
+            return self.__hello()
+
+    a = A()
+    assert "_A__hello" in dir(A)
+    assert "__hello" not in dir(A)
+    assert a.hello() == 'hello'
+    
+    try:
+        print(A.__hello)
+    except AttributeError as ae:
+        pass
+    else:
+        assert False, "AttributeError was not raised"
+
+    try:
+        print(a.__hello)
+    except AttributeError as ae:
+        pass
+    else:
+        assert False, "AttributeError was not raised"
+
+def test_mangled_private_class():
+    class __P:
+        __property = 1
+    
+    p = __P()
+    assert __P._P__property == 1
+    assert "_P__property" in dir(__P)
+    assert "__property" not in dir(__P)
+    assert p._P__property == 1
+    assert "_P__property" in dir(p)
+    assert "__property" not in dir(p)
+
+    class __:
+        __property = 2
+
+    p = __()
+    assert __.__property == 2
+    assert "__property" in dir(__)
+    assert p.__property == 2
+    assert "__property" in dir(p)
+   
+
+    class _____Testik__:
+        __property = 3
+
+    p = _____Testik__()
+    assert _____Testik__._Testik____property == 3
+    assert "_Testik____property" in dir(_____Testik__)
+    assert "__property" not in dir(_____Testik__)
+    assert p._Testik____property == 3
+    assert "_Testik____property" in dir(p)
+    assert "__property" not in dir(p)
+
+def test_mangled_import():
+    class X:
+        def fn(self):
+            import __mangled_module
+
+    assert '_X__mangled_module' in X.fn.__code__.co_varnames
+    assert '__mangled_module' not in X.fn.__code__.co_varnames
+    
+
+def test_mangled_params():
+    def xf(__param):
+        return __param
+    assert '__param' in xf.__code__.co_varnames
+    assert xf(10) == 10
+
+    class X:
+        def m1(self, __param):
+            return __param
+        def m2(self, *__arg):
+            return __arg
+        def m3(self, **__kw):
+            return __kw
+        
+
+    assert '_X__param' in X.m1.__code__.co_varnames
+    assert '__param' not in X.m1.__code__.co_varnames
+    assert X().m1(11) == 11
+
+    assert '_X__arg' in X.m2.__code__.co_varnames
+    assert '__arg' not in X.m2.__code__.co_varnames
+    assert X().m2(1, 2, 3) == (1,2,3)
+    
+    assert '_X__kw' in X.m3.__code__.co_varnames
+    assert '__kw' not in X.m3.__code__.co_varnames
+    assert X().m3(a = 1, b = 2) == {'a':1, 'b':2}
+
+def test_mangled_local_vars():
+    class L:
+        def fn(self, i):
+            __result = 0
+            for __index in range (1, i + 1):
+                __result += __index
+            return __result
+
+    assert '_L__result' in L.fn.__code__.co_varnames
+    assert '__result' not in L.fn.__code__.co_varnames
+    assert '_L__index' in L.fn.__code__.co_varnames
+    assert '__index' not in L.fn.__code__.co_varnames
+    assert L().fn(5) == 15
+
+
+def test_mangled_inner_function():
+    def find_code_object(code_object, name):
+        import types
+        for object in code_object.co_consts:
+            if type(object) == types.CodeType and object.co_name == name:
+                return object
+
+    class L:
+        def fn(self, i):
+            def __help(__i):
+                __result = 0
+                for __index in range (1, __i + 1):
+                    __result += __index
+                return __result
+            return __help(i)
+
+    assert '_L__help' in L.fn.__code__.co_varnames
+    assert '__help' not in L.fn.__code__.co_varnames
+
+    # CPython has stored as name of the code object the non mangle name. The question is, if this is right. 
+    co = find_code_object(L.fn.__code__, '__help')
+    if co is None:
+        co = find_code_object(L.fn.__code__, '_L__help')
+    assert co is not None
+    assert '_L__result' in co.co_varnames
+    assert '__result' not in co.co_varnames
+    assert '_L__index' in co.co_varnames
+    assert '__index' not in co.co_varnames
+    assert L().fn(5) == 15
+    
+
+def test_mangled_default_value_param():
+    class D:
+        def fn(self, __default = 5):
+            return __default
+
+    assert D().fn(_D__default = 11) == 11
+
+    try:
+        D().fn(__default = 11)
+    except TypeError as ae:
+        pass
+    else:
+        assert False, "TypeError was not raised"
+
+
+def test_mangled_slots():
+    class SlotClass:
+        __slots__ = ("__mangle_me", "do_not_mangle_me")
+        def __init__(self):
+            self.__mangle_me = 123
+            self.do_not_mangle_me = 456
+
+    b = SlotClass()
+    assert b._SlotClass__mangle_me == 123
+    assert b.do_not_mangle_me == 456
+
+
+def test_method_decorator():
+    class S:
+        def __init__(self, value):
+            self.value = value
+        @property
+        def __ser(self):
+            return self.value
+        @__ser.setter
+        def __ser(self, value):
+            self.value = value
+
+    s = S(10)
+    assert s.value == 10
+    assert s._S__ser == 10
+    assert '_S__ser' in dir(S)
+    assert '_S__ser' in dir(s)
+    assert '__ser' not in dir(S)
+    assert '__ser' not in dir(s)
+
+    s.value = 11
+    assert s._S__ser == 11
+
+    s._S__ser = 12
+    assert s.value == 12
+
+    s.__ser = 13
+    assert s.value == 12
+    assert s.__ser == 13
+    assert s._S__ser == 12

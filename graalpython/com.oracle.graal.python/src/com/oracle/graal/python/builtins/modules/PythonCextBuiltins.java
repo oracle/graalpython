@@ -132,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirst
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
@@ -170,6 +171,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -249,6 +251,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -723,6 +726,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object run(PBaseException exception, Object object,
                         @Cached WriteUnraisableNode writeUnraisableNode) {
             writeUnraisableNode.execute(null, exception, null, (object instanceof PNone) ? PNone.NONE : object);
+            getContext().setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
     }
@@ -1583,7 +1587,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
             try {
                 int ndim = castToIntNode.execute(ndimObj);
                 int itemsize = castToIntNode.execute(itemsizeObj);
@@ -1623,10 +1627,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
                 ManagedBuffer managedBuffer = null;
                 if (!lib.isNull(bufferStructPointer)) {
-                    managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
+                    managedBuffer = new ManagedBuffer(bufferStructPointer);
                 }
-                PMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
-                                PMemoryView.BufferFormat.fromString(format),
+                PMemoryView memoryview = factory().createMemoryView(context, managedBuffer, owner, len, readonly, itemsize,
+                                BufferFormat.forMemoryView(format),
                                 format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);
             } catch (PException e) {
@@ -3418,7 +3422,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTraceMallocTrack extends PythonBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocTrack.class);
 
-        @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
+        @Specialization(guards = {"domain == cachedDomain"}, limit = "3", assumptions = "singleContextAssumption()")
         int doCachedDomainIdx(VirtualFrame frame, @SuppressWarnings("unused") long domain, Object pointerObject, long size,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
@@ -3434,7 +3438,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doCachedDomainIdx")
-        int doGeneric(VirtualFrame frame, int domain, Object pointerObject, long size,
+        int doGeneric(VirtualFrame frame, long domain, Object pointerObject, long size,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return doCachedDomainIdx(frame, domain, pointerObject, size, context, domain, lookupDomain(domain));
         }
@@ -3450,7 +3454,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTraceMallocUntrack extends PythonBinaryBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocUntrack.class);
 
-        @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
+        @Specialization(guards = {"domain == cachedDomain"}, limit = "3", assumptions = "singleContextAssumption()")
         int doCachedDomainIdx(@SuppressWarnings("unused") long domain, Object pointerObject,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {
@@ -3465,7 +3469,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doCachedDomainIdx")
-        int doGeneric(int domain, Object pointerObject) {
+        int doGeneric(long domain, Object pointerObject) {
             return doCachedDomainIdx(domain, pointerObject, domain, lookupDomain(domain));
         }
 
@@ -3805,6 +3809,49 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return (PBuiltinFunction) object;
             }
             return null;
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyTruffle_Unicode_FromFormat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleUnicodeFromFromat extends PythonBuiltinNode {
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, String format, Object vaList,
+                        @Cached UnicodeFromFormatNode unicodeFromFormatNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return toSulongNode.execute(unicodeFromFormatNode.execute(format, vaList));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Bytes_CheckEmbeddedNull", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleBytesCheckEmbeddedNull extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static int doBytes(PBytes bytes,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached GetItemScalarNode getItemScalarNode) {
+
+            SequenceStorage sequenceStorage = bytes.getSequenceStorage();
+            int len = lenNode.execute(sequenceStorage);
+            try {
+                for (int i = 0; i < len; i++) {
+                    if (getItemScalarNode.executeInt(sequenceStorage, i) == 0) {
+                        return -1;
+                    }
+                }
+            } catch (ClassCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("bytes object contains non-int value");
+            }
+            return 0;
         }
     }
 }
