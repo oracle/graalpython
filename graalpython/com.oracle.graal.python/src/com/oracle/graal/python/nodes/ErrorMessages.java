@@ -335,6 +335,11 @@ public abstract class ErrorMessages {
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String IS_NOT_A = "%s is not a %s";
+    public static final String SHOULD_RETURN_TYPE_A_NOT_TYPE_B = "%s should return a %s, not %p";
+    public static final String MUST_BE_TYPE_A_NOT_TYPE_B = "%s must be a %s, not %p";
+    public static final String SHOULD_RETURN_A_NOT_B = "%s should return a %s, not %s";
+    public static final String SLOTNAMES_SHOULD_BE_A_NOT_B = "%p.__slotnames__ should be a %s, not %p";
+    public static final String COPYREG_SLOTNAMES = "copyreg._slotnames didn't return a list or None";
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
     public static final String INIT_TAKES_ONE_ARG = "%N.__init__() takes exactly one argument (the instance to initialize)";
     public static final String INIT_TAKES_ONE_ARG_OBJECT = "object.__init__() takes exactly one argument (the instance to initialize)";
@@ -676,6 +681,10 @@ public abstract class ErrorMessages {
     public static final String IO_CLOSED = "I/O operation on closed file.";
     public static final String MUST_BE_NON_NEG_OR_NEG_1 = "read length must be non-negative or -1";
     public static final String BUF_SIZE_POS = "buffer size must be strictly positive";
+
+    // pickle errors
+    public static final String CANNOT_PICKLE_OBJECT = "cannot pickle '%s' object";
+    public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
 
     public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +

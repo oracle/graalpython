@@ -73,4 +73,8 @@ public class ImportNode extends AbstractImportNode {
     public String getModuleName() {
         return moduleName;
     }
+
+    public static ImportExpression createAsExpression(String moduleName) {
+        return new ImportNode(moduleName).asExpression();
+    }
 }
