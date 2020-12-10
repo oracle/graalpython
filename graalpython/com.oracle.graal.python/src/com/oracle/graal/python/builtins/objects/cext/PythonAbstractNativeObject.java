@@ -50,6 +50,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -218,13 +220,13 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     @GenerateUncached
-    @SuppressWarnings("unused")
     public abstract static class GetLazyPythonClass {
-        public static Assumption getSingleContextAssumption() {
+        static Assumption getSingleContextAssumption() {
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
         @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "getSingleContextAssumption()")
+        @SuppressWarnings("unused")
         static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
                         @Exclusive @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
                         @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass) {
@@ -236,6 +238,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         }
 
         @Specialization(guards = "isSame(lib, cachedObject, object)", assumptions = "getSingleContextAssumption()")
+        @SuppressWarnings("unused")
         static Object getNativeClassCached(PythonAbstractNativeObject object,
                         @Exclusive @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
                         @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass,
@@ -244,18 +247,33 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return cachedClass;
         }
 
-        @Specialization(guards = {"lib.hasMembers(object.getPtr())"}, replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"}, limit = "1", rewriteOn = {UnknownIdentifierException.class,
-                        UnsupportedMessageException.class})
+        @Specialization(guards = {"lib.hasMembers(object.getPtr())"}, //
+                        replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"}, //
+                        limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
         static Object getNativeClassByMember(PythonAbstractNativeObject object,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
-                        @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
         }
 
-        @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember"})
+        @Specialization(guards = {"!lib.hasMembers(object.getPtr())"}, //
+                        replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember"}, //
+                        limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getNativeClassByMemberAttachType(PythonAbstractNativeObject object,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
+                        @Exclusive @Cached CExtNodes.GetLLVMType getLLVMType,
+                        @Exclusive @Cached ToJavaNode toJavaNode,
+                        @Exclusive @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+            Object typedPtr = callGetObTypeNode.call("polyglot_from_typed", object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyObject));
+            return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberName())));
+        }
+
+        @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember", "getNativeClassByMemberAttachType"})
         static Object getNativeClass(PythonAbstractNativeObject object,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached AsPythonObjectNode toJavaNode,
