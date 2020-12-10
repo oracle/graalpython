@@ -26,7 +26,6 @@
 
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PythonClass;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
@@ -80,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrDeleteNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrGetNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrSetNode;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -845,14 +845,12 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile reduceProfile,
                         @Cached ObjectNodes.CommonReduceNode commonReduceNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            Object obj_reduce = pol.lookupAttribute(PythonClass, frame, __REDUCE__);
+            Object REDUCE_FACTORY = ObjectBuiltinsFactory.ReduceNodeFactory.getInstance();
             Object _reduce = pol.lookupAttribute(obj, frame, __REDUCE__);
             if (reduceProfile.profile(_reduce != PNone.NO_VALUE)) {
                 // Check if __reduce__ has been overridden:
                 // "type(obj).__reduce__ is not object.__reduce__"
-                Object type = pol.getLazyPythonClass(obj);
-                Object cls_reduce = pol.lookupAttribute(type, frame, __REDUCE__);
-                if (cls_reduce != obj_reduce) {
+                if (!(_reduce instanceof PBuiltinMethod) || ((PBuiltinMethod) _reduce).getFunction().getBuiltinNodeFactory() != REDUCE_FACTORY) {
                     return pol.callObject(_reduce, frame);
                 }
             }
