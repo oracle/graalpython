@@ -52,7 +52,7 @@ public final class PythonClass extends PythonManagedClass {
     }
 
     public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, classShape, null, name, invokeMro, baseClasses);
+        super(lang, typeClass, classShape, null, name, invokeMro, false, baseClasses);
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
