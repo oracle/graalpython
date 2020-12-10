@@ -185,7 +185,7 @@ MACRO_BENCHMARKS = {
 
 
 WARMUP_BENCHMARKS = {
-    'gcbench': ITER_100 + ["--startup=1,10,100"] + ['10'] ,
+    'gcbench': ITER_100 + ["--startup=1,10,100"] + ['10'],
     'binarytrees3': ITER_100 + ["--startup=1,10,100"] + ['18'],
     'pads-integerpartitions': ITER_100  + ["--startup=1,10,100"] + ['700'],
 }
