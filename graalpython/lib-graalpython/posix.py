@@ -53,60 +53,36 @@ stat_result.__name__ = 'stat_result'
 stat_result.__module__ = 'os'
 
 
-def legacy_stat_result(data):
-    assert len(data) == 10
-    return stat_result(data + tuple(float(x) for x in data[7:10]) + tuple(x * 1000000000 for x in data[7:10]))
-
-
 old_stat = stat
-
-
 @__graalpython__.builtin
-def stat(filename, follow_symlinks=True):
-    return legacy_stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
+def stat(filename, follow_symlinks=True, dir_fd=None):
+    return stat_result(old_stat(filename, follow_symlinks=follow_symlinks, dir_fd=dir_fd))
 
-old_nfi_stat = nfi_stat
+old_lstat = lstat
 @__graalpython__.builtin
-def nfi_stat(filename, follow_symlinks=True, dir_fd=None):
-    return stat_result(old_nfi_stat(filename, follow_symlinks=follow_symlinks, dir_fd=dir_fd))
+def lstat(filename, dir_fd=None):
+    return stat_result(old_lstat(filename, dir_fd=dir_fd))
 
-old_nfi_lstat = nfi_lstat
+old_fstat = fstat
 @__graalpython__.builtin
-def nfi_lstat(filename, dir_fd=None):
-    return stat_result(old_nfi_lstat(filename, dir_fd=dir_fd))
-
-old_nfi_fstat = nfi_fstat
-@__graalpython__.builtin
-def nfi_fstat(fd):
-    return stat_result(old_nfi_fstat(fd))
+def fstat(fd):
+    return stat_result(old_fstat(fd))
 
 
 __dir_entry_old_stat = DirEntry.stat
-def __dir_entry_stat(self, follow_symlinks=True):
-    return legacy_stat_result(__dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
+def __dir_entry_stat(self, *, follow_symlinks=True):
+    return stat_result(__dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
 DirEntry.stat = __dir_entry_stat
 
-__nfi_dir_entry_old_stat = nfi_DirEntry.stat
-def __nfi_dir_entry_stat(self, *, follow_symlinks=True):
-    return stat_result(__nfi_dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
-nfi_DirEntry.stat = __nfi_dir_entry_stat
 
-
-@__graalpython__.builtin
-def lstat(filename):
-    if not __graalpython__.is_native:
-        from sys import executable as graal_python_executable
-        if filename == graal_python_executable:
-            return stat_result((0,0,0,0,0,0,0,0,0,0))
-    return legacy_stat_result(old_stat(filename, False))
-
-
-old_fstat = fstat
-
-
-@__graalpython__.builtin
-def fstat(fd):
-    return legacy_stat_result(old_fstat(fd))
+# TODO lstat exception for graal_python_executable
+# @__graalpython__.builtin
+# def lstat(filename):
+#     if not __graalpython__.is_native:
+#         from sys import executable as graal_python_executable
+#         if filename == graal_python_executable:
+#             return stat_result((0,0,0,0,0,0,0,0,0,0))
+#     return legacy_stat_result(old_stat(filename, False))
 
 
 @__graalpython__.builtin
@@ -123,11 +99,6 @@ def fspath(path):
         return __fspath__()
     else:
         raise TypeError("expected str, bytes or os.PathLike object, not %r" % type(path))
-
-
-@__graalpython__.builtin
-def scandir(path):
-    return ScandirIterator(path)
 
 
 @__graalpython__.builtin
@@ -163,17 +134,11 @@ def WSTOPSIG(status):
 uname_result = make_named_tuple_class("posix.uname_result", [
     "sysname", "nodename", "release", "version", "machine"
 ])
+
 old_uname = uname
-
-
 @__graalpython__.builtin
 def uname():
     return uname_result(old_uname())
-
-old_nfi_uname = nfi_uname
-@__graalpython__.builtin
-def nfi_uname():
-    return uname_result(old_nfi_uname())
 
 
 error = OSError
@@ -183,11 +148,5 @@ terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])
 old_get_terminal_size = get_terminal_size
 
 @__graalpython__.builtin
-def get_terminal_size(fd = None):
-    return terminal_size(old_get_terminal_size(fd))
-
-old_nfi_get_terminal_size = nfi_get_terminal_size
-
-@__graalpython__.builtin
-def nfi_get_terminal_size(fd=None):
-    return terminal_size(old_nfi_get_terminal_size() if fd is None else old_nfi_get_terminal_size(fd))
+def get_terminal_size(fd=None):
+    return terminal_size(old_get_terminal_size() if fd is None else old_get_terminal_size(fd))

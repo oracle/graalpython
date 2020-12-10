@@ -258,7 +258,7 @@ public final class PythonContext {
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
-    private final PosixResources resources;
+    private PosixResources resources;
     private final AsyncHandler handler;
     private final AsyncHandler.SharedFinalizer sharedFinalizer;
 
@@ -275,11 +275,9 @@ public final class PythonContext {
         this.language = language;
         this.core = core;
         this.env = env;
-        this.resources = new PosixResources();
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
-        this.resources.setEnv(env);
         this.in = env.in();
         this.out = env.out();
         this.err = env.err();
@@ -441,6 +439,7 @@ public final class PythonContext {
     }
 
     public void initialize() {
+        initalizePosixSupport();
         core.initialize(this);
         setupRuntimeInformation(false);
         core.postInitialize();
@@ -515,9 +514,6 @@ public final class PythonContext {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
-        if (!isPatching) {
-            posixSupport = initalizePosixSupport();
-        }
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         PythonModule sysModule = core.lookupBuiltinModule("sys");
@@ -552,7 +548,7 @@ public final class PythonContext {
         isInitialized = true;
     }
 
-    private PosixSupport initalizePosixSupport() {
+    private void initalizePosixSupport() {
         String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
         PosixSupport result;
         switch (option) {
@@ -568,10 +564,18 @@ public final class PythonContext {
             default:
                 throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
         }
-        if (LoggingPosixSupport.isEnabled()) {
-            return new LoggingPosixSupport(result);
+        // The resources field will be removed once all posix builtins go through PosixSupport
+        if (result instanceof PosixResources) {
+            resources = (PosixResources) result;
+        } else {
+            resources = new PosixResources();
+            resources.setEnv(env);
         }
-        return result;
+        if (LoggingPosixSupport.isEnabled()) {
+            posixSupport = new LoggingPosixSupport(result);
+        } else {
+            posixSupport = result;
+        }
     }
 
     private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;

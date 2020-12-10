@@ -1615,8 +1615,8 @@ public abstract class TypeNodes {
                 case PStaticmethod:
                 case PClassmethod:
                 case PBuiltinClassMethod:
-                case PScandirIterator:
-                case PDirEntry:
+                case PNfiScandirIterator:
+                case PNfiDirEntry:
                 case BZ2Compressor:
                 case BZ2Decompressor:
                 case PLZMACompressor:
