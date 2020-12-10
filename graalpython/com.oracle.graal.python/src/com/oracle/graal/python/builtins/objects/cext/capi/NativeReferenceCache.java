@@ -162,7 +162,7 @@ public final class NativeReferenceCache implements TruffleObject {
             CApiContext cApiContext = context.getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
-                int idx = CApiContext.idFromRefCnt(getRefCntNode.execute(pointerObject));
+                int idx = CApiContext.idFromRefCnt(getRefCntNode.execute(cApiContext, pointerObject));
                 return lookupNativeObjectReference(pointerObject, idx, steal, wrapperExistsProfile, stealProfile, cApiContext);
             }
             return pointerObject;

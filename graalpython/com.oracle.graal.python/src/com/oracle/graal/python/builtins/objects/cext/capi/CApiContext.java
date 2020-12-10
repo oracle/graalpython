@@ -91,6 +91,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class CApiContext extends CExtContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
 
+    /**
+     * A dummy context to disambiguate between <it>context not yet created</it> and <it>context
+     * should be looked up lazily</it>
+     */
+    static final CApiContext LAZY_CONTEXT = new CApiContext();
+
     public static final long REFERENCE_COUNT_BITS = Integer.SIZE;
     public static final long REFERENCE_COUNT_MARKER = (1L << REFERENCE_COUNT_BITS);
     /* a random number between 1 and 20 */
@@ -130,6 +136,17 @@ public final class CApiContext extends CExtContext {
 
     /** same as {@code moduleobject.c: max_module_number} */
     private long maxModuleNumber;
+
+    /**
+     * Private dummy constructor just for {@link #LAZY_CONTEXT}.
+     */
+    private CApiContext() {
+        super(null, null, null);
+        nativeObjectsQueue = null;
+        nativeObjectWrapperList = null;
+        primitiveNativeWrapperCache = null;
+        llvmTypeCache = null;
+    }
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
@@ -449,7 +466,7 @@ public final class CApiContext extends CExtContext {
         CompilerAsserts.partialEvaluationConstant(addRefCntNode);
         CompilerAsserts.partialEvaluationConstant(steal);
 
-        int id = CApiContext.idFromRefCnt(getObRefCntNode.execute(nativePtr));
+        int id = CApiContext.idFromRefCnt(getObRefCntNode.execute(this, nativePtr));
 
         NativeObjectReference ref;
 

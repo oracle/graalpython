@@ -2975,17 +2975,20 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class GetRefCntNode extends PNodeWithContext {
 
-        public abstract long execute(Object ptrObject);
+        public final long execute(Object ptrObject) {
+            return execute(CApiContext.LAZY_CONTEXT, ptrObject);
+        }
 
-        @Specialization(limit = "2", rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
-        static long doNativeObjectTyped(Object ptrObject,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        public abstract long execute(CApiContext cApiContext, Object ptrObject);
+
+        @Specialization(guards = "!isLazyContext(cApiContext)", limit = "2", rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static long doNativeObjectTypedWithContext(CApiContext cApiContext, Object ptrObject,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
             if (!lib.isNull(ptrObject)) {
-                CApiContext cApiContext = context.getCApiContext();
-                if (cApiContext != null) {
+                boolean haveCApiContext = cApiContext != null;
+                if (haveCApiContext) {
                     cApiContext.checkAccess(ptrObject, lib);
                 }
 
@@ -2994,29 +2997,47 @@ public abstract class CExtNodes {
                 if (lib.hasMembers(ptrObject)) {
                     return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberName()));
                 }
-                if (context.getCApiContext() != null) {
+                if (haveCApiContext) {
                     return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
                 }
             }
             return 0;
         }
 
-        @Specialization(limit = "2", replaces = "doNativeObjectTyped")
-        static long doNativeObject(Object ptrObject,
+        @Specialization(guards = "!isLazyContext(cApiContext)", limit = "2", replaces = "doNativeObjectTypedWithContext")
+        static long doNativeObjectWithContext(CApiContext cApiContext, Object ptrObject,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) {
+            if (!lib.isNull(ptrObject) && cApiContext != null) {
+                cApiContext.checkAccess(ptrObject, lib);
+                return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
+            }
+            return 0;
+        }
+
+        @Specialization(limit = "2", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class}, //
+                        replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext"})
+        static long doNativeObjectTyped(@SuppressWarnings("unused") CApiContext cApiContext, Object ptrObject,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
+            return doNativeObjectTypedWithContext(context.getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
+        }
+
+        @Specialization(limit = "2", replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext", "doNativeObjectTyped"})
+        static long doNativeObject(@SuppressWarnings("unused") CApiContext cApiContext, Object ptrObject,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) {
-            if (!lib.isNull(ptrObject)) {
-                CApiContext cApiContext = context.getCApiContext();
-                if (cApiContext != null) {
-                    cApiContext.checkAccess(ptrObject, lib);
-                }
-                if (context.getCApiContext() != null) {
-                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
-                }
-            }
-            return 0;
+            return doNativeObjectWithContext(context.getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
+        }
+
+        static boolean isLazyContext(CApiContext cApiContext) {
+            return CApiContext.LAZY_CONTEXT == cApiContext;
         }
     }
 
