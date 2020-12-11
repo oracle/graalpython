@@ -1776,15 +1776,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
-        static Object repr(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, "");
+        Object repr(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
+                        @CachedLibrary("obj") PythonObjectLibrary lib,
+                        @Cached BranchProfile notStringBranch) {
+            Object res = lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, "");
+            if (!PGuards.isString(res)) {
+                notStringBranch.enter();
+                throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, __FORMAT__, "str", res);
+            }
+            return res;
         }
 
         @Specialization(guards = "!isNoValue(formatSpec)", limit = "1")
-        static Object repr(VirtualFrame frame, Object obj, Object formatSpec,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, formatSpec);
+        Object repr(VirtualFrame frame, Object obj, Object formatSpec,
+                        @CachedLibrary("obj") PythonObjectLibrary lib,
+                        @Cached BranchProfile notStringBranch) {
+            Object res = lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, formatSpec);
+            if (!PGuards.isString(res)) {
+                notStringBranch.enter();
+                throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, __FORMAT__, "str", res);
+            }
+            return res;
         }
     }
 

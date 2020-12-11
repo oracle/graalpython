@@ -410,6 +410,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
+    public static final String S_MUST_RETURN_S_NOT_P = "%s must return a %s, not %p";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_USED_BEFORE_GLOBAL = "name '%s' is used prior to global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
