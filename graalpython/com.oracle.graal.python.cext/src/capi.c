@@ -314,8 +314,8 @@ PyObject* get_tp_bases(PyTypeObject* obj) {
 }
 
 /** to be used from Java code only; reads native 'tp_name' field */
-PyObject* get_tp_name(PyTypeObject* obj) {
-	return polyglot_from_string(obj->tp_name, SRC_CS);
+const char* get_tp_name(PyTypeObject* obj) {
+	return obj->tp_name;
 }
 
 /** to be used from Java code only; reads native 'tp_mro' field */

@@ -71,6 +71,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -349,8 +351,9 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @ExportMessage
     String getMetaSimpleName(
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
-                    @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode) throws UnsupportedMessageException {
-        return getSimpleName(getMetaQualifiedName(isType, getTpNameNode));
+                    @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode,
+                    @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode) throws UnsupportedMessageException {
+        return getSimpleName(getMetaQualifiedName(isType, getTpNameNode, castToJavaStringNode));
     }
 
     @TruffleBoundary
@@ -365,11 +368,16 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @ExportMessage
     String getMetaQualifiedName(
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
-                    @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode) throws UnsupportedMessageException {
+                    @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode,
+                    @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode) throws UnsupportedMessageException {
         if (!isType.execute(this)) {
             throw UnsupportedMessageException.create();
         }
         // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-        return (String) getTpNameNode.execute(this, NativeMember.TP_NAME);
+        try {
+            return castToJavaStringNode.execute(getTpNameNode.execute(this, NativeMember.TP_NAME));
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 }

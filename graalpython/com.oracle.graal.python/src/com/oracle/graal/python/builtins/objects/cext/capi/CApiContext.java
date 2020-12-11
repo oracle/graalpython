@@ -773,6 +773,7 @@ public final class CApiContext extends CExtContext {
         Py_ssize_t,
         Py_complex,
         PyObject,
+        PyTypeObject,
         PyObject_ptr_t,
         char_ptr_t,
         void_ptr_t,

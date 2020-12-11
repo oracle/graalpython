@@ -51,6 +51,15 @@ import com.oracle.truffle.api.object.Shape;
 @SuppressWarnings("unused")
 public abstract class NativeCAPISymbols {
 
+    /* Sulong intrinsics */
+
+    public static final String FUN_POINTS_TO_HANDLE_SPACE = "_graalvm_llvm_points_to_handle_space";
+    public static final String FUN_DEREF_HANDLE = "_graalvm_llvm_create_deref_handle";
+    public static final String FUN_RESOLVE_HANDLE = "_graalvm_llvm_resolve_handle";
+    public static final String FUN_POLYGLOT_FROM_TYPED = "polyglot_from_typed";
+
+    /* Python C API functions */
+
     public static final String FUN_NATIVE_LONG_TO_JAVA = "native_long_to_java";
     public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
     public static final String FUN_NATIVE_HANDLE_FOR_ARRAY = "NativeHandle_ForArray";
@@ -74,7 +83,6 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_TP_DICTOFFSET = "get_tp_dictoffset";
     public static final String FUN_GET_TP_BASICSIZE = "get_tp_basicsize";
     public static final String FUN_GET_TP_ITEMSIZE = "get_tp_itemsize";
-    public static final String FUN_DEREF_HANDLE = "_graalvm_llvm_create_deref_handle";
     public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
     public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";
     public static final String FUN_PTR_COMPARE = "truffle_ptr_compare";
@@ -109,8 +117,6 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_DECREF = "Py_DecRef";
     public static final String FUN_ADDREF = "PyTruffle_ADDREF";
     public static final String FUN_SUBREF = "PyTruffle_SUBREF";
-    public static final String FUN_RESOLVE_HANDLE = "_graalvm_llvm_resolve_handle";
-    public static final String FUN_POINTS_TO_HANDLE_SPACE = "_graalvm_llvm_points_to_handle_space";
     public static final String FUN_GET_LONG_BITS_PER_DIGIT = "get_long_bits_in_digit";
     public static final String FUN_BULK_SUBREF = "PyTruffle_bulk_SUBREF";
     public static final String FUN_TRUFFLE_ADD_SUBOFFSET = "truffle_add_suboffset";
