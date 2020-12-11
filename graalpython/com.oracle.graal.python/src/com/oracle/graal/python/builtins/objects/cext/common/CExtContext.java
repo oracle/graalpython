@@ -53,7 +53,7 @@ import com.oracle.truffle.api.object.Shape;
 
 public abstract class CExtContext {
 
-    public static CExtContext LAZY_CONTEXT = new CExtContext(null, null, null) {
+    public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null, null) {
         @Override
         protected String[] getKnownCacheSymbols() {
             return PythonUtils.EMPTY_STRING_ARRAY;
