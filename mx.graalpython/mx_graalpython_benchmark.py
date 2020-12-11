@@ -266,7 +266,7 @@ class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
     def interpreter(self):
         try:
             return subprocess.check_output("which %s" % JythonVm.JYTHON_INTERPRETER, shell=True).decode().strip()
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             mx.log_error(e)
             mx.abort("`jython` is neither on the path, nor is {} set!\n".format(ENV_JYTHON_JAR))
 
@@ -693,13 +693,13 @@ class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
         ]
 
 class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
-     
+
     def get_vm_registry(self):
         return java_vm_registry
-    
+
     def get_bench_name(self, benchmarks):
         return benchmarks[0]
-    
+
     def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
         vmArgs = self.vmArgs(bmSuiteArgs)
         dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
@@ -720,12 +720,11 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
         bench_name = benchmarks[0]
         bench_args = self._benchmarks[bench_name]
         return vmArgs + jmh_entry + runArgs + [bench_name] + bench_args
-        
+
     def get_arg(self, bench_name):
         return " ".join(self._benchmarks[bench_name][1:])
-    
+
     @classmethod
     def get_benchmark_suites(cls, benchmarks):
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
         return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
-    
