@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
@@ -210,8 +211,8 @@ public final class PythonContext {
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final List<AtExitHook> atExitHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
-    private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+    private final IDUtils idUtils = new IDUtils();
 
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
@@ -295,9 +296,12 @@ public final class PythonContext {
         return pythonThreadStackSize.getAndSet(value);
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public long getNextGlobalId() {
-        return globalId.incrementAndGet();
+    public long getNextGlobalObjectId() {
+        return idUtils.getNextGlobalObjectId();
+    }
+
+    public long getNextGlobalObjectId(Object object) {
+        return idUtils.getNextGlobalObjectId(object);
     }
 
     public <T> T getOption(OptionKey<T> key) {

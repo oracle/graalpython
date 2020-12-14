@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -1007,9 +1008,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IdNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long doObject(Object value,
-                        @Cached IdExpressionNode idNode) {
-            return idNode.executeLong(value);
+        Object doObject(Object value,
+                        @Cached ObjectNodes.GetIdNode getIdNode) {
+            return getIdNode.execute(value);
         }
     }
 

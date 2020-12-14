@@ -32,7 +32,6 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -54,7 +53,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public class PythonObject extends PythonAbstractObject {
+public class PythonObject extends PythonAbstractIDableObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
     private static final byte CLASS_CHANGED_FLAG = 1;
     public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 2;
