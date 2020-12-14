@@ -550,7 +550,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
             return fstatWithoutPath(fileChannel);
         }
-        TruffleFile f = context.getPublicTruffleFileRelaxed(path);
+        TruffleFile f = getTruffleFile(path);
         try {
             return fstat(f, new LinkOption[0]);
         } catch (Exception e) {
@@ -813,7 +813,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         String linkPath = pathToJavaStr(link);
         TruffleFile linkFile = resolvePath(linkDirFd, linkPath, defaultDirFdPofile);
         String targetPath = pathToJavaStr(target);
-        TruffleFile targetFile = context.getEnv().getPublicTruffleFile(targetPath);
+        TruffleFile targetFile = getTruffleFile(targetPath);
         try {
             linkFile.createSymbolicLink(targetFile);
         } catch (Exception e) {
@@ -860,7 +860,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     private void chdirStr(String pathStr, BranchProfile errorBranch) throws PosixException {
-        TruffleFile truffleFile = context.getPublicTruffleFileRelaxed(pathStr, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+        TruffleFile truffleFile = getTruffleFile(pathStr);
         try {
             context.getEnv().setCurrentWorkingDirectory(truffleFile);
         } catch (IllegalArgumentException ignored) {
@@ -922,7 +922,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     private EmulatedDirStream opendirImpl(String path, BranchProfile errorBranch) throws PosixException {
-        TruffleFile file = context.getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+        TruffleFile file = getTruffleFile(path);
         try {
             return new EmulatedDirStream(file.newDirectoryStream());
         } catch (IOException e) {
@@ -968,6 +968,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public Object dirEntryGetPath(Object dirEntry, Object scandirPath) {
         TruffleFile file = (TruffleFile) dirEntry;
+        // Given that scandirPath must have been successfully channeled via opendir, we can assume
+        // that it is a valid path
         TruffleFile dir = context.getPublicTruffleFileRelaxed(pathToJavaStr(scandirPath));
         // We let the filesystem handle the proper concatenation of the two paths
         return dir.resolve(file.getName()).getPath();
@@ -1023,7 +1025,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     public void futimens(int fd, long[] timespec,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
         String path = getFilePath(fd);
-        TruffleFile file = context.getPublicTruffleFileRelaxed(path);
+        TruffleFile file = getTruffleFile(path);
         setUTimeNode.execute(file, timespec, true);
     }
 
@@ -1152,7 +1154,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (path == null) {
             throw posixException(OSErrorEnum.EBADF);
         }
-        TruffleFile file = context.getPublicTruffleFileRelaxed(path);
+        TruffleFile file = getTruffleFile(path);
         Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
         try {
             file.setPosixPermissions(permissions);
@@ -1237,25 +1239,35 @@ public final class EmulatedPosixSupport extends PosixResources {
         return t.toInstant().getNano();
     }
 
+    private TruffleFile getTruffleFile(String path) throws PosixException {
+        try {
+            return context.getPublicTruffleFileRelaxed(path, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+        } catch (Exception ex) {
+            // So far it seem that this can only be InvalidPath exception from Java NIO, but we stay
+            // on the safe side and catch generic exception
+            throw posixException(OSErrorEnum.fromException(ex));
+        }
+    }
+
     /**
      * Resolves the path relative to the directory given as file descriptor. Honors the
      * {@link PosixSupportLibrary#DEFAULT_DIR_FD}.
      */
     private TruffleFile resolvePath(int dirFd, String pathname, ConditionProfile defaultDirFdPofile) throws PosixException {
         if (defaultDirFdPofile.profile(dirFd == PosixSupportLibrary.DEFAULT_DIR_FD)) {
-            return context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            return getTruffleFile(pathname);
         } else {
-            TruffleFile file = context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            TruffleFile file = getTruffleFile(pathname);
             if (file.isAbsolute()) {
-                // Even if the dirFd is non-existing or otherwise wrong, we should not trigger any
-                // error if the file path is already absolute
+                // Even if the dirFd is non-existing or otherwise wrong, we should not trigger
+                // any error if the file path is already absolute
                 return file;
             }
             String dirPath = getFilePathOrDefault(dirFd, null);
             if (dirPath == null) {
                 throw posixException(OSErrorEnum.EBADF);
             }
-            TruffleFile dir = context.getPublicTruffleFileRelaxed(dirPath, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            TruffleFile dir = getTruffleFile(dirPath);
             return dir.resolve(pathname);
         }
     }
