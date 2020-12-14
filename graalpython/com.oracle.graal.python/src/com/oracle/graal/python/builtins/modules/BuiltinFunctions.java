@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -118,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
+import static com.oracle.graal.python.nodes.BuiltinNames.SORTED;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -135,6 +137,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -1867,6 +1870,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("new()") SetAttributeNode.Dynamic setAttrNode) {
             setAttrNode.execute(frame, object, key, value);
             return PNone.NONE;
+        }
+    }
+
+    // sorted(iterable, key, reverse)
+    @Builtin(name = SORTED, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class SortedNode extends PythonBuiltinNode {
+
+        @Specialization
+        Object sorted(VirtualFrame frame, Object iterable, PKeyword[] keywords,
+                        @Cached ConstructListNode constructListNode,
+                        @Cached ListSortNode sortNode) {
+            PList list = constructListNode.execute(iterable);
+            sortNode.execute(frame, list, PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
+            return list;
         }
     }
 
