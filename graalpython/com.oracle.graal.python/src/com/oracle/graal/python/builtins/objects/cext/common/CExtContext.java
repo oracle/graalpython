@@ -77,8 +77,7 @@ public abstract class CExtContext {
     private final ConversionNodeSupplier supplier;
 
     /** A cache for C symbols. */
-    @CompilationFinal
-    private DynamicObject symbolCache;
+    @CompilationFinal private DynamicObject symbolCache;
 
     public CExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
         this.context = context;

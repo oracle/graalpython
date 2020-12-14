@@ -411,8 +411,8 @@ public abstract class TypeNodes {
 
         @Specialization
         String doNativeClass(PythonNativeClass obj,
-                             @Cached CExtNodes.GetTypeMemberNode getTpNameNode,
-                             @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Cached CExtNodes.GetTypeMemberNode getTpNameNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
             return castToJavaStringNode.execute(getTpNameNode.execute(obj, NativeMember.TP_NAME));
         }
 
