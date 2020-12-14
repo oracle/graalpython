@@ -854,7 +854,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         String path = getFilePath(fd);
         if (path == null) {
             errorBranch.enter();
-            throw posixException(OSErrorEnum.EBADFD);
+            throw posixException(OSErrorEnum.EBADF);
         }
         chdirStr(path, errorBranch);
     }
