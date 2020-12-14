@@ -529,16 +529,15 @@ class ScandirTests(unittest.TestCase):
         self.assertTrue(entry.is_file(follow_symlinks=False))
         self.assertFalse(entry.is_dir(follow_symlinks=False))
 
-    # TODO temporarily disabled - needs a fix from master
-    # def test_kw_only(self):
-    #     with os.scandir(TEST_FULL_PATH1) as dir:
-    #         entry = next(dir)
-    #     with self.assertRaises(TypeError):
-    #         entry.stat(True)
-    #     with self.assertRaises(TypeError):
-    #         entry.is_file(True)
-    #     with self.assertRaises(TypeError):
-    #         entry.is_dir(True)
+    def test_kw_only(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        with self.assertRaises(TypeError):
+            entry.stat(True)
+        with self.assertRaises(TypeError):
+            entry.is_file(True)
+        with self.assertRaises(TypeError):
+            entry.is_dir(True)
 
     def test_stat_error_msg(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
@@ -635,11 +634,7 @@ class ScandirSymlinkToDirTests(unittest.TestCase):
         self.target_inode = os.stat(TEST_FULL_PATH2).st_ino
 
     def tearDown(self):
-        try:
-            os.unlink(self.link_path)
-        except:
-            # TODO temporary hack needed as long as emulated unlink refuses to remove symlinks to dirs
-            os.rmdir(self.link_path)
+        os.unlink(self.link_path)
         os.rmdir(TEST_FULL_PATH1)
         try:
             os.rmdir(TEST_FULL_PATH2)
