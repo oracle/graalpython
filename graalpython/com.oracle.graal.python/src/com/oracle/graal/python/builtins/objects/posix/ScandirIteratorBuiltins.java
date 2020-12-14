@@ -46,7 +46,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,13 +61,15 @@ import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.Truffle;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PScandirIterator)
@@ -147,6 +151,8 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
 
     static class ReleaseCallback implements AsyncAction {
 
+        private static final AtomicReference<CallTarget> cachedCallTarget = new AtomicReference<>();
+
         private final PScandirIterator.DirStreamRef ref;
 
         ReleaseCallback(PScandirIterator.DirStreamRef ref) {
@@ -158,13 +164,33 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
             if (ref.isReleased()) {
                 return;
             }
-            Truffle.getRuntime().createCallTarget(new RootNode(context.getLanguage()) {
-                @Override
-                public Object execute(VirtualFrame frame) {
-                    LibraryFactory.resolve(PosixSupportLibrary.class).getUncached(context.getPosixSupport()).closedir(context.getPosixSupport(), ref.getReference());
-                    return null;
-                }
-            }).call();
+            CallTarget callTarget = cachedCallTarget.get();
+            if (callTarget == null) {
+                callTarget = cachedCallTarget.updateAndGet((ct) -> {
+                    if (ct == null) {
+                        return PythonUtils.getOrCreateCallTarget(new ReleaserRootNode(context.getLanguage()));
+                    }
+                    return ct;
+                });
+            }
+            callTarget.call(ref.getReference());
+        }
+
+        private static class ReleaserRootNode extends RootNode {
+            @Child PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
+            private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
+
+            public ReleaserRootNode(TruffleLanguage<?> language) {
+                super(language);
+            }
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                PythonContext context = contextRef.get();
+                Object dirStream = frame.getArguments()[0];
+                posixSupportLibrary.closedir(context.getPosixSupport(), dirStream);
+                return null;
+            }
         }
     }
 }
