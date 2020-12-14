@@ -52,12 +52,12 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public final class PNfiScandirIterator extends PythonBuiltinObject {
+public final class PScandirIterator extends PythonBuiltinObject {
 
     final PosixFileHandle path;
     final DirStreamRef ref;
 
-    public PNfiScandirIterator(Object cls, Shape instanceShape, PythonContext context, Object dirStream, PosixFileHandle path) {
+    public PScandirIterator(Object cls, Shape instanceShape, PythonContext context, Object dirStream, PosixFileHandle path) {
         super(cls, instanceShape);
         this.ref = new DirStreamRef(this, dirStream, context.getSharedFinalizer());
         this.path = path;
@@ -65,19 +65,19 @@ public final class PNfiScandirIterator extends PythonBuiltinObject {
 
     /* this is correct because it cannot be subclassed in Python */
     @ExportMessage
-    PNfiScandirIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
+    PScandirIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
         return this;
     }
 
     static class DirStreamRef extends SharedFinalizer.FinalizableReference {
 
-        DirStreamRef(PNfiScandirIterator referent, Object dirStream, SharedFinalizer finalizer) {
+        DirStreamRef(PScandirIterator referent, Object dirStream, SharedFinalizer finalizer) {
             super(referent, dirStream, finalizer);
         }
 
         @Override
         public AsyncAction release() {
-            return new NfiScandirIteratorBuiltins.ReleaseCallback(this);
+            return new ScandirIteratorBuiltins.ReleaseCallback(this);
         }
     }
 }

@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.truffle.api.object.Shape;
 
-public class PNfiDirEntry extends PythonBuiltinObject {
+public class PDirEntry extends PythonBuiltinObject {
 
     final Object dirEntryData;
     final PosixFileHandle scandirPath;
@@ -54,7 +54,7 @@ public class PNfiDirEntry extends PythonBuiltinObject {
     volatile PTuple lstatCache;
     volatile PosixPath pathCache;
 
-    public PNfiDirEntry(Object cls, Shape instanceShape, Object dirEntryData, PosixFileHandle scandirPath) {
+    public PDirEntry(Object cls, Shape instanceShape, Object dirEntryData, PosixFileHandle scandirPath) {
         super(cls, instanceShape);
         this.dirEntryData = dirEntryData;
         this.scandirPath = scandirPath;

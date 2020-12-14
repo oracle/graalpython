@@ -101,8 +101,8 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.posix.PNfiDirEntry;
-import com.oracle.graal.python.builtins.objects.posix.PNfiScandirIterator;
+import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
+import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
@@ -923,12 +923,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
-    public PNfiScandirIterator createNfiScandirIterator(PythonContext context, Object dirStream, PosixFileHandle path) {
-        return trace(new PNfiScandirIterator(PythonBuiltinClassType.PNfiScandirIterator, PythonBuiltinClassType.PNfiScandirIterator.getInstanceShape(getLanguage()), context, dirStream, path));
+    public PScandirIterator createScandirIterator(PythonContext context, Object dirStream, PosixFileHandle path) {
+        return trace(new PScandirIterator(PythonBuiltinClassType.PScandirIterator, PythonBuiltinClassType.PScandirIterator.getInstanceShape(getLanguage()), context, dirStream, path));
     }
 
-    public PNfiDirEntry createNfiDirEntry(Object dirEntryData, PosixFileHandle path) {
-        return trace(new PNfiDirEntry(PythonBuiltinClassType.PNfiDirEntry, PythonBuiltinClassType.PNfiDirEntry.getInstanceShape(getLanguage()), dirEntryData, path));
+    public PDirEntry createDirEntry(Object dirEntryData, PosixFileHandle path) {
+        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(getLanguage()), dirEntryData, path));
     }
 
     public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {

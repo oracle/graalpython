@@ -68,25 +68,25 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.RootNode;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PNfiScandirIterator)
-public class NfiScandirIteratorBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PScandirIterator)
+public class ScandirIteratorBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return NfiScandirIteratorBuiltinsFactory.getFactories();
+        return ScandirIteratorBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = "close", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone close(PNfiScandirIterator self,
+        PNone close(PScandirIterator self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             closedir(self, getPosixSupport(), posixLib);
             return PNone.NONE;
         }
 
-        static void closedir(PNfiScandirIterator self, Object posixSupport, PosixSupportLibrary posixLib) {
+        static void closedir(PScandirIterator self, Object posixSupport, PosixSupportLibrary posixLib) {
             posixLib.closedir(posixSupport, self.ref.getReference());
             self.ref.markReleased();
         }
@@ -96,7 +96,7 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNfiScandirIterator iter(PNfiScandirIterator self) {
+        PScandirIterator iter(PScandirIterator self) {
             return self;
         }
     }
@@ -105,7 +105,7 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNfiDirEntry next(VirtualFrame frame, PNfiScandirIterator self,
+        PDirEntry next(VirtualFrame frame, PScandirIterator self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             if (self.ref.isReleased()) {
                 throw raise(PythonBuiltinClassType.StopIteration);
@@ -116,7 +116,7 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
                     CloseNode.closedir(self, getPosixSupport(), posixLib);
                     throw raise(PythonBuiltinClassType.StopIteration);
                 }
-                return factory().createNfiDirEntry(dirEntryData, self.path);
+                return factory().createDirEntry(dirEntryData, self.path);
             } catch (PosixException e) {
                 CloseNode.closedir(self, getPosixSupport(), posixLib);
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -128,7 +128,7 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNfiScandirIterator iter(PNfiScandirIterator self) {
+        PScandirIterator iter(PScandirIterator self) {
             return self;
         }
     }
@@ -138,7 +138,7 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
     abstract static class ExitNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        PNone exit(PNfiScandirIterator self, Object type, Object value, Object traceback,
+        PNone exit(PScandirIterator self, Object type, Object value, Object traceback,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             CloseNode.closedir(self, getPosixSupport(), posixLib);
             return PNone.NONE;
@@ -147,9 +147,9 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
 
     static class ReleaseCallback implements AsyncAction {
 
-        private final PNfiScandirIterator.DirStreamRef ref;
+        private final PScandirIterator.DirStreamRef ref;
 
-        ReleaseCallback(PNfiScandirIterator.DirStreamRef ref) {
+        ReleaseCallback(PScandirIterator.DirStreamRef ref) {
             this.ref = ref;
         }
 
