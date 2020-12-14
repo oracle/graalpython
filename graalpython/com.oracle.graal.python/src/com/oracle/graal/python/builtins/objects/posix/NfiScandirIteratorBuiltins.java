@@ -55,13 +55,18 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.nodes.RootNode;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PNfiScandirIterator)
 public class NfiScandirIteratorBuiltins extends PythonBuiltins {
@@ -82,8 +87,8 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
         }
 
         static void closedir(PNfiScandirIterator self, Object posixSupport, PosixSupportLibrary posixLib) {
-            posixLib.closedir(posixSupport, self.ref.dirStream);
-            PNfiScandirIterator.DirStreamRef.removeFromSet(self.ref);
+            posixLib.closedir(posixSupport, self.ref.getReference());
+            self.ref.markReleased();
         }
     }
 
@@ -102,8 +107,11 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
         @Specialization
         PNfiDirEntry next(VirtualFrame frame, PNfiScandirIterator self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            if (self.ref.isReleased()) {
+                throw raise(PythonBuiltinClassType.StopIteration);
+            }
             try {
-                Object dirEntryData = posixLib.readdir(getPosixSupport(), self.ref.dirStream);
+                Object dirEntryData = posixLib.readdir(getPosixSupport(), self.ref.getReference());
                 if (dirEntryData == null) {
                     CloseNode.closedir(self, getPosixSupport(), posixLib);
                     throw raise(PythonBuiltinClassType.StopIteration);
@@ -134,6 +142,29 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             CloseNode.closedir(self, getPosixSupport(), posixLib);
             return PNone.NONE;
+        }
+    }
+
+    static class ReleaseCallback implements AsyncAction {
+
+        private final PNfiScandirIterator.DirStreamRef ref;
+
+        ReleaseCallback(PNfiScandirIterator.DirStreamRef ref) {
+            this.ref = ref;
+        }
+
+        @Override
+        public void execute(PythonContext context) {
+            if (ref.isReleased()) {
+                return;
+            }
+            Truffle.getRuntime().createCallTarget(new RootNode(context.getLanguage()) {
+                @Override
+                public Object execute(VirtualFrame frame) {
+                    LibraryFactory.resolve(PosixSupportLibrary.class).getUncached(context.getPosixSupport()).closedir(context.getPosixSupport(), ref.getReference());
+                    return null;
+                }
+            }).call();
         }
     }
 }

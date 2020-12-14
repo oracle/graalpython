@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
-import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -148,14 +147,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int WRONLY = 1;
     private static final int RDONLY = 0;
 
-    // Apart from being consistent with definitions in C headers, the first three must have these
-    // exact values on the Python side. SEEK_DATA and SEEK_HOLE should only be defined where
-    // supported
-    // private static final int SEEK_SET = 0;
-    // private static final int SEEK_CUR = 1;
-    // private static final int SEEK_END = 2;
-    // private static final int SEEK_DATA = 3;
-    // private static final int SEEK_HOLE = 4;
+    // TODO map Python's SEEK_SET, SEEK_CUR, SEEK_END values to the underlying OS values if they are different
+    private static final int SEEK_DATA = 3;
+    private static final int SEEK_HOLE = 4;
 
     private static final int WNOHANG = 1;
     private static final int WUNTRACED = 3;
@@ -197,12 +191,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("O_SYNC", SYNC);
         builtinConstants.put("O_TEMPORARY", TEMPORARY);
         builtinConstants.put("O_TMPFILE", TMPFILE);
-        // TODO SEEK_* were removed in master
-        // builtinConstants.put("SEEK_SET", SEEK_SET);
-        // builtinConstants.put("SEEK_CUR", SEEK_CUR);
-        // builtinConstants.put("SEEK_END", SEEK_END);
-        // builtinConstants.put("SEEK_DATA", SEEK_DATA);
-        // builtinConstants.put("SEEK_HOLE", SEEK_HOLE);
+
+        builtinConstants.put("SEEK_DATA", SEEK_DATA);
+        builtinConstants.put("SEEK_HOLE", SEEK_HOLE);
 
         builtinConstants.put("WNOHANG", WNOHANG);
         builtinConstants.put("WUNTRACED", WUNTRACED);
@@ -219,9 +210,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("_have_functions", core.factory().createList());
         builtinConstants.put("environ", core.factory().createDict());
     }
-
-    // TODO will be replaced by using SharedFinalizer from PR #1316, for now it's static
-    private static final ReferenceQueue<PNfiScandirIterator> dirStreamRefQueue = new ReferenceQueue<>();
 
     @Override
     public void postInitialize(PythonCore core) {
@@ -1141,7 +1129,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return factory().createNfiScandirIterator(posixLib.opendir(getPosixSupport(), path.value), path, dirStreamRefQueue);
+                return factory().createNfiScandirIterator(getContext(), posixLib.opendir(getPosixSupport(), path.value), path);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
             }
@@ -1153,7 +1141,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", fd.originalObject);
             try {
-                return factory().createNfiScandirIterator(posixLib.fdopendir(getPosixSupport(), fd.fd), fd, dirStreamRefQueue);
+                return factory().createNfiScandirIterator(getContext(), posixLib.fdopendir(getPosixSupport(), fd.fd), fd);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
             }

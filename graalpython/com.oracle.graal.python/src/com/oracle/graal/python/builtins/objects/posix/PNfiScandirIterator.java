@@ -40,17 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
-import java.lang.ref.PhantomReference;
-import java.lang.ref.ReferenceQueue;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
+import com.oracle.graal.python.runtime.AsyncHandler.SharedFinalizer;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -61,9 +57,9 @@ public final class PNfiScandirIterator extends PythonBuiltinObject {
     final PosixFileHandle path;
     final DirStreamRef ref;
 
-    public PNfiScandirIterator(Object cls, Shape instanceShape, Object dirStream, PosixFileHandle path, ReferenceQueue<PNfiScandirIterator> queue) {
+    public PNfiScandirIterator(Object cls, Shape instanceShape, PythonContext context, Object dirStream, PosixFileHandle path) {
         super(cls, instanceShape);
-        this.ref = new DirStreamRef(this, queue, dirStream);
+        this.ref = new DirStreamRef(this, dirStream, context.getSharedFinalizer());
         this.path = path;
     }
 
@@ -73,32 +69,15 @@ public final class PNfiScandirIterator extends PythonBuiltinObject {
         return this;
     }
 
-    static class DirStreamRef extends PhantomReference<PNfiScandirIterator> {
+    static class DirStreamRef extends SharedFinalizer.FinalizableReference {
 
-        final Object dirStream;
-
-        // all alive references are stored in this set in order to keep them reachable
-        private static final Set<DirStreamRef> dirStreamRefs = Collections.synchronizedSet(new HashSet<>());
-
-        DirStreamRef(PNfiScandirIterator referent, ReferenceQueue<PNfiScandirIterator> queue, Object dirStream) {
-            super(referent, queue);
-            this.dirStream = dirStream;
-            addToSet(this);
-        }
-
-        @TruffleBoundary
-        static void addToSet(DirStreamRef ref) {
-            dirStreamRefs.add(ref);
-        }
-
-        @TruffleBoundary
-        static void removeFromSet(DirStreamRef ref) {
-            dirStreamRefs.remove(ref);
+        DirStreamRef(PNfiScandirIterator referent, Object dirStream, SharedFinalizer finalizer) {
+            super(referent, dirStream, finalizer);
         }
 
         @Override
-        public String toString() {
-            return "DirStreamRef -> " + dirStream;
+        public AsyncAction release() {
+            return new NfiScandirIteratorBuiltins.ReleaseCallback(this);
         }
     }
 }
