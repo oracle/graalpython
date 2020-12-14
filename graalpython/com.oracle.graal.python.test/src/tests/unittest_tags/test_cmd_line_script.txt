@@ -8,3 +8,6 @@
 *graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_issue20500_exit_with_exception_value
 *graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_issue20884
 *graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_nonexisting_script
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_package_error
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_package_recursion
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_pep_409_verbiage

@@ -51,9 +51,12 @@
 *graalpython.lib-python.3.test.test_os.ExtendedAttributeTests.test_fds
 *graalpython.lib-python.3.test.test_os.ExtendedAttributeTests.test_lpath
 *graalpython.lib-python.3.test.test_os.ExtendedAttributeTests.test_simple
+*graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_dup
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_dup_nul
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_dup_standard_stream
+*graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_open
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_openpty
+*graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_pipe
 *graalpython.lib-python.3.test.test_os.FSEncodingTests.test_identity
 *graalpython.lib-python.3.test.test_os.FSEncodingTests.test_nop
 *graalpython.lib-python.3.test.test_os.FileTests.test_access
