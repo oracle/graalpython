@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,14 +67,22 @@ public class PwdModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GetpwuidNode extends PythonUnaryBuiltinNode {
+        // TODO: this ignores the uid and just returns the info for the current user
+        // TODO: this should use argument clinic to properly cast the argument
+        // GR-28184
 
         @Specialization
         Object doGetpwuid(int uid) {
             return factory().createTuple(createPwuidObject(uid));
         }
 
+        @Specialization
+        Object doGetpwuid(long uid) {
+            return factory().createTuple(createPwuidObject(uid));
+        }
+
         @TruffleBoundary
-        public Object[] createPwuidObject(int uid) {
+        public Object[] createPwuidObject(Object uid) {
             String osName = System.getProperty("os.name");
             String username = System.getProperty("user.name");
             String password = "NOT_AVAILABLE";
