@@ -2652,20 +2652,24 @@ public abstract class CExtNodes {
             return result;
         }
 
-        @Specialization(guards = {"lib.hasMembers(object.getPtr())"}, replaces = "doCachedObj", limit = "1", //
+        @Specialization(guards = {"lib.hasMembers(object.getPtr())", "member.getType() == cachedMemberType"}, //
+                        replaces = "doCachedObj", limit = "1", //
                         rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
         static Object getByMember(PythonAbstractNativeObject object, NativeMember member,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
                         @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
                         throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return toJavaNode.execute(lib.readMember(object.getPtr(), member.getMemberName()));
         }
 
-        @Specialization(guards = {"!lib.hasMembers(object.getPtr())"}, replaces = {"doCachedObj", "getByMember"}, //
-                        limit = "1", rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        @Specialization(guards = {"!lib.hasMembers(object.getPtr())", "member.getType() == cachedMemberType"}, //
+                        replaces = {"doCachedObj", "getByMember"}, limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
         static Object getByMemberAttachType(PythonAbstractNativeObject object, NativeMember member,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached CExtNodes.GetLLVMType getLLVMType,
                         @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
@@ -2680,8 +2684,8 @@ public abstract class CExtNodes {
                         @Cached("getterFuncName(memberName)") String getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") ToJavaBaseNode toJavaNode,
-                        @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
-            return toJavaNode.execute(callGetTpDictNode.call(getterName, toSulong.execute(self)));
+                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
+            return toJavaNode.execute(callMemberGetterNode.call(getterName, toSulong.execute(self)));
         }
 
         @Specialization(replaces = {"doCachedObj", "getByMember", "getByMemberAttachType", "doCachedMember"})
@@ -2690,8 +2694,8 @@ public abstract class CExtNodes {
                         @Cached ToJavaNode toJavaNode,
                         @Cached CharPtrToJavaNode charPtrToJavaNode,
                         @Cached VoidPtrToJavaNode voidPtrToJavaNode,
-                        @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
-            Object value = callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self));
+                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
+            Object value = callMemberGetterNode.call(getterFuncName(memberName), toSulong.execute(self));
             switch (memberName.getType()) {
                 case OBJECT:
                     return toJavaNode.execute(value);
