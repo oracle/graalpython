@@ -151,8 +151,6 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
 
     static class ReleaseCallback implements AsyncAction {
 
-        private static final AtomicReference<CallTarget> cachedCallTarget = new AtomicReference<>();
-
         private final PScandirIterator.DirStreamRef ref;
 
         ReleaseCallback(PScandirIterator.DirStreamRef ref) {
@@ -164,15 +162,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
             if (ref.isReleased()) {
                 return;
             }
-            CallTarget callTarget = cachedCallTarget.get();
-            if (callTarget == null) {
-                callTarget = cachedCallTarget.updateAndGet((ct) -> {
-                    if (ct == null) {
-                        return PythonUtils.getOrCreateCallTarget(new ReleaserRootNode(context.getLanguage()));
-                    }
-                    return ct;
-                });
-            }
+            CallTarget callTarget = context.getLanguage().getScandirFinalizerCallTarget(ReleaserRootNode::new);
             callTarget.call(ref.getReference());
         }
 
@@ -180,7 +170,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
             @Child PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
             private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
 
-            public ReleaserRootNode(TruffleLanguage<?> language) {
+            ReleaserRootNode(TruffleLanguage<?> language) {
                 super(language);
             }
 
