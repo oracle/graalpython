@@ -137,7 +137,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetO
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
@@ -2275,7 +2274,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached IsIdentifierNode isIdentifier,
-                        @Cached DictBuiltins.CopyNode copyDict) {
+                        @Cached HashingCollectionNodes.SetDictStorageNode setStorage,
+                        @Cached HashingStorage.InitNode initNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = calculate_metaclass(frame, cls, bases, lib);
@@ -2290,7 +2290,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
-                PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
+                PDict namespace = factory().createDict();
+                setStorage.execute(namespace, initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
                                 isIdentifier);
 
@@ -2347,6 +2348,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             namespace.setDictStorage(newStore);
                         }
                     }
+                }
+
+                if (newType.getAttribute(SpecialAttributeNames.__DOC__) == PNone.NO_VALUE) {
+                    newType.setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
                 }
 
                 return newType;

@@ -79,11 +79,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @TruffleBoundary
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
-        this(lang, typeClass, classShape, instanceShape, name, true, baseClasses);
+        this(lang, typeClass, classShape, instanceShape, name, true, true, baseClasses);
     }
 
     @TruffleBoundary
-    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass... baseClasses) {
+    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, boolean invokeMro, boolean initDocAttr,
+                    PythonAbstractClass... baseClasses) {
         super(typeClass, classShape);
         this.name = name;
         this.qualName = name;
@@ -103,7 +104,9 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         this.needsNativeAllocation = computeNeedsNativeAllocation();
 
-        setAttribute(__DOC__, PNone.NONE);
+        if (initDocAttr) {
+            setAttribute(__DOC__, PNone.NONE);
+        }
 
         if (instanceShape != null) {
             this.instanceShape = instanceShape;
