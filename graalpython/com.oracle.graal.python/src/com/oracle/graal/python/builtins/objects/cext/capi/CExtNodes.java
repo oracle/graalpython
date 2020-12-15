@@ -3539,11 +3539,15 @@ public abstract class CExtNodes {
         static TruffleObject doUntyped(TruffleObject ptr,
                         @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib,
                         @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
                         @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
                         @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
                         @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
             Object type = asPythonObjectNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, ptr));
             Object llvmType = getSulongTypeNode.execute(type);
+            if (llvmType == null) {
+                llvmType = getLLVMType.execute(LLVMType.PyObject);
+            }
             return (TruffleObject) callPolyglotFromTypedNode.call(FUN_POLYGLOT_FROM_TYPED, ptr, llvmType);
         }
 
@@ -3551,11 +3555,12 @@ public abstract class CExtNodes {
         static TruffleObject doGeneric(TruffleObject ptr,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
                         @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
                         @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
                         @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
             if (!lib.hasMetaObject(ptr)) {
-                return doUntyped(ptr, lib, getSulongTypeNode, callGetObTypeNode, callPolyglotFromTypedNode, asPythonObjectNode);
+                return doUntyped(ptr, lib, getSulongTypeNode, getLLVMType, callGetObTypeNode, callPolyglotFromTypedNode, asPythonObjectNode);
             }
             return ptr;
         }
