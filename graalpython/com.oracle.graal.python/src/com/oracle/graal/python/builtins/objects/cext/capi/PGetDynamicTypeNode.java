@@ -107,62 +107,62 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
 
         public abstract Object execute(Object clazz);
 
-        @Specialization(guards = "clazz == cachedClass", limit = "10")
-        Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+        @Specialization(guards = "clazz == cachedClass", limit = "10", assumptions = "singleContextAssumption()")
+        static Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("getSulongTypeForBuiltinClass(clazz, context)") Object sulongType) {
-            return sulongType;
+                        @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
+                        @Cached("getLLVMTypeForBuiltinClass(clazz, context)") Object llvmType) {
+            return llvmType;
         }
 
         @Specialization(replaces = "doBuiltinCached")
-        Object doBuiltinGeneric(PythonBuiltinClassType clazz,
+        static Object doBuiltinGeneric(PythonBuiltinClassType clazz,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
-            return getSulongTypeForBuiltinClass(clazz, context);
+            return getLLVMTypeForBuiltinClass(clazz, context);
         }
 
         @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")
-        Object doGeneric(@SuppressWarnings("unused") PythonManagedClass clazz,
+        static Object doManagedClassCached(@SuppressWarnings("unused") PythonManagedClass clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonManagedClass cachedClass,
-                        @Cached(value = "doGeneric(clazz)", allowUncached = true) Object sulongType) {
-            return sulongType;
+                        @Cached("getLLVMTypeForClass(clazz)") Object llvmType) {
+            return llvmType;
         }
 
-        @Specialization
-        Object doGeneric(PythonManagedClass clazz) {
-            return getSulongTypeForClass(clazz);
+        @Specialization(replaces = "doManagedClassCached")
+        static Object doManagedClass(PythonManagedClass clazz) {
+            return getLLVMTypeForClass(clazz);
         }
 
-        protected Object getSulongTypeForBuiltinClass(PythonBuiltinClassType clazz, PythonContext context) {
+        protected static Object getLLVMTypeForBuiltinClass(PythonBuiltinClassType clazz, PythonContext context) {
             PythonBuiltinClass pythonClass = context.getCore().lookupType(clazz);
-            return getSulongTypeForClass(pythonClass);
+            return getLLVMTypeForClass(pythonClass);
         }
 
-        private static Object getSulongTypeForClass(PythonManagedClass pythonClass) {
-            Object sulongType = pythonClass.getSulongType();
-            if (sulongType == null) {
+        protected static Object getLLVMTypeForClass(PythonManagedClass pythonClass) {
+            Object llvmType = pythonClass.getSulongType();
+            if (llvmType == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                sulongType = findBuiltinClass(pythonClass);
-                if (sulongType == null) {
+                llvmType = findBuiltinClass(pythonClass);
+                if (llvmType == null) {
                     throw new IllegalStateException("sulong type for " + GetNameNode.getUncached().execute(pythonClass) + " was not registered");
                 }
             }
-            return sulongType;
+            return llvmType;
         }
 
         private static Object findBuiltinClass(PythonManagedClass pythonClass) {
             PythonAbstractClass[] mro = GetMroNode.getUncached().execute(pythonClass);
-            Object sulongType = null;
+            Object llvmType = null;
             for (PythonAbstractClass superClass : mro) {
                 if (superClass instanceof PythonManagedClass) {
-                    sulongType = ((PythonManagedClass) superClass).getSulongType();
-                    if (sulongType != null) {
-                        pythonClass.setSulongType(sulongType);
+                    llvmType = ((PythonManagedClass) superClass).getSulongType();
+                    if (llvmType != null) {
+                        pythonClass.setSulongType(llvmType);
                         break;
                     }
                 }
             }
-            return sulongType;
+            return llvmType;
         }
     }
 }

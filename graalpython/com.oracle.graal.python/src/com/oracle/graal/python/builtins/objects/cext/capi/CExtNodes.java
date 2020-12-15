@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_POLYGLOT_FROM_TYPED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PTR_COMPARE;
@@ -90,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidP
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -1121,13 +1123,14 @@ public abstract class CExtNodes {
                         @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached GetRefCntNode getRefCntNode,
-                        @Cached AddRefCntNode addRefCntNode) {
+                        @Cached AddRefCntNode addRefCntNode,
+                        @Cached AttachLLVMTypeNode attachLLVMTypeNode) {
             if (lib.isNull(object)) {
                 return PNone.NO_VALUE;
             }
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, attachLLVMTypeNode);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -1148,13 +1151,14 @@ public abstract class CExtNodes {
                         @CachedLibrary("object") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetRefCntNode getRefCntNode,
-                        @Cached AddRefCntNode addRefCntNode) {
+                        @Cached AddRefCntNode addRefCntNode,
+                        @Cached AttachLLVMTypeNode attachLLVMTypeNode) {
             if (lib.isNull(object)) {
                 return PNone.NO_VALUE;
             }
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true, attachLLVMTypeNode);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -3508,6 +3512,48 @@ public abstract class CExtNodes {
         private static Object callBuiltin(PythonContext context, String builtinName, Object object) {
             Object attribute = PythonObjectLibrary.getUncached().lookupAttribute(context.getBuiltins(), null, builtinName);
             return CastToJavaStringNodeGen.getUncached().execute(PythonObjectLibrary.getUncached().callObject(attribute, null, object));
+        }
+    }
+
+    /**
+     * Attaches the appropriate LLVM type to the provided pointer object making the pointer to be
+     * typed (i.e. {@code interopLib.hasMetaObject(ptr) == true}) and thus allows to do direct
+     * member access via interop.<br/>
+     */
+    @GenerateUncached
+    public abstract static class AttachLLVMTypeNode extends Node {
+
+        public abstract TruffleObject execute(TruffleObject ptr);
+
+        @Specialization(guards = "lib.hasMetaObject(ptr)", limit = "1")
+        static TruffleObject doTyped(TruffleObject ptr,
+                        @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib) {
+            return ptr;
+        }
+
+        @Specialization(guards = "!lib.hasMetaObject(ptr)", limit = "1", replaces = "doTyped")
+        static TruffleObject doUntyped(TruffleObject ptr,
+                        @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
+                        @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
+                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+            Object type = asPythonObjectNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, ptr));
+            Object llvmType = getSulongTypeNode.execute(type);
+            return (TruffleObject) callPolyglotFromTypedNode.call(FUN_POLYGLOT_FROM_TYPED, ptr, llvmType);
+        }
+
+        @Specialization(limit = "1", replaces = {"doTyped", "doUntyped"})
+        static TruffleObject doGeneric(TruffleObject ptr,
+                        @CachedLibrary("ptr") InteropLibrary lib,
+                        @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
+                        @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
+                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+            if (!lib.hasMetaObject(ptr)) {
+                return doUntyped(ptr, lib, getSulongTypeNode, callGetObTypeNode, callPolyglotFromTypedNode, asPythonObjectNode);
+            }
+            return ptr;
         }
     }
 

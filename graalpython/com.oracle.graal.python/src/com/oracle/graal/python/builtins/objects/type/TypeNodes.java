@@ -108,7 +108,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStor
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1198,46 +1197,6 @@ public abstract class TypeNodes {
             private static final long serialVersionUID = 1L;
             static final NotSameTypeException INSTANCE = new NotSameTypeException();
         }
-    }
-
-    /** accesses the Sulong type of a class; does no recursive resolving */
-    public abstract static class GetSulongTypeNode extends Node {
-
-        public abstract Object execute(PythonAbstractClass clazz);
-
-        @Specialization
-        Object doInitialized(PythonManagedClass clazz) {
-            return clazz.getSulongType();
-        }
-
-        @Specialization
-        Object doNative(@SuppressWarnings("unused") PythonNativeClass clazz) {
-            return null;
-        }
-
-        @TruffleBoundary
-        public static Object getSlowPath(PythonAbstractClass clazz) {
-            if (clazz instanceof PythonManagedClass) {
-                return ((PythonManagedClass) clazz).getSulongType();
-            } else if (PGuards.isNativeClass(clazz)) {
-                return null;
-            }
-            throw new IllegalStateException("unknown type " + clazz.getClass().getName());
-        }
-
-        @TruffleBoundary
-        public static void setSlowPath(PythonAbstractClass clazz, Object sulongType) {
-            if (clazz instanceof PythonManagedClass) {
-                ((PythonManagedClass) clazz).setSulongType(sulongType);
-            } else {
-                throw new IllegalStateException("cannot set Sulong type for " + clazz.getClass().getName());
-            }
-        }
-
-        public static GetSulongTypeNode create() {
-            return GetSulongTypeNodeGen.create();
-        }
-
     }
 
     public abstract static class ComputeMroNode extends Node {
