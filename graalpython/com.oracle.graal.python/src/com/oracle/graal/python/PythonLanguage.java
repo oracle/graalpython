@@ -186,6 +186,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     /**
      * Caches per-engine singleton instance of call target used to release ScandirIterator.
+     * 
      * @see com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins
      */
     private final AtomicReference<CallTarget> scandirFinalizerCallTargetCache = new AtomicReference<>();
