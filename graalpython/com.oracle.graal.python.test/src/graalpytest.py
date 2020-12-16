@@ -651,18 +651,22 @@ class TestRunner(object):
                 print(u"\n\u25B9 ", module.__name__, end="")
             # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
             module_dict = dict(module.__dict__)
+            testcases = []
             for k, v in module_dict.items():
                 if (k.startswith("Test") or k.endswith("Test") or k.endswith("Tests")) and isinstance(v, type):
-                    testcase = TestCase.runClass(v)
+                    testcases.append(TestCase.runClass(v))
                 else:
-                    testcase = TestCase.run(items=[(k, v)])
-                self.exceptions += testcase.exceptions
-                self.passed += testcase.passed
-                self.failed += testcase.failed
-                self.skipped_n += testcase.skipped_n
+                    testcases.append(TestCase.run(items=[(k, v)]))
             if verbose:
-                print()
+                with print_lock:
+                    print()
         ThreadPool.shutdown()
+        for testcase in testcases:
+            self.exceptions += testcase.exceptions
+            self.passed += testcase.passed
+            self.failed += testcase.failed
+            self.skipped_n += testcase.skipped_n
+
         print("\n\nRan %d tests (%d passes, %d failures, %d skipped)" % (self.passed + self.failed, self.passed, self.failed, self.skipped_n))
         for e in self.exceptions:
             msg, exc = e
