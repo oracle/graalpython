@@ -40,67 +40,44 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.util.Iterator;
-
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleFile;
+import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
+import com.oracle.graal.python.runtime.AsyncHandler.SharedFinalizer;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PScandirIterator extends PythonBuiltinObject {
-    private boolean closed = false;
-    private final DirectoryStream<TruffleFile> stream;
-    private final Iterator<TruffleFile> iterator;
-    private final String path;
-    private final boolean produceBytes;
 
-    @TruffleBoundary
-    public PScandirIterator(Object cls, Shape instanceShape, String path, DirectoryStream<TruffleFile> stream, boolean produceBytes) {
+    final PosixFileHandle path;
+    final DirStreamRef ref;
+
+    public PScandirIterator(Object cls, Shape instanceShape, PythonContext context, Object dirStream, PosixFileHandle path) {
         super(cls, instanceShape);
+        this.ref = new DirStreamRef(this, dirStream, context.getSharedFinalizer());
         this.path = path;
-        this.stream = stream;
-        this.iterator = stream.iterator();
-        this.produceBytes = produceBytes;
-    }
-
-    @TruffleBoundary
-    public TruffleFile next() {
-        return iterator.next();
-    }
-
-    @TruffleBoundary
-    public boolean hasNext() {
-        return !closed && iterator.hasNext();
-    }
-
-    @TruffleBoundary
-    public void close() {
-        closed = true;
-        try {
-            stream.close();
-        } catch (IOException e) {
-            // doesn't matter at this point
-        }
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public boolean isProduceBytes() {
-        return produceBytes;
     }
 
     /* this is correct because it cannot be subclassed in Python */
     @ExportMessage
     PScandirIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
         return this;
+    }
+
+    static class DirStreamRef extends SharedFinalizer.FinalizableReference {
+
+        DirStreamRef(PScandirIterator referent, Object dirStream, SharedFinalizer finalizer) {
+            super(referent, dirStream, finalizer);
+        }
+
+        @Override
+        public AsyncAction release() {
+            return new ScandirIteratorBuiltins.ReleaseCallback(this);
+        }
     }
 }

@@ -37,21 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# TODO replace with normal import once we remove the nfi prefixes
-def wrap_modules():
-    import os as _os
-    import posix as _posix
-    class OsWrapper:
-        def __getattribute__(self, item):
-            return getattr(_os, f'nfi_{item}', getattr(_os, item, None))
-    class PosixWrapper:
-        def __getattribute__(self, item):
-            return getattr(_posix, f'nfi_{item}', getattr(_posix, item, None))
-    return OsWrapper(), PosixWrapper()
-
-
-os, posix = wrap_modules()
-
 try:
     __graalpython__.posix_module_backend()
 except:
@@ -62,10 +47,13 @@ except:
 
 
 import unittest
+import os
 import array
 import sys
+import posix
 import stat
 import tempfile
+import io
 from contextlib import contextmanager
 
 
@@ -106,59 +94,59 @@ class PosixTests(unittest.TestCase):
         self.assertIsNotNone(uname.version)
         self.assertIsNotNone(uname.machine)
 
-#     def test_execv(self):
-#         # test creates a shell script, which again creates a file, to ensure script execution
-#         # Both files are deleted again in the end
-#         new_file_path, cwd = self.create_file()
-#         os.system("%s -c \"import os; os.execv('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
-#         assert os.path.isfile(cwd + '/test.txt')
-#         self.delete_file(new_file_path, cwd)
-#
-#     def test_execl(self):
-#         # test creates a shell script, which again creates a file, to ensure script execution
-#         # Both files are deleted again in the end
-#         new_file_path, cwd = self.create_file()
-#         os.system("%s -c \"import os; os.execl('%s', *['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
-#         assert os.path.isfile(cwd + '/test.txt')
-#         self.delete_file(new_file_path, cwd)
-#
-#     def test_execv_with_env(self):
-#         new_file_path, cwd = self.create_file()
-#         with open(new_file_path, 'w') as script:
-#             script.write('#!/bin/sh\n')
-#             script.write('echo $ENV_VAR > {}/test.txt\n'.format(cwd))
-#         os.system("%s -c \"import os; os.environ['ENV_VAR']='the_text'; os.execv('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
-#         assert os.path.isfile(cwd + '/test.txt')
-#         with open(cwd+'/test.txt', 'r') as result:
-#             assert 'the_text' in result.readline()
-#         self.delete_file(new_file_path, cwd)
-#
-#    def test_path_respecialization(self):
-#        # regression test for https://github.com/graalvm/graalpython/issues/124
-#        from pathlib import PurePath
-#        p = PurePath(".")
-#        for path in [p, "."]:
-#            os.scandir(path)
-#
-#     def create_file(self):
-#         cwd = os.getcwd()
-#         new_file_path = os.path.join(cwd , 'myscript.sh')
-#         with open(new_file_path, 'w') as script:
-#             script.write('#!/bin/sh\n')
-#             script.write("echo \"something echo with\" $1 > {}/test.txt\n".format(cwd))
-#             script.write('echo this is an output\n')
-#         assert os.path.isfile(new_file_path)
-#         st = os.stat(new_file_path)
-#         os.chmod(new_file_path, st.st_mode | stat.S_IEXEC)
-#         return new_file_path, cwd
+    def test_execv(self):
+        # test creates a shell script, which again creates a file, to ensure script execution
+        # Both files are deleted again in the end
+        new_file_path, cwd = self.create_file()
+        os.system("%s -c \"import os; os.execv('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
+        assert os.path.isfile(cwd + '/test.txt')
+        self.delete_file(new_file_path, cwd)
+
+    def test_execl(self):
+        # test creates a shell script, which again creates a file, to ensure script execution
+        # Both files are deleted again in the end
+        new_file_path, cwd = self.create_file()
+        os.system("%s -c \"import os; os.execl('%s', *['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
+        assert os.path.isfile(cwd + '/test.txt')
+        self.delete_file(new_file_path, cwd)
+
+    def test_execv_with_env(self):
+        new_file_path, cwd = self.create_file()
+        with io.open(new_file_path, 'w') as script:
+            script.write('#!/bin/sh\n')
+            script.write('echo $ENV_VAR > {}/test.txt\n'.format(cwd))
+        os.system("%s -c \"import os; os.environ['ENV_VAR']='the_text'; os.execv('%s', ['%s', 'the_input'])\"" % (sys.executable, new_file_path, new_file_path))
+        assert os.path.isfile(cwd + '/test.txt')
+        with io.open(cwd+'/test.txt', 'r') as result:
+            assert 'the_text' in result.readline()
+        self.delete_file(new_file_path, cwd)
+
+    def test_path_respecialization(self):
+        # regression test for https://github.com/graalvm/graalpython/issues/124
+        from pathlib import PurePath
+        p = PurePath(".")
+        for path in [p, "."]:
+            os.scandir(path)
+
+    def create_file(self):
+        cwd = os.getcwd()
+        new_file_path = os.path.join(cwd , 'myscript.sh')
+        with io.open(new_file_path, 'w') as script:
+            script.write('#!/bin/sh\n')
+            script.write("echo \"something echo with\" $1 > {}/test.txt\n".format(cwd))
+            script.write('echo this is an output\n')
+        assert os.path.isfile(new_file_path)
+        st = os.stat(new_file_path)
+        os.chmod(new_file_path, st.st_mode | stat.S_IEXEC)
+        return new_file_path, cwd
 
     def test_empty_stat(self):
         with self.assertRaises(FileNotFoundError):
             os.stat('')
 
-    # def delete_file(self, new_file_path, cwd):
-    #     os.remove(new_file_path)
-    #     os.remove(cwd + '/test.txt')
+    def delete_file(self, new_file_path, cwd):
+        os.remove(new_file_path)
+        os.remove(cwd + '/test.txt')
 
     def test_strerror(self):
         # make sure that strerror works even for non-existent error codes
@@ -541,16 +529,15 @@ class ScandirTests(unittest.TestCase):
         self.assertTrue(entry.is_file(follow_symlinks=False))
         self.assertFalse(entry.is_dir(follow_symlinks=False))
 
-    # TODO temporarily disabled - needs a fix from master
-    # def test_kw_only(self):
-    #     with os.scandir(TEST_FULL_PATH1) as dir:
-    #         entry = next(dir)
-    #     with self.assertRaises(TypeError):
-    #         entry.stat(True)
-    #     with self.assertRaises(TypeError):
-    #         entry.is_file(True)
-    #     with self.assertRaises(TypeError):
-    #         entry.is_dir(True)
+    def test_kw_only(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        with self.assertRaises(TypeError):
+            entry.stat(True)
+        with self.assertRaises(TypeError):
+            entry.is_file(True)
+        with self.assertRaises(TypeError):
+            entry.is_dir(True)
 
     def test_stat_error_msg(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
@@ -647,11 +634,7 @@ class ScandirSymlinkToDirTests(unittest.TestCase):
         self.target_inode = os.stat(TEST_FULL_PATH2).st_ino
 
     def tearDown(self):
-        try:
-            os.unlink(self.link_path)
-        except:
-            # TODO temporary hack needed as long as emulated unlink refuses to remove symlinks to dirs
-            os.rmdir(self.link_path)
+        os.unlink(self.link_path)
         os.rmdir(TEST_FULL_PATH1)
         try:
             os.rmdir(TEST_FULL_PATH2)

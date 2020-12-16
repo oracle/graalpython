@@ -184,6 +184,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
 
+    /**
+     * Caches per-engine singleton instance of call target used to release ScandirIterator.
+     * 
+     * @see com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins
+     */
+    private final AtomicReference<CallTarget> scandirFinalizerCallTargetCache = new AtomicReference<>();
+
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
     }
@@ -783,6 +790,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             arithmeticOpCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
         }
         assert callTarget != null;
+        return callTarget;
+    }
+
+    public CallTarget getScandirFinalizerCallTarget(Function<PythonLanguage, RootNode> rootNodeSupplier) {
+        CallTarget callTarget = scandirFinalizerCallTargetCache.get();
+        if (callTarget == null) {
+            callTarget = scandirFinalizerCallTargetCache.updateAndGet((ct) -> {
+                if (ct == null) {
+                    return PythonUtils.getOrCreateCallTarget(rootNodeSupplier.apply(this));
+                }
+                return ct;
+            });
+        }
         return callTarget;
     }
 }

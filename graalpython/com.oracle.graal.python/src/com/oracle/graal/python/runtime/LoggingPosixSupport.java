@@ -70,21 +70,20 @@ import com.oracle.truffle.api.source.SourceSection;
  * <li>only {@link PosixException} are logged</li>
  * <li>this class assumes default string/bytes encoding to keep it simple</li>
  * <li>logging must be enabled using the
- * {@code --log.python.com.oracle.graal.python.runtime.LoggingPosixSupport.level=FINE} option</li>
+ * {@code --log.python.com.oracle.graal.python.runtime.LoggingPosixSupport.level=FINER} option</li>
  * </ul>
  *
  * Logging levels:
  * <ul>
- * <li>FINE - all important messages</li>
- * <li>FINER - supporting messages (e.g. path conversions) + top 3 frames of the call stack</li>
- * <li>FINEST - whole call stack</li>
+ * <li>FINER - all important messages</li>
+ * <li>FINEST - supporting messages (e.g. path conversions) + top 5 frames of the call stack</li>
  * </ul>
  */
 @ExportLibrary(PosixSupportLibrary.class)
 public class LoggingPosixSupport extends PosixSupport {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LoggingPosixSupport.class);
-    private static final Level DEFAULT_LEVEL = Level.FINE;
+    private static final Level DEFAULT_LEVEL = Level.FINER;
 
     protected final PosixSupport delegate;
 
@@ -104,15 +103,15 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     final String getBackend(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINER, "getBackend", "");
-        return logExit(Level.FINER, "getBackend", "%s", lib.getBackend(delegate));
+        logEnter(Level.FINEST, "getBackend", "");
+        return logExit(Level.FINEST, "getBackend", "%s", lib.getBackend(delegate));
     }
 
     @ExportMessage
     final String strerror(int errorCode,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINER, "strerror", "%d", errorCode);
-        return logExit(Level.FINER, "strerror", "%s", lib.strerror(delegate, errorCode));
+        logEnter(Level.FINEST, "strerror", "%d", errorCode);
+        return logExit(Level.FINEST, "strerror", "%s", lib.strerror(delegate, errorCode));
     }
 
     @ExportMessage
@@ -562,29 +561,29 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINER, "createPathFromString", "%s", path);
-        return logExit(Level.FINER, "createPathFromString", "%s", lib.createPathFromString(delegate, path));
+        logEnter(Level.FINEST, "createPathFromString", "%s", path);
+        return logExit(Level.FINEST, "createPathFromString", "%s", lib.createPathFromString(delegate, path));
     }
 
     @ExportMessage
     final Object createPathFromBytes(byte[] path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINER, "createPathFromBytes", "%s", path);
-        return logExit(Level.FINER, "createPathFromBytes", "%s", lib.createPathFromBytes(delegate, path));
+        logEnter(Level.FINEST, "createPathFromBytes", "%s", path);
+        return logExit(Level.FINEST, "createPathFromBytes", "%s", lib.createPathFromBytes(delegate, path));
     }
 
     @ExportMessage
     final String getPathAsString(Object path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINER, "getPathAsString", "%s", path);
-        return logExit(Level.FINER, "getPathAsString", "%s", lib.getPathAsString(delegate, path));
+        logEnter(Level.FINEST, "getPathAsString", "%s", path);
+        return logExit(Level.FINEST, "getPathAsString", "%s", lib.getPathAsString(delegate, path));
     }
 
     @ExportMessage
     final Buffer getPathAsBytes(Object path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINER, "getPathAsBytes", "%s", path);
-        return logExit(Level.FINER, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path));
+        logEnter(Level.FINEST, "getPathAsBytes", "%s", path);
+        return logExit(Level.FINEST, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path));
     }
 
     @TruffleBoundary
@@ -592,9 +591,7 @@ public class LoggingPosixSupport extends PosixSupport {
         if (LOGGER.isLoggable(level)) {
             LOGGER.log(level, msg + '(' + String.format(argFmt, fixLogArgs(args)) + ')');
             if (LOGGER.isLoggable(Level.FINEST)) {
-                logStackTrace(Level.FINEST, 0, Integer.MAX_VALUE);
-            } else if (LOGGER.isLoggable(Level.FINER)) {
-                logStackTrace(Level.FINER, 0, 3);
+                logStackTrace(Level.FINEST, 0, 5);
             }
         }
     }

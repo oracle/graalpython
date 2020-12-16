@@ -47,6 +47,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
+import com.oracle.truffle.api.library.LibraryFactory;
 
 /**
  * Internal abstraction layer for POSIX functionality. Instance of the implementation is stored in
@@ -330,5 +331,15 @@ public abstract class PosixSupportLibrary extends Library {
         public ByteBuffer getByteBuffer() {
             return ByteBuffer.wrap(data, 0, (int) length);
         }
+    }
+
+    static final LibraryFactory<PosixSupportLibrary> FACTORY = LibraryFactory.resolve(PosixSupportLibrary.class);
+
+    public static LibraryFactory<PosixSupportLibrary> getFactory() {
+        return FACTORY;
+    }
+
+    public static PosixSupportLibrary getUncached() {
+        return FACTORY.getUncached();
     }
 }
