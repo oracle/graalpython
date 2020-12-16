@@ -40,27 +40,25 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 /**
+ * Do not use for a regular cast "to long". This is only meant for the use with hash functions where
+ * the sign bit does not really matter but just the bits. Also in case of a <b>BigInteger
+ * overflow</b> the PInt args hash value is returned.
+ * 
  * Casts a Python integer to a Java long without coercion. The difference to
  * {@link CastToJavaLongExactNode} is that if a {@link PInt} is larger than
  * {@link Integer#MAX_VALUE} but still just requires 64-bits, we will still to the cast resulting in
- * a negative Java long. This is useful for hash functions where the sign bit does not really matter
- * but just the bits.
+ * a negative Java long.
  * 
  * <b>ATTENTION:</b> If the cast isn't possible, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
-public abstract class CastUnsignedToJavaLongNode extends CastToJavaLongNode {
+public abstract class CastUnsignedToJavaLongHashNode extends CastToJavaLongNode {
 
     @Specialization(rewriteOn = OverflowException.class, insertBefore = "doNativeObject")
     static long toLongNoOverflow(PInt x) throws OverflowException {
@@ -68,15 +66,17 @@ public abstract class CastUnsignedToJavaLongNode extends CastToJavaLongNode {
     }
 
     @Specialization(replaces = "toLongNoOverflow", insertBefore = "doNativeObject")
-    static long toLong(PInt x,
-                    @Cached PRaiseNode raiseNode) {
+    static long toLong(PInt x) {
         try {
             return x.longValueExact();
         } catch (OverflowException e) {
             if (x.isZeroOrPositive() && x.bitLength() <= 64) {
                 return x.longValue();
             }
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
+            // see slot_tp_hash()
+            // res was not within range, so we're free to use any sufficiently bit-mixing
+            // transformation; long.__hash__ will do nicely
+            return x.hash();
         }
     }
 }

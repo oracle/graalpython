@@ -134,7 +134,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -780,7 +780,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastUnsignedToJavaLongNode castUnsignedToJavaLongNode) {
+                    @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode) {
         Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
         if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
@@ -789,7 +789,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
         // hash call is always a plain long, forcibly and lossy read from memory.
         try {
-            return castUnsignedToJavaLongNode.execute(result);
+            return castUnsignedToJavaLongHashNode.execute(result);
         } catch (CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
         }

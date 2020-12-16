@@ -56,6 +56,12 @@ def _reference_bytes(args):
         return bytes(obj)
     raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
 
+def _reference_hash(args):
+    try:
+        return hash(args[0])
+    except TypeError as e:
+        return SystemError(e)
+
 
 class AttroClass(object):
     def __getattribute__(self, key):
@@ -659,3 +665,28 @@ class TestObjectFunctions(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    class MyObject():
+        def __hash__(self):
+            return 42
+
+    __MyObject_SINGLETON = MyObject()
+
+    test_PyObject_Hash = CPyExtFunction(
+        _reference_hash,
+        lambda: (
+            (0,),
+            ("hello",),
+            (memoryview(b"world"),),
+            (1.234,),
+            (bytearray(b"blah"),),
+            ({1: 2, 3: 4},),
+            ([1,2,3,4],),
+            ({1,2,3,4},),
+            (slice(1,100,2),),
+            (TestObjectFunctions.__MyObject_SINGLETON,)
+        ),
+        arguments=["PyObject* obj"],
+        resultspec="n",
+        argspec="O",
+        cmpfunc=unhandled_error_compare
+    )

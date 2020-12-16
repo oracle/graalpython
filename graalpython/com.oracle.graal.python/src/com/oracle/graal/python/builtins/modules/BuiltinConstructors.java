@@ -137,7 +137,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetO
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
@@ -1131,6 +1130,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callIndexNode;
         @Child private LookupAndCallUnaryNode callTruncNode;
         @Child private LookupAndCallUnaryNode callReprNode;
+        @Child private WarnNode warnNode;
 
         @TruffleBoundary
         private static Object stringToIntInternal(String num, int base) {
@@ -1517,7 +1517,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // If a subclass of int is returned by __int__ or __index__, a conversion to int is
             // performed and a DeprecationWarning should be triggered (see PyNumber_Long).
             if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
-                // TODO deprecation warning
+                getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                ErrorMessages.P_RETURNED_NON_P,
+                                obj, "__int__/__index__", "int", result, "int");
                 if (PGuards.isPInt(result)) {
                     result = ((PInt) result).getValue();
                 } else if (PGuards.isBoolean(result)) {
@@ -1573,6 +1575,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 callTruncNode = insert(LookupAndCallUnaryNode.create(__TRUNC__));
             }
             return callTruncNode.executeObject(frame, obj);
+        }
+
+        private WarnNode getWarnNode() {
+            if (warnNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                warnNode = insert(WarnNode.create());
+            }
+            return warnNode;
         }
 
         private String toString(PBytesLike pByteArray) {
@@ -2264,7 +2274,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached IsIdentifierNode isIdentifier,
-                        @Cached DictBuiltins.CopyNode copyDict) {
+                        @Cached HashingCollectionNodes.SetDictStorageNode setStorage,
+                        @Cached HashingStorage.InitNode initNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = calculate_metaclass(frame, cls, bases, lib);
@@ -2279,7 +2290,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
-                PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
+                PDict namespace = factory().createDict();
+                setStorage.execute(namespace, initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
                                 isIdentifier);
 
@@ -2336,6 +2348,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             namespace.setDictStorage(newStore);
                         }
                     }
+                }
+
+                if (newType.getAttribute(SpecialAttributeNames.__DOC__) == PNone.NO_VALUE) {
+                    newType.setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
                 }
 
                 return newType;

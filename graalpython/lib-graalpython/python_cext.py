@@ -1176,8 +1176,9 @@ def PyObject_HasAttr(obj, attr):
     return 1 if hasattr(obj, attr) else 0
 
 
+@may_raise(-1)
 def PyObject_HashNotImplemented(obj):
-    return TypeError("unhashable type: '%s'" % type(obj).__name__)
+    raise TypeError("unhashable type: '%s'" % type(obj).__name__)
 
 
 def PyObject_IsTrue(obj):

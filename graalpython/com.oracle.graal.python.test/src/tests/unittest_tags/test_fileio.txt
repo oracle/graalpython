@@ -22,6 +22,7 @@
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testAppend
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testBadModeArgument
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testBytesOpen
+*graalpython.lib-python.3.test.test_fileio.COtherFileTests.testConstructorHandlesNULChars
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidFd_overflow
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidInit
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidModeStrings
@@ -56,6 +57,7 @@
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testAppend
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testBadModeArgument
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testBytesOpen
+*graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testConstructorHandlesNULChars
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testInvalidInit
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testInvalidModeStrings
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testTruncateOnWindows

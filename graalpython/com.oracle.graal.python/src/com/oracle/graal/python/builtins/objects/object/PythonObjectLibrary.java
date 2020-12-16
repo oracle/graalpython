@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
@@ -191,11 +190,10 @@ public abstract class PythonObjectLibrary extends Library {
      * special method.
      *
      * @param receiver the receiver Object
-     * @return True if object is callable
+     * @return True if object has the __CALL__ attribute
      */
     public boolean isCallable(Object receiver) {
-        Object callMethod = lookupAttributeOnType(receiver, __CALL__);
-        return PGuards.isCallable(callMethod);
+        return lookupAttributeOnType(receiver, __CALL__) != PNone.NO_VALUE;
     }
 
     /**

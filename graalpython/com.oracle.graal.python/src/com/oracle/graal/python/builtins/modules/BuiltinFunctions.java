@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -118,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
+import static com.oracle.graal.python.nodes.BuiltinNames.SORTED;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -135,6 +137,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -1354,9 +1357,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return lib.getIteratorWithFrame(object, frame);
         }
 
-        @Specialization(guards = "!isNoValue(sentinel)")
-        Object iter(Object callable, Object sentinel) {
+        @Specialization(guards = {"lib.isCallable(callable)", "!isNoValue(sentinel)"}, limit = "1")
+        Object iter(Object callable, Object sentinel,
+                        @SuppressWarnings("unused") @CachedLibrary("callable") PythonObjectLibrary lib) {
             return factory().createSentinelIterator(callable, sentinel);
+        }
+
+        @Specialization(guards = {"!lib.isCallable(callable)", "!isNoValue(sentinel)"}, limit = "1")
+        @SuppressWarnings("unused")
+        Object iterNotCallable(Object callable, Object sentinel,
+                        @CachedLibrary("callable") PythonObjectLibrary lib) {
+            throw raise(TypeError, ErrorMessages.ITER_V_MUST_BE_CALLABLE);
         }
     }
 
@@ -1768,15 +1779,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
-        static Object repr(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, "");
+        Object repr(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
+                        @CachedLibrary("obj") PythonObjectLibrary lib,
+                        @Cached BranchProfile notStringBranch) {
+            Object res = lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, "");
+            if (!PGuards.isString(res)) {
+                notStringBranch.enter();
+                throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, __FORMAT__, "str", res);
+            }
+            return res;
         }
 
         @Specialization(guards = "!isNoValue(formatSpec)", limit = "1")
-        static Object repr(VirtualFrame frame, Object obj, Object formatSpec,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, formatSpec);
+        Object repr(VirtualFrame frame, Object obj, Object formatSpec,
+                        @CachedLibrary("obj") PythonObjectLibrary lib,
+                        @Cached BranchProfile notStringBranch) {
+            Object res = lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, formatSpec);
+            if (!PGuards.isString(res)) {
+                notStringBranch.enter();
+                throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, __FORMAT__, "str", res);
+            }
+            return res;
         }
     }
 
@@ -1847,6 +1870,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("new()") SetAttributeNode.Dynamic setAttrNode) {
             setAttrNode.execute(frame, object, key, value);
             return PNone.NONE;
+        }
+    }
+
+    // sorted(iterable, key, reverse)
+    @Builtin(name = SORTED, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class SortedNode extends PythonBuiltinNode {
+
+        @Specialization
+        Object sorted(VirtualFrame frame, Object iterable, PKeyword[] keywords,
+                        @Cached ConstructListNode constructListNode,
+                        @Cached ListSortNode sortNode) {
+            PList list = constructListNode.execute(iterable);
+            sortNode.execute(frame, list, PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
+            return list;
         }
     }
 

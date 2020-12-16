@@ -26,8 +26,10 @@
 
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -40,12 +42,16 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE_EX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSHOOK__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -73,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrDeleteNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrGetNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrSetNode;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -95,6 +102,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -789,6 +797,65 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Override
         public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __SIZEOF__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object doit(VirtualFrame frame, Object obj,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            Object cls = pol.getLazyPythonClass(obj);
+            long size = 0;
+            Object itemsize = pol.lookupAttribute(obj, frame, __ITEMSIZE__);
+            if (itemsize != PNone.NO_VALUE) {
+                Object clsItemsize = pol.lookupAttribute(cls, frame, __ITEMSIZE__);
+                Object objLen = pol.lookupAttribute(obj, frame, __LEN__);
+                if (clsItemsize == PNone.NO_VALUE || objLen == PNone.NO_VALUE) {
+                    size = 0;
+                } else {
+                    size = pol.asJavaLong(clsItemsize) * pol.length(obj);
+                }
+            }
+            size += pol.asJavaLong(pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
+            return size;
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object doit(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object ignored,
+                        @Cached ObjectNodes.CommonReduceNode commonReduceNode) {
+            return commonReduceNode.execute(frame, obj, 0);
+        }
+    }
+
+    @Builtin(name = __REDUCE_EX__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "protocol"})
+    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @GenerateNodeFactory
+    public abstract static class ReduceExNode extends PythonBuiltinNode {
+        static final Object REDUCE_FACTORY = ObjectBuiltinsFactory.ReduceNodeFactory.getInstance();
+
+        @Specialization
+        @SuppressWarnings("unused")
+        Object doit(VirtualFrame frame, Object obj, int proto,
+                        @Cached ConditionProfile reduceProfile,
+                        @Cached ObjectNodes.CommonReduceNode commonReduceNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            Object _reduce = pol.lookupAttribute(obj, frame, __REDUCE__);
+            if (reduceProfile.profile(_reduce != PNone.NO_VALUE)) {
+                // Check if __reduce__ has been overridden:
+                // "type(obj).__reduce__ is not object.__reduce__"
+                if (!(_reduce instanceof PBuiltinMethod) || ((PBuiltinMethod) _reduce).getFunction().getBuiltinNodeFactory() != REDUCE_FACTORY) {
+                    return pol.callObject(_reduce, frame);
+                }
+            }
+            return commonReduceNode.execute(frame, obj, proto);
         }
     }
 }

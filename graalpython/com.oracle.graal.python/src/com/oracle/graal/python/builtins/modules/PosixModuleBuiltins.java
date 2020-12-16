@@ -583,6 +583,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_inheritable", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class GetInheritableNode extends PythonFileNode {
+        @Specialization
+        static boolean getInheritable(@SuppressWarnings("unused") int fd) {
+            return false;
+        }
+    }
+
     @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"path", "follow_symlinks"})
     @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
