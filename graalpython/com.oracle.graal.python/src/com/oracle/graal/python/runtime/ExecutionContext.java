@@ -501,7 +501,7 @@ public abstract class ExecutionContext {
             if (needsExceptionState) {
                 PException curExc = context.getCaughtException();
                 if (curExc == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    CompilerDirectives.transferToInterpreter();
                     PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
                     curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
                     // now, set in our args, such that we won't do this again
