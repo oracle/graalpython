@@ -3678,12 +3678,9 @@ public abstract class SequenceStorageNodes {
     public abstract static class DeleteNode extends NormalizingNode {
         @Child private DeleteItemNode deleteItemNode;
         @Child private DeleteSliceNode deleteSliceNode;
-        @Child private PRaiseNode raiseNode;
-        private final String keyTypeErrorMessage;
 
-        public DeleteNode(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
+        public DeleteNode(NormalizeIndexNode normalizeIndexNode) {
             super(normalizeIndexNode);
-            this.keyTypeErrorMessage = keyTypeErrorMessage;
         }
 
         public abstract void execute(VirtualFrame frame, SequenceStorage s, Object indexOrSlice);
@@ -3729,15 +3726,6 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Fallback
-        protected void doInvalidKey(@SuppressWarnings("unused") SequenceStorage storage, Object key) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(TypeError, keyTypeErrorMessage, key);
-        }
-
         private DeleteItemNode getDeleteItemNode() {
             if (deleteItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -3754,28 +3742,12 @@ public abstract class SequenceStorageNodes {
             return deleteSliceNode;
         }
 
-        public static DeleteNode createNotNormalized() {
-            return DeleteNodeGen.create(null, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
-        }
-
         public static DeleteNode create(NormalizeIndexNode normalizeIndexNode) {
-            return DeleteNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
+            return DeleteNodeGen.create(normalizeIndexNode);
         }
 
         public static DeleteNode create() {
-            return DeleteNodeGen.create(NormalizeIndexNode.create(), ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
-        }
-
-        public static DeleteNode createNotNormalized(String keyTypeErrorMessage) {
-            return DeleteNodeGen.create(null, keyTypeErrorMessage);
-        }
-
-        public static DeleteNode create(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
-            return DeleteNodeGen.create(normalizeIndexNode, keyTypeErrorMessage);
-        }
-
-        public static DeleteNode create(String keyTypeErrorMessage) {
-            return DeleteNodeGen.create(NormalizeIndexNode.create(), keyTypeErrorMessage);
+            return DeleteNodeGen.create(NormalizeIndexNode.create());
         }
     }
 
