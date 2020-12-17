@@ -48,6 +48,15 @@ import _thread
 import collections
 import tempfile
 
+
+# A list of tests that cannot run in parallel with other tests
+SERIAL_TESTS = [
+    # test_compileall tries to recompile the whole PYTHONPATH, which makes it interfere with any test that
+    # creates temporary py files
+    'test_compileall',
+]
+
+
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
     raise ImportError("posix or nt module is required in builtin modules")
@@ -395,7 +404,12 @@ class TestCase(object):
                         self.skipped()
                     else:
                         self.success(end) if r else self.failure(end)
+            force_serial_execution = any(name in func.__qualname__ for name in SERIAL_TESTS)
+            if force_serial_execution:
+                ThreadPool.shutdown()
             ThreadPool.start(do_run)
+            if force_serial_execution:
+                ThreadPool.shutdown()
 
     def success(self, time):
         self.passed += 1
