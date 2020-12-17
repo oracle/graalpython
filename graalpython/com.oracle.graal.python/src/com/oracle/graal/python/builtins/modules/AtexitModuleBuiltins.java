@@ -61,9 +61,9 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -132,8 +132,8 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             CompilerDirectives.transferToInterpreter();
-            AtExitRootNode atExitRootNode = new AtExitRootNode(getContext().getLanguage());
-            getContext().registerAtexitHook(callable, arguments, keywords, PythonUtils.getOrCreateCallTarget(atExitRootNode));
+            RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(l -> new AtExitRootNode(l), AtExitRootNode.class);
+            getContext().registerAtexitHook(callable, arguments, keywords, callTarget);
             return callable;
         }
     }

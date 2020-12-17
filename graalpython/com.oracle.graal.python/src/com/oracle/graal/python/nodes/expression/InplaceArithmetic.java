@@ -50,11 +50,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.CallBinaryArithmeticRootNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic.CallTernaryArithmeticRootNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public enum InplaceArithmetic {
     IAdd(SpecialMethodNames.__IADD__, "+="),
@@ -157,13 +156,10 @@ public enum InplaceArithmetic {
     }
 
     /**
-     * Creates a call target with a specific root node for this in-place operator such that the
-     * operator can be executed via a full call. This is in particular useful, if you want to
-     * execute an operator without a frame (e.g. from interop). It is not recommended to use this
-     * method directly. In order to enable AST sharing, you should use
-     * {@link PythonLanguage#getOrCreateInplaceArithmeticCallTarget(InplaceArithmetic)}.
+     * Creates a root node for this in-place operator such that the operator can be executed via a
+     * full call.
      */
-    public RootCallTarget createCallTarget(PythonLanguage language) {
-        return PythonUtils.getOrCreateCallTarget(new CallInplaceArithmeticRootNode(language, this));
+    public RootNode createRootNode(PythonLanguage language) {
+        return new CallInplaceArithmeticRootNode(language, this);
     }
 }

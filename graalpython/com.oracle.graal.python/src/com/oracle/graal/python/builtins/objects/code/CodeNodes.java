@@ -115,18 +115,17 @@ public abstract class CodeNodes {
                         Object[] varnames, Object[] freevars, Object[] cellvars,
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
-            Supplier<CallTarget> createCode = () -> {
+
+            RootCallTarget ct;
+            if (codedata.length == 0) {
+                ct = context.getLanguage().createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name);
+            } else {
                 RootNode rootNode = context.getCore().getSerializer().deserialize(codedata, toStringArray(cellvars), toStringArray(freevars));
-                if (rootNode instanceof BadOPCodeNode) {
-                    ((BadOPCodeNode) rootNode).setName(name);
-                }
                 if (rootNode instanceof PRootNodeWithFileName) {
                     ((PRootNodeWithFileName) rootNode).setFileName(filename);
                 }
-                return PythonUtils.getOrCreateCallTarget(rootNode);
-            };
-
-            RootCallTarget ct = (RootCallTarget) createCode.get();
+                ct = PythonUtils.getOrCreateCallTarget(rootNode);
+            }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name,
                             firstlineno, lnotab);

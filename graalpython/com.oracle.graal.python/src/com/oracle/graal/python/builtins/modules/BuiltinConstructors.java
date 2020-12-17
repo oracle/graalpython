@@ -2582,20 +2582,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__) == PNone.NO_VALUE) ||
                             basesHaveSlots(basesArray)) {
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
-                BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true);
-                setAttribute(__DICT__, rootNode, pythonClass);
+                RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(
+                                l -> new BuiltinFunctionRootNode(l, dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true), dictBuiltin,
+                                StandaloneBuiltinFactory.class);
+                setAttribute(__DICT__, callTarget, pythonClass);
             }
         }
 
         @TruffleBoundary
         private void addWeakrefDescrAttribute(PythonClass pythonClass) {
             Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
-            BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true);
-            setAttribute(__WEAKREF__, rootNode, pythonClass);
+            RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), builtin, WeakRefModuleBuiltinsFactory.class);
+            setAttribute(__WEAKREF__, callTarget, pythonClass);
         }
 
-        private void setAttribute(String name, BuiltinFunctionRootNode rootNode, PythonClass pythonClass) {
-            RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(rootNode);
+        private void setAttribute(String name, RootCallTarget callTarget, PythonClass pythonClass) {
             PBuiltinFunction function = factory().createBuiltinFunction(name, pythonClass, 1, callTarget);
             GetSetDescriptor desc = factory().createGetSetDescriptor(function, function, name, pythonClass, true);
             pythonClass.setAttribute(name, desc);

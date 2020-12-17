@@ -61,6 +61,11 @@ public class BadOPCodeNode extends PRootNodeWithFileName {
         super(language);
     }
 
+    public BadOPCodeNode(TruffleLanguage<?> language, String name) {
+        super(language);
+        this.name = name;
+    }
+
     @Override
     public Object execute(VirtualFrame frame) {
         throw getContext().getCore().raise(PythonBuiltinClassType.SystemError, "unknown opcode");

@@ -177,9 +177,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     @Override
     @TruffleBoundary
     public RootNode deserialize(byte[] data, String[] cellvars, String[] freevars) {
-        if (data.length == 0) {
-            return new BadOPCodeNode(PythonLanguage.getCore().getLanguage());
-        }
+        assert data.length > 0 : "should be caught earlier";
+
         ByteArrayInputStream bais = new ByteArrayInputStream(data);
         DataInputStream dis = new DataInputStream(bais);
         ScopeInfo globalScope;

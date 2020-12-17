@@ -26,15 +26,10 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import org.graalvm.options.OptionDescriptors;
@@ -57,11 +52,8 @@ import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
-import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -168,16 +160,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final Assumption singleThreadedAssumption = Truffle.getRuntime().createAssumption("Only a single thread is active");
 
     private final NodeFactory nodeFactory;
-    private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+
     /**
-     * A thread-safe map that maps arithmetic operators (i.e.
-     * {@link com.oracle.graal.python.nodes.expression.UnaryArithmetic},
-     * {@link com.oracle.graal.python.nodes.expression.BinaryArithmetic},
-     * {@link com.oracle.graal.python.nodes.expression.TernaryArithmetic}, and
-     * {@link com.oracle.graal.python.nodes.expression.InplaceArithmetic}) to call targets. Use this
-     * map to retrieve a singleton instance (per engine) such that proper AST sharing is possible.
+     * A thread-safe map to retrieve (and cache) singleton instacnes of call targets, e.g., for
+     * Arithmetic operations, wrappers, named cext functions, etc. This reduces the number of call
+     * targets and allows AST sharing across contexts. The key in this map is either a single value
+     * or a list of values.
      */
-    private final AtomicReference<ConcurrentHashMap<Object, WeakReference<RootCallTarget>>> arithmeticOpCallTargetCacheRef = new AtomicReference<>();
+    private final ConcurrentHashMap<Object, RootCallTarget> cachedCallTargets = new ConcurrentHashMap<>();
 
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
@@ -330,7 +320,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
 
         if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
-            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(source.getBytes().toByteArray()));
+            byte[] bytes = source.getBytes().toByteArray();
+            if (bytes.length == 0) {
+                return createCachedCallTarget(l -> new BadOPCodeNode(l), BadOPCodeNode.class);
+            }
+            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(bytes));
         }
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
@@ -777,10 +771,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.disposeThread(thread);
     }
 
-    public RootCallTarget getOrComputeBuiltinCallTarget(String key, Supplier<RootNode> supplier) {
-        return builtinCallTargetCache.computeIfAbsent(key, (k) -> PythonUtils.getOrCreateCallTarget(supplier.get()));
-    }
-
     public Shape getEmptyShape() {
         return emptyShape;
     }
@@ -813,82 +803,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     /**
-     * Retrieve a call target for the given {@link UnaryArithmetic} operator. If the no such call
-     * target exists yet, it will be created lazily. This method is thread-safe and should be used
-     * for all contexts in this engine to enable AST sharing.
-     */
-    @TruffleBoundary
-    public RootCallTarget getOrCreateUnaryArithmeticCallTarget(UnaryArithmetic unaryOperator) {
-        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
-    }
-
-    /**
-     * Retrieve a call target for the given {@link BinaryArithmetic} operator. If the no such call
-     * target exists yet, it will be created lazily. This method is thread-safe and should be used
-     * for all contexts in this engine to enable AST sharing.
-     */
-    @TruffleBoundary
-    public RootCallTarget getOrCreateBinaryArithmeticCallTarget(BinaryArithmetic unaryOperator) {
-        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
-    }
-
-    /**
-     * Retrieve a call target for the given {@link TernaryArithmetic} operator. If the no such call
-     * target exists yet, it will be created lazily. This method is thread-safe and should be used
-     * for all contexts in this engine to enable AST sharing.
-     */
-    @TruffleBoundary
-    public RootCallTarget getOrCreateTernaryArithmeticCallTarget(TernaryArithmetic unaryOperator) {
-        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
-    }
-
-    /**
-     * Retrieve a call target for the given {@link InplaceArithmetic} operator. If the no such call
-     * target exists yet, it will be created lazily. This method is thread-safe and should be used
-     * for all contexts in this engine to enable AST sharing.
-     */
-    @TruffleBoundary
-    public RootCallTarget getOrCreateInplaceArithmeticCallTarget(InplaceArithmetic unaryOperator) {
-        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
-    }
-
-    private RootCallTarget getOrCreateArithmeticCallTarget(Object arithmeticOperator, Function<PythonLanguage, RootCallTarget> supplier) {
-        CompilerAsserts.neverPartOfCompilation();
-        ConcurrentHashMap<Object, WeakReference<RootCallTarget>> arithmeticOpCallTargetCache = arithmeticOpCallTargetCacheRef.get();
-        if (arithmeticOpCallTargetCache == null) {
-            arithmeticOpCallTargetCache = arithmeticOpCallTargetCacheRef.updateAndGet((v) -> {
-                // IMPORTANT: only create a new instance if we still see 'null'; otherwise we would
-                // overwrite the update of a different thread
-                if (v == null) {
-                    return new ConcurrentHashMap<>();
-                }
-                return v;
-            });
-        }
-
-        WeakReference<RootCallTarget> ctRef = arithmeticOpCallTargetCache.compute(arithmeticOperator, (k, v) -> {
-            RootCallTarget cachedCallTarget = v != null ? v.get() : null;
-            if (cachedCallTarget == null) {
-                return new WeakReference<>(supplier.apply(this));
-            }
-            return v;
-        });
-
-        RootCallTarget callTarget = ctRef.get();
-        if (callTarget == null) {
-            // Bad luck: we ensured that there is a mapping in the cache but the weak value got
-            // collected before we could strongly reference it. Now, we need to be conservative and
-            // create the call target eagerly, hold a strong reference to it until we've put it into
-            // the map.
-            final RootCallTarget callTargetToCache = supplier.apply(this);
-            callTarget = callTargetToCache;
-            arithmeticOpCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
-        }
-        assert callTarget != null;
-        return callTarget;
-    }
-
-    /**
      * Returns the shape used for the C API symbol cache.
      */
     @TruffleBoundary
@@ -908,5 +822,20 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             hpySymbolCache = Shape.newBuilder().build();
         }
         return hpySymbolCache;
+    }
+
+    /**
+     * Cache call targets that are created for every new context, based on a single key.
+     */
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
+        CompilerAsserts.neverPartOfCompilation();
+        return cachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+    }
+
+    /**
+     * Cache call targets that are created for every new context, based on a list of keys.
+     */
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object... cacheKeys) {
+        return createCachedCallTarget(rootNodeFunction, Arrays.asList(cacheKeys));
     }
 }

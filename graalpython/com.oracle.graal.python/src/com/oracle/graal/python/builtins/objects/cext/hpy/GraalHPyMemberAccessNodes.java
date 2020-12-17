@@ -411,13 +411,10 @@ public class GraalHPyMemberAccessNodes {
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
             GraalHPyNativeSymbol accessor = getReadAccessorName(type);
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
-            RootCallTarget callTarget = language.getOrComputeBuiltinCallTarget(createBuiltinKey(type, offset),
-                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true));
+            RootCallTarget callTarget = language.createCachedCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true),
+                            HPyReadMemberNode.class, builtin.name(), type, offset);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, callTarget);
-        }
-
-        private static String createBuiltinKey(int type, int offset) {
-            return GraalHPyMemberAccessNodes.class.getName() + "." + builtin.name() + "(" + type + ", " + offset + ")";
         }
     }
 
@@ -434,8 +431,8 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
-            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(GraalHPyMemberAccessNodes.class.getName() + "." + builtin.name(),
-                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create()), true));
+            RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create()), true),
+                            GraalHPyMemberAccessNodes.class, builtin.name());
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
@@ -455,8 +452,8 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
-            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(GraalHPyMemberAccessNodes.class.getName() + "." + builtin,
-                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true));
+            RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true),
+                            HPyBadMemberDescrNode.class, builtin);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
@@ -570,13 +567,10 @@ public class GraalHPyMemberAccessNodes {
                 return HPyBadMemberDescrNode.createBuiltinFunction(language, propertyName);
             }
             //
-            RootCallTarget callTarget = language.getOrComputeBuiltinCallTarget(createBuiltinKey(type, offset),
-                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(type, offset)), true));
+            RootCallTarget callTarget = language.createCachedCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(type, offset)), true),
+                            HPyWriteMemberNode.class, builtin.name(), type, offset);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, callTarget);
-        }
-
-        private static String createBuiltinKey(int type, int offset) {
-            return GraalHPyMemberAccessNodes.class.getName() + "." + builtin.name() + "(" + type + ", " + offset + ")";
         }
     }
 
@@ -759,8 +753,8 @@ public class GraalHPyMemberAccessNodes {
         @TruffleBoundary
         public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            String key = HPyLegacyGetSetDescriptorGetterRoot.class.getCanonicalName() + propertyName;
-            RootCallTarget rootCallTarget = lang.getOrComputeBuiltinCallTarget(key, () -> new HPyLegacyGetSetDescriptorGetterRoot(lang, propertyName, PExternalFunctionWrapper.GETTER));
+            RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorGetterRoot(l, propertyName, PExternalFunctionWrapper.GETTER),
+                            HPyLegacyGetSetDescriptorGetterRoot.class, propertyName);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
@@ -843,8 +837,8 @@ public class GraalHPyMemberAccessNodes {
         @TruffleBoundary
         public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            String key = HPyLegacyGetSetDescriptorSetterRoot.class.getCanonicalName() + propertyName;
-            RootCallTarget rootCallTarget = lang.getOrComputeBuiltinCallTarget(key, () -> new HPyLegacyGetSetDescriptorSetterRoot(lang, propertyName, PExternalFunctionWrapper.SETTER));
+            RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorSetterRoot(l, propertyName, PExternalFunctionWrapper.SETTER),
+                            HPyLegacyGetSetDescriptorSetterRoot.class, propertyName);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
             }
