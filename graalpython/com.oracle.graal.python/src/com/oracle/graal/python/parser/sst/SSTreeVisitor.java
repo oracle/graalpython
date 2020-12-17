@@ -116,6 +116,8 @@ public interface SSTreeVisitor<T> {
 
     T visit(StringLiteralSSTNode.BytesLiteralSSTNode node);
 
+    T visit(StringLiteralSSTNode.FormatExpressionSSTNode node);
+
     T visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node);
 
     T visit(SubscriptSSTNode node);

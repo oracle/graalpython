@@ -1777,7 +1777,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
-    public abstract static class FormatNode extends PythonBuiltinNode {
+    public abstract static class FormatNode extends PythonBinaryBuiltinNode {
+
         @Specialization(limit = "1")
         Object repr(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
                         @CachedLibrary("obj") PythonObjectLibrary lib,

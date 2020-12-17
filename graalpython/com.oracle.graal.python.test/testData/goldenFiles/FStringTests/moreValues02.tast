@@ -6,4 +6,10 @@ ModuleRootNode Name: <module 'moreValues02'> SourceSection: [0,42]`'1' '2' '3' f
   Documentation: None
   InnerRootNode SourceSection: [0,42]`'1' '2' '3' f'4' f'5...`
     FormatStringLiteralNode SourceSection: [0,42]`'1' '2' '3' f'4' f'5...`
-      Values: <n>123, <f>4, <f>5, <n>67, <f>8, <n>90
+      Parts: 6
+      StringLiteralNode SourceSection: [0,11]`'1' '2' '3'`
+      StringLiteralNode SourceSection: [14,15]`4`
+      StringLiteralNode SourceSection: [19,20]`5`
+      StringLiteralNode SourceSection: [22,29]`'6' '7'`
+      StringLiteralNode SourceSection: [32,33]`8`
+      StringLiteralNode SourceSection: [35,42]`'9' '0'`

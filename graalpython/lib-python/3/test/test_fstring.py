@@ -1191,7 +1191,8 @@ non-important content
         # This is an assignment expression, which requires parens.
         # GraalPython patch: commented out to allow GraalPython to successfully parse this file
         # self.assertEqual(f'{(x:=10)}', '10')
-        self.assertEqual(x, 10)
+        # it can not be 10 until will not support walrus operator
+        # self.assertEqual(x, 10)  
 
 
 if __name__ == '__main__':

@@ -54,4 +54,8 @@ public class ExpressionStatementSSTNode extends SSTNode {
         return visitor.visit(this);
     }
 
+    public SSTNode getExpression() {
+        return expression;
+    }
+
 }

@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.sst.SerializationUtils.SSTId;
 
@@ -148,6 +147,8 @@ public final class SSTDeserializer {
                 return readRawStringLiteral();
             case BytesLiteralID:
                 return readBytesLiteral();
+            case FormatExpressionID:
+                return readFormatExpression();
             case FormatStringLiteralID:
                 return readFormatStringLiteral();
             case SubscriptID:
@@ -647,33 +648,26 @@ public final class SSTDeserializer {
         return new StringLiteralSSTNode.BytesLiteralSSTNode(value, startOffset, endOffset);
     }
 
+    private SSTNode readFormatExpression() throws IOException {
+        readPosition();
+        int startOffset = startIndex;
+        int endOffset = endIndex;
+        String code = readString();
+        StringLiteralSSTNode.FormatStringConversionType type = SerializationUtils.getFormatStringConversionTypeFromId(stream.readByte());
+        SSTNode expresssion = readNode();
+        SSTNode specifier = readNode();
+        return new StringLiteralSSTNode.FormatExpressionSSTNode(code, expresssion, specifier, type, startOffset, endOffset);
+    }
+
     private SSTNode readFormatStringLiteral() throws IOException {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        StringPart[] value = new StringPart[readInt()];
-        for (int i = 0; i < value.length; i++) {
-            boolean isFormatString = stream.readBoolean();
-            String text = readString();
-            value[i] = new StringPart(text, isFormatString);
+        SSTNode[] parts = new SSTNode[readInt()];
+        for (int i = 0; i < parts.length; i++) {
+            parts[i] = readNode();
         }
-        String[] literals = new String[readInt()];
-        for (int i = 0; i < literals.length; i++) {
-            String s = readString();
-            literals[i] = s.isEmpty() ? null : s;
-        }
-        SSTNode[] expressions = new SSTNode[readInt()];
-        int prevOffsetDelta = offsetDelta;
-        offsetDelta = 0;
-        for (int i = 0; i < expressions.length; i++) {
-            expressions[i] = readNode();
-        }
-        offsetDelta = prevOffsetDelta;
-        String[] exprsSources = new String[expressions.length];
-        for (int i = 0; i < exprsSources.length; i++) {
-            exprsSources[i] = readString();
-        }
-        return new StringLiteralSSTNode.FormatStringLiteralSSTNode(value, literals, expressions, exprsSources, startOffset, endOffset);
+        return new StringLiteralSSTNode.FormatStringLiteralSSTNode(parts, startOffset, endOffset);
     }
 
     private SSTNode readSubscript() throws IOException {

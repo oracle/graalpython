@@ -38,61 +38,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.nodes.literal;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class FormatStringLiteralNode extends LiteralNode {
     private static final String EMPTY_STRING = "";
 
-    private final StringPart[] parts;
-
     /**
-     * The size of this array is total number of actual String literals and expressions inside the
-     * f-string. Slots that do not represent actual String literal are left {@code null}, for each
-     * such slot there is an expression in {@link #expressions}.
+     * The parts array can basically contains only StringLiteralNodes and
+     * FormatSringExpressionNodes.
      */
-    @CompilationFinal(dimensions = 1) private final String[] literals;
-    @Children ExpressionNode[] expressions;
+    @Children ExpressionNode[] parts;
     @Children CastToJavaStringNode[] castToJavaStringNodes;
 
-    public FormatStringLiteralNode(StringPart[] parts, ExpressionNode[] exprs, String[] literals) {
+    public FormatStringLiteralNode(ExpressionNode[] parts) {
         this.parts = parts;
-        this.expressions = exprs;
-        this.literals = literals;
     }
 
-    public static final class StringPart {
-        /**
-         * Marks, whether the value is formatted string
-         */
-        public final boolean isFormatString;
-        public final String text;
-
-        public StringPart(String text, boolean isFormatString) {
-            this.text = text;
-            this.isFormatString = isFormatString;
-        }
-
-        public boolean isFormatString() {
-            return isFormatString;
-        }
-
-        public String getText() {
-            return text;
-        }
-    }
-
-    public StringPart[] getParts() {
+    public ExpressionNode[] getParts() {
         return parts;
     }
 
@@ -104,14 +74,15 @@ public class FormatStringLiteralNode extends LiteralNode {
         }
 
         // Get all the Strings and calculate the resulting String size
-        String[] values = Arrays.copyOf(literals, literals.length);
-        int exprIndex = 0;
+        String[] values = new String[parts.length];
         int length = 0;
         ensureCastNodes();
-        for (int i = 0; i < literals.length; i++) {
-            if (values[i] == null) {
-                values[i] = castToJavaStringNodes[exprIndex].execute(expressions[exprIndex].execute(frame));
-                exprIndex++;
+        for (int i = 0; i < parts.length; i++) {
+            Object stringPart = parts[i].execute(frame);
+            try {
+                values[i] = castToJavaStringNodes[i].execute(stringPart);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
             length += values[i].length();
         }
@@ -129,7 +100,7 @@ public class FormatStringLiteralNode extends LiteralNode {
     private void ensureCastNodes() {
         if (castToJavaStringNodes == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            CastToJavaStringNode[] nodes = new CastToJavaStringNode[expressions.length];
+            CastToJavaStringNode[] nodes = new CastToJavaStringNode[parts.length];
             for (int i = 0; i < nodes.length; i++) {
                 nodes[i] = CastToJavaStringNode.create();
             }

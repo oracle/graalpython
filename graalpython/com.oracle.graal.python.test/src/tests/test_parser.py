@@ -533,3 +533,59 @@ def test_method_decorator():
     assert s.value == 12
     assert s.__ser == 13
     assert s._S__ser == 12
+
+def test_fstring_function_overwrite():
+
+    format = "hello from other side"
+    assert f'text: {format}' == 'text: hello from other side'
+
+    ascii = "hello from ascii"
+    assert f'text: {ascii!a}' == "text: 'hello from ascii'"
+
+    repr = "hello from repr"
+    assert f'text: {repr!r}' == "text: 'hello from repr'"
+
+    str = "hello from str"
+    assert f'text: {str!s}' == "text: hello from str"
+
+def test_fstring_class_overwrite():
+
+    class A():
+        def __format__(self, spec):
+             return "__format__ from A " + spec
+        def __str__(self):
+             return "__str__ from A"
+        def __repr__(self):
+             return "__repr__ from A"
+        def ascii(self):
+             return "ascii from A"
+
+    a = A()
+    assert f'{a}' == '__format__ from A '
+    assert f'{a:123}' == '__format__ from A 123'
+    assert f'{a!s}' == '__str__ from A'
+    assert f'{a!r}' == '__repr__ from A'
+    assert f'{a!a}' == '__repr__ from A'
+    assert f'{a.ascii()!a}' == "'ascii from A'"
+    assert f'{a.ascii()!s}' == "ascii from A"
+    assert f'{a.ascii()!r}' == "'ascii from A'"
+    assert f'{a.ascii()}' == "ascii from A"
+
+def test_fstring_basic():
+
+    assert f'' == ''
+    assert f'{{}}' == '{}'
+    assert f'{{name}}' == '{name}'
+    assert f'Hi {{name}}' == "Hi {name}"
+    assert f'{{name}} first' == "{name} first"
+    assert f'Hi {{name}} first' == "Hi {name} first"
+    assert f'{{' == "{"
+    assert f'a{{' == "a{"
+    assert f'{{b' == "{b"
+    assert f'a{{b' == "a{b"
+    assert f'}}' == "}"
+    assert f'a}}' == "a}"
+    assert f'}}b' == "}b"
+    assert f'a}}b' == "a}b"
+    assert f'a{{}}' == "a{}"
+

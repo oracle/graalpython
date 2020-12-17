@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,6 +110,26 @@ public class FStringTests extends ParserTestBase {
     @Test
     public void moreValues02() throws Exception {
         checkTreeResult("'1' '2' '3' f'4' f'5' '6' '7' f'8' '9' '0'");
+    }
+
+    @Test
+    public void specifier01() throws Exception {
+        checkTreeResult("f'result is:{result:1.2}'");
+    }
+
+    @Test
+    public void specifier02() throws Exception {
+        checkTreeResult("f'result is:{result:{width}.2}'");
+    }
+
+    @Test
+    public void specifier03() throws Exception {
+        checkTreeResult("f'result is:{result:{width}.{precision}}'");
+    }
+
+    @Test
+    public void specifier04() throws Exception {
+        checkTreeResult("f'result is:{result:{width}.{precision}} and this is true'");
     }
 
 }
