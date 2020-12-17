@@ -48,6 +48,15 @@ import _thread
 import collections
 import tempfile
 
+
+# A list of tests that cannot run in parallel with other tests
+SERIAL_TESTS = [
+    # test_compileall tries to recompile the whole PYTHONPATH, which makes it interfere with any test that
+    # creates temporary py files
+    'test_compileall',
+]
+
+
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
     raise ImportError("posix or nt module is required in builtin modules")
@@ -395,7 +404,12 @@ class TestCase(object):
                         self.skipped()
                     else:
                         self.success(end) if r else self.failure(end)
+            force_serial_execution = any(name in func.__qualname__ for name in SERIAL_TESTS)
+            if force_serial_execution:
+                ThreadPool.shutdown()
             ThreadPool.start(do_run)
+            if force_serial_execution:
+                ThreadPool.shutdown()
 
     def success(self, time):
         self.passed += 1
@@ -651,18 +665,22 @@ class TestRunner(object):
                 print(u"\n\u25B9 ", module.__name__, end="")
             # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
             module_dict = dict(module.__dict__)
+            testcases = []
             for k, v in module_dict.items():
                 if (k.startswith("Test") or k.endswith("Test") or k.endswith("Tests")) and isinstance(v, type):
-                    testcase = TestCase.runClass(v)
+                    testcases.append(TestCase.runClass(v))
                 else:
-                    testcase = TestCase.run(items=[(k, v)])
-                self.exceptions += testcase.exceptions
-                self.passed += testcase.passed
-                self.failed += testcase.failed
-                self.skipped_n += testcase.skipped_n
+                    testcases.append(TestCase.run(items=[(k, v)]))
             if verbose:
-                print()
+                with print_lock:
+                    print()
         ThreadPool.shutdown()
+        for testcase in testcases:
+            self.exceptions += testcase.exceptions
+            self.passed += testcase.passed
+            self.failed += testcase.failed
+            self.skipped_n += testcase.skipped_n
+
         print("\n\nRan %d tests (%d passes, %d failures, %d skipped)" % (self.passed + self.failed, self.passed, self.failed, self.skipped_n))
         for e in self.exceptions:
             msg, exc = e
