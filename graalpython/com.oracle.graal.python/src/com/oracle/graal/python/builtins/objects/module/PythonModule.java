@@ -25,7 +25,9 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CACHED__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
@@ -56,6 +58,12 @@ import com.oracle.truffle.api.object.Shape;
 public final class PythonModule extends PythonObject {
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
+        setAttribute(__DOC__, PNone.NO_VALUE);
+        setAttribute(__PACKAGE__, PNone.NO_VALUE);
+        setAttribute(__LOADER__, PNone.NO_VALUE);
+        setAttribute(__SPEC__, PNone.NO_VALUE);
+        setAttribute(__CACHED__, PNone.NO_VALUE);
+        setAttribute(__FILE__, PNone.NO_VALUE);
     }
 
     private PythonModule(PythonLanguage lang, String moduleName) {
@@ -65,6 +73,8 @@ public final class PythonModule extends PythonObject {
         setAttribute(__PACKAGE__, PNone.NONE);
         setAttribute(__LOADER__, PNone.NONE);
         setAttribute(__SPEC__, PNone.NONE);
+        setAttribute(__CACHED__, PNone.NO_VALUE);
+        setAttribute(__FILE__, PNone.NO_VALUE);
     }
 
     /**
