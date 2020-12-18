@@ -106,6 +106,8 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
+    private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
+    private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
@@ -467,12 +469,12 @@ public final class PythonContext {
 
     private void importSiteIfForced() {
         if (getOption(PythonOptions.ForceImportSite)) {
-            CallTarget site = env.parsePublic(Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build());
+            CallTarget site = env.parsePublic(FORCE_IMPORTS_SOURCE);
             site.call();
         }
         if (!getOption(PythonOptions.WarnOptions).isEmpty()) {
             // we must force an import of the warnings module here if warnings were passed
-            CallTarget site = env.parsePublic(Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build());
+            CallTarget site = env.parsePublic(IMPORT_WARNINGS_SOURCE);
             site.call();
         }
     }
