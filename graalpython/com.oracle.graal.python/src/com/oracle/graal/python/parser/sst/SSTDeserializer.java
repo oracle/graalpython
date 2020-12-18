@@ -174,6 +174,10 @@ public final class SSTDeserializer {
         throw new UnsupportedOperationException("Not supported deserialization of id: " + nodeId);
     }
 
+    private boolean readBoolean() throws IOException {
+        return stream.readBoolean();
+    }
+
     private int readInt() throws IOException {
         return readInt(stream.readByte());
     }
@@ -773,23 +777,24 @@ public final class SSTDeserializer {
     private ArgListBuilder readArgListBuilder() throws IOException {
         int argCount = readInt();
         int namedArgCount = readInt();
-        int starArgCount = readInt();
         int kwArgCount = readInt();
 
-        ArgListBuilder alb = new ArgListBuilder(argCount, namedArgCount, starArgCount, kwArgCount);
+        ArgListBuilder alb = new ArgListBuilder(argCount, namedArgCount, kwArgCount);
 
         for (int i = 0; i < argCount; i++) {
-            alb.addArg(readNode());
+            if (readBoolean()) {
+                alb.addStarArg(readNode());
+            } else {
+                alb.addArg(readNode());
+            }
         }
         for (int i = 0; i < namedArgCount; i++) {
             alb.addNamedArg(readString(), readNode());
         }
-        for (int i = 0; i < starArgCount; i++) {
-            alb.addStarArg(readNode());
-        }
         for (int i = 0; i < kwArgCount; i++) {
             alb.addKwArg(readNode());
         }
+        alb.setFirstStarArgIndex(readInt());
         alb.setNakedForComp(readNode());
         return alb;
     }

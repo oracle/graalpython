@@ -387,5 +387,4 @@ def test_multiple_starargs():
         yield 4
 
     assert foo(*(1, 2), *gen()) == (1, 2, 3, 4)
-    # FIXME GR-28369: the following doesn't yet work correctly on graalpython
-    # assert foo(0, *[1], 2, *gen(), 5) == (0, 1, 2, 3, 4, 5)
+    assert foo(0, *[1], 2, *gen(), 5) == (0, 1, 2, 3, 4, 5)

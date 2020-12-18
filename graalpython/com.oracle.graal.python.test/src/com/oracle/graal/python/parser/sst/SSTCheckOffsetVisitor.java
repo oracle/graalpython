@@ -105,12 +105,6 @@ public class SSTCheckOffsetVisitor implements SSTreeVisitor<Boolean> {
                     return false;
                 }
             }
-            args = builder.getStarArg();
-            if (args != null) {
-                if (!checkArrayWithOverlap(args, "star arguments")) {
-                    return false;
-                }
-            }
         }
         return true;
     }

@@ -46,24 +46,24 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public abstract class ConcatPositionalStarargsNode extends ExpressionNode {
+public abstract class AppendPositionalStarargsNode extends ExpressionNode {
     @Child ExpressionNode list;
-    @Child ExpressionNode iterable;
+    @Child ExpressionNode item;
 
-    protected ConcatPositionalStarargsNode(ExpressionNode list, ExpressionNode iterable) {
+    protected AppendPositionalStarargsNode(ExpressionNode list, ExpressionNode item) {
         this.list = list;
-        this.iterable = iterable;
+        this.item = item;
     }
 
     @Specialization
-    Object concat(VirtualFrame frame,
-                    @Cached ListBuiltins.ListExtendNode extendNode) {
+    Object append(VirtualFrame frame,
+                    @Cached ListBuiltins.ListAppendNode appendNode) {
         Object result = list.execute(frame);
-        extendNode.execute(frame, result, iterable.execute(frame));
+        appendNode.execute(frame, result, item.execute(frame));
         return result;
     }
 
-    public static ConcatPositionalStarargsNode create(ExpressionNode list, ExpressionNode iterable) {
-        return ConcatPositionalStarargsNodeGen.create(list, iterable);
+    public static AppendPositionalStarargsNode create(ExpressionNode list, ExpressionNode item) {
+        return AppendPositionalStarargsNodeGen.create(list, item);
     }
 }

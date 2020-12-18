@@ -45,8 +45,8 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 
 public class SerializationUtils {
-    // version 7 - mangle names of private properties in classes
-    public static byte VERSION = 7;
+    // version 8 - rework starargs handling
+    public static byte VERSION = 8;
 
     public static enum SSTId {
         AndID,
