@@ -46,7 +46,7 @@ import java.util.List;
 
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.keywords.ConcatKeywordsNodeGen;
-import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.argument.positional.ConcatPositionalStarargsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.KeywordLiteralNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -185,9 +185,14 @@ public final class ArgListBuilder {
     public ExpressionNode getStarArgs(SSTreeVisitor<PNode> visitor) {
         ExpressionNode result = null;
         if (starArg != null && !starArg.isEmpty()) {
-            result = (ExpressionNode) starArg.get(0).accept(visitor);
-            for (int i = 1; i < starArg.size(); i++) {
-                result = BinaryArithmetic.Add.create(result, (ExpressionNode) starArg.get(i).accept(visitor));
+            if (starArg.size() > 1) {
+                ExpressionNode[] iterables = new ExpressionNode[starArg.size()];
+                for (int i = 0; i < starArg.size(); i++) {
+                    iterables[i] = (ExpressionNode) starArg.get(i).accept(visitor);
+                }
+                result = ConcatPositionalStarargsNode.create(iterables);
+            } else {
+                result = (ExpressionNode) starArg.get(0).accept(visitor);
             }
         }
         return result;
