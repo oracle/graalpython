@@ -946,6 +946,15 @@ public class BasicTests extends ParserTestBase {
         Assert.assertFalse(parser.isIdentifier(core, "0"));
     }
 
+    @Test
+    public void issueGR28345() throws Exception {
+        // wrong node offsets when unicode with various length is used in a comment
+        checkTreeResult("def test_isidentifier():\n" +
+                        "  # \"𝔘𝔫𝔦𝔠𝔬𝔡𝔢\"\n" +
+                        "  self.checkequal(True, 'helloworld', 'startswith', ('hellowo',\n" +
+                        "                                                           'rld', 'lowo'), 3)");
+    }
+
     private void checkScopeAndTree() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);
