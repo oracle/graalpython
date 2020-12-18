@@ -49,9 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
@@ -63,7 +61,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
@@ -637,12 +634,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public boolean isSequence(@CachedLibrary("this") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
-        return pythonTypeLibrary.isSequenceType(plib.getLazyPythonClass(this));
-    }
-
-    @ExportMessage
     public int lengthWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
@@ -675,59 +666,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         } else {
             throw raiseNode.raiseHasNoLength(this);
         }
-    }
-
-    @ExportMessage
-    public boolean isMapping(@CachedLibrary("this") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
-        return pythonTypeLibrary.isMappingType(plib.getLazyPythonClass(this));
-    }
-
-    @ExportMessage
-    public boolean isSequenceType(
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
-                    @Shared("isLazyClass") @Cached ConditionProfile isLazyClass,
-                    @Exclusive @Cached ConditionProfile lenProfile,
-                    @Shared("getItemProfile") @Cached ConditionProfile getItemProfile) {
-        if (isLazyClass.profile(lib.isLazyPythonClass(this))) {
-            if (lenProfile.profile(hasLenNode.execute(this, __LEN__) != PNone.NO_VALUE)) {
-                return getItemProfile.profile(hasGetItemNode.execute(this, __GETITEM__) != PNone.NO_VALUE);
-            }
-        }
-        return false;
-    }
-
-    @ExportMessage
-    public boolean isMappingType(
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                    @Shared("isLazyClass") @Cached ConditionProfile isLazyClass,
-                    @Shared("getItemProfile") @Cached ConditionProfile getItemProfile) {
-        if (isLazyClass.profile(lib.isLazyPythonClass(this))) {
-            return getItemProfile.profile(hasGetItemNode.execute(this, __GETITEM__) != PNone.NO_VALUE);
-        }
-        return false;
-    }
-
-    @ExportMessage
-    public final boolean isIterable(@CachedLibrary("this") PythonObjectLibrary plib,
-                    @Exclusive @Cached ConditionProfile profileIter,
-                    @Shared("getItemProfile") @Cached ConditionProfile profileGetItem,
-                    @Exclusive @Cached ConditionProfile profileNext) {
-        Object iterMethod = plib.lookupAttributeOnType(this, __ITER__);
-        if (profileIter.profile(iterMethod != PNone.NO_VALUE && iterMethod != PNone.NONE)) {
-            return true;
-        } else {
-            Object getItemMethod = plib.lookupAttributeOnType(this, __GETITEM__);
-            if (profileGetItem.profile(getItemMethod != PNone.NO_VALUE)) {
-                return true;
-            } else if (plib.isCallable(this)) {
-                return profileNext.profile(plib.lookupAttributeOnType(this, __NEXT__) != PNone.NO_VALUE);
-            }
-        }
-        return false;
     }
 
     @ExportMessage
@@ -766,12 +704,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 return true;
             }
         }
-    }
-
-    @ExportMessage
-    public final boolean isHashable(@CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        return methodLib.isCallable(lib.lookupAttributeOnType(this, __HASH__));
     }
 
     @ExportMessage
@@ -1186,21 +1118,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         } catch (CannotCastException e) {
             throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, this, "__int__", result);
         }
-    }
-
-    @ExportMessage
-    public boolean typeCheck(Object type,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode) {
-        Object instanceClass = lib.getLazyPythonClass(this);
-        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
-    }
-
-    @ExportMessage
-    public final boolean isContextManager(@CachedLibrary("this") PythonObjectLibrary lib,
-                    @Exclusive @Cached ConditionProfile profile) {
-        return profile.profile(lib.lookupAttributeOnType(this, __ENTER__) != PNone.NO_VALUE && lib.lookupAttributeOnType(this, __EXIT__) != PNone.NO_VALUE);
     }
 
     private static final String DATETIME_MODULE_NAME = "datetime";
