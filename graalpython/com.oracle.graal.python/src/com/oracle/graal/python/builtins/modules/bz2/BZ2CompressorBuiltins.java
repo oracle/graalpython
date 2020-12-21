@@ -124,7 +124,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
@@ -137,7 +137,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeObject(BZ2Object.BZ2Compressor self, Object data,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             synchronized (self) {
