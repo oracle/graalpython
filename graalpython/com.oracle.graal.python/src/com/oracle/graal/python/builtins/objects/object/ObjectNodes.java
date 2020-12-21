@@ -112,7 +112,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.sun.istack.internal.NotNull;
 
 public abstract class ObjectNodes {
 
@@ -134,7 +133,7 @@ public abstract class ObjectNodes {
         }
 
         @Specialization(replaces = "singleThreadedObject")
-        static long multiThreadedObject(@NotNull PythonAbstractIDableObject self,
+        static long multiThreadedObject(PythonAbstractIDableObject self,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             if (self.getPyId() == -1) {
                 synchronized (self) {
