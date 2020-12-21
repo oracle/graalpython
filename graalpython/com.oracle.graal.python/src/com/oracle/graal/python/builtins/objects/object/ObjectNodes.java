@@ -68,8 +68,7 @@ import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_TUPLE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_UNICODE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NONE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NOTIMPLEMENTED;
-import static com.oracle.graal.python.runtime.object.IDUtils.asId;
-import static com.oracle.graal.python.runtime.object.IDUtils.getReservedObjectId;
+import static com.oracle.graal.python.runtime.object.IDUtils.getId;
 
 import org.graalvm.collections.Pair;
 
@@ -100,6 +99,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
@@ -128,7 +128,7 @@ public abstract class ObjectNodes {
         static long singleThreadedObject(PythonAbstractIDableObject self,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             if (self.getPyId() == -1) {
-                self.setPyId(context.getNextGlobalObjectId());
+                self.setPyId(context.getNextObjectId());
             }
             return self.getPyId();
         }
@@ -139,7 +139,7 @@ public abstract class ObjectNodes {
             if (self.getPyId() == -1) {
                 synchronized (self) {
                     if (self.getPyId() == -1) {
-                        self.setPyId(context.getNextGlobalObjectId());
+                        self.setPyId(context.getNextObjectId());
                     }
                 }
             }
@@ -231,7 +231,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PythonBuiltinClassType self) {
-            return getReservedObjectId(self);
+            return getId(self);
         }
 
         @Specialization
@@ -257,18 +257,18 @@ public abstract class ObjectNodes {
         @Specialization
         static Object id(double self,
                         @Cached PythonObjectFactory factory) {
-            return asId(self, factory);
+            return IDUtils.getId(self, factory);
         }
 
         @Specialization
         static Object id(long self,
                         @Cached PythonObjectFactory factory) {
-            return asId(self, factory);
+            return IDUtils.getId(self, factory);
         }
 
         @Specialization
         static Object id(int self) {
-            return asId(self);
+            return IDUtils.getId(self);
         }
 
         @Specialization
@@ -277,14 +277,14 @@ public abstract class ObjectNodes {
             if (self.length() == 0) {
                 return ID_EMPTY_UNICODE;
             }
-            return context.getNextGlobalObjectId(self);
+            return context.getNextObjectId(self);
         }
 
         @Specialization(guards = "pol.isForeignObject(self)", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object idForeign(Object self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary("self") PythonObjectLibrary pol) {
-            return context.getNextGlobalObjectId(self);
+            return context.getNextObjectId(self);
         }
     }
 

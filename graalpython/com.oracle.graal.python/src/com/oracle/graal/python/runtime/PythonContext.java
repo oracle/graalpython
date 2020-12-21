@@ -296,12 +296,12 @@ public final class PythonContext {
         return pythonThreadStackSize.getAndSet(value);
     }
 
-    public long getNextGlobalObjectId() {
-        return idUtils.getNextGlobalObjectId();
+    public long getNextObjectId() {
+        return idUtils.getNextObjectId();
     }
 
-    public long getNextGlobalObjectId(Object object) {
-        return idUtils.getNextGlobalObjectId(object);
+    public long getNextObjectId(Object object) {
+        return idUtils.getNextObjectId(object);
     }
 
     public <T> T getOption(OptionKey<T> key) {
