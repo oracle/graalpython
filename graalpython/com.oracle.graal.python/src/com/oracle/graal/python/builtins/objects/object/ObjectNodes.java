@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -284,6 +285,22 @@ public abstract class ObjectNodes {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary("self") PythonObjectLibrary pol) {
             return context.getNextObjectId(self);
+        }
+    }
+
+    public abstract static class GetIdentityHashNode extends Node {
+        public abstract int execute(Object object);
+
+        @Specialization
+        static int idHash(Object object,
+                          @Cached GetIdNode getIdNode) {
+            final Object id = getIdNode.execute(object);
+            if (id instanceof Long) {
+                return Long.hashCode((long) id);
+            } else {
+                assert id instanceof PInt;
+                return Long.hashCode(((PInt) id).longValue());
+            }
         }
     }
 
