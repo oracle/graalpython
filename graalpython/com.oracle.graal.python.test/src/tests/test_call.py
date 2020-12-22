@@ -377,3 +377,14 @@ def test_runtime_args():
     assert F27.f27() == (tuple(), 5)
     assert F27.f27(1,2,3) == ((1,2,3), 5)
     assert F27.f27(1,2,3,a=10) == ((1,2,3), 10)
+
+def test_multiple_starargs():
+    def foo(*args):
+        return args
+
+    def gen():
+        yield 3
+        yield 4
+
+    assert foo(*(1, 2), *gen()) == (1, 2, 3, 4)
+    assert foo(0, *[1], 2, *gen(), 5) == (0, 1, 2, 3, 4, 5)
