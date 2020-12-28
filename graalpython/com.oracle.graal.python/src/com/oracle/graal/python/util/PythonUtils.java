@@ -42,6 +42,7 @@ package com.oracle.graal.python.util;
 
 import java.lang.management.ManagementFactory;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -93,6 +94,19 @@ public final class PythonUtils {
     public static void arraycopy(Object src, int srcPos, Object dest, int destPos, int length) {
         try {
             System.arraycopy(src, srcPos, dest, destPos, length);
+        } catch (Throwable t) {
+            // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
+     * Executes Arrays.copyOf and puts all exceptions on the slow path.
+     */
+    public static <T> T[] arrayCopyOf(T[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
         } catch (Throwable t) {
             // this is really unexpected and we want to break exception edges in compiled code
             CompilerDirectives.transferToInterpreterAndInvalidate();

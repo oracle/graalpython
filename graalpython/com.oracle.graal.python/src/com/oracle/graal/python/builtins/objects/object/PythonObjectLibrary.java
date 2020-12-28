@@ -803,6 +803,17 @@ public abstract class PythonObjectLibrary extends Library {
     public abstract double asJavaDoubleWithState(Object receiver, ThreadState threadState);
 
     /**
+     * @see #asJavaDoubleWithState(Object, ThreadState)
+     */
+    public final double asJavaDoubleWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
+            return asJavaDoubleWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return asJavaDouble(receiver);
+        }
+    }
+
+    /**
      * @see #asJavaDoubleWithState
      */
     public final double asJavaDouble(Object receiver) {

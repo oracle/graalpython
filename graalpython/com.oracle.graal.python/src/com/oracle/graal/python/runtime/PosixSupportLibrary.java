@@ -99,6 +99,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int[] pipe(Object receiver) throws PosixException;
 
+    public abstract SelectResult select(Object receiver, int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException;
+
     public abstract long lseek(Object receiver, int fd, long offset, int how) throws PosixException;
 
     public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;
@@ -330,6 +332,71 @@ public abstract class PosixSupportLibrary extends Library {
         @TruffleBoundary
         public ByteBuffer getByteBuffer() {
             return ByteBuffer.wrap(data, 0, (int) length);
+        }
+    }
+
+    /**
+     * Corresponds to the {@code timeval} struct.
+     */
+    @ValueType
+    public static final class Timeval {
+        private final long seconds;
+        private final long microseconds;
+
+        public Timeval(long seconds, long microseconds) {
+            this.seconds = seconds;
+            this.microseconds = microseconds;
+        }
+
+        public long getSeconds() {
+            return seconds;
+        }
+
+        public long getMicroseconds() {
+            return microseconds;
+        }
+
+        public long getTotalMiliseconds() {
+            return (seconds * 1000L) + (microseconds / 1000L);
+        }
+    }
+
+    /**
+     * Wraps boolean arrays that indicate if given file descriptor was selected or not. For example,
+     * if {@code getReadFds()[X]} is {@code true}, then the file descriptor that was passed to
+     * {@code select} as {@code readfds[X]} was selected.
+     */
+    @ValueType
+    public static final class SelectResult {
+        private final boolean[] readfds;
+        private final boolean[] writefds;
+        private final boolean[] errorfds;
+
+        public SelectResult(boolean[] readfds, boolean[] writefds, boolean[] errorfds) {
+            this.readfds = readfds;
+            this.writefds = writefds;
+            this.errorfds = errorfds;
+        }
+
+        public boolean[] getReadFds() {
+            return readfds;
+        }
+
+        public boolean[] getWriteFds() {
+            return writefds;
+        }
+
+        public boolean[] getErrorFds() {
+            return errorfds;
+        }
+    }
+
+    public static class ChannelNotSelectableException extends UnsupportedPosixFeatureException {
+        private static final long serialVersionUID = -4185480181939639297L;
+        static ChannelNotSelectableException INSTANCE = new ChannelNotSelectableException();
+
+        private ChannelNotSelectableException() {
+            super(null);
         }
     }
 

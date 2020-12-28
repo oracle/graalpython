@@ -37,10 +37,60 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
+import select
+import tempfile
+import unittest
+
+import sys
+
+PREFIX = 'select_graalpython_test'
+TEMP_DIR = tempfile.gettempdir()
+TEST_FILENAME = f'{PREFIX}_{os.getpid()}_tmp1'
+TEST_FILENAME_FULL_PATH = os.path.join(TEMP_DIR, TEST_FILENAME)
+
 def test_select_raises_on_object_with_no_fileno_func():    
-    import select
     try :
         select.select('abc', [], [], 0)
     except TypeError:
         raised = True
     assert raised
+
+def test_select_uses_dunder_index_of_timeout_obj():
+    class MyVal:
+        def __init__(self):
+            self.called_index = 0
+        def __index__(self):
+            self.called_index += 1
+            return 1
+
+    v = MyVal()
+    select.select([], [], [], v)
+    assert v.called_index == 1
+
+
+try:
+    __graalpython__.posix_module_backend()
+except:
+    class GP:
+        def posix_module_backend(self):
+            return 'cpython'
+    __graalpython__ = GP()
+
+@unittest.skipUnless(__graalpython__.posix_module_backend() != 'java',
+                     'The java backend does not support select for ordinary files, only sockets.')
+def test_select_result_duplicate_fds_preserve_objs_order():
+    class F:
+        def __init__(self, fd):
+            self.fd = fd
+        def fileno(self):
+            return self.fd
+
+    os.close(os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY | os.O_CREAT))
+    with open(TEST_FILENAME_FULL_PATH, 'r') as f:
+        stdout_fd = sys.__stdout__.fileno()
+        # stdout is not ready for reading, but the file should be,
+        # we should get back both objects and in the right order
+        fds = [F(f.fileno()), F(stdout_fd), F(f.fileno())]
+        res = select.select(fds, [], [], 1)
+        assert res == ([fds[0], fds[2]], [], [])

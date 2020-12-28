@@ -47,6 +47,8 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -230,6 +232,18 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("pipe", "%s", lib.pipe(delegate));
         } catch (PosixException e) {
             throw logException("pipe", e);
+        }
+    }
+
+    @SuppressWarnings("all")
+    @ExportMessage
+    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("select", "");
+        try {
+            return logExit("pipe", "%s", lib.select(delegate, readfds, writefds, errorfds, timeout));
+        } catch (PosixException e) {
+            throw logException("select", e);
         }
     }
 

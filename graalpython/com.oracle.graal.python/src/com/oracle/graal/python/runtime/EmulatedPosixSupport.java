@@ -66,6 +66,8 @@ import java.nio.channels.Channel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -83,6 +85,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -95,7 +98,10 @@ import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
@@ -393,6 +399,84 @@ public final class EmulatedPosixSupport extends PosixResources {
         } catch (IOException ex) {
             throw posixException(OSErrorEnum.fromException(ex));
         }
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
+        SelectableChannel[] readChannels = getSelectableChannels(readfds);
+        SelectableChannel[] writeChannels = getSelectableChannels(writefds);
+        SelectableChannel[] errChannels = getSelectableChannels(errorfds);
+
+        try (Selector selector = Selector.open()) {
+            for (SelectableChannel channel : readChannels) {
+                channel.configureBlocking(false);
+                channel.register(selector, SelectionKey.OP_READ);
+            }
+
+            for (SelectableChannel channel : writeChannels) {
+                channel.configureBlocking(false);
+                channel.register(selector, SelectionKey.OP_WRITE);
+            }
+
+            for (SelectableChannel channel : errChannels) {
+                // TODO(fa): not sure if these ops are representing "exceptional condition pending"
+                channel.configureBlocking(false);
+                channel.register(selector, SelectionKey.OP_ACCEPT | SelectionKey.OP_CONNECT);
+            }
+
+            // IMPORTANT: The meaning of the timeout value is slightly different: 'timeout == 0.0'
+            // means we should not block and return immediately. However, the Java API does not
+            // allow a non-blocking select. So we set the timeout to 1 ms.
+            //
+            // 'timeout == None' means we should wait indefinitely, i.e., we need to pass 0 to the
+            // Java API.
+            long timeoutMs;
+            if (timeout == null) {
+                timeoutMs = 0;
+            } else {
+                timeoutMs = timeout.getTotalMiliseconds();
+                if (timeoutMs == 0) {
+                    timeoutMs = 1;
+                }
+            }
+            int selected = selector.select(timeoutMs);
+
+            // remove non-selected channels from given lists
+            boolean[] resReadfds = removeNonSelected(readfds, readChannels, selector, SelectionKey::isReadable);
+            boolean[] resWritefds = removeNonSelected(writefds, writeChannels, selector, SelectionKey::isWritable);
+            boolean[] resErrfds = removeNonSelected(errorfds, errChannels, selector, key -> key.isAcceptable() || key.isConnectable());
+
+            assert selected == resReadfds.length + resWritefds.length + resErrfds.length;
+            return new SelectResult(resReadfds, resWritefds, resErrfds);
+        } catch (IOException e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    private static boolean[] removeNonSelected(int[] fds, SelectableChannel[] channels, Selector selector, Function<SelectionKey, Boolean> selectedPredicate) {
+        boolean[] result = new boolean[fds.length];
+        for (int i = 0; i < channels.length; i++) {
+            SelectableChannel channel = channels[i];
+            SelectionKey selectionKey = channel.keyFor(selector);
+            result[i] = selectedPredicate.apply(selectionKey);
+        }
+        return result;
+    }
+
+    private SelectableChannel[] getSelectableChannels(int[] fds) throws PosixException {
+        SelectableChannel[] channels = new SelectableChannel[fds.length];
+        for (int i = 0; i < fds.length; i++) {
+            Channel ch = getFileChannel(fds[i]);
+            if (ch == null) {
+                throw posixException(OSErrorEnum.EBADF);
+            }
+            if (!(ch instanceof SelectableChannel)) {
+                throw ChannelNotSelectableException.INSTANCE;
+            }
+            channels[i] = (SelectableChannel) ch;
+        }
+        return channels;
     }
 
     @ExportMessage

@@ -56,6 +56,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -161,6 +162,45 @@ int32_t call_pipe2(int32_t *pipefd) {
     }
     return 0;
 #endif
+}
+
+static void fill_select_result(int32_t* fds, int32_t fdsLen, fd_set* set, int8_t* result, int32_t resultOffset) {
+    for (int32_t i = 0; i < fdsLen; ++i) {
+        if (FD_ISSET(fds[i], set)) {
+            result[resultOffset + i] = 1;
+        }
+    }
+}
+
+static void fill_fd_set(fd_set *set, int32_t* fds, int32_t len) {
+    FD_ZERO(set);
+    for (int32_t i = 0; i < len; ++i) {
+        FD_SET(fds[i], set);
+    }
+}
+
+// selected is output parameter, a non-zero value will be written to
+// indices of file descriptors that were selected. The array indices
+// should be interpreted as if read/write/err file descriptors were
+// concatendated into one array
+int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
+    int32_t* writefds, int32_t writefdsLen, int32_t* errfds, int32_t errfdsLen,
+    int64_t timeoutSec, int64_t timeoutUsec, int8_t* selected) {
+
+    fd_set readfdsSet, writefdsSet, errfdsSet;
+    fill_fd_set(&readfdsSet, readfds, readfdsLen);
+    fill_fd_set(&writefdsSet, writefds, writefdsLen);
+    fill_fd_set(&errfdsSet, errfds, errfdsLen);
+
+    struct timeval timeout = {timeoutSec, timeoutUsec};
+
+    int result = select(nfds, &readfdsSet, &writefdsSet, &errfdsSet, timeoutSec > 0 ? &timeout : NULL);
+
+    // fill in the output parameter
+    fill_select_result(readfds, readfdsLen, &readfdsSet, selected, 0);
+    fill_select_result(writefds, writefdsLen, &writefdsSet, selected, readfdsLen);
+    fill_select_result(errfds, errfdsLen, &errfdsSet, selected, readfdsLen + writefdsLen);
+    return (int32_t) result;
 }
 
 int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
