@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class IntSequenceStorage extends TypedSequenceStorage {
 
@@ -158,26 +157,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         }
 
         return new IntSequenceStorage(newArray);
-    }
-
-    public void setIntSliceInBound(int start, int stop, int step, IntSequenceStorage sequence, ConditionProfile sameLengthProfile) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            setNewLength(length);
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        setNewLength(length > stop ? length : stop);
     }
 
     public int popInt() {
