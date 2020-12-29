@@ -2552,17 +2552,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return pythonClass;
         }
 
+        @TruffleBoundary
         private void addDictDescrAttribute(PythonAbstractClass[] basesArray, LookupAttributeInMRONode getDictAttrNode, PythonClass pythonClass) {
             if ((!hasPythonClassBases(basesArray) && getDictAttrNode.execute(pythonClass) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
                 BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true);
                 setAttribute(__DICT__, rootNode, pythonClass);
             }
         }
 
+        @TruffleBoundary
         private void addWeakrefDescrAttribute(PythonClass pythonClass) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
             BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true);
             setAttribute(__WEAKREF__, rootNode, pythonClass);
