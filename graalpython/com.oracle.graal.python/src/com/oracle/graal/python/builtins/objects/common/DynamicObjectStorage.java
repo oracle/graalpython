@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -426,14 +427,43 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage copy(@CachedLanguage PythonLanguage lang,
-                    @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-        DynamicObject copy = new Store(lang.getEmptyShape());
-        Object[] keys = dylib.getKeyArray(store);
-        for (int i = 0; i < keys.length; i++) {
-            dylib.put(copy, keys[i], dylib.getOrDefault(store, keys[i], PNone.NO_VALUE));
+    public static class Copy {
+        static DynamicObjectLibrary[] createAccess(int length) {
+            DynamicObjectLibrary[] result = new DynamicObjectLibrary[length];
+            for (int i = 0; i < length; i++) {
+                result[i] = DynamicObjectLibrary.getFactory().createDispatched(1);
+            }
+            return result;
         }
-        return new DynamicObjectStorage(copy);
+
+        @ExplodeLoop
+        @Specialization(limit = "1", guards = {"cachedLength < EXPLODE_LOOP_SIZE_LIMIT", "keys.length == cachedLength"})
+        public static HashingStorage copy(DynamicObjectStorage receiver,
+                        @SuppressWarnings("unused") @Bind("receiver.store") DynamicObject store,
+                        @SuppressWarnings("unused") @CachedLibrary("store") DynamicObjectLibrary dylib,
+                        @Bind("dylib.getKeyArray(store)") Object[] keys,
+                        @Cached("keys.length") int cachedLength,
+                        @CachedLanguage PythonLanguage lang,
+                        @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] readLib,
+                        @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] writeLib) {
+            DynamicObject copy = new Store(lang.getEmptyShape());
+            for (int i = 0; i < cachedLength; i++) {
+                writeLib[i].put(copy, keys[i], readLib[i].getOrDefault(receiver.store, keys[i], PNone.NO_VALUE));
+            }
+            return new DynamicObjectStorage(copy);
+        }
+
+        @Specialization(replaces = "copy")
+        public static HashingStorage copyGeneric(DynamicObjectStorage receiver,
+                        @CachedLanguage PythonLanguage lang,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            DynamicObject copy = new Store(lang.getEmptyShape());
+            Object[] keys = dylib.getKeyArray(receiver.store);
+            for (int i = 0; i < keys.length; i++) {
+                dylib.put(copy, keys[i], dylib.getOrDefault(receiver.store, keys[i], PNone.NO_VALUE));
+            }
+            return new DynamicObjectStorage(copy);
+        }
     }
 
     @ExportMessage
