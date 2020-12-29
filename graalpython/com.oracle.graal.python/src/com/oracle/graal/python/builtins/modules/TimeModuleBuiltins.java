@@ -372,11 +372,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
         @Specialization(guards = "isPositive(seconds)")
-        Object sleep(VirtualFrame frame, long seconds,
-                        @Shared("branchProfile") @Cached BranchProfile profile) {
+        Object sleep(VirtualFrame frame, long seconds) {
             long deadline = (long) timeSeconds() + seconds;
             doSleep(seconds, deadline);
-            getContext().triggerAsyncActions(frame, profile);
+            getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
 
@@ -387,11 +386,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPositive(seconds)")
-        Object sleep(VirtualFrame frame, double seconds,
-                        @Shared("branchProfile") @Cached BranchProfile profile) {
+        Object sleep(VirtualFrame frame, double seconds) {
             double deadline = timeSeconds() + seconds;
             doSleep(seconds, deadline);
-            getContext().triggerAsyncActions(frame, profile);
+            getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
 
@@ -404,7 +402,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.canBeJavaDouble(secondsObj)")
         Object sleepObj(VirtualFrame frame, Object secondsObj,
                         @Cached ConditionProfile negErr,
-                        @Shared("branchProfile") @Cached BranchProfile profile,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             double seconds = lib.asJavaDouble(secondsObj);
             if (negErr.profile(seconds < 0)) {
@@ -412,7 +409,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
             double deadline = timeSeconds() + seconds;
             doSleep(seconds, deadline);
-            getContext().triggerAsyncActions(frame, profile);
+            getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
 

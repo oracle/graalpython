@@ -43,7 +43,6 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
     private final LoopConditionProfile conditionProfile = LoopConditionProfile.createCountingProfile();
-    @CompilationFinal private BranchProfile asyncProfile;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     @Child CoerceToBooleanNode condition;
@@ -61,9 +60,8 @@ final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 contextRef = lookupContextReference(PythonLanguage.class);
-                asyncProfile = BranchProfile.create();
             }
-            contextRef.get().triggerAsyncActions(frame, asyncProfile);
+            contextRef.get().triggerAsyncActions(frame);
             return true;
         }
         return false;

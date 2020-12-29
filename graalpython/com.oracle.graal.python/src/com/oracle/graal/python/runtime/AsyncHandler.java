@@ -234,12 +234,11 @@ public class AsyncHandler {
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions(VirtualFrame frame, BranchProfile actionProfile) {
+    void triggerAsyncActions(VirtualFrame frame) {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, hasScheduledAction)) {
-            actionProfile.enter();
+            CompilerDirectives.transferToInterpreter();
             IndirectCallContext.enter(frame, context.get(), null);
             try {
-                CompilerDirectives.transferToInterpreter();
                 processAsyncActions();
             } finally {
                 IndirectCallContext.exit(frame, context.get(), null);
@@ -343,7 +342,7 @@ public class AsyncHandler {
             }
 
             /**
-             * 
+             *
              * @return the undelying reference which is usually a native pointer.
              */
             public final Object getReference() {

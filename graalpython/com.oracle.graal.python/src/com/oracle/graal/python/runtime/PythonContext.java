@@ -875,8 +875,8 @@ public final class PythonContext {
     /**
      * Trigger any pending asynchronous actions
      */
-    public void triggerAsyncActions(VirtualFrame frame, BranchProfile asyncProfile) {
-        handler.triggerAsyncActions(frame, asyncProfile);
+    public void triggerAsyncActions(VirtualFrame frame) {
+        handler.triggerAsyncActions(frame);
     }
 
     public AsyncHandler getAsyncHandler() {

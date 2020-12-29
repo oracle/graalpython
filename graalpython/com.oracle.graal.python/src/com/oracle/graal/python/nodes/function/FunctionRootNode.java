@@ -57,7 +57,6 @@ import com.oracle.truffle.api.source.SourceSection;
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
 public class FunctionRootNode extends PClosureFunctionRootNode {
-    @CompilationFinal private BranchProfile asyncProfile;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
@@ -177,10 +176,9 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asyncProfile = BranchProfile.create();
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
-            contextRef.get().triggerAsyncActions(frame, asyncProfile);
+            contextRef.get().triggerAsyncActions(frame);
         }
         try {
             return body.execute(frame);

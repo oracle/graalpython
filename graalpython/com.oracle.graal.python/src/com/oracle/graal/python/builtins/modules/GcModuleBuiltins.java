@@ -69,11 +69,10 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
-        int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level,
-                        @Cached BranchProfile asyncProfile) {
+        int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level) {
             PythonUtils.forceFullGC();
             // collect some weak references now
-            getContext().triggerAsyncActions(frame, asyncProfile);
+            getContext().triggerAsyncActions(frame);
             return 0;
         }
     }
