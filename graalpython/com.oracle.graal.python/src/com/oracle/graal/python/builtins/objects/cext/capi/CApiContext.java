@@ -86,7 +86,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class CApiContext extends CExtContext {
@@ -618,7 +617,7 @@ public final class CApiContext extends CExtContext {
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
-            getContext().triggerAsyncActions(null, BranchProfile.getUncached());
+            getContext().triggerAsyncActions(null);
             if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
                 return;
