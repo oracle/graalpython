@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
+import org.graalvm.collections.Pair;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -54,8 +56,10 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -70,6 +74,8 @@ public final class WrapTpNew extends SlotWrapper {
     @CompilationFinal private ValueProfile builtinProfile;
     @CompilationFinal private byte state = 0;
     @CompilationFinal private PythonBuiltinClassType owner;
+    // we cache two node classes here, otherwise we use a truffle boundary lookup
+    @CompilationFinal(dimensions = 1) private Pair<?, ?>[] cachedFactoriesNodeClasses = new Pair<?, ?>[2];
 
     private static final short NOT_SUBTP_STATE = 0b10000000;
     private static final short NOT_CLASS_STATE = 0b01000000;
@@ -139,7 +145,7 @@ public final class WrapTpNew extends SlotWrapper {
                 }
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) builtinProfile.profile(newMethod)).getBuiltinNodeFactory();
                 if (factory != null) {
-                    if (!factory.getNodeClass().isInstance(getNode())) {
+                    if (!getFactoryNodeClass(factory).isInstance(getNode())) {
                         if ((state & IS_UNSAFE_STATE) == 0) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             reportPolymorphicSpecialize();
@@ -155,6 +161,29 @@ public final class WrapTpNew extends SlotWrapper {
             }
         }
         return super.execute(frame);
+    }
+
+    @ExplodeLoop
+    @SuppressWarnings("unchecked")
+    private final Class<? extends PythonBuiltinBaseNode> getFactoryNodeClass(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
+        for (int i = 0; i < cachedFactoriesNodeClasses.length; i++) {
+            Pair<NodeFactory<? extends PythonBuiltinBaseNode>, Class<? extends PythonBuiltinBaseNode>> pair = (Pair<NodeFactory<? extends PythonBuiltinBaseNode>, Class<? extends PythonBuiltinBaseNode>>) cachedFactoriesNodeClasses[i];
+            if (pair == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
+                Class<? extends PythonBuiltinBaseNode> nodeclass = factory.getNodeClass();
+                cachedFactoriesNodeClasses[i] = Pair.create(factory, nodeclass);
+                return nodeclass;
+            } else if (pair.getLeft() == factory) {
+                return pair.getRight();
+            }
+        }
+        return getFactoryNodeClassUncached(factory);
+    }
+
+    @TruffleBoundary
+    private static final Class<? extends PythonBuiltinBaseNode> getFactoryNodeClassUncached(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
+        return factory.getNodeClass();
     }
 
     private final PRaiseNode getRaiseNode() {
