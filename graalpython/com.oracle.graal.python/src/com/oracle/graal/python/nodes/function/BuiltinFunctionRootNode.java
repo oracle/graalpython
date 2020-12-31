@@ -96,11 +96,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     public static class StandaloneBuiltinFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
         private final T node;
-        private final Class<T> nodeClass;
 
         public StandaloneBuiltinFactory(T node) {
             this.node = node;
-            this.nodeClass = determineNodeClass(node);
         }
 
         @Override
@@ -110,7 +108,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Class<T> getNodeClass() {
-            return nodeClass;
+            return determineNodeClass(node);
         }
 
         @SuppressWarnings("unchecked")
