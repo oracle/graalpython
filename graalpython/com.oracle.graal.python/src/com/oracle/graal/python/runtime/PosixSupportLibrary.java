@@ -41,7 +41,9 @@
 package com.oracle.graal.python.runtime;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -355,10 +357,6 @@ public abstract class PosixSupportLibrary extends Library {
         public long getMicroseconds() {
             return microseconds;
         }
-
-        public long getTotalMiliseconds() {
-            return (seconds * 1000L) + (microseconds / 1000L);
-        }
     }
 
     /**
@@ -388,6 +386,12 @@ public abstract class PosixSupportLibrary extends Library {
 
         public boolean[] getErrorFds() {
             return errorfds;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return String.format("select[read = %s; write = %s; err = %s]", Arrays.toString(readfds), Arrays.toString(writefds), Arrays.toString(errorfds));
         }
     }
 

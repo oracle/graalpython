@@ -239,9 +239,9 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("select", "");
+        logEnter("select", "%s %s %s %d %d", readfds, writefds, errorfds, timeout.getSeconds(), timeout.getMicroseconds());
         try {
-            return logExit("pipe", "%s", lib.select(delegate, readfds, writefds, errorfds, timeout));
+            return logExit("select", "%s", lib.select(delegate, readfds, writefds, errorfds, timeout));
         } catch (PosixException e) {
             throw logException("select", e);
         }

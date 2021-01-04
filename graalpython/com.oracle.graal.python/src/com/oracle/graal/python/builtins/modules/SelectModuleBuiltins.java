@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_VALUE_NAN;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT_TO;
 
 import java.util.List;
@@ -67,10 +68,12 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableE
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.IntArrayBuilder;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
@@ -243,10 +246,13 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         @Specialization
         long doDouble(double d, long unitToNs) {
             // Implements _PyTime_FromDouble, rounding mode (HALF_UP) is hard-coded for now
+            if (Double.isNaN(d)) {
+                throw raise(PythonBuiltinClassType.ValueError, INVALID_VALUE_NAN);
+            }
             double value = d * unitToNs;
             value = value >= 0.0 ? Math.ceil(value) : Math.floor(value);
             if (value < Long.MIN_VALUE || value > Long.MAX_VALUE) {
-                throw raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT_TO, "timestamp", "long");
+                throw raiseTimeOverflow();
             }
             return (long) value;
         }
@@ -260,7 +266,15 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         long doOther(VirtualFrame frame, Object value, long unitToNs,
                         @CachedLibrary("value") PythonObjectLibrary pol) {
-            return pol.asJavaLong(value, frame) * unitToNs;
+            try {
+                return PythonUtils.multiplyExact(pol.asJavaLong(value, frame), unitToNs);
+            } catch (OverflowException e) {
+                throw raiseTimeOverflow();
+            }
+        }
+
+        private PException raiseTimeOverflow() {
+            throw raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT_TO, "timestamp", "long");
         }
     }
 }

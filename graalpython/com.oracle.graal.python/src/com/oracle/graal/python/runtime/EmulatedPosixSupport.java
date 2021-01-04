@@ -57,6 +57,8 @@ import static com.oracle.truffle.api.TruffleFile.UNIX_NLINK;
 import static com.oracle.truffle.api.TruffleFile.UNIX_OWNER;
 import static com.oracle.truffle.api.TruffleFile.UNIX_PERMISSIONS;
 import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
+import static java.lang.Math.addExact;
+import static java.lang.Math.multiplyExact;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -426,21 +428,24 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
 
             // IMPORTANT: The meaning of the timeout value is slightly different: 'timeout == 0.0'
-            // means we should not block and return immediately. However, the Java API does not
-            // allow a non-blocking select. So we set the timeout to 1 ms.
-            //
+            // means we should not block and return immediately, for which we use selectNow().
             // 'timeout == None' means we should wait indefinitely, i.e., we need to pass 0 to the
             // Java API.
             long timeoutMs;
+            boolean useSelectNow = false;
             if (timeout == null) {
                 timeoutMs = 0;
             } else {
-                timeoutMs = timeout.getTotalMiliseconds();
+                try {
+                    timeoutMs = addExact(multiplyExact(timeout.getSeconds(), 1000L), timeout.getMicroseconds() / 1000L);
+                } catch (ArithmeticException ex) {
+                    throw posixException(OSErrorEnum.EINVAL);
+                }
                 if (timeoutMs == 0) {
-                    timeoutMs = 1;
+                    useSelectNow = true;
                 }
             }
-            int selected = selector.select(timeoutMs);
+            int selected = useSelectNow ? selector.selectNow() : selector.select(timeoutMs);
 
             // remove non-selected channels from given lists
             boolean[] resReadfds = removeNonSelected(readfds, readChannels, selector, SelectionKey::isReadable);

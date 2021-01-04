@@ -175,6 +175,19 @@ public final class PythonUtils {
         return (int) r;
     }
 
+    public static long multiplyExact(long x, long y) throws OverflowException {
+        // copy&paste from Math.multiplyExact
+        long r = x * y;
+        long ax = Math.abs(x);
+        long ay = Math.abs(y);
+        if (((ax | ay) >>> 31 != 0)) {
+            if (((y != 0) && (r / y != x)) || (x == Long.MIN_VALUE && y == -1)) {
+                throw OverflowException.INSTANCE;
+            }
+        }
+        return r;
+    }
+
     private static final MBeanServer SERVER;
     private static final String OPERATION_NAME = "gcRun";
     private static final Object[] PARAMS = new Object[]{null};
