@@ -315,7 +315,7 @@ public abstract class ObjectNodes {
         @Specialization(guards = "pol.isForeignObject(self)", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object idForeign(Object self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary pol) {
             return context.getNextObjectId(self);
         }
     }
