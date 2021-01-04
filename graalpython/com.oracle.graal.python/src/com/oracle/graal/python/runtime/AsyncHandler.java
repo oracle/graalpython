@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,7 +74,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -234,12 +233,11 @@ public class AsyncHandler {
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions(VirtualFrame frame, BranchProfile actionProfile) {
+    void triggerAsyncActions(VirtualFrame frame) {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, hasScheduledAction)) {
-            actionProfile.enter();
+            CompilerDirectives.transferToInterpreter();
             IndirectCallContext.enter(frame, context.get(), null);
             try {
-                CompilerDirectives.transferToInterpreter();
                 processAsyncActions();
             } finally {
                 IndirectCallContext.exit(frame, context.get(), null);
@@ -343,7 +341,7 @@ public class AsyncHandler {
             }
 
             /**
-             * 
+             *
              * @return the undelying reference which is usually a native pointer.
              */
             public final Object getReference() {

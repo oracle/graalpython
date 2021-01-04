@@ -3028,20 +3028,21 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         PythonCallNodeGen SourceSection: [10261,10304]`self.func(*self.args...`
                                           CallNodeGen SourceSection: None
                                           PositionalArgumentsNode SourceSection: None
-                                            BinaryArithmeticExpression SourceSection: None
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __add__
-                                              GetAttributeNodeGen SourceSection: [10272,10281]`self.args`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: args
-                                                  CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
+                                            ConcatPositionalStarargsNodeGen SourceSection: None
+                                              ConcatPositionalStarargsNodeGen SourceSection: None
+                                                ListLiteralNode SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
+                                                GetAttributeNodeGen SourceSection: [10272,10281]`self.args`
+                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                    Key: args
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [10272,10276]`self`
-                                                  Frame: [2,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __getattribute__
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [10272,10276]`self`
+                                                    Frame: [2,self,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [10284,10288]`args`
                                                 Frame: [0,args,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -176,7 +177,14 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is iterable
      */
     public boolean isIterable(Object receiver) {
-        return false;
+        if (!(lookupAttributeOnType(receiver, SpecialMethodNames.__ITER__) instanceof PNone)) {
+            return true;
+        } else if (lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE) {
+            return true;
+        } else {
+            return isCallable(receiver) &&
+                            lookupAttributeOnType(receiver, SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
+        }
     }
 
     /**
@@ -216,7 +224,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is a context manager
      */
     public boolean isContextManager(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, SpecialMethodNames.__ENTER__) != PNone.NO_VALUE &&
+                        lookupAttributeOnType(receiver, SpecialMethodNames.__EXIT__) != PNone.NO_VALUE;
     }
 
     /**
@@ -233,7 +242,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is hashable
      */
     public boolean isHashable(Object receiver) {
-        return false;
+        return !(lookupAttributeOnType(receiver, SpecialMethodNames.__HASH__) instanceof PNone);
     }
 
     /**
@@ -643,7 +652,7 @@ public abstract class PythonObjectLibrary extends Library {
      * Lookup an attribute directly in MRO of the receiver's type. Doesn't bind the attribute to the
      * object. Typically used to lookup special methods and attributes. Equivalent of CPython's
      * {@code _PyType_Lookup} or {@code lookup_maybe_method}.
-     * 
+     *
      * @param receiver self
      * @param name attribute name
      * @return found attribute or {@code PNone#NO_VALUE}
@@ -935,7 +944,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is a Python sequence object
      */
     public boolean isSequence(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, SpecialMethodNames.__LEN__) != PNone.NO_VALUE &&
+                        lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
     }
 
     /**
@@ -1010,7 +1020,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is a Python mapping object
      */
     public boolean isMapping(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
     }
 
     /**
@@ -1032,24 +1042,27 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if a sequence type
      */
     public boolean isSequenceType(Object receiver) {
-        return false;
+        return isLazyPythonClass(receiver) &&
+                        lookupAttribute(receiver, null, SpecialMethodNames.__LEN__) != PNone.NO_VALUE &&
+                        lookupAttribute(receiver, null, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
     }
 
     /**
      * Checks whether the receiver is a Python mapping. This message is supposed to be an equivalent
-     * of CPython's {@code PyCheck_Mapping}. Note that such object does not have to conform to the
+     * of CPython's {@code PyMapping_Check}. Note that such object does not have to conform to the
      * definition of mapping as described in
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>.
      *
      * <br>
-     * Specifically the default implementation checks whether the receiver has the {@code __items__}
-     * special method.
+     * Specifically the default implementation checks whether the receiver has the
+     * {@code __getitem__} special method.
      *
      * @param receiver the receiver Object
      * @return True if a mapping type
      */
     public boolean isMappingType(Object receiver) {
-        return false;
+        return isLazyPythonClass(receiver) &&
+                        lookupAttribute(receiver, null, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
     }
 
     @Abstract(ifExported = {"getBufferBytes", "getBufferLength"})
@@ -1101,7 +1114,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @param type the class to be checked against
      */
     public boolean typeCheck(Object receiver, Object type) {
-        return false;
+        return getDefaultNodes().getIsSameTypeNode().execute(getLazyPythonClass(receiver), type) ||
+                        getDefaultNodes().getIsSubtypeNode().execute(getLazyPythonClass(receiver), type);
     }
 
     /**

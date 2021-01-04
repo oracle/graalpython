@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,6 +61,10 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
     public SSTSerializerVisitor(DataOutputStream out) {
         this.out = out;
         stringTable.put(null, 0);
+    }
+
+    private void writeBoolean(boolean value) throws IOException {
+        out.writeBoolean(value);
     }
 
     private void writeInt(int value) throws IOException {
@@ -162,26 +166,23 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
         SSTNode[] nameArgNodes = alb.getNameArgNodes();
         String[] nameArgNames = alb.getNameArgNames();
         assert nameArgNodes.length == nameArgNames.length;
-        SSTNode[] starArg = alb.getStarArg();
         SSTNode[] kwArg = alb.getKwArg();
         writeInt(args.length);
         writeInt(nameArgNodes.length);
-        writeInt(starArg.length);
         writeInt(kwArg.length);
 
-        for (SSTNode arg : args) {
-            writeNodeOrNull(arg);
+        for (int i = 0; i < args.length; i++) {
+            writeBoolean(alb.isStarArgAt(i));
+            writeNodeOrNull(args[i]);
         }
         for (int i = 0; i < nameArgNodes.length; i++) {
             writeString(nameArgNames[i]);
             writeNodeOrNull(nameArgNodes[i]);
         }
-        for (SSTNode arg : starArg) {
-            writeNodeOrNull(arg);
-        }
         for (SSTNode arg : kwArg) {
             writeNodeOrNull(arg);
         }
+        writeInt(alb.getFirstStarArgIndex());
         writeNodeOrNull(alb.getNakedForComp());
     }
 

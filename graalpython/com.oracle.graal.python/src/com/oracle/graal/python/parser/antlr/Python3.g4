@@ -2025,7 +2025,24 @@ LONG_QUOTES2 : '\'\'\'' {usedQuote2();};
 
 SKIP_
  : ( SPACES 
-| COMMENT 
+| COMMENT
+    {
+        int startIndex = lastToken == null ? 0 : lastToken.getStopIndex() + 1;
+        String text = _input.getText(Interval.of(startIndex, _input.index()));
+        int len = text.length();
+        int delta = 0;
+        // find if there is code point and how big is
+        for (int i = 0; i < len; i++) {
+           // check if there is a codepoint with char count bigger then 1
+            int codePoint = Character.codePointAt(text, i);
+            delta += Character.charCount(codePoint);
+        }
+        delta = delta - len;
+
+        if (delta > 0) {
+            codePointDelta += delta;
+        }
+    }
 | LINE_JOINING 
     {   
         // We need to hanle line continuation here, because normally is hidden for the parser
