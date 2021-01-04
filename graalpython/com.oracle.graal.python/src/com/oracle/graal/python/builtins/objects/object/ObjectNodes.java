@@ -95,8 +95,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithState;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -136,8 +136,8 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption()")
         static long singleThreadedObject(Object self,
-                        @Cached ReadAttributeFromObjectNode readNode,
-                        @Cached WriteAttributeToObjectNode writeNode,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeNode,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             Object objectId = readNode.execute(self, OBJECT_ID);
             if (objectId == PNone.NO_VALUE) {
@@ -150,13 +150,14 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "isIDableObject(self)", replaces = "singleThreadedObject")
         static long multiThreadedObject(Object self,
-                        @Cached ReadAttributeFromObjectNode readNode,
-                        @Cached WriteAttributeToObjectNode writeNode,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeNode,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             Object objectId = readNode.execute(self, OBJECT_ID);
             if (objectId == PNone.NO_VALUE) {
                 synchronized (self) {
-                    if (readNode.execute(self, OBJECT_ID) == PNone.NO_VALUE) {
+                    objectId = readNode.execute(self, OBJECT_ID);
+                    if (objectId == PNone.NO_VALUE) {
                         objectId = context.getNextObjectId();
                         writeNode.execute(self, OBJECT_ID, objectId);
                     }
