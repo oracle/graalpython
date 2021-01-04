@@ -95,6 +95,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -113,38 +115,55 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ObjectNodes {
 
     @GenerateUncached
     abstract static class GetObjectIdNode extends Node {
+        private static final HiddenKey OBJECT_ID = new HiddenKey("_id");
+
         public abstract long execute(Object self);
 
-        protected Assumption getSingleThreadedAssumption() {
+        protected static Assumption getSingleThreadedAssumption() {
             return PythonLanguage.getCurrent().singleThreadedAssumption;
         }
 
-        @Specialization(assumptions = "getSingleThreadedAssumption()")
-        static long singleThreadedObject(PythonAbstractIDableObject self,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            if (self.getPyId() == -1) {
-                self.setPyId(context.getNextObjectId());
-            }
-            return self.getPyId();
+        protected static boolean isIDableObject(Object object) {
+            return object instanceof PythonObject || object instanceof PythonAbstractNativeObject;
         }
 
-        @Specialization(replaces = "singleThreadedObject")
-        static long multiThreadedObject(PythonAbstractIDableObject self,
+        @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption()")
+        static long singleThreadedObject(Object self,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached WriteAttributeToObjectNode writeNode,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
-            if (self.getPyId() == -1) {
+            Object objectId = readNode.execute(self, OBJECT_ID);
+            if (objectId == PNone.NO_VALUE) {
+                objectId = context.getNextObjectId();
+                writeNode.execute(self, OBJECT_ID, objectId);
+            }
+            assert objectId instanceof Long : "internal object id hidden key must be a long at this point";
+            return (long) objectId;
+        }
+
+        @Specialization(guards = "isIDableObject(self)", replaces = "singleThreadedObject")
+        static long multiThreadedObject(Object self,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached WriteAttributeToObjectNode writeNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            Object objectId = readNode.execute(self, OBJECT_ID);
+            if (objectId == PNone.NO_VALUE) {
                 synchronized (self) {
-                    if (self.getPyId() == -1) {
-                        self.setPyId(context.getNextObjectId());
+                    if (readNode.execute(self, OBJECT_ID) == PNone.NO_VALUE) {
+                        objectId = context.getNextObjectId();
+                        writeNode.execute(self, OBJECT_ID, objectId);
                     }
                 }
             }
-            return self.getPyId();
+            assert objectId instanceof Long : "internal object id hidden key must be a long at this point";
+            return (long) objectId;
         }
     }
 
@@ -257,7 +276,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PFloat self,
-                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(self);
         }
 
@@ -269,7 +288,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PInt self,
-                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(self);
         }
 
@@ -289,7 +308,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(PythonObject self,
-                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(self);
         }
 
