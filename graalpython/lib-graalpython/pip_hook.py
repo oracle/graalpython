@@ -63,14 +63,14 @@ class PipLoader:
             # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
             # some packages may have only major.minor or just major version
             archive_name = os.path.basename(filename)
-            name_ver_match = re.search("^([^-]+)-(\\d+)(.\\d+)?(.\\d+)?.*\\.(tar\\.gz|whl)$", archive_name)
+            name_ver_match = re.search("^([^-]+)-(\\d+)(.\\d+)?(.\\d+)?.*\\.(tar\\.gz|whl|zip)$", archive_name)
             if not name_ver_match:
                 print("Warning: could not parse package name, version, or format from '{}'.\n"
                       "Could not determine if any GraalPython specific patches need to be applied.".format(archive_name))
                 return result
 
             package_name = name_ver_match.group(1)
-            is_sdist = name_ver_match.group(5) == "tar.gz"
+            is_sdist = name_ver_match.group(5) in ("tar.gz", "zip")
             patches_base_dir = os.path.join(__graalpython__.core_home, "patches")
 
             # NOTE: Following 3 functions are duplicated in ginstall.py:
