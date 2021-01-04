@@ -68,6 +68,8 @@ class EnvBuilder:
             self._setup_pip(context)
         # Truffle change: patch shebang
         self._patch_shebang(context)
+        self._install_compilers(context)
+        # End of Truffle change
         if not self.upgrade:
             self.setup_scripts(context)
             self.post_setup(context)
@@ -180,6 +182,31 @@ class EnvBuilder:
         context.env_exe = os.path.join(binpath, exename)
         create_if_needed(binpath)
         return context
+
+    def _install_compilers(self, context):
+        # Put the Graal LLVM compiler tools on the path
+        r = subprocess.check_output(sys.executable + " -llvm-path", shell=True).decode("utf8")
+        llvm_bin_dir = r.splitlines()[-1].strip()
+        if not os.path.isdir(llvm_bin_dir):
+            print("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
+        llvm_bins = {
+            "llvm-ar": ("ar",),
+            "llvm-as": ("as",),
+            "llvm-ranlib": ("ranlib",),
+            "llvm-nm": ("nm",),
+            "ld.lld": ("ld.lld", "ld", "lld"),
+            "clang": ("clang", "cc"),
+            "clang++": ("clang++", "c++"),
+            "clang-cl": ("cl",),
+            "clang-cpp": ("cpp",),
+        }
+        bin_dir = os.path.join(context.env_dir, context.bin_name)
+        for binary in llvm_bins:
+            llvm_bin = os.path.join(llvm_bin_dir, binary)
+            for name in llvm_bins[binary]:
+                dest = os.path.join(bin_dir, name)
+                if not os.path.exists(dest):
+                    os.symlink(llvm_bin, dest)
 
     def _patch_shebang(self, context):
         # Truffle change: we need to patch the pip/pip3 (and maybe other) 
