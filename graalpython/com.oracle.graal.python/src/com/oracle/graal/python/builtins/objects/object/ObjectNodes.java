@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -241,12 +242,6 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        static Object id(PythonObject self,
-                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
-            return getObjectIdNode.execute(self);
-        }
-
-        @Specialization
         static Object id(boolean self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
@@ -261,9 +256,21 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
+        static Object id(PFloat self,
+                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(self);
+        }
+
+        @Specialization
         static Object id(long self,
                         @Cached PythonObjectFactory factory) {
             return IDUtils.getId(self, factory);
+        }
+
+        @Specialization
+        static Object id(PInt self,
+                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(self);
         }
 
         @Specialization
@@ -280,6 +287,12 @@ public abstract class ObjectNodes {
             return context.getNextObjectId(self);
         }
 
+        @Specialization
+        static Object id(PythonObject self,
+                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(self);
+        }
+
         @Specialization(guards = "pol.isForeignObject(self)", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object idForeign(Object self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
@@ -288,12 +301,13 @@ public abstract class ObjectNodes {
         }
     }
 
+    @GenerateUncached
     public abstract static class GetIdentityHashNode extends Node {
         public abstract int execute(Object object);
 
         @Specialization
         static int idHash(Object object,
-                          @Cached GetIdNode getIdNode) {
+                        @Cached GetIdNode getIdNode) {
             final Object id = getIdNode.execute(object);
             if (id instanceof Long) {
                 return Long.hashCode((long) id);

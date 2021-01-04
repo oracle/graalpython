@@ -56,7 +56,7 @@ public final class IDUtils {
     private static final long ID_MASK_DOUBLE = 0b0; // this gives doubles 63 bits
     private static final long ID_MASK_LONG = 0b10; // 62 bits for longs until overflow
     private static final long ID_MASK_OBJECT = 0b11; // 62 bits for objects (48 bits max num
-                                                    // addressable objects at once)
+                                                     // addressable objects at once)
 
     private static final BigInteger ID_MASK_LONG_BI = BigInteger.valueOf(ID_MASK_LONG);
     private static final BigInteger ID_MASK_DOUBLE_BI = BigInteger.valueOf(ID_MASK_DOUBLE);
