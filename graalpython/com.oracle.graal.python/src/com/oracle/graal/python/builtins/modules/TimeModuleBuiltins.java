@@ -407,7 +407,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isPositive(seconds)")
         Object sleep(VirtualFrame frame, long seconds) {
             long deadline = (long) timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            getContext().releaseGil();
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                getContext().acquireGil();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
@@ -421,7 +426,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isPositive(seconds)")
         Object sleep(VirtualFrame frame, double seconds) {
             double deadline = timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            getContext().releaseGil();
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                getContext().acquireGil();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
@@ -441,7 +451,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
             }
             double deadline = timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            getContext().releaseGil();
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                getContext().acquireGil();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }

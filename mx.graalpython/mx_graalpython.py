@@ -292,7 +292,7 @@ def retag_unittests(args):
     args = [
         '--experimental-options=true',
         '--python.CatchAllExceptions=true',
-        '--python.WithThread=true']
+    ]
     if parsed_args.inspect:
         args.append('--inspect')
     if parsed_args.debug_java:
@@ -649,8 +649,7 @@ def run_tagged_unittests(python_binary, env=None):
     )
     run_python_unittests(
         python_binary,
-        args=["-v",
-              "--python.WithThread=true"],
+        args=["-v"],
         paths=["test_tagged_unittests.py"],
         env=env,
     )
@@ -1801,8 +1800,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             # always add "-q" if not verbose to suppress hello message
             args.append("-q")
 
-        args += ["--python.WithThread",
-                 "--python.PyCachePrefix=" + pycache_dir,
+        args += ["--python.PyCachePrefix=" + pycache_dir,
                  "-B",
                  "-S", os.path.join(self.src_dir(), "setup.py"),
                  self.subject.get_output_root()]

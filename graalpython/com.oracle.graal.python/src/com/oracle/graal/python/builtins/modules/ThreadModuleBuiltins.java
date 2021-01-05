@@ -177,11 +177,18 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                 // stack and if we would pass the current frame, this would be connected as a caller
                 // which is incorrect. However, the thread-local 'topframeref' is initialized with
                 // EMPTY which will be picked up.
-                callNode.execute(null, callable, arguments, keywords);
+                context.acquireGil();
+                try {
+                    callNode.execute(null, callable, arguments, keywords);
+                } finally {
+                    context.releaseGil();
+                }
             }, env.getContext(), context.getThreadGroup());
 
             PThread pThread = factory().createPythonThread(cls, thread);
+            // if we're the first thread, acquire the newly created GIL now
             pThread.start();
+            context.acquireGil();
             return pThread.getId();
         }
     }

@@ -47,13 +47,3 @@ TIMEOUT_MAX = __truffle_get_timeout_max__()
 @__graalpython__.builtin
 def allocate_lock():
     return LockType()
-
-
-def load():
-    if not _sysconfig.get_config_vars().get('WITH_THREAD'):
-        import sys
-        filename = __graalpython__.stdlib_home + ("/_dummy_thread.py")
-        _dummy_thread = __import__(filename, "_thread")
-        sys.modules["_thread"] = _dummy_thread
-load()
-del load

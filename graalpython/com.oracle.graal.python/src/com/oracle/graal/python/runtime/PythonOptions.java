@@ -182,9 +182,6 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
-    @EngineOption @Option(category = OptionCategory.EXPERT, help = "This option control builtin _thread module support") //
-    public static final OptionKey<Boolean> WithThread = new OptionKey<>(false);
-
     // disabling TRegex has an effect on the _sre Python functions that are
     // dynamically created, so we cannot change that option again.
     @EngineOption @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine. Default true") //
@@ -363,11 +360,6 @@ public final class PythonOptions {
 
     public static boolean isPExceptionWithJavaStacktrace(PythonLanguage language) {
         return language.getEngineOption(WithJavaStacktrace) > 1;
-    }
-
-    @TruffleBoundary
-    public static boolean isWithThread(Env env) {
-        return env.getOptions().get(WithThread);
     }
 
     @TruffleBoundary

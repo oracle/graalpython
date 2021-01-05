@@ -68,7 +68,12 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
         int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level) {
-            PythonUtils.forceFullGC();
+            getContext().releaseGil();
+            try {
+                PythonUtils.forceFullGC();
+            } finally {
+                getContext().acquireGil();
+            }
             // collect some weak references now
             getContext().triggerAsyncActions(frame);
             return 0;

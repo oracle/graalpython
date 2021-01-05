@@ -119,23 +119,28 @@ public class TopLevelExceptionHandler extends RootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        if (exception != null) {
-            throw handlePythonException(exception.getEscapedException());
-        } else {
-            assert getContext().getCurrentException() == null;
-            try {
-                return run(frame);
-            } catch (PException e) {
-                assert !PArguments.isPythonFrame(frame);
-                throw handlePythonException(e.getEscapedException());
-            } catch (StackOverflowError e) {
-                PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
-                PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
-                throw handlePythonException(pe.getEscapedException());
-            } catch (Throwable e) {
-                handleJavaException(e);
-                throw e;
+        getContext().acquireGil();
+        try {
+            if (exception != null) {
+                throw handlePythonException(exception.getEscapedException());
+            } else {
+                assert getContext().getCurrentException() == null;
+                try {
+                    return run(frame);
+                } catch (PException e) {
+                    assert !PArguments.isPythonFrame(frame);
+                    throw handlePythonException(e.getEscapedException());
+                } catch (StackOverflowError e) {
+                    PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
+                    PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
+                    throw handlePythonException(pe.getEscapedException());
+                } catch (Throwable e) {
+                    handleJavaException(e);
+                    throw e;
+                }
             }
+        } finally {
+            getContext().releaseGil();
         }
     }
 

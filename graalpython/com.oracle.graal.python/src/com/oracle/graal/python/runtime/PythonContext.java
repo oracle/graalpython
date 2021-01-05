@@ -250,8 +250,7 @@ public final class PythonContext {
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
-    /* A lock for interop calls when this context is used by multiple threads. */
-    private ReentrantLock interopLock;
+    private ReentrantLock globalInterpreterLock;
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
@@ -900,11 +899,7 @@ public final class PythonContext {
         return singleNativeContext;
     }
 
-    public Assumption getSingleThreadedAssumption() {
-        return singleThreaded;
-    }
-
-    public Assumption getNativeObjectsAllManagedAssumption() {
+    public final Assumption getNativeObjectsAllManagedAssumption() {
         return nativeObjectsAllManagedAssumption;
     }
 
@@ -955,15 +950,29 @@ public final class PythonContext {
         return null;
     }
 
-    @TruffleBoundary
-    public void acquireInteropLock() {
-        interopLock.lock();
+    public void acquireGil() {
+        if (!singleThreaded.isValid()) {
+            privateAcquireGil();
+        }
     }
 
     @TruffleBoundary
-    public void releaseInteropLock() {
-        if (interopLock.isLocked()) {
-            interopLock.unlock();
+    private void privateAcquireGil() {
+        if (!globalInterpreterLock.isHeldByCurrentThread()) {
+            globalInterpreterLock.lock();
+        }
+    }
+
+    public void releaseGil() {
+        if (!singleThreaded.isValid()) {
+            privateReleaseGil();
+        }
+    }
+
+    @TruffleBoundary
+    private void privateReleaseGil() {
+        if (globalInterpreterLock.isHeldByCurrentThread()) {
+            globalInterpreterLock.unlock();
         }
     }
 
@@ -1101,11 +1110,28 @@ public final class PythonContext {
         getThreadState().sentinelLock = sentinelLock;
     }
 
+    private static final class ReleaseGIL implements AsyncAction {
+        @Override
+        public final void execute(PythonContext context) {
+            context.releaseGil();
+            Thread.yield();
+            context.acquireGil();
+        }
+
+        private static final ReleaseGIL INSTANCE = new ReleaseGIL();
+    }
+
     @TruffleBoundary
     public void initializeMultiThreading() {
-        interopLock = new ReentrantLock();
+        globalInterpreterLock = new ReentrantLock();
         singleThreaded.invalidate();
         threadState = new ThreadLocal<>();
+
+        // each async action is scheduled with a fixed delay to run repeatedly, thus when we do run,
+        // all we want is to return the action to release the GIL on whichever thread handles this
+        // action next
+        registerAsyncAction(() -> ReleaseGIL.INSTANCE);
+
         synchronized (this) {
             threadStateMapping = new HashMap<>();
             for (WeakReference<Thread> ownerRef : singleThreadState.getOwners()) {

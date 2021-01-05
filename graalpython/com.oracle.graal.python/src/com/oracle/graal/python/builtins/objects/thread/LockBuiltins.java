@@ -137,10 +137,15 @@ public class LockBuiltins extends PythonBuiltins {
             if (isBlockingProfile.profile(!isBlocking)) {
                 return self.acquireNonBlocking();
             } else {
-                if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
-                    return acquireBlocking(self);
-                } else {
-                    return self.acquireTimeout(timeoutSeconds);
+                getContext().releaseGil();
+                try {
+                    if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
+                        return acquireBlocking(self);
+                    } else {
+                        return self.acquireTimeout(timeoutSeconds);
+                    }
+                } finally {
+                    getContext().acquireGil();
                 }
             }
         }

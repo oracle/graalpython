@@ -80,7 +80,12 @@ public class RLockBuiltins extends PythonBuiltins {
         @Specialization
         Object acquireRestore(PRLock self) {
             if (!self.acquireNonBlocking()) {
-                self.acquireBlocking();
+                getContext().releaseGil();
+                try {
+                    self.acquireBlocking();
+                } finally {
+                    getContext().acquireGil();
+                }
             }
             return PNone.NONE;
         }

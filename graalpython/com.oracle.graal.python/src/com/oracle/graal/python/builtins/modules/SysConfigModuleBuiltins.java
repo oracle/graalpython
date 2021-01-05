@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -67,7 +66,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(PythonCore core) {
-        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PInt.intValue(core.getLanguage().getEngineOption(PythonOptions.WithThread)));
+        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", 1);
         super.initialize(core);
     }
 

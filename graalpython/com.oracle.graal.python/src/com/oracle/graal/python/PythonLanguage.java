@@ -172,13 +172,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
-    /*
-     * We need to store this here, because the check is on the language and can come from a thread
-     * that has no context, but we enable or disable threads with a context option. So we store this
-     * here when a context is created.
-     */
-    private Boolean isWithThread = null;
-
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
 
@@ -233,8 +226,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
-        assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
-        this.isWithThread = PythonOptions.isWithThread(env);
         Python3Core newCore = new Python3Core(new PythonParserImpl(env), env.isNativeAccessAllowed());
         final PythonContext context = new PythonContext(this, env, newCore);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
@@ -658,10 +649,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (singleThreaded) {
             return super.isThreadAccessAllowed(thread, singleThreaded);
         }
-        if (isWithThread == null) {
-            isWithThread = false;
-        }
-        return isWithThread;
+        return true;
     }
 
     @Override

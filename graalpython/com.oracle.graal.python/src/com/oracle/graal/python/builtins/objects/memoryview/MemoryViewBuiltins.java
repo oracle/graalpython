@@ -133,17 +133,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 return;
             }
             ManagedBuffer buffer = reference.getManagedBuffer();
-            boolean shouldLock = !context.getSingleThreadedAssumption().isValid();
-            if (shouldLock) {
-                context.acquireInteropLock();
-            }
-            try {
-                CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
-            } finally {
-                if (shouldLock) {
-                    context.releaseInteropLock();
-                }
-            }
+            CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
         }
     }
 
