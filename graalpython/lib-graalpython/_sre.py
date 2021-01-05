@@ -39,7 +39,7 @@
 
 from mmap import mmap
 
-_mappingpoxy = type(type.__dict__)
+_mappingproxy = type(type.__dict__)
 
 def default(value, default):
     return default if not value else value
@@ -48,12 +48,20 @@ def maxsize():
     import sys
     return sys.maxsize
 
+class _NamedCaptureGroups:
+    def __init__(self, groupindex):
+        self._groupindex = groupindex
+
+    def __dir__(self):
+        return self._groupindex.keys()
+
+    def __getitem__(self, item):
+        return self._groupindex[item]
 
 class _RegexResult:
-    def __init__(self, pattern_input, isMatch, groupCount, start, end):
+    def __init__(self, pattern_input, isMatch, start, end):
         self.input = pattern_input
         self.isMatch = isMatch
-        self.groupCount = groupCount
         self._start = start
         self._end = end
 
@@ -63,13 +71,52 @@ class _RegexResult:
     def getEnd(self, grpidx):
         return self._end[grpidx]
 
+class _ExecutablePattern:
+    def __init__(self, compiled_pattern, flags, sticky):
+        self.__compiled_pattern__ = compiled_pattern
+        self.__sticky__ = sticky
+        self.pattern = compiled_pattern.pattern
+        self.flags = flags
+        self.groupCount = 1 + compiled_pattern.groups
+        self.groups = _NamedCaptureGroups(compiled_pattern.groupindex)
 
-def _str_to_bytes(arg):
-    buffer = bytearray(len(arg))
-    for i, c in enumerate(arg):
-        buffer[i] = ord(c)
-    return bytes(buffer)
+    def exec(self, pattern_input, from_index):
+        if self.__sticky__:
+            result = self.__compiled_pattern__.match(pattern_input, from_index)
+        else:
+            result = self.__compiled_pattern__.search(pattern_input, from_index)
+        is_match = result is not None
+        return _RegexResult(
+            pattern_input = pattern_input,
+            isMatch = is_match,
+            start = [result.start(i) for i in range(self.groupCount)] if is_match else [],
+            end = [result.end(i) for i in range(self.groupCount)] if is_match else []
+        )
 
+def fallback_compiler(pattern, flags):
+    """
+    :param pattern: a str or bytes with the regexp's pattern
+    :param flags: string representation of the regexp's flags
+    :return: an object implementing the RegexObject interface
+    """
+    sticky = False
+    bit_flags = 0
+    for flag in flags:
+        # Handle internal stick(y) flag used to signal matching only at the start of input.
+        if flag == "y":
+            sticky = True
+        else:
+            bit_flags = bit_flags | FLAGS[flag]
+
+    compiled_pattern = _sre_compile(pattern, bit_flags)
+
+    return _ExecutablePattern(compiled_pattern, flags, sticky)
+
+def _new_compile(p, flags=0):
+    if _with_tregex and isinstance(p, (str, bytes)):
+        return _t_compile(p, flags)
+    else:
+        return _sre_compile(p, flags)
 
 def setup(sre_compiler, error_class, flags_table):
     global error
@@ -78,80 +125,10 @@ def setup(sre_compiler, error_class, flags_table):
     global FLAGS
     FLAGS = flags_table
 
-    def configure_fallback_compiler(mode):
-        # wraps a native 're.Pattern' object
-        class ExecutablePattern:
-            def __init__(self, sticky, compiled_pattern):
-                self.__sticky__ = sticky
-                self.__compiled_pattern__ = compiled_pattern
+    global _sre_compile
+    _sre_compile = sre_compiler
 
-            def __call__(self, *args):
-                # deprecated
-                return self.exec(*args)
-
-            def exec(self, *args):
-                nargs = len(args)
-                if nargs == 2:
-                    # new-style signature
-                    pattern_input, from_index = args
-                elif nargs == 3:
-                    # old-style signature; deprecated
-                    _, pattern_input, from_index = args
-                else:
-                    raise TypeError("invalid arguments: " + repr(args))
-                if self.__sticky__:
-                    result = self.__compiled_pattern__.match(pattern_input, from_index)
-                else:
-                    result = self.__compiled_pattern__.search(pattern_input, from_index)
-                is_match = result is not None
-                group_count = 1 + self.__compiled_pattern__.groups
-                return _RegexResult(
-                    pattern_input = pattern_input,
-                    isMatch = is_match,
-                    groupCount = group_count if is_match else 0,
-                    start = [result.start(i) for i in range(group_count)] if is_match else [],
-                    end = [result.end(i) for i in range(group_count)] if is_match else []
-                )
-
-        def fallback_compiler(pattern, flags):
-            sticky = False
-            bit_flags = 0
-            for flag in flags:
-                # Handle internal stick(y) flag used to signal matching only at the start of input.
-                if flag == "y":
-                    sticky = True
-                else:
-                    bit_flags = bit_flags | FLAGS[flag]
-
-            compiled_pattern = sre_compiler(pattern if mode == "str" else _str_to_bytes(pattern), bit_flags)
-
-            return ExecutablePattern(sticky, compiled_pattern)
-
-        return fallback_compiler
-
-    engine_builder = _build_regex_engine("")
-
-    if engine_builder:
-        global TREGEX_ENGINE_STR
-        global TREGEX_ENGINE_BYTES
-        if _use_sre_fallback:
-            TREGEX_ENGINE_STR = engine_builder("Flavor=PythonStr", configure_fallback_compiler("str"))
-            TREGEX_ENGINE_BYTES = engine_builder("Flavor=PythonBytes", configure_fallback_compiler("bytes"))
-        else:
-            TREGEX_ENGINE_STR = engine_builder("Flavor=PythonStr")
-            TREGEX_ENGINE_BYTES = engine_builder("Flavor=PythonBytes")
-
-        def new_compile(p, flags=0):
-            if isinstance(p, (str, bytes)):
-                return _tcompile(p, flags)
-            else:
-                return sre_compiler(p, flags)
-    else:
-        def new_compile(p, flags=0):
-            return sre_compiler(p, flags)
-
-    return new_compile
-
+    return _new_compile
 
 CODESIZE = 4
 
@@ -265,7 +242,7 @@ class SRE_Pattern():
                 groups = self.__tregex_compile(self.pattern).groups
                 self.groups = len(dir(groups))
                 groupindex[group_name] = groups[group_name]
-        self.groupindex = _mappingpoxy(groupindex)
+        self.groupindex = _mappingproxy(groupindex)
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
@@ -284,9 +261,8 @@ class SRE_Pattern():
         if flags is None:
             flags = self.flags_str
         if (pattern, flags) not in self.__compiled_regexes:
-            tregex_engine = TREGEX_ENGINE_BYTES if self.__binary else TREGEX_ENGINE_STR
             try:
-                self.__compiled_regexes[(pattern, flags)] = tregex_call_compile(tregex_engine, pattern, flags)
+                self.__compiled_regexes[(pattern, flags)] = tregex_compile_internal(pattern, flags, fallback_compiler)
             except ValueError as e:
                 message = str(e)
                 boundary = message.rfind(" at position ")
@@ -522,7 +498,7 @@ class SRE_Pattern():
         return result
 
 
-_tcompile = SRE_Pattern
+_t_compile = SRE_Pattern
 
 def compile(pattern, flags, code, groups, groupindex, indexgroup):
     import _cpython_sre
