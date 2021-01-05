@@ -448,18 +448,18 @@ public final class EmulatedPosixSupport extends PosixResources {
             int selected = useSelectNow ? selector.selectNow() : selector.select(timeoutMs);
 
             // remove non-selected channels from given lists
-            boolean[] resReadfds = removeNonSelected(readfds, readChannels, selector, SelectionKey::isReadable);
-            boolean[] resWritefds = removeNonSelected(writefds, writeChannels, selector, SelectionKey::isWritable);
-            boolean[] resErrfds = removeNonSelected(errorfds, errChannels, selector, key -> key.isAcceptable() || key.isConnectable());
+            boolean[] resReadfds = createSelectedMap(readfds, readChannels, selector, SelectionKey::isReadable);
+            boolean[] resWritefds = createSelectedMap(writefds, writeChannels, selector, SelectionKey::isWritable);
+            boolean[] resErrfds = createSelectedMap(errorfds, errChannels, selector, key -> key.isAcceptable() || key.isConnectable());
 
-            assert selected == resReadfds.length + resWritefds.length + resErrfds.length;
+            assert selected == countSelected(resReadfds) + countSelected(resWritefds) + countSelected(resErrfds);
             return new SelectResult(resReadfds, resWritefds, resErrfds);
         } catch (IOException e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
-    private static boolean[] removeNonSelected(int[] fds, SelectableChannel[] channels, Selector selector, Function<SelectionKey, Boolean> selectedPredicate) {
+    private static boolean[] createSelectedMap(int[] fds, SelectableChannel[] channels, Selector selector, Function<SelectionKey, Boolean> selectedPredicate) {
         boolean[] result = new boolean[fds.length];
         for (int i = 0; i < channels.length; i++) {
             SelectableChannel channel = channels[i];
@@ -467,6 +467,16 @@ public final class EmulatedPosixSupport extends PosixResources {
             result[i] = selectedPredicate.apply(selectionKey);
         }
         return result;
+    }
+
+    private static int countSelected(boolean[] selected) {
+        int res = 0;
+        for (boolean b : selected) {
+            if (b) {
+                res += 1;
+            }
+        }
+        return res;
     }
 
     private SelectableChannel[] getSelectableChannels(int[] fds) throws PosixException {
