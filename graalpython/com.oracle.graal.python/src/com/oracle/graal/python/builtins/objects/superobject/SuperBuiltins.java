@@ -213,9 +213,9 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         protected abstract Object execute(VirtualFrame frame, Object self, Object cls, Object obj);
 
-        @Specialization(guards = {"!isNoValue(cls)", "!isNoValue(obj)"})
+        @Specialization(guards = "!isNoValue(cls)")
         PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj) {
-            if (obj != PNone.NONE) {
+            if (!(obj instanceof PNone)) {
                 Object type = supercheck(frame, cls, obj);
                 self.init(cls, type, obj);
             } else {

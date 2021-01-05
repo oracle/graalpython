@@ -72,21 +72,23 @@ class property(object):
              del self._x
 
     """
+    
+    __slots__ = ['_fget', '_fset', '_fdel', '_doc', '_getter_doc', '_name', '_owner']
     def __init__(self, fget=None, fset=None, fdel=None, doc=None, name=None):
-        self.fget = fget
-        self.fset = fset
-        self.fdel = fdel
-        self.doc = doc
-        self.getter_doc = False
-        if self.doc is None and fget:
+        self._fget = fget
+        self._fset = fset
+        self._fdel = fdel
+        self._doc = doc
+        self._getter_doc = False
+        if self._doc is None and fget:
             gdoc = getattr(fget, "__doc__")
             if gdoc:
                 if type(self) is property:
-                    self.doc = gdoc
+                    self._doc = gdoc
                 else:
                     self.__doc__ = gdoc
-                self.getter_doc = True
-        self.name = name
+                self._getter_doc = True
+        self._name = name
         self._owner = None
 
     def __get__(self, instance, owner=None):
@@ -94,20 +96,20 @@ class property(object):
             self._owner = owner
         if instance is None:
             return self
-        if self.fget is None:
+        if self._fget is None:
             raise AttributeError("unreadable attribute")
-        return self.fget(instance)
+        return self._fget(instance)
 
     def __set__(self, instance, value):
-        if self.fset is None:
+        if self._fset is None:
             raise AttributeError("attribute '{}' of '{}' objects is not writable".format(
-                self.name, getattr(self._owner, "__name__", str(self._owner))))
-        return self.fset(instance, value)
+                self._name, getattr(self._owner, "__name__", str(self._owner))))
+        return self._fset(instance, value)
 
     def __delete__(self, instance):
-        if self.fdel is None:
+        if self._fdel is None:
             raise AttributeError("can't delete attribute")
-        return self.fdel(instance)
+        return self._fdel(instance)
 
     def setter(self, func):
         return self.__copy(fset=func)
@@ -121,36 +123,54 @@ class property(object):
     def __repr__(self):
         return "'".join([
             "<property ",
-            str(self.name),
+            str(self._name),
             " of ",
             getattr(self._owner, "__name__", str(self._owner)),
             " objects>"
         ])
 
     def __copy(self, fget=None, fset=None, fdel=None):
-        _fget = fget if fget is not None else self.fget
-        _fset = fset if fset is not None else self.fset
-        _fdel = fdel if fdel is not None else self.fdel
-        _doc = None if (self.getter_doc and _fget) else self.doc
-        return type(self)(fget=_fget, fset=_fset, fdel=_fdel, doc=_doc, name=self.name)
+        _fget = fget if fget is not None else self._fget
+        _fset = fset if fset is not None else self._fset
+        _fdel = fdel if fdel is not None else self._fdel
+        _doc = None if (self._getter_doc and _fget) else self._doc
+        return type(self)(fget=_fget, fset=_fset, fdel=_fdel, doc=_doc, name=self._name)
 
 
 def isabstract(self):
-    return (bool(getattr(self.fget, "__isabstractmethod__", False)) or
-            bool(getattr(self.fset, "__isabstractmethod__", False)) or
-            bool(getattr(self.fdel, "__isabstractmethod__", False)))
+    return (bool(getattr(self._fget, "__isabstractmethod__", False)) or
+            bool(getattr(self._fset, "__isabstractmethod__", False)) or
+            bool(getattr(self._fdel, "__isabstractmethod__", False)))
 
 
 property.__isabstractmethod__ = descriptor(fget=isabstract, name="__isabstractmethod__", owner=property)
 
 
 def get_doc(self):
-    return self.doc
+    return self._doc
 
 
 def set_doc(self, value):
-    self.doc = value
-    self.getter_doc = False
+    self._doc = value
+    self._getter_doc = False
 
 
 property.__doc__ = descriptor(fget=get_doc, fset=set_doc, name="__doc__", owner=property)
+
+def get_fget(self):
+    return self._fget
+
+def set_fxxx(self, value):
+    raise AttributeError("readonly attribute")
+
+property.fget = descriptor(fget=get_fget, fset=set_fxxx, name="fget", owner=property)
+
+def get_fset(self):
+    return self._fset
+
+property.fset = descriptor(fget=get_fset, fset=set_fxxx, name="fset", owner=property)
+
+def get_fdel(self):
+    return self._fdel
+
+property.fdel = descriptor(fget=get_fdel, fset=set_fxxx, name="fdel", owner=property)
