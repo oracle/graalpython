@@ -1,5 +1,3 @@
-/* @formatter:off for the whole file. */
-/* Checkstyle: stop for the whole file. */
 /*
  * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -40,6 +38,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/* @formatter:off for the whole file. */
+/* Checkstyle: stop for the whole file. */
 package com.oracle.graal.python.util;
 
 import java.lang.ref.ReferenceQueue;
