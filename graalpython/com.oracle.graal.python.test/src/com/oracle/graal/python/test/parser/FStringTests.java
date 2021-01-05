@@ -132,4 +132,24 @@ public class FStringTests extends ParserTestBase {
         checkTreeResult("f'result is:{result:{width}.{precision}} and this is true'");
     }
 
+    @Test
+    public void unicode01() throws Exception {
+        checkTreeResult("f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 result is:{result:{width}.{precision}} and this is true'");
+    }
+
+    @Test
+    public void unicode02() throws Exception {
+        checkTreeResult("def test():\n" +
+                        "  # assert a == '𝒜' and b == '𝒞' and c == '𝒵'\n" +
+                        "  f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 result is:{result:{width}.{precision}} and this is true'");
+    }
+
+    @Test
+    public void unicode03() throws Exception {
+        checkTreeResult("def test():\n" +
+                        "  # assert a == '𝒜' and b == '𝒞' and c == '𝒵'\n" +
+                        "  assert a == '𝒜' and b == '𝒞' and c == '𝒵'\n" +
+                        "  f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 result is:{result:{width}.{precision}} and this is true'");
+    }
+
 }

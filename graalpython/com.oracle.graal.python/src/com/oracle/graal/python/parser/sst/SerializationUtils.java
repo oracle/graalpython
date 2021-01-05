@@ -48,7 +48,7 @@ public class SerializationUtils {
     // version 7 - mangle names of private properties in classes
     // version 8 - rework starargs handling
     // version 9 - refactoring of parsing fstring
-    
+
     public static byte VERSION = 9;
 
     public static enum SSTId {

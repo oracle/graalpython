@@ -49,6 +49,16 @@ retval = x('hello')
     assert globs["retval"] == ('hello', None, {}, '*hello')
 
 
+def test_codepoints_in_comment():
+    # these comments are part of the test, also don't delete new line between the comments
+    # the test do not fail, but the file can not be parse without proper fix. 
+    # assert a == '𝒜' and b == '𝒞' and c == '𝒵
+
+    # assert a == '𝒜' and b == '𝒞' and c == '𝒵
+
+    # another comment
+    pass
+
 def test_required_kw_arg():
     globs = {}
     exec("""

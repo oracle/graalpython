@@ -83,9 +83,9 @@ def test_destructuring():
 
     a, b, c = "\u0430\u0431\u0432"
     assert a == 'а' and b == 'б' and c == 'в'
-    # TODO not supported yet
-#     a, b, c = "\U0001d49c\U0001d49e\U0001d4b5"
-#     assert a == '𝒜' and b == '𝒞' and c == '𝒵
+    
+    a, b, c = "\U0001d49c\U0001d49e\U0001d4b5"
+    assert a == '𝒜' and b == '𝒞' and c == '𝒵'
 
     # starred desctructuring assignment
     a, b, *s, c, d = tuple(range(4))
