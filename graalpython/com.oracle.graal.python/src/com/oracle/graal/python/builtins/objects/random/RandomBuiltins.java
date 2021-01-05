@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.random;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -76,9 +79,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public class RandomBuiltins extends PythonBuiltins {
@@ -227,7 +227,7 @@ public class RandomBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "getrandbits", minNumOfPositionalArgs = 2, parameterNames = {"$self", "k"})
-    @ArgumentClinic(name = "k", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "k", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     public abstract static class GetRandBitsNode extends PythonBinaryClinicBuiltinNode {
 

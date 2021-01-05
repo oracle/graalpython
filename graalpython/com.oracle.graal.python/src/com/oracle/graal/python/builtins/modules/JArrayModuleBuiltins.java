@@ -148,7 +148,7 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "zeros", minNumOfPositionalArgs = 2, parameterNames = {"length", "type"})
-    @ArgumentClinic(name = "length", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "length", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class ZerosNode extends PythonBinaryClinicBuiltinNode {
         public abstract Object execute(int length, Object type);

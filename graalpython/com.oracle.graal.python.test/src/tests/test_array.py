@@ -55,6 +55,14 @@ def test_import():
         imported = False
     assert imported
 
+def test_argument_validation():
+    import array
+    a = array.array('d', [1.1, 3.5])
+    assert_raises(TypeError, a.__reduce_ex__, None)
+    assert_raises(TypeError, a.fromfile, 'bogus', None)
+    assert_raises(TypeError, a.insert, None, 42.42)
+    assert_raises(TypeError, a.__imul__, None)
+    assert_raises(TypeError, a.__mul__, None)
 
 def test_create():
     from array import array

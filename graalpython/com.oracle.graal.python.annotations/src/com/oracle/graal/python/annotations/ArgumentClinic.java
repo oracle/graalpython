@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -106,6 +106,11 @@ public @interface ArgumentClinic {
          * {@code PNone.NONE} is, for now, always converted to {@code false}.
          */
         Boolean,
+        /**
+         * Corresponds to CPython's {@code bool(accept=int)} converter. Supports
+         * {@link #defaultValue()}.
+         */
+        IntToBoolean,
         /**
          * GraalPython specific converter that narrows any String representation to Java String.
          * Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.

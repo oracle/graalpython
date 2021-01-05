@@ -59,12 +59,15 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleCodeData;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleInfo;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.FindLoaderNodeClinicProviderGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -413,7 +416,12 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class FindLoaderNode extends PythonTernaryBuiltinNode {
+    public abstract static class FindLoaderNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FindLoaderNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
         public Object findLoader(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path) {
             PZipImporter.ModuleInfo mi = self.getModuleInfo(fullname);

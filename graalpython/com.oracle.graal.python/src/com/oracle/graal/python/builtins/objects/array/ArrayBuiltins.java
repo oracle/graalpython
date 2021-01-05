@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -163,7 +164,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
-    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
@@ -194,7 +195,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __IMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
-    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
@@ -645,9 +646,14 @@ public class ArrayBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __REDUCE_EX__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "protocol"})
-    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class ReduceExNode extends PythonBinaryBuiltinNode {
+    abstract static class ReduceExNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ReduceExNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization(guards = "protocol < 3", limit = "2")
         Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @CachedLibrary("self") PythonObjectLibrary lib,
@@ -823,7 +829,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "insert", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "index", "value"})
-    @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
@@ -933,7 +939,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "fromfile", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "file", "n"})
-    @ArgumentClinic(name = "n", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "n", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     public abstract static class FromFileNode extends PythonTernaryClinicBuiltinNode {
         @Specialization

@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -105,6 +106,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -826,6 +828,8 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    // Note: this must not inherit from PythonUnaryBuiltinNode, i.e. must not be AST inlined.
+    // The CommonReduceNode seems to need a fresh frame, otherwise it can mess up the existing one.
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
@@ -836,10 +840,17 @@ public class ObjectBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __REDUCE_EX__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "protocol"})
-    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class ReduceExNode extends PythonBuiltinNode {
+    // Note: this must not inherit from PythonBinaryClinicBuiltinNode, i.e. must not be AST inlined.
+    // The CommonReduceNode seems to need a fresh frame, otherwise it can mess up the existing one.
+    public abstract static class ReduceExNode extends PythonClinicBuiltinNode {
         static final Object REDUCE_FACTORY = ObjectBuiltinsFactory.ReduceNodeFactory.getInstance();
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ReduceExNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         @SuppressWarnings("unused")

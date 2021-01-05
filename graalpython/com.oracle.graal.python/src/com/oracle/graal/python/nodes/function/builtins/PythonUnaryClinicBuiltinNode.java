@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ClinicBuiltinBaseClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -48,6 +49,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
+@ClinicBuiltinBaseClass
 public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNode {
     @Child ArgumentCastNode castNode;
 

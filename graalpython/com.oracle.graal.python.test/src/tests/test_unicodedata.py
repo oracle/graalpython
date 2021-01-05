@@ -47,6 +47,13 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
+def test_args_validation():
+    import unicodedata
+    assert_raises(TypeError, unicodedata.category, None)
+    assert_raises(TypeError, unicodedata.bidirectional, None)
+    assert_raises(TypeError, unicodedata.name, None)
+
+
 def test_normalize():
     import unicodedata
     assert_raises(TypeError, unicodedata.normalize)

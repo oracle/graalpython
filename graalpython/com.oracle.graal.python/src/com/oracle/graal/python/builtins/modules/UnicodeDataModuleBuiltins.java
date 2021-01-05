@@ -238,7 +238,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
     // unicodedata.name(chr, default)
     @Builtin(name = "name", minNumOfPositionalArgs = 1, parameterNames = {"chr", "default"})
-    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint, defaultValue = "-1")
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint)
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonBinaryClinicBuiltinNode {
 
@@ -271,7 +271,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
     // unicodedata.bidirectional(char)
     @Builtin(name = "bidirectional", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"chr"})
-    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint, defaultValue = "-1")
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint)
     @GenerateNodeFactory
     public abstract static class BidirectionalNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
@@ -288,7 +288,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
     // unicodedata.category(char)
     @Builtin(name = "category", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"chr"})
-    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint, defaultValue = "-1")
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint)
     @GenerateNodeFactory
     public abstract static class CategoryNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
