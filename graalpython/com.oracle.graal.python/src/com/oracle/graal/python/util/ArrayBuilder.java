@@ -49,8 +49,8 @@ import com.oracle.truffle.api.CompilerDirectives;
  * is not known upfront.
  */
 public final class ArrayBuilder<T> {
-    Object[] data;
-    int size;
+    private Object[] data;
+    private int size;
 
     public ArrayBuilder() {
         this(8);

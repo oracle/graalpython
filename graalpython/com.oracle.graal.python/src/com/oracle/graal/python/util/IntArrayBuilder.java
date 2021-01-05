@@ -46,8 +46,8 @@ import com.oracle.truffle.api.CompilerDirectives;
  * @see ArrayBuilder
  */
 public final class IntArrayBuilder {
-    int[] data;
-    int size;
+    private int[] data;
+    private int size;
 
     public IntArrayBuilder() {
         this(8);
@@ -84,7 +84,7 @@ public final class IntArrayBuilder {
 
     private static int[] arrayCopyOf(int[] original, int newLength) {
         int[] copy = new int[newLength];
-        PythonUtils.arraycopy(original, 0, copy, 0, newLength);
+        PythonUtils.arraycopy(original, 0, copy, 0, Math.min(newLength, original.length));
         return copy;
     }
 }
