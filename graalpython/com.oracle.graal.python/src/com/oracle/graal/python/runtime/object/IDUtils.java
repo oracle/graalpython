@@ -43,10 +43,10 @@ package com.oracle.graal.python.runtime.object;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.util.WeakIdentityHashMap;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class IDUtils {
@@ -83,7 +83,7 @@ public final class IDUtils {
     public static final long ID_EMPTY_TUPLE = getId(ReservedID.emptyTuple);
     public static final long ID_EMPTY_FROZENSET = getId(ReservedID.emptyFrozenSet);
 
-    private final Map<Object, Long> weakIdMap = Collections.synchronizedMap(new WeakHashMap<>());
+    private final Map<Object, Long> weakIdMap = Collections.synchronizedMap(new WeakIdentityHashMap<>());
     private final AtomicLong globalId = new AtomicLong(ID_OFFSET);
 
     private static long asMaskedReservedObjectId(long id) {
