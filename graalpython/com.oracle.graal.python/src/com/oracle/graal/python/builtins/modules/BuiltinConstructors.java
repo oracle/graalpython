@@ -232,10 +232,9 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
-import com.oracle.graal.python.runtime.ExecutionContextFactory.ForeignCallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -2241,7 +2240,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private IsSubtypeNode isSubtypeNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private IsAcceptableBaseNode isAcceptableBaseNode;
-        @Child private ForeignCallContext foreignCallContext;
 
         protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
@@ -2527,7 +2525,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // Make slots into a tuple
                 }
                 PythonContext context = getContextRef().get();
-                Object state = ensureForeignCallContext().enter(frame, context, this);
+                Object state = IndirectCallContext.enter(frame, context, this);
                 try {
                     pythonClass.setAttribute(__SLOTS__, slotsObject);
                     if (basesArray.length > 1) {
@@ -2543,7 +2541,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    ensureForeignCallContext().exit(frame, context, state);
+                    IndirectCallContext.exit(frame, context, state);
                 }
                 if (!addDict && getDictAttrNode.execute(pythonClass) == PNone.NO_VALUE) {
                     pythonClass.setHasSlotsButNoDictFlag();
@@ -2908,14 +2906,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 isAcceptableBaseNode = insert(IsAcceptableBaseNode.create());
             }
             return isAcceptableBaseNode;
-        }
-
-        private ForeignCallContext ensureForeignCallContext() {
-            if (foreignCallContext == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                foreignCallContext = insert(ForeignCallContextNodeGen.create());
-            }
-            return foreignCallContext;
         }
     }
 
@@ -3476,19 +3466,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PMemoryView fromNative(VirtualFrame frame, @SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
-                        @Cached ForeignCallContext foreignCallContext,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached PythonCextBuiltins.DefaultCheckFunctionResultNode checkFunctionResultNode) {
             PythonContext context = getContext();
-            Object state = foreignCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
                 checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
                 return (PMemoryView) asPythonObjectNode.execute(result);
             } finally {
-                foreignCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 

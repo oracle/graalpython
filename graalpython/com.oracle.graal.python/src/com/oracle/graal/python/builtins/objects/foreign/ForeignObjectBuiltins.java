@@ -94,8 +94,8 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -590,7 +590,6 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached ForeignCallContext foreignCallContext,
                         @Cached PTypeToForeignNode toForeignNode,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
@@ -599,7 +598,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
                 Object res = null;
-                Object state = foreignCallContext.enter(frame, context, this);
+                Object state = IndirectCallContext.enter(frame, context, this);
                 try {
                     if (lib.isExecutable(callee)) {
                         res = lib.execute(callee, convertedArgs);
@@ -609,7 +608,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         return toPTypeNode.executeConvert(res);
                     }
                 } finally {
-                    foreignCallContext.exit(frame, context, state);
+                    IndirectCallContext.exit(frame, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
