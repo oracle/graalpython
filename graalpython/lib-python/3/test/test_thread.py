@@ -129,8 +129,8 @@ class ThreadRunningTests(BasicThreadTest):
             done = []
             wr = weakref.ref(task, lambda _: done.append(None))
             del task
-            while not done:
-                time.sleep(POLL_SLEEP)
+            # while not done: # Truffle change
+            time.sleep(POLL_SLEEP)
             self.assertEqual(thread._count(), orig)
 
     def test_unraisable_exception(self):
