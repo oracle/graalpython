@@ -1,0 +1,92 @@
+ModuleRootNode Name: <module 'unicode03'> SourceSection: [0,183]`def test():↵  # asse...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,183]`def test():↵  # asse...`
+    ExpressionWithSideEffect SourceSection: [0,183]`def test():↵  # asse...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,183]`def test():↵  # asse...`
+          Identifier: test
+          FunctionDefinitionNode Name: test SourceSection: None
+            Arguments: None
+            KwArguments: None
+            Documentation: None
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,183]`def test():↵  # asse...`
+              Name: test
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 1 slots [<return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,183]`def test():↵  # asse...`
+                ReturnTargetNode SourceSection: [0,183]`def test():↵  # asse...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [63,183]`assert a == '𝒜' and...`
+                      AssertNode SourceSection: [63,107]`assert a == '𝒜' and...`
+                        YesNodeGen SourceSection: None
+                          IsBuiltinClassProfile SourceSection: None
+                            CachedDispatchFirst SourceSection: None
+                          AndNode SourceSection: [70,107]`a == '𝒜' and b == '...`
+                            AndNode SourceSection: None
+                              BinaryComparisonNodeGen SourceSection: [70,79]`a == '𝒜'`
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __eq__
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [70,71]`a`
+                                  Identifier: a
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                StringLiteralNode SourceSection: [75,79]`'𝒜'`
+                              BinaryComparisonNodeGen SourceSection: [84,93]`b == '𝒞'`
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __eq__
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [84,85]`b`
+                                  Identifier: b
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                StringLiteralNode SourceSection: [89,93]`'𝒞'`
+                              YesNodeGen SourceSection: None
+                                IsBuiltinClassProfile SourceSection: None
+                                  CachedDispatchFirst SourceSection: None
+                            BinaryComparisonNodeGen SourceSection: [98,107]`c == '𝒵'`
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __eq__
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [98,99]`c`
+                                Identifier: c
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              StringLiteralNode SourceSection: [103,107]`'𝒵'`
+                            YesNodeGen SourceSection: None
+                              IsBuiltinClassProfile SourceSection: None
+                                CachedDispatchFirst SourceSection: None
+                      ExpressionStatementNode SourceSection: [110,183]`f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 res...`
+                        FormatStringLiteralNode SourceSection: [110,183]`f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 res...`
+                          Parts: 3
+                          StringLiteralNode SourceSection: [112,137]`𝔘𝔫𝔦𝔠𝔬𝔡𝔢 resul...`
+                          FormatStringExpressionNode SourceSection: [138,164]`result:{width}.{prec...`
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [1,7]`result`
+                              Identifier: result
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            FormatStringLiteralNode SourceSection: [145,164]`{width}.{precision}`
+                              Parts: 3
+                              FormatStringExpressionNode SourceSection: [146,151]`width`
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [1,6]`width`
+                                  Identifier: width
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              StringLiteralNode SourceSection: [152,153]`.`
+                              FormatStringExpressionNode SourceSection: [154,163]`precision`
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [1,10]`precision`
+                                  Identifier: precision
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          StringLiteralNode SourceSection: [165,182]` and this is true`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [0,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None

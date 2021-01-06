@@ -491,6 +491,11 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     }
 
     @Override
+    public SSTNodeWithScope visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
+        return null;
+    }
+
+    @Override
     public SSTNodeWithScope visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
         return null;
     }

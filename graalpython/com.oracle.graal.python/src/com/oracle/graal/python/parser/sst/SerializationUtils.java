@@ -45,8 +45,11 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 
 public class SerializationUtils {
+    // version 7 - mangle names of private properties in classes
     // version 8 - rework starargs handling
-    public static byte VERSION = 8;
+    // version 9 - refactoring of parsing fstring
+
+    public static byte VERSION = 9;
 
     public static enum SSTId {
         AndID,
@@ -86,6 +89,7 @@ public class SerializationUtils {
         StarID,
         RawStringLiteralID,
         BytesLiteralID,
+        FormatExpressionID,
         FormatStringLiteralID,
         SubscriptID,
         TernaryIfID,
@@ -199,6 +203,36 @@ public class SerializationUtils {
                 return BinaryArithmetic.Pow;
             default:
                 throw new UnsupportedOperationException("Deserialization of BinaryArithmetic with id " + id + " is not supported.");
+        }
+    }
+
+    public static byte getFormatStringConversionTypeId(StringLiteralSSTNode.FormatStringConversionType ct) {
+        switch (ct) {
+            case NO_CONVERSION:
+                return 0;
+            case ASCII_CONVERSION:
+                return 1;
+            case REPR_CONVERSION:
+                return 2;
+            case STR_CONVERTION:
+                return 3;
+            default:
+                throw new UnsupportedOperationException("Serialization of " + ct.name() + " is not supported.");
+        }
+    }
+
+    public static StringLiteralSSTNode.FormatStringConversionType getFormatStringConversionTypeFromId(byte id) {
+        switch (id) {
+            case 0:
+                return StringLiteralSSTNode.FormatStringConversionType.NO_CONVERSION;
+            case 1:
+                return StringLiteralSSTNode.FormatStringConversionType.ASCII_CONVERSION;
+            case 2:
+                return StringLiteralSSTNode.FormatStringConversionType.REPR_CONVERSION;
+            case 3:
+                return StringLiteralSSTNode.FormatStringConversionType.STR_CONVERTION;
+            default:
+                throw new UnsupportedOperationException("Deserialization of FormatStringConversionType with id " + id + " is not supported.");
         }
     }
 

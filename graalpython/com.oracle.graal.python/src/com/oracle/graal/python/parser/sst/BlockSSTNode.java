@@ -67,4 +67,8 @@ public class BlockSSTNode extends SSTNode {
         return visitor.visit(this);
     }
 
+    public SSTNode[] getStatements() {
+        return statements;
+    }
+
 }

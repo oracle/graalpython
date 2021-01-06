@@ -612,6 +612,11 @@ public class SSTCheckOffsetVisitor implements SSTreeVisitor<Boolean> {
     }
 
     @Override
+    public Boolean visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
+        return checkParent(node);
+    }
+
+    @Override
     public Boolean visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
         return checkParent(node);
     }

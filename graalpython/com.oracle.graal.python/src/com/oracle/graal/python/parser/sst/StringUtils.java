@@ -47,10 +47,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.source.Source;
 
 public class StringUtils {
 
@@ -188,6 +190,17 @@ public class StringUtils {
             sb.append(ch);
         }
         return sb.toString();
+    }
+
+    public static String unescapeString(int startOffset, int endOffset, Source source, ParserErrorCallback errors, String text) {
+        try {
+            return unescapeJavaString(errors, text);
+        } catch (PException e) {
+            e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
+            String message = e.getMessage();
+            message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
+            throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), message);
+        }
     }
 
     public static void warnInvalidEscapeSequence(ParserErrorCallback errorCallback, char nextChar) {

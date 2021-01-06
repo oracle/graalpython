@@ -41,21 +41,57 @@
 
 package com.oracle.graal.python.nodes.literal;
 
-import java.util.ArrayList;
-
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.parser.sst.AndSSTNode;
+import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.AssertSSTNode;
+import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.BinaryArithmeticSSTNode;
+import com.oracle.graal.python.parser.sst.BlockSSTNode;
+import com.oracle.graal.python.parser.sst.BooleanLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.CallSSTNode;
+import com.oracle.graal.python.parser.sst.ClassSSTNode;
+import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.ComparisonSSTNode;
+import com.oracle.graal.python.parser.sst.DecoratedSSTNode;
+import com.oracle.graal.python.parser.sst.DecoratorSSTNode;
+import com.oracle.graal.python.parser.sst.DelSSTNode;
+import com.oracle.graal.python.parser.sst.ExceptSSTNode;
+import com.oracle.graal.python.parser.sst.ExpressionStatementSSTNode;
+import com.oracle.graal.python.parser.sst.FloatLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
+import com.oracle.graal.python.parser.sst.ForSSTNode;
 import com.oracle.graal.python.parser.sst.FormatStringParser;
-import com.oracle.graal.python.parser.sst.FormatStringParser.Token;
-import com.oracle.graal.python.runtime.PythonParser.ErrorType;
-import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.graal.python.parser.sst.FunctionDefSSTNode;
+import com.oracle.graal.python.parser.sst.GetAttributeSSTNode;
+import com.oracle.graal.python.parser.sst.IfSSTNode;
+import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
+import com.oracle.graal.python.parser.sst.ImportSSTNode;
+import com.oracle.graal.python.parser.sst.LambdaSSTNode;
+import com.oracle.graal.python.parser.sst.NotSSTNode;
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.OrSSTNode;
+import com.oracle.graal.python.parser.sst.RaiseSSTNode;
+import com.oracle.graal.python.parser.sst.ReturnSSTNode;
+import com.oracle.graal.python.parser.sst.SSTNode;
+import com.oracle.graal.python.parser.sst.SSTreeVisitor;
+import com.oracle.graal.python.parser.sst.SimpleSSTNode;
+import com.oracle.graal.python.parser.sst.SliceSSTNode;
+import com.oracle.graal.python.parser.sst.StarSSTNode;
+import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.SubscriptSSTNode;
+import com.oracle.graal.python.parser.sst.TernaryIfSSTNode;
+import com.oracle.graal.python.parser.sst.TrySSTNode;
+import com.oracle.graal.python.parser.sst.UnarySSTNode;
+import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
+import com.oracle.graal.python.parser.sst.WhileSSTNode;
+import com.oracle.graal.python.parser.sst.WithSSTNode;
+import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
+import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.test.parser.ParserTestBase;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.SourceSection;
 
 public class FormatStringTests extends ParserTestBase {
 
@@ -301,17 +337,17 @@ public class FormatStringTests extends ParserTestBase {
 
     @Test
     public void spaces01() throws Exception {
-        testFormatString("f'{     {}}'", "format(({}))");
+        testFormatString("f'{     {}}'", "format((     {}))");
     }
 
     @Test
     public void spaces02() throws Exception {
-        testFormatString("f'{     {}                 }'", "format(({}))");
+        testFormatString("f'{     {}                 }'", "format((     {}                 ))");
     }
 
     @Test
     public void innerExp01() throws Exception {
-        testFormatString("f'result: {value:{width}.{precision}}'", "result: +format((value),(format((width))+\".\"+format((precision))))");
+        testFormatString("f'result: {value:{width}.{precision}}'", "result: +format((value),(format((width))+.+format((precision))))");
     }
 
     @Test
@@ -354,7 +390,7 @@ public class FormatStringTests extends ParserTestBase {
         checkSyntaxError("f'{10:{ }}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
-    private static void checkSyntaxError(String text, String expectedMessage) throws Exception {
+    private void checkSyntaxError(String text, String expectedMessage) throws Exception {
         try {
             testFormatString(text, "Expected Error: " + expectedMessage);
         } catch (RuntimeException e) {
@@ -362,60 +398,304 @@ public class FormatStringTests extends ParserTestBase {
         }
     }
 
-    private static void testFormatString(String fstring, String expected) {
+    private void testFormatString(String fstring, String expected) {
         assert fstring.startsWith("f'") && fstring.endsWith("'");
-        // remove the f'...', to extract the text of the f-string
-        String text = fstring.substring(2).substring(0, fstring.length() - 3);
-        ArrayList<Token> tokens = new ArrayList<>();
-        FormatStringParser.createTokens(tokens, new MockErrorCallback(), 0, text, false, 0);
-        ArrayList<String> expressions = FormatStringParser.createExpressionSources(text, tokens, 0, tokens.size(), tokens.size());
-        int expressionsIndex = 0;
-        StringBuilder actual = new StringBuilder();
-        boolean first = true;
-        boolean wasLastString = true;
-        for (int index = 0; index < tokens.size(); index++) {
-            Token token = tokens.get(index);
-            if (first) {
-                first = false;
-            } else if (!(wasLastString && token.type == FormatStringParser.TOKEN_TYPE_STRING)) {
-                actual.append("+");
-            }
-            if (token.type == FormatStringParser.TOKEN_TYPE_STRING) {
-                actual.append(text, token.startIndex, token.endIndex);
-                wasLastString = true;
-            } else {
-                actual.append(expressions.get(expressionsIndex));
-                index += token.formatTokensCount;
-                wasLastString = false;
-            }
-        }
-        Assert.assertEquals(expected, actual.toString());
+
+        parse(fstring, "fstring-test", PythonParser.ParserMode.Statement);
+        SSTNode sstResult = getLastSST();
+
+        String result = (new FStringASTPrinter()).print(sstResult);
+
+        Assert.assertEquals(expected, result);
     }
 
-    private static final class MockErrorCallback implements ParserErrorCallback {
-        @Override
-        public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
-            throw new RuntimeException("SyntaxError: " + String.format(message, args));
+    private static final class FStringASTPrinter implements SSTreeVisitor<Object> {
+
+        private StringBuilder sb;
+        private boolean needPlus;
+
+        public String print(SSTNode node) {
+            sb = new StringBuilder();
+            needPlus = false;
+            node.accept(this);
+            return sb.toString();
         }
 
         @Override
-        public RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
-            throw new RuntimeException("SyntaxError: " + String.format(message, arguments));
+        public Object visit(AndSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments) {
-            throw new RuntimeException("SyntaxError: " + String.format(message, arguments));
+        public Object visit(AnnAssignmentSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public void warn(PythonBuiltinClassType type, String format, Object... args) {
-            throw new RuntimeException("Warning: " + String.format(format, args));
+        public Object visit(AssertSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public PythonLanguage getLanguage() {
+        public Object visit(AssignmentSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(AugAssignmentSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(BinaryArithmeticSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(BlockSSTNode node) {
+            for (SSTNode statement : node.getStatements()) {
+                statement.accept(this);
+            }
             return null;
         }
+
+        @Override
+        public Object visit(BooleanLiteralSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(CallSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ClassSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(CollectionSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ComparisonSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(DecoratedSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(DecoratorSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(DelSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ExceptSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ExpressionStatementSSTNode node) {
+            return node.getExpression().accept(this);
+        }
+
+        @Override
+        public Object visit(FloatLiteralSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ForComprehensionSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ForSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(FunctionDefSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(GetAttributeSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(IfSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ImportFromSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ImportSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(LambdaSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(NotSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(NumberLiteralSSTNode.IntegerLiteralSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(NumberLiteralSSTNode.BigIntegerLiteralSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(OrSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(RaiseSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(ReturnSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(SimpleSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(SliceSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(StarSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(StringLiteralSSTNode.RawStringLiteralSSTNode node) {
+            if (needPlus) {
+                sb.append("+");
+                needPlus = false;
+            }
+            sb.append(node.getValue());
+            return null;
+        }
+
+        @Override
+        public Object visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
+            if (sb.length() != 0) {
+                sb.append("+");
+            }
+            sb.append("format(");
+            switch (node.getConversionType()) {
+                case ASCII_CONVERSION:
+                    sb.append("ascii(");
+                    break;
+                case REPR_CONVERSION:
+                    sb.append("repr(");
+                    break;
+                case STR_CONVERTION:
+                    sb.append("str(");
+                    break;
+            }
+            sb.append(node.getExpressionCode());
+            if (node.getConversionType() != StringLiteralSSTNode.FormatStringConversionType.NO_CONVERSION) {
+                sb.append(")");
+            }
+            if (node.getSpecifier() != null) {
+                sb.append(",(");
+                StringBuilder sbtmp = sb;
+                sb = new StringBuilder();
+                node.getSpecifier().accept(this);
+                sbtmp.append(sb.toString());
+                sb = sbtmp;
+                sb.append(")");
+            }
+            sb.append(")");
+            needPlus = true;
+            return null;
+        }
+
+        @Override
+        public Object visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
+            for (SSTNode part : node.getParts()) {
+                part.accept(this);
+            }
+            return null;
+        }
+
+        @Override
+        public Object visit(SubscriptSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(TernaryIfSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(TrySSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(UnarySSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(VarLookupSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(WhileSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(WithSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(YieldExpressionSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
     }
 }

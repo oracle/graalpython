@@ -44,7 +44,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 
-import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.parser.sst.ArgDefListBuilder.Parameter;
 import com.oracle.graal.python.parser.sst.ArgDefListBuilder.ParameterWithDefValue;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
@@ -752,30 +751,28 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
     }
 
     @Override
+    public Boolean visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
+        try {
+            writeId(SSTId.FormatExpressionID);
+            writePosition(node);
+            writeString(node.expressionCode);
+            out.writeByte(SerializationUtils.getFormatStringConversionTypeId(node.conversionType));
+            node.expression.accept(this);
+            writeNodeOrNull(node.specifier);
+        } catch (IOException e) {
+            handleIOExceptin(e);
+        }
+        return true;
+    }
+
+    @Override
     public Boolean visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
         try {
             writeId(SSTId.FormatStringLiteralID);
             writePosition(node);
-            StringPart[] parts = node.value;
-            writeInt(parts.length);
-            for (StringPart part : parts) {
-                out.writeBoolean(part.isFormatString());
-                writeString(part.getText());
-            }
-            writeInt(node.literals.length);
-            for (String literal : node.literals) {
-                if (literal == null) {
-                    writeString("");
-                } else {
-                    writeString(literal);
-                }
-            }
-            writeInt(node.expressions.length);
-            for (int i = 0; i < node.expressions.length; i++) {
-                node.expressions[i].accept(this);
-            }
-            for (int i = 0; i < node.expresionsSources.length; i++) {
-                writeString(node.expresionsSources[i]);
+            writeInt(node.parts.length);
+            for (int i = 0; i < node.parts.length; i++) {
+                node.parts[i].accept(this);
             }
         } catch (IOException e) {
             handleIOExceptin(e);

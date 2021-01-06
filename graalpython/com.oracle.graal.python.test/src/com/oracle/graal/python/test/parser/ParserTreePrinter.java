@@ -400,6 +400,16 @@ public class ParserTreePrinter implements NodeVisitor {
         return true;
     }
 
+    public boolean visit(FormatStringLiteralNode node) {
+        nodeHeader(node);
+        level++;
+        indent(level);
+        sb.append("Parts: ").append(node.getParts().length);
+        newLine();
+        level--;
+        return printFormatStringLiteralDetail;
+    }
+
     private boolean visitChildren(Node node) {
         for (Node child : node.getChildren()) {
             visit(child);
@@ -611,6 +621,8 @@ public class ParserTreePrinter implements NodeVisitor {
             visitChildren = visit((GeneratorReturnTargetNode) node);
         } else if (node instanceof GetFixedAttributeNode) {
             visitChildren = visit((GetFixedAttributeNode) node);
+        } else if (node instanceof FormatStringLiteralNode) {
+            visitChildren = visit((FormatStringLiteralNode) node);
         } else {
             nodeHeader(node);
             level++;
@@ -654,18 +666,6 @@ public class ParserTreePrinter implements NodeVisitor {
                 if (node instanceof ReadIndexedArgumentNode) {
                     indent(level);
                     sb.append("Index: ").append(((ReadIndexedArgumentNode) node).getIndex());
-                    newLine();
-                }
-                if (printFormatStringLiteralDetail && node instanceof FormatStringLiteralNode) {
-                    indent(level);
-                    sb.append("Values: ");
-
-                    String[] values = new String[((FormatStringLiteralNode) node).getParts().length];
-                    int index = 0;
-                    for (FormatStringLiteralNode.StringPart part : ((FormatStringLiteralNode) node).getParts()) {
-                        values[index++] = part.isFormatString() ? "<f>" + part.getText() : "<n>" + part.getText();
-                    }
-                    add(values);
                     newLine();
                 }
             }
