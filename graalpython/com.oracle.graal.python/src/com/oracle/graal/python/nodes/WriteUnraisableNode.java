@@ -49,8 +49,6 @@ import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackN
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -58,27 +56,34 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
-@ImportStatic(BuiltinNames.class)
+@GenerateUncached
 public abstract class WriteUnraisableNode extends Node {
-    public abstract void execute(VirtualFrame frame, PBaseException exception, String message, Object object);
+    public final void execute(VirtualFrame frame, PBaseException exception, String message, Object object) {
+        executeInternal(frame, exception, message, object);
+    }
 
-    @Specialization(limit = "1")
+    public final void execute(PBaseException exception, String message, Object object) {
+        executeInternal(null, exception, message, object);
+    }
+
+    protected abstract void executeInternal(Frame frame, PBaseException exception, String message,  Object object);
+
+    @Specialization
     static void writeUnraisable(VirtualFrame frame, PBaseException exception, String message, Object object,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                    @CachedLibrary("exception") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                     @Cached PythonObjectFactory factory,
-                    @Cached GetExceptionTracebackNode getExceptionTracebackNode,
-                    @Cached("create(UNRAISABLEHOOK)") GetAttributeNode getUnraisableHook,
-                    @Cached CallNode callUnraisableHook) {
+                    @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
         try {
             PythonModule sysModule = contextRef.get().getCore().lookupBuiltinModule("sys");
-            Object unraisablehook = getUnraisableHook.executeObject(frame, sysModule);
+            Object unraisablehook = lib.lookupAttribute(sysModule, frame, BuiltinNames.UNRAISABLEHOOK);
             Object exceptionType = lib.getLazyPythonClass(exception);
             Object traceback = getExceptionTracebackNode.execute(exception);
             if (traceback == null) {
@@ -89,7 +94,7 @@ public abstract class WriteUnraisableNode extends Node {
                 messageObj = formatMessage(message);
             }
             Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLE_HOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
-            callUnraisableHook.execute(frame, unraisablehook, hookArguments);
+            lib.callObject(unraisablehook, frame, hookArguments);
         } catch (PException e) {
             ignoreException(contextRef.get(), message);
         }
@@ -115,5 +120,9 @@ public abstract class WriteUnraisableNode extends Node {
 
     public static WriteUnraisableNode create() {
         return WriteUnraisableNodeGen.create();
+    }
+
+    public static WriteUnraisableNode getUncached() {
+        return WriteUnraisableNodeGen.getUncached();
     }
 }
