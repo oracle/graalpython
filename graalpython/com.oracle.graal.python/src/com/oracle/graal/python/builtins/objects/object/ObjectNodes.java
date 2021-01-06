@@ -306,7 +306,7 @@ public abstract class ObjectNodes {
             if (self.length() == 0) {
                 return ID_EMPTY_UNICODE;
             }
-            return context.getNextObjectId(self);
+            return context.getNextStringId(self);
         }
 
         @Specialization

@@ -37,6 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+
+
 def test_small_int_id_is_constant():
     assert id(12) == id(12)
     x = 128
@@ -76,3 +79,8 @@ def test_identity():
 
     nan = float('nan')
     assert nan is nan
+
+def test_string_interning():
+    x='1234'
+    y='1234'
+    assert id(x) == id(y) == id('1234') == id(sys.intern('1234')) == id(sys.intern(x)) == id(sys.intern(y))

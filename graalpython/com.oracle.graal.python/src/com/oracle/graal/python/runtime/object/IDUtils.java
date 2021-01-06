@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.object;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -84,6 +85,7 @@ public final class IDUtils {
     public static final long ID_EMPTY_FROZENSET = getId(ReservedID.emptyFrozenSet);
 
     private final Map<Object, Long> weakIdMap = Collections.synchronizedMap(new WeakIdentityHashMap<>());
+    private final Map<String, Long> weakStringIdMap = Collections.synchronizedMap(new WeakHashMap<>());
     private final AtomicLong globalId = new AtomicLong(ID_OFFSET);
 
     private static long asMaskedReservedObjectId(long id) {
@@ -142,5 +144,10 @@ public final class IDUtils {
     @CompilerDirectives.TruffleBoundary
     public long getNextObjectId(Object object) {
         return weakIdMap.computeIfAbsent(object, value -> getNextObjectId());
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    public long getNextStringId(String string) {
+        return weakStringIdMap.computeIfAbsent(string, value -> getNextObjectId());
     }
 }

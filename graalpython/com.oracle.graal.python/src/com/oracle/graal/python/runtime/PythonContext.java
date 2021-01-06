@@ -304,6 +304,10 @@ public final class PythonContext {
         return idUtils.getNextObjectId(object);
     }
 
+    public long getNextStringId(String string) {
+        return idUtils.getNextStringId(string);
+    }
+
     public <T> T getOption(OptionKey<T> key) {
         assert !PythonOptions.isEngineOption(key) : "Querying engine option via context.";
         if (CompilerDirectives.inInterpreter()) {
