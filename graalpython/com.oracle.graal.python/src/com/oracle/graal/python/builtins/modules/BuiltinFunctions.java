@@ -1530,7 +1530,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // max(iterable, *[, key])
     // max(arg1, arg2, *args[, key])
-    @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"})
+    @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"key", "default"}, doc = "max(iterable, *[, default=obj, key=func]) -> value\n" +
+                    "max(arg1, arg2, *args, *[, key=func]) -> value\n\n" + "With a single iterable argument, return its biggest item. The\n" +
+                    "default keyword-only argument specifies an object to return if\n" + "the provided iterable is empty.\n" + "With two or more arguments, return the largest argument.")
     @GenerateNodeFactory
     public abstract static class MaxNode extends MinMaxNode {
 
