@@ -179,7 +179,16 @@ public class LockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doRelease(AbstractPythonLock self) {
+        Object doRelease(PLock self) {
+            self.release();
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doRelease(PRLock self) {
+            if (!self.isOwned()) {
+                throw raise(PythonBuiltinClassType.RuntimeError, "lock not held");
+            }
             self.release();
             return PNone.NONE;
         }
