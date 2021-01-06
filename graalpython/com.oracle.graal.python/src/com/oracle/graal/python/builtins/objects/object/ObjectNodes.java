@@ -91,6 +91,8 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
@@ -305,6 +307,13 @@ public abstract class ObjectNodes {
                 return ID_EMPTY_UNICODE;
             }
             return context.getNextObjectId(self);
+        }
+
+        @Specialization
+        static Object id(PString self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached StringNodes.StringMaterializeNode materializeNode) {
+            return id(materializeNode.execute(self), context);
         }
 
         @Specialization

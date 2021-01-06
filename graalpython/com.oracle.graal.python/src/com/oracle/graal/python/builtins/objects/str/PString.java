@@ -57,6 +57,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -64,6 +65,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PString extends PSequence {
+    public static final HiddenKey INTERNED = new HiddenKey("_interned");
 
     private CharSequence value;
 

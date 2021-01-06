@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.PGuards.cannotBeOverridden;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
@@ -70,7 +69,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -389,25 +388,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        String doString(String s) {
-            return s.intern();
+        private PString doIntern(Object str, StringNodes.InternStringNode internNode) {
+            final PString interned = internNode.execute(str);
+            if (interned == null) {
+                throw raise(TypeError, ErrorMessages.CANNOT_INTERN_P, str);
+            }
+            return interned;
         }
 
-        @Specialization(limit = "1")
-        String doPString(PString ps,
-                        @CachedLibrary("ps") PythonObjectLibrary lib,
-                        @Cached StringMaterializeNode materializeNode) {
-            if (cannotBeOverridden(lib.getLazyPythonClass(ps))) {
-                return doString(materializeNode.execute(ps));
-            } else {
-                throw raise(TypeError, ErrorMessages.CANNOT_INTERN_P, ps);
-            }
+        @Specialization
+        Object doString(String s,
+                        @Shared("internNode") @Cached StringNodes.InternStringNode internNode) {
+            return doIntern(s, internNode);
+        }
+
+        @Specialization
+        Object doPString(PString s,
+                        @Shared("internNode") @Cached StringNodes.InternStringNode internNode) {
+            return doIntern(s, internNode);
         }
 
         @Fallback
-        String doOthers(Object obj) {
+        Object doOthers(Object obj) {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "intern()", "str", obj);
         }
     }
