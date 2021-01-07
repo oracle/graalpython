@@ -517,6 +517,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
 
         @Child private CodeNodes.CreateCodeNode createCodeNode;
+        @Child private StringNodes.InternStringNode internStringNode;
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
 
@@ -577,8 +578,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return text;
         }
 
-        private String readInternedString() {
+        @TruffleBoundary
+        private String readJavaInternedString() {
             return readString().intern();
+        }
+
+        private PString readInternedString() {
+            return ensureInternStringNode().execute(readString());
         }
 
         private byte[] readBytes() {
@@ -621,7 +627,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private PCode readCode() {
             String sourceCode = readString();
-            String fileName = readInternedString();
+            // TODO: fix me and use PString interning if needed
+            String fileName = readJavaInternedString();
             int flags = readInt();
             byte[] codeString = readBytes();
             int firstLineNo = readInt();
@@ -751,6 +758,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 createCodeNode = insert(CodeNodes.CreateCodeNode.create());
             }
             return createCodeNode;
+        }
+
+        private StringNodes.InternStringNode ensureInternStringNode() {
+            if (internStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                internStringNode = insert(StringNodes.InternStringNode.create());
+            }
+            return internStringNode;
         }
 
         @Specialization

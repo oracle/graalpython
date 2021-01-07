@@ -312,8 +312,13 @@ public abstract class ObjectNodes {
         @Specialization
         static Object id(PString self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode,
                         @Cached StringNodes.StringMaterializeNode materializeNode) {
-            return id(materializeNode.execute(self), context);
+            if (isInternedStringNode.execute(self)) {
+                return id(materializeNode.execute(self), context);
+            }
+            return getObjectIdNode.execute(self);
         }
 
         @Specialization

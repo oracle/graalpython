@@ -85,6 +85,7 @@ public final class IDUtils {
     public static final long ID_EMPTY_FROZENSET = getId(ReservedID.emptyFrozenSet);
 
     private final Map<Object, Long> weakIdMap = Collections.synchronizedMap(new WeakIdentityHashMap<>());
+    // for Python interned strings and java strings
     private final Map<String, Long> weakStringIdMap = Collections.synchronizedMap(new WeakHashMap<>());
     private final AtomicLong globalId = new AtomicLong(ID_OFFSET);
 

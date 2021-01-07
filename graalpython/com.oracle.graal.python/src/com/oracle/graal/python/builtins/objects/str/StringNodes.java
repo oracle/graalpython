@@ -564,19 +564,15 @@ public abstract class StringNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class InternStringNode extends Node {
         public abstract PString execute(Object string);
-
-        @TruffleBoundary
-        protected static String getInterned(String string) {
-            return string.intern();
-        }
 
         @Specialization
         static PString doString(String string,
                         @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            final PString interned = factory.createString(getInterned(string));
+                        @Cached PythonObjectFactory factory) {
+            final PString interned = factory.createString(string);
             writeNode.execute(interned, PString.INTERNED, true);
             return interned;
         }
@@ -584,11 +580,10 @@ public abstract class StringNodes {
         @Specialization(limit = "1")
         static PString doPString(PString string,
                         @CachedLibrary("string") PythonObjectLibrary lib,
-                        @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode,
-                        @Cached StringMaterializeNode materializeNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode) {
             if (cannotBeOverridden(lib.getLazyPythonClass(string))) {
-                return doString(materializeNode.execute(string), writeNode, factory);
+                writeNode.execute(string, PString.INTERNED, true);
+                return string;
             }
             return null;
         }
@@ -597,9 +592,14 @@ public abstract class StringNodes {
         static PString doOthers(@SuppressWarnings("unused") Object string) {
             return null;
         }
+
+        public static InternStringNode create() {
+            return StringNodesFactory.InternStringNodeGen.create();
+        }
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class IsInternedStringNode extends Node {
         public abstract boolean execute(PString string);
 

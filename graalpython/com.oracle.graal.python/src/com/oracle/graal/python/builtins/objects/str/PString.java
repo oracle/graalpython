@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -374,5 +375,24 @@ public final class PString extends PSequence {
     @SuppressWarnings("unused")
     static boolean isArrayElementRemovable(PString self, long index) {
         return false;
+    }
+
+    @ExportMessage
+    static class IsSame {
+        @Specialization
+        static boolean ss(PString receiver, PString other,
+                        @Cached StringMaterializeNode materializeNode,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
+            if (isInternedStringNode.execute(receiver) && isInternedStringNode.execute(other)) {
+                return materializeNode.execute(receiver).equals(materializeNode.execute(other));
+            }
+            return receiver == other;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean sO(PString receiver, Object other) {
+            return false;
+        }
     }
 }
