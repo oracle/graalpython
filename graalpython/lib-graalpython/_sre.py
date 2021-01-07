@@ -355,8 +355,8 @@ class SRE_Pattern():
         elif endpos < 0 and len(string) > 0:
             endpos = endpos % len(string) + 1
         matchlist = []
-        while pos < endpos:
-            compiled_regex = self.__tregex_compile(self.pattern)
+        compiled_regex = self.__tregex_compile(self.pattern)
+        while pos <= endpos:
             result = tregex_call_exec(compiled_regex.exec, string, pos)
             if not result.isMatch:
                 break
