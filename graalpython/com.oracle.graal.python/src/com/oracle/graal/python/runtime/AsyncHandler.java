@@ -144,8 +144,11 @@ public class AsyncHandler {
     private final WeakReference<PythonContext> context;
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
     private volatile boolean hasScheduledAction = false;
+    private volatile boolean shouldReleaseGil = false;
+    private ThreadLocal<Boolean> recursionGuard = new ThreadLocal<>();
     private final Lock executingScheduledActions = new ReentrantLock();
     private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
+    private static final int GIL_RELEASE_DELAY = 10;
 
     private class AsyncRunnable implements Runnable {
         private final Supplier<AsyncAction> actionSupplier;
@@ -233,7 +236,15 @@ public class AsyncHandler {
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);
     }
 
+    void activateGIL() {
+        CompilerAsserts.neverPartOfCompilation();
+        executorService.scheduleWithFixedDelay(() -> { shouldReleaseGil = true; }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
+    }
+
     void triggerAsyncActions(VirtualFrame frame) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, shouldReleaseGil)) {
+            doReleaseGIL();
+        }
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, hasScheduledAction)) {
             CompilerDirectives.transferToInterpreter();
             IndirectCallContext.enter(frame, context.get(), null);
@@ -245,54 +256,51 @@ public class AsyncHandler {
         }
     }
 
+    private final void doReleaseGIL() {
+        context.get().releaseGil();
+        Thread.yield();
+        context.get().acquireGil();
+    }
+
     /**
-     * It's fine that there is a race between checking the hasScheduledAction flag and processing
-     * actions, we use the executingScheduledActions lock to ensure that only one thread is
-     * processing and that no asynchronous handler thread would set it again while we're processing.
-     * While the nice scenario would be any variation of:
+     * We have a GIL, so when we enter this method, we own the GIL. Some async actions may cause us
+     * to relinquish the GIL, and then other threads may come and start processing async
+     * actions. That is fine, this processing can go on in parallel. E.g., Thread-1 may processes a
+     * few weakref callbacks, then process a GIL release action. Thread-2 will still see the
+     * hasScheduledAction flag be true when it next enters this method (in fact, Thread-2 may be
+     * sitting in this method because it was processing an earlier GIL release action, but it
+     * doesn't matter). Thread-2 will continue to process actions. If it's done, it will acquire the
+     * action lock and reset the flag if the async action queue is empty (this way we don't race
+     * between setting the flag and checking that the queue was empty). Thread-2 returns and
+     * continues running until it once again relinquishes the GIL. Thread-1 may now wake up in this
+     * method after getting the GIL back, but may not get any more actions from the queue, so it
+     * leaves and continues running.
      *
-     * <ul>
-     * <li>Thread2 - acquireLock, pushWork, setFlag, releaseLock</li>
-     * <li>Thread1 - checkFlag, acquireLock, resetFlag, processActions, releaseLock</li>
-     * </ul>
-     *
-     * <ul>
-     * <li>Thread1 - checkFlag</li>
-     * <li>Thread2 - acquireLock, pushWork, setFlag, releaseLock</li>
-     * <li>Thread1 - acquireLock, resetFlag, processActions, releaseLock</li>
-     * </ul>
-     *
-     * it's also fine if we get into a race for example like this:
-     *
-     * <ul>
-     * <li>Thread2 - acquireLock, pushWork, setFlag</li>
-     * <li>Thread1 - checkFlag, tryAcquireLock, bail out</li>
-     * <li>Thread2 - releaseLock</li>
-     * </ul>
-     *
-     * because Thread1 is sure to check the flag again soon enough, and very likely much sooner than
-     * the {@value #ASYNC_ACTION_DELAY} ms delay between successive runs of the async handler
-     * threads (Thread2 in this example). Of course, there can be more than one handler thread, but
-     * it's unlikely that there are so many that it would completely saturate the ability to process
-     * async actions on the main thread, because there's only one per "type" of async thing (e.g. 1
-     * for weakref finalizers, 1 for signals, 1 for destructors).
+     * We use a recursion guard to ensure that we don't recursively process during processing.
      */
     private void processAsyncActions() {
         PythonContext ctx = context.get();
         if (ctx == null) {
             return;
         }
-        if (executingScheduledActions.tryLock()) {
-            hasScheduledAction = false;
+        if (recursionGuard.get() == Boolean.TRUE) {
+            return;
+        }
+        recursionGuard.set(true);
+        try {
+            ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
+            AsyncAction action;
+            while ((action = actions.poll()) != null) {
+                action.execute(ctx);
+            }
+            executingScheduledActions.lock();
             try {
-                ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
-                AsyncAction action;
-                while ((action = actions.poll()) != null) {
-                    action.execute(ctx);
-                }
+                hasScheduledAction = !actions.isEmpty();
             } finally {
                 executingScheduledActions.unlock();
             }
+        } finally {
+            recursionGuard.set(false);
         }
     }
 

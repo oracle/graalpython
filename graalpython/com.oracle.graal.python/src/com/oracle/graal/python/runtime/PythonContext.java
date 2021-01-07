@@ -1110,27 +1110,13 @@ public final class PythonContext {
         getThreadState().sentinelLock = sentinelLock;
     }
 
-    private static final class ReleaseGIL implements AsyncAction {
-        @Override
-        public final void execute(PythonContext context) {
-            context.releaseGil();
-            Thread.yield();
-            context.acquireGil();
-        }
-
-        private static final ReleaseGIL INSTANCE = new ReleaseGIL();
-    }
-
     @TruffleBoundary
     public void initializeMultiThreading() {
         globalInterpreterLock = new ReentrantLock();
         singleThreaded.invalidate();
         threadState = new ThreadLocal<>();
 
-        // each async action is scheduled with a fixed delay to run repeatedly, thus when we do run,
-        // all we want is to return the action to release the GIL on whichever thread handles this
-        // action next
-        registerAsyncAction(() -> ReleaseGIL.INSTANCE);
+        handler.activateGIL();
 
         synchronized (this) {
             threadStateMapping = new HashMap<>();
