@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -1040,6 +1041,24 @@ public final class PythonContext {
     public void popCurrentImport() {
         assert currentImport.get() != null && currentImport.get().peek() != null : "invalid popCurrentImport without push";
         currentImport.get().pop();
+    }
+
+    public Thread[] getThreads() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (singleThreaded.isValid()) {
+            return new Thread[] { Thread.currentThread() };
+        } else {
+            Set<Thread> threads = new HashSet<>();
+            for (PythonThreadState ts : threadStateMapping.values()) {
+                for (WeakReference<Thread> thRef : ts.getOwners()) {
+                    Thread th = thRef.get();
+                    if (th != null) {
+                        threads.add(th);
+                    }
+                }
+            }
+            return threads.toArray(new Thread[0]);
+        }
     }
 
     private PythonThreadState getThreadState() {
