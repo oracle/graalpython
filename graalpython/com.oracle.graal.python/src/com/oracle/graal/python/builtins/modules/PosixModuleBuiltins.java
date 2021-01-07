@@ -363,7 +363,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         int open(VirtualFrame frame, PosixPath path, int flags, int mode, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached BranchProfile asyncProfile,
                         @Cached BranchProfile errorProfile) {
             int fixedFlags = flags | CLOEXEC;
             auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
@@ -373,7 +372,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame, asyncProfile);
+                        getContext().triggerAsyncActions(frame);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
                     }
@@ -418,7 +417,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PBytes read(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile asyncProfile,
                         @Cached BranchProfile errorProfile) {
             if (length < 0) {
                 int error = OSErrorEnum.EINVAL.getNumber();
@@ -436,7 +434,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame, asyncProfile);
+                        getContext().triggerAsyncActions(frame);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -459,7 +457,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         long write(VirtualFrame frame, int fd, byte[] data,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile asyncProfile,
                         @Cached BranchProfile errorProfile) {
             while (true) {
                 try {
@@ -467,7 +464,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame, asyncProfile);
+                        getContext().triggerAsyncActions(frame);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -627,7 +624,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone ftruncate(VirtualFrame frame, int fd, long length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached BranchProfile asyncProfile,
                         @Cached BranchProfile errorProfile) {
             auditNode.audit("os.truncate", fd, length);
             while (true) {
@@ -637,7 +633,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame, asyncProfile);
+                        getContext().triggerAsyncActions(frame);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -659,7 +655,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PNone fsync(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile asyncProfile,
                         @Cached BranchProfile errorProfile) {
             while (true) {
                 try {
@@ -668,7 +663,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame, asyncProfile);
+                        getContext().triggerAsyncActions(frame);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -836,7 +831,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PTuple doStatFd(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ConditionProfile positiveLongProfile,
-                        @Cached BranchProfile asyncProfile,
                         @Cached BranchProfile errorProfile) {
             while (true) {
                 try {
@@ -845,7 +839,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame, asyncProfile);
+                        getContext().triggerAsyncActions(frame);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1059,7 +1053,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PNone fchdir(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile asyncProfile,
                         @Cached BranchProfile errorProfile) {
             while (true) {
                 try {
@@ -1068,7 +1061,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame, asyncProfile);
+                        getContext().triggerAsyncActions(frame);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
