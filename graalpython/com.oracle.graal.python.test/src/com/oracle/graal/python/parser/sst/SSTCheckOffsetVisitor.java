@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -102,12 +102,6 @@ public class SSTCheckOffsetVisitor implements SSTreeVisitor<Boolean> {
             args = builder.getKwArg();
             if (args != null) {
                 if (!checkArrayWithOverlap(args, "keyword arguments")) {
-                    return false;
-                }
-            }
-            args = builder.getStarArg();
-            if (args != null) {
-                if (!checkArrayWithOverlap(args, "star arguments")) {
                     return false;
                 }
             }
@@ -614,6 +608,11 @@ public class SSTCheckOffsetVisitor implements SSTreeVisitor<Boolean> {
 
     @Override
     public Boolean visit(StringLiteralSSTNode.BytesLiteralSSTNode node) {
+        return checkParent(node);
+    }
+
+    @Override
+    public Boolean visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
         return checkParent(node);
     }
 

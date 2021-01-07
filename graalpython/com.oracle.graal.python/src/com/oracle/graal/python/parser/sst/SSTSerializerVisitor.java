@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 
-import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode.StringPart;
 import com.oracle.graal.python.parser.sst.ArgDefListBuilder.Parameter;
 import com.oracle.graal.python.parser.sst.ArgDefListBuilder.ParameterWithDefValue;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
@@ -62,6 +61,10 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
     public SSTSerializerVisitor(DataOutputStream out) {
         this.out = out;
         stringTable.put(null, 0);
+    }
+
+    private void writeBoolean(boolean value) throws IOException {
+        out.writeBoolean(value);
     }
 
     private void writeInt(int value) throws IOException {
@@ -163,26 +166,23 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
         SSTNode[] nameArgNodes = alb.getNameArgNodes();
         String[] nameArgNames = alb.getNameArgNames();
         assert nameArgNodes.length == nameArgNames.length;
-        SSTNode[] starArg = alb.getStarArg();
         SSTNode[] kwArg = alb.getKwArg();
         writeInt(args.length);
         writeInt(nameArgNodes.length);
-        writeInt(starArg.length);
         writeInt(kwArg.length);
 
-        for (SSTNode arg : args) {
-            writeNodeOrNull(arg);
+        for (int i = 0; i < args.length; i++) {
+            writeBoolean(alb.isStarArgAt(i));
+            writeNodeOrNull(args[i]);
         }
         for (int i = 0; i < nameArgNodes.length; i++) {
             writeString(nameArgNames[i]);
             writeNodeOrNull(nameArgNodes[i]);
         }
-        for (SSTNode arg : starArg) {
-            writeNodeOrNull(arg);
-        }
         for (SSTNode arg : kwArg) {
             writeNodeOrNull(arg);
         }
+        writeInt(alb.getFirstStarArgIndex());
         writeNodeOrNull(alb.getNakedForComp());
     }
 
@@ -751,30 +751,28 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
     }
 
     @Override
+    public Boolean visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
+        try {
+            writeId(SSTId.FormatExpressionID);
+            writePosition(node);
+            writeString(node.expressionCode);
+            out.writeByte(SerializationUtils.getFormatStringConversionTypeId(node.conversionType));
+            node.expression.accept(this);
+            writeNodeOrNull(node.specifier);
+        } catch (IOException e) {
+            handleIOExceptin(e);
+        }
+        return true;
+    }
+
+    @Override
     public Boolean visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
         try {
             writeId(SSTId.FormatStringLiteralID);
             writePosition(node);
-            StringPart[] parts = node.value;
-            writeInt(parts.length);
-            for (StringPart part : parts) {
-                out.writeBoolean(part.isFormatString());
-                writeString(part.getText());
-            }
-            writeInt(node.literals.length);
-            for (String literal : node.literals) {
-                if (literal == null) {
-                    writeString("");
-                } else {
-                    writeString(literal);
-                }
-            }
-            writeInt(node.expressions.length);
-            for (int i = 0; i < node.expressions.length; i++) {
-                node.expressions[i].accept(this);
-            }
-            for (int i = 0; i < node.expresionsSources.length; i++) {
-                writeString(node.expresionsSources[i]);
+            writeInt(node.parts.length);
+            for (int i = 0; i < node.parts.length; i++) {
+                node.parts[i].accept(this);
             }
         } catch (IOException e) {
             handleIOExceptin(e);

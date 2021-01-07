@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1016,7 +1016,7 @@ public abstract class TypeNodes {
         abstract Object execute(Object type);
 
         @Specialization
-        protected Object exec(Object type,
+        protected Object getSolid(Object type,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached LookupSpecialMethodNode.Dynamic lookupGetAttribute,
@@ -1024,17 +1024,30 @@ public abstract class TypeNodes {
                         @Cached GetDictStorageNode getDictStorageNode,
                         @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
                         @CachedLibrary(limit = "6") PythonObjectLibrary objectLibrary,
-                        @Cached GetInternalObjectArrayNode getArrayNode) {
-            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode);
+                        @Cached GetInternalObjectArrayNode getArrayNode,
+                        @Cached ConditionProfile dephtPropfile,
+                        @Cached BranchProfile isBaseProfile) {
+            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode, dephtPropfile, isBaseProfile, 0);
         }
 
-        private Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, LookupSpecialMethodNode.Dynamic lookupGetAttribute,
-                        CallBinaryMethodNode callGetAttr, GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary,
-                        PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode) {
-            Object base = getBaseClassNode.execute(type);
+        @TruffleBoundary
+        protected Object solidBaseTB(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, GetInternalObjectArrayNode getArrayNode, int depth) {
+            return solidBase(type, getBaseClassNode, context, LookupSpecialMethodNode.Dynamic.getUncached(), CallBinaryMethodNode.getUncached(), GetDictStorageNode.getUncached(),
+                            HashingStorageLibrary.getUncached(), PythonObjectLibrary.getUncached(), getArrayNode, ConditionProfile.getUncached(), BranchProfile.getUncached(), depth);
+        }
 
+        protected Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, LookupSpecialMethodNode.Dynamic lookupGetAttribute,
+                        CallBinaryMethodNode callGetAttr, GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary,
+                        PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode, ConditionProfile dephtPropfile, BranchProfile isBaseProfile, int depth) {
+            CompilerAsserts.partialEvaluationConstant(depth);
+            Object base = getBaseClassNode.execute(type);
             if (base != null) {
-                base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode);
+                if (dephtPropfile.profile(depth > 3)) {
+                    base = solidBaseTB(base, getBaseClassNode, context, getArrayNode, depth);
+                } else {
+                    base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode, dephtPropfile, isBaseProfile,
+                                    depth + 1);
+                }
             } else {
                 base = context.getCore().lookupType(PythonBuiltinClassType.PythonObject);
             }
@@ -1042,6 +1055,7 @@ public abstract class TypeNodes {
             if (type == base) {
                 return type;
             }
+            isBaseProfile.enter();
 
             Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getDictStorageNode, objectLibrary, storageLibrary);
             Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getDictStorageNode, objectLibrary, storageLibrary);

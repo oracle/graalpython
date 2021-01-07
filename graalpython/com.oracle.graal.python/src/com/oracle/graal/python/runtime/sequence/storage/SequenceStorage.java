@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,14 +27,16 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 
 public abstract class SequenceStorage {
 
     // Mutations lock
     protected boolean lock;
-    @CompilationFinal private boolean lockingEnabled = false;
+    private static final Assumption lockingNeverEnabledAssumption = Truffle.getRuntime().createAssumption("Seq storage locking");
+    private static final Assumption lockingNeverFailedAssumption = Truffle.getRuntime().createAssumption("Seq storage locking failure");
 
     public enum ListStorageType {
         Uninitialized,
@@ -70,22 +72,27 @@ public abstract class SequenceStorage {
     }
 
     public final void setLock() {
-        if (!lockingEnabled) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            lockingEnabled = true;
-        }
+        lockingNeverEnabledAssumption.invalidate();
         this.lock = true;
     }
 
     public final void releaseLock() {
+        if (lockingNeverEnabledAssumption.isValid()) {
+            return;
+        }
         this.lock = false;
     }
 
     protected final void checkLock() {
-        if (lockingEnabled) {
-            if (lock) {
-                PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError);
+        if (lockingNeverEnabledAssumption.isValid()) {
+            return;
+        }
+        if (lock) {
+            if (lockingNeverFailedAssumption.isValid()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lockingNeverFailedAssumption.invalidate();
             }
+            PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -99,7 +99,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -910,8 +909,8 @@ public final class PythonContext {
     /**
      * Trigger any pending asynchronous actions
      */
-    public void triggerAsyncActions(VirtualFrame frame, BranchProfile asyncProfile) {
-        handler.triggerAsyncActions(frame, asyncProfile);
+    public void triggerAsyncActions(VirtualFrame frame) {
+        handler.triggerAsyncActions(frame);
     }
 
     public AsyncHandler getAsyncHandler() {

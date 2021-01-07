@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -55,7 +55,6 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
-    @CompilationFinal private BranchProfile asyncProfile;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final int iteratorSlot;
@@ -117,10 +116,9 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 }
                 if (contextRef == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asyncProfile = BranchProfile.create();
                     contextRef = lookupContextReference(PythonLanguage.class);
                 }
-                contextRef.get().triggerAsyncActions(frame, asyncProfile);
+                contextRef.get().triggerAsyncActions(frame);
             }
             return;
         } catch (YieldException e) {

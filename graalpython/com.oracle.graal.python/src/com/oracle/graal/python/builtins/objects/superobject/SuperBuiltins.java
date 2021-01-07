@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -213,9 +213,9 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         protected abstract Object execute(VirtualFrame frame, Object self, Object cls, Object obj);
 
-        @Specialization(guards = {"!isNoValue(cls)", "!isNoValue(obj)"})
+        @Specialization(guards = "!isNoValue(cls)")
         PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj) {
-            if (obj != PNone.NONE) {
+            if (!(obj instanceof PNone)) {
                 Object type = supercheck(frame, cls, obj);
                 self.init(cls, type, obj);
             } else {

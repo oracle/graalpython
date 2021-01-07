@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.nodes.BuiltinNames.LAMBDA_NAME;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
@@ -56,7 +57,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -97,6 +97,7 @@ import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
+import com.oracle.graal.python.nodes.literal.FormatStringExpressionNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.literal.LiteralNode;
@@ -1153,15 +1154,24 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     @Override
-    public PNode visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
-        ExpressionNode[] exprs = new ExpressionNode[node.expressions.length];
+    public PNode visit(StringLiteralSSTNode.FormatExpressionSSTNode node) {
         Source prev = this.source;
-        for (int i = 0; i < node.expressions.length; i++) {
-            this.source = Source.newBuilder(PythonLanguage.ID, node.expresionsSources[i], "<fstring-expr>").build();
-            exprs[i] = (ExpressionNode) node.expressions[i].accept(this);
-        }
+        this.source = Source.newBuilder(PythonLanguage.ID, node.expressionCode, "<fstring-expr>").build();
+        ExpressionNode expression = (ExpressionNode) node.expression.accept(this);
         this.source = prev;
-        PNode result = nodeFactory.createFormatStringLiteral(node.value, exprs, node.literals);
+        ExpressionNode specifier = node.specifier == null ? null : (ExpressionNode) node.specifier.accept(this);
+        PNode result = new FormatStringExpressionNode(expression, specifier, node.conversionType);
+        result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        return result;
+    }
+
+    @Override
+    public PNode visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
+        ExpressionNode[] exprs = new ExpressionNode[node.parts.length];
+        for (int i = 0; i < node.parts.length; i++) {
+            exprs[i] = (ExpressionNode) node.parts[i].accept(this);
+        }
+        PNode result = nodeFactory.createFormatStringLiteral(exprs);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,16 @@ retval = x('hello')
     """, globs)
     assert globs["retval"] == ('hello', None, {}, '*hello')
 
+
+def test_codepoints_in_comment():
+    # these comments are part of the test, also don't delete new line between the comments
+    # the test do not fail, but the file can not be parse without proper fix. 
+    # assert a == '𝒜' and b == '𝒞' and c == '𝒵
+
+    # assert a == '𝒜' and b == '𝒞' and c == '𝒵
+
+    # another comment
+    pass
 
 def test_required_kw_arg():
     globs = {}
@@ -533,3 +543,59 @@ def test_method_decorator():
     assert s.value == 12
     assert s.__ser == 13
     assert s._S__ser == 12
+
+def test_fstring_function_overwrite():
+
+    format = "hello from other side"
+    assert f'text: {format}' == 'text: hello from other side'
+
+    ascii = "hello from ascii"
+    assert f'text: {ascii!a}' == "text: 'hello from ascii'"
+
+    repr = "hello from repr"
+    assert f'text: {repr!r}' == "text: 'hello from repr'"
+
+    str = "hello from str"
+    assert f'text: {str!s}' == "text: hello from str"
+
+def test_fstring_class_overwrite():
+
+    class A():
+        def __format__(self, spec):
+             return "__format__ from A " + spec
+        def __str__(self):
+             return "__str__ from A"
+        def __repr__(self):
+             return "__repr__ from A"
+        def ascii(self):
+             return "ascii from A"
+
+    a = A()
+    assert f'{a}' == '__format__ from A '
+    assert f'{a:123}' == '__format__ from A 123'
+    assert f'{a!s}' == '__str__ from A'
+    assert f'{a!r}' == '__repr__ from A'
+    assert f'{a!a}' == '__repr__ from A'
+    assert f'{a.ascii()!a}' == "'ascii from A'"
+    assert f'{a.ascii()!s}' == "ascii from A"
+    assert f'{a.ascii()!r}' == "'ascii from A'"
+    assert f'{a.ascii()}' == "ascii from A"
+
+def test_fstring_basic():
+
+    assert f'' == ''
+    assert f'{{}}' == '{}'
+    assert f'{{name}}' == '{name}'
+    assert f'Hi {{name}}' == "Hi {name}"
+    assert f'{{name}} first' == "{name} first"
+    assert f'Hi {{name}} first' == "Hi {name} first"
+    assert f'{{' == "{"
+    assert f'a{{' == "a{"
+    assert f'{{b' == "{b"
+    assert f'a{{b' == "a{b"
+    assert f'}}' == "}"
+    assert f'a}}' == "a}"
+    assert f'}}b' == "}b"
+    assert f'a}}b' == "a}b"
+    assert f'a{{}}' == "a{}"
+

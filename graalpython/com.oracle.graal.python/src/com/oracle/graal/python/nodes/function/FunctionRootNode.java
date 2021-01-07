@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -49,7 +49,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -57,7 +56,6 @@ import com.oracle.truffle.api.source.SourceSection;
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
 public class FunctionRootNode extends PClosureFunctionRootNode {
-    @CompilationFinal private BranchProfile asyncProfile;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
@@ -177,10 +175,9 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asyncProfile = BranchProfile.create();
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
-            contextRef.get().triggerAsyncActions(frame, asyncProfile);
+            contextRef.get().triggerAsyncActions(frame);
         }
         try {
             return body.execute(frame);

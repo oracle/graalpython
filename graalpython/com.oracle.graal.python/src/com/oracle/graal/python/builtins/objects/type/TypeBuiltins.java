@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -328,8 +328,8 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
         @Child private LookupAndCallTernaryNode callNewGet = LookupAndCallTernaryNode.create(__GET__);
         @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
-        @Child private CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
-        @Child private LookupSpecialMethodNode lookupInit = LookupSpecialMethodNode.create(__INIT__);
+        @Child private CallVarargsMethodNode dispatchInit;
+        @Child private LookupSpecialMethodNode lookupInit;
         @Child private IsSubtypeNode isSubTypeNode;
         @Child private TypeNodes.GetNameNode getNameNode;
 
@@ -481,28 +481,54 @@ public class TypeBuiltins extends PythonBuiltins {
                     }
                     newInstance = dispatchNew.execute(frame, callNewGet.execute(frame, newMethod, PNone.NONE, self), newArgs, keywords);
                 }
-                Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
-                if (isSubType(newInstanceKlass, self)) {
-                    Object initMethod = lookupInit.execute(frame, newInstanceKlass, newInstance);
-                    if (hasInit.profile(initMethod != PNone.NO_VALUE)) {
-                        Object[] initArgs;
-                        if (doCreateArgs) {
-                            initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
-                        } else {
-                            // XXX: (tfel) is this valid? I think it should be fine...
-                            arguments[0] = newInstance;
-                            initArgs = arguments;
-                        }
-                        Object initResult = dispatchInit.execute(frame, initMethod, initArgs, keywords);
-                        if (gotInitResult.profile(initResult != PNone.NONE && initResult != PNone.NO_VALUE)) {
-                            throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
-                        }
-                    }
+
+                // see typeobject.c#type_call()
+                // Ugly exception: when the call was type(something),
+                // don't call tp_init on the result.
+                if (!(arguments.length == 2 && arguments[0] == PythonBuiltinClassType.PythonClass && keywords.length == 0)) {
+                    callInit(lib, newInstance, self, frame, doCreateArgs, arguments, keywords);
                 }
                 return newInstance;
             } else {
                 throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, getTypeName(self));
             }
+        }
+
+        private void callInit(PythonObjectLibrary lib, Object newInstance, Object self, VirtualFrame frame, boolean doCreateArgs, Object[] arguments, PKeyword[] keywords) throws PException {
+            Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
+            if (isSubType(newInstanceKlass, self)) {
+                Object initMethod = getInitNode().execute(frame, newInstanceKlass, newInstance);
+                if (hasInit.profile(initMethod != PNone.NO_VALUE)) {
+                    Object[] initArgs;
+                    if (doCreateArgs) {
+                        initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
+                    } else {
+                        // XXX: (tfel) is this valid? I think it should be fine...
+                        arguments[0] = newInstance;
+                        initArgs = arguments;
+                    }
+                    Object initResult = getDispatchNode().execute(frame, initMethod, initArgs, keywords);
+                    if (gotInitResult.profile(initResult != PNone.NONE && initResult != PNone.NO_VALUE)) {
+                        throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
+                    }
+                }
+            }
+        }
+
+        private LookupSpecialMethodNode getInitNode() {
+            if (lookupInit == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupInit = insert(LookupSpecialMethodNode.create(__INIT__));
+            }
+            return lookupInit;
+        }
+
+        private CallVarargsMethodNode getDispatchNode() {
+            if (dispatchInit == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                dispatchInit = insert(CallVarargsMethodNode.create());
+            }
+            return dispatchInit;
         }
 
         private boolean isSubType(Object left, Object right) {

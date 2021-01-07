@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -96,11 +96,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     public static class StandaloneBuiltinFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
         private final T node;
-        private final Class<T> nodeClass;
 
         public StandaloneBuiltinFactory(T node) {
             this.node = node;
-            this.nodeClass = determineNodeClass(node);
         }
 
         @Override
@@ -110,7 +108,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Class<T> getNodeClass() {
-            return nodeClass;
+            return determineNodeClass(node);
         }
 
         @SuppressWarnings("unchecked")

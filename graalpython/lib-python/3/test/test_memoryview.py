@@ -223,6 +223,7 @@ class AbstractMemoryTests:
             m = None
             # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
+    @test.support.impl_detail("weakref nondeterministic", graalvm=False)
     def test_gc(self):
         for tp in self._types:
             if not isinstance(tp, type):
@@ -354,6 +355,8 @@ class AbstractMemoryTests:
         m = self._view(b)
         self.assertRaises(ValueError, hash, m)
 
+    # Even with added GC calls, the test sometimes transiently fails
+    @test.support.impl_detail("weakref nondeterministic", graalvm=False)
     def test_weakref(self):
         # Check memoryviews are weakrefable
         for tp in self._types:
