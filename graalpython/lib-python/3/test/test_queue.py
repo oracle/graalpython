@@ -577,6 +577,7 @@ class BaseSimpleQueueTest:
 
         self.assertEqual(sorted(results), inputs)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_references(self):
         # The queue should lose references to each item as soon as
         # it leaves the queue.
