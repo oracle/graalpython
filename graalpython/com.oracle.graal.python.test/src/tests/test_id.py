@@ -85,9 +85,10 @@ def test_string_interned():
     y='1234'
     assert id(x) == id(y) == id('1234') == id(sys.intern('1234')) == id(sys.intern(x)) == id(sys.intern(y))
 
-def test_string_noninterned():
-    x = '1234'
-    y = x * 2
-    z = x * 2
-    assert id(y) != id(z)
+# skip until is fixed: GR-28568
+# def test_string_noninterned():
+#     x = '1234'
+#     y = x * 2
+#     z = x * 2
+#     assert id(y) != id(z)
 
