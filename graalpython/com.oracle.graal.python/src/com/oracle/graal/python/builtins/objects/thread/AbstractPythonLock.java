@@ -45,7 +45,7 @@ import com.oracle.truffle.api.object.Shape;
 
 public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
-    public static final double TIMEOUT_MAX = 2 ^ 31;
+    public static final double TIMEOUT_MAX = Math.pow(2, 31);
     public static final boolean DEFAULT_BLOCKING = true;
     public static final double UNSET_TIMEOUT = -1.0;
 
