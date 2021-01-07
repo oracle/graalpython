@@ -50,14 +50,17 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -69,26 +72,40 @@ import com.oracle.truffle.api.object.HiddenKey;
 @CoreFunctions(defineModule = "faulthandler")
 public class FaulthandlerModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey STACK_DUMP_REQUESTED = new HiddenKey("stackDumpRequested");
-    private WeakHashMap<Thread, Boolean> dumpRequestedForThreads = new WeakHashMap<>();
+    private WeakHashMap<Thread, Object> dumpRequestedForThreads = new WeakHashMap<>();
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FaulthandlerModuleBuiltinsFactory.getFactories();
     }
 
+    private static void dumpTraceback(Object callable, Object file) {
+        if (!(callable instanceof PNone)) {
+            Object f = file;
+            if (file == PNone.NO_VALUE) {
+                f = PNone.NONE;
+            }
+            try {
+                PythonObjectLibrary.getUncached().callObject(callable, null, PNone.NONE, PNone.NONE, f);
+            } catch (RuntimeException e) {
+                ExceptionUtils.printPythonLikeStackTrace(e);
+            }
+        }
+    }
+
     private static final class StackDumpAction implements AsyncHandler.AsyncAction {
+        @Override
         public void execute(PythonContext context) {
             CompilerDirectives.bailout("This should never be compiled");
             PythonModule mod = context.getCore().lookupBuiltinModule("faulthandler");
             Object dumpQueue = DynamicObjectLibrary.getUncached().getOrDefault(mod, STACK_DUMP_REQUESTED, null);
             if (dumpQueue instanceof WeakHashMap) {
                 WeakHashMap<?, ?> weakDumpQueue = (WeakHashMap<?, ?>)dumpQueue;
-                if (weakDumpQueue.isEmpty()) {
-                    return;
-                } else if (weakDumpQueue.getOrDefault(Thread.currentThread(), null) == Boolean.TRUE) {
-                    System.err.println("\nThread " + Thread.currentThread());
-                    weakDumpQueue.remove(Thread.currentThread());
-                    ExceptionUtils.printPythonLikeStackTrace();
+                Object callableAndFile = weakDumpQueue.remove(Thread.currentThread());
+                if (callableAndFile instanceof Object[]) {
+                    Object callable = ((Object[]) callableAndFile)[0];
+                    Object file = ((Object[]) callableAndFile)[1];
+                    dumpTraceback(callable, file);
                 }
             }
         }
@@ -119,11 +136,18 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         @SuppressWarnings("unchecked")
-        public PNone doit(PythonModule mod, @SuppressWarnings("unused") Object file, boolean allThreads) {
+        public PNone doit(PythonModule mod, Object file, boolean allThreads) {
+            Object printStackFunc;
+            try {
+                Object tracebackModule = AbstractImportNode.importModule("traceback");
+                printStackFunc = PythonObjectLibrary.getUncached().lookupAttribute(tracebackModule, null, "print_stack");
+            } catch (PException e) {
+                return PNone.NONE;
+            }
+
             if (allThreads) {
                 if (PythonOptions.isWithJavaStacktrace(getContext().getLanguage())) {
                     Thread[] ths = getContext().getThreads();
-                    System.err.println();
                     for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
                         boolean found = false;
                         for (Thread pyTh : ths) {
@@ -135,18 +159,20 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
                         if (!found) {
                             continue;
                         }
+                        System.err.println();
                         System.err.println(e.getKey());
                         for (StackTraceElement el : e.getValue()) {
                             System.err.println(el.toString());
                         }
                     }
                 }
+
                 Object dumpQueue = DynamicObjectLibrary.getUncached().getOrDefault(mod, STACK_DUMP_REQUESTED, null);
                 if (dumpQueue instanceof WeakHashMap) {
-                    WeakHashMap<Thread, Boolean> weakDumpQueue = (WeakHashMap<Thread, Boolean>)dumpQueue;
+                    WeakHashMap<Thread, Object[]> weakDumpQueue = (WeakHashMap<Thread, Object[]>)dumpQueue;
                     if (weakDumpQueue.isEmpty()) {
                         for (Thread th : getContext().getThreads()) {
-                            weakDumpQueue.put(th, true);
+                            weakDumpQueue.put(th, new Object[] { printStackFunc, file });
                         }
                     }
                 }
@@ -158,7 +184,7 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
                         System.err.println(el.toString());
                     }
                 }
-                ExceptionUtils.printPythonLikeStackTrace();
+                dumpTraceback(printStackFunc, file);
             }
             return PNone.NONE;
         }
