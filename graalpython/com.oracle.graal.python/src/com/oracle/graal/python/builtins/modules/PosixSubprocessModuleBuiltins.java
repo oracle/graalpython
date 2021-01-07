@@ -327,11 +327,16 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     executables[i] = createPathFromBytes(bytes, posixLib);
                 }
             }
+
+            getContext().releaseGil();
             try {
                 return posixLib.forkExec(getPosixSupport(), executables, processArgs, cwd, env == null ? null : (Object[]) env, stdinRead, stdinWrite, stdoutRead, stdoutWrite, stderrRead, stderrWrite,
                                 errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, fdsToKeep);
             } catch (PosixException e) {
+                getContext().acquireGil();
                 throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                getContext().acquireGil();
             }
         }
 
