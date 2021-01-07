@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -228,12 +229,34 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return isSubMro(cachedCls, getMro.execute(derived), baseMroLen, isSameTypeInLoopNode);
     }
 
+    @Specialization(guards = {
+                    "libD.isLazyPythonClass(derived)", "libC.isLazyPythonClass(cls)",
+                    "mro.getInternalClassArray().length == sz",
+                    "sz < 16"
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = {
+                    "isSubtypeOfCachedMultiContext",
+                    "isVariableSubtypeOfConstantTypeCachedMultiContext",
+                    "isSubtypeOfCached",
+                    "isSubtypeOfVariableTypeCached",
+                    "isVariableSubtypeOfConstantTypeCached",
+    })
+    boolean isSubtypeGenericCachedLen(@SuppressWarnings("unused") Object derived, Object cls,
+                    @SuppressWarnings("unused") @CachedLibrary("derived") PythonObjectLibrary libD,
+                    @SuppressWarnings("unused") @CachedLibrary("cls") PythonObjectLibrary libC,
+                    @SuppressWarnings("unused") @Cached GetMroStorageNode getMro,
+                    @Bind("getMro.execute(derived)") MroSequenceStorage mro,
+                    @Cached("mro.getInternalClassArray().length") int sz,
+                    @Cached IsSameTypeNode isSameTypeInLoopNode) {
+        return isInMro(cls, mro, sz, isSameTypeInLoopNode);
+    }
+
     @Specialization(guards = {"libD.isLazyPythonClass(derived)", "libC.isLazyPythonClass(cls)"}, replaces = {
                     "isVariableSubtypeOfConstantTypeCached",
                     "isSubtypeOfCachedMultiContext",
                     "isVariableSubtypeOfConstantTypeCachedMultiContext",
                     "isSubtypeOfCached",
-                    "isSubtypeOfVariableTypeCached"
+                    "isSubtypeOfVariableTypeCached",
+                    "isSubtypeGenericCachedLen"
     }, limit = "4")
     boolean issubTypeGeneric(Object derived, Object cls,
                     @SuppressWarnings("unused") @CachedLibrary("derived") PythonObjectLibrary libD,

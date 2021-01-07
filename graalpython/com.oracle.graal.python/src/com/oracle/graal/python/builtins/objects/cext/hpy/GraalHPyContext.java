@@ -935,4 +935,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
         return nativeSpaceReferenceQueue;
     }
+
+    @Override
+    protected String[] getKnownCacheSymbols() {
+        return GraalHPyNativeSymbols.getValues();
+    }
 }

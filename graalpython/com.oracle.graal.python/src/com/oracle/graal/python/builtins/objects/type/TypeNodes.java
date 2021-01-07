@@ -108,7 +108,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStor
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -125,6 +124,7 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -410,8 +410,9 @@ public abstract class TypeNodes {
 
         @Specialization
         String doNativeClass(PythonNativeClass obj,
-                        @Cached CExtNodes.GetTypeMemberNode getTpNameNode) {
-            return (String) getTpNameNode.execute(obj, NativeMember.TP_NAME);
+                        @Cached CExtNodes.GetTypeMemberNode getTpNameNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            return castToJavaStringNode.execute(getTpNameNode.execute(obj, NativeMember.TP_NAME));
         }
 
         @Specialization(replaces = {"doManagedClass", "doBuiltinClassType", "doNativeClass"})
@@ -422,7 +423,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (PGuards.isNativeClass(obj)) {
-                return (String) CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_NAME);
+                return CastToJavaStringNode.getUncached().execute(CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_NAME));
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -1196,46 +1197,6 @@ public abstract class TypeNodes {
             private static final long serialVersionUID = 1L;
             static final NotSameTypeException INSTANCE = new NotSameTypeException();
         }
-    }
-
-    /** accesses the Sulong type of a class; does no recursive resolving */
-    public abstract static class GetSulongTypeNode extends Node {
-
-        public abstract Object execute(PythonAbstractClass clazz);
-
-        @Specialization
-        Object doInitialized(PythonManagedClass clazz) {
-            return clazz.getSulongType();
-        }
-
-        @Specialization
-        Object doNative(@SuppressWarnings("unused") PythonNativeClass clazz) {
-            return null;
-        }
-
-        @TruffleBoundary
-        public static Object getSlowPath(PythonAbstractClass clazz) {
-            if (clazz instanceof PythonManagedClass) {
-                return ((PythonManagedClass) clazz).getSulongType();
-            } else if (PGuards.isNativeClass(clazz)) {
-                return null;
-            }
-            throw new IllegalStateException("unknown type " + clazz.getClass().getName());
-        }
-
-        @TruffleBoundary
-        public static void setSlowPath(PythonAbstractClass clazz, Object sulongType) {
-            if (clazz instanceof PythonManagedClass) {
-                ((PythonManagedClass) clazz).setSulongType(sulongType);
-            } else {
-                throw new IllegalStateException("cannot set Sulong type for " + clazz.getClass().getName());
-            }
-        }
-
-        public static GetSulongTypeNode create() {
-            return GetSulongTypeNodeGen.create();
-        }
-
     }
 
     public abstract static class ComputeMroNode extends Node {

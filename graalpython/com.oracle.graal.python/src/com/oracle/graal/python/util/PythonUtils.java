@@ -50,6 +50,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -65,6 +66,7 @@ public final class PythonUtils {
 
     public static final PCell[] NO_CLOSURE = new PCell[0];
     public static final ByteArraySupport arrayAccessor;
+    public static final ConditionProfile[] DISABLED = new ConditionProfile[]{ConditionProfile.getUncached()};
 
     static {
         if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {

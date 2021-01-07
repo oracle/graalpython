@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,8 +63,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  */
 @GenerateUncached
 public abstract class GetCurrentFrameRef extends Node {
-
-    private static final ConditionProfile[] DISABLED = new ConditionProfile[]{ConditionProfile.getUncached()};
 
     public abstract Reference execute(Frame frame);
 
@@ -113,7 +112,7 @@ public abstract class GetCurrentFrameRef extends Node {
     }
 
     static ConditionProfile[] getFlagUncached() {
-        return DISABLED;
+        return PythonUtils.DISABLED;
     }
 
     public static GetCurrentFrameRef create() {

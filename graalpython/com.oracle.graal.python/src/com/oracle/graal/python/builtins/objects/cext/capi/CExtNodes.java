@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_POLYGLOT_FROM_TYPED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE;
@@ -72,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllTo
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.BinaryFirstToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CextUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CharPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
@@ -84,10 +87,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Terna
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.WrapVoidPtrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -1119,13 +1123,14 @@ public abstract class CExtNodes {
                         @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached GetRefCntNode getRefCntNode,
-                        @Cached AddRefCntNode addRefCntNode) {
+                        @Cached AddRefCntNode addRefCntNode,
+                        @Cached AttachLLVMTypeNode attachLLVMTypeNode) {
             if (lib.isNull(object)) {
                 return PNone.NO_VALUE;
             }
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, attachLLVMTypeNode);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -1146,13 +1151,14 @@ public abstract class CExtNodes {
                         @CachedLibrary("object") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetRefCntNode getRefCntNode,
-                        @Cached AddRefCntNode addRefCntNode) {
+                        @Cached AddRefCntNode addRefCntNode,
+                        @Cached AttachLLVMTypeNode attachLLVMTypeNode) {
             if (lib.isNull(object)) {
                 return PNone.NO_VALUE;
             }
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true, attachLLVMTypeNode);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -1171,6 +1177,20 @@ public abstract class CExtNodes {
 
             // do not modify reference count at all; this is for non-'PyObject*' pointers
             return new PythonAbstractNativeObject(object);
+        }
+
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    public abstract static class WrapCharPtrNode extends AsPythonObjectBaseNode {
+
+        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
+                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
+                        @Cached FromCharPointerNode fromCharPointerNode) {
+            return fromCharPointerNode.execute(object);
         }
 
     }
@@ -1404,15 +1424,35 @@ public abstract class CExtNodes {
         @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
                         @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Shared("toJavaNode") @Cached WrapVoidPtrNode asPythonObjectNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
             // this branch is not a shortcut; it actually returns a different object
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
                 return new PythonAbstractNativeObject((TruffleObject) value);
             }
-            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), false));
+            return asPythonObjectNode.execute(resolveHandleNode.execute(value));
+        }
+    }
+
+    /**
+     * Does the same conversion as the native function {@code native_pointer_to_java}. The node
+     * tries to avoid calling the native function for resolving native handles.
+     */
+    @GenerateUncached
+    public abstract static class CharPtrToJavaNode extends ToJavaBaseNode {
+
+        @Specialization(guards = "isForeignObject(value)", limit = "1")
+        static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("toJavaNode") @Cached WrapCharPtrNode asPythonObjectNode,
+                        @CachedLibrary("value") InteropLibrary interopLibrary,
+                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+            // this branch is not a shortcut; it actually returns a different object
+            if (isNullProfile.profile(interopLibrary.isNull(value))) {
+                return asPythonObjectNode.execute(value);
+            }
+            return asPythonObjectNode.execute(resolveHandleNode.execute(value));
         }
     }
 
@@ -2612,63 +2652,102 @@ public abstract class CExtNodes {
             return result;
         }
 
-        @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = "doCachedObj")
-        public Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMember memberName,
+        @Specialization(guards = {"lib.hasMembers(object.getPtr())", "member.getType() == cachedMemberType"}, //
+                        replaces = "doCachedObj", limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getByMember(PythonAbstractNativeObject object, NativeMember member,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
+                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
+                        throws UnknownIdentifierException, UnsupportedMessageException {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return toJavaNode.execute(lib.readMember(object.getPtr(), member.getMemberName()));
+        }
+
+        @Specialization(guards = {"!lib.hasMembers(object.getPtr())", "member.getType() == cachedMemberType"}, //
+                        replaces = {"doCachedObj", "getByMember"}, limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getByMemberAttachType(PythonAbstractNativeObject object, NativeMember member,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached("member.getType()") @SuppressWarnings("unused") NativeMemberType cachedMemberType,
+                        @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
+                        @Exclusive @Cached CExtNodes.GetLLVMType getLLVMType,
+                        @Cached(value = "createForMember(member)", uncached = "getUncachedForMember(member)") ToJavaBaseNode toJavaNode)
+                        throws UnknownIdentifierException, UnsupportedMessageException {
+            Object typedPtr = callGetObTypeNode.call(FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyTypeObject));
+            return toJavaNode.execute(lib.readMember(typedPtr, member.getMemberName()));
+        }
+
+        @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = {"doCachedObj", "getByMember", "getByMemberAttachType"})
+        static Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMember memberName,
                         @SuppressWarnings("unused") @Cached("memberName") NativeMember cachedMemberName,
                         @Cached("getterFuncName(memberName)") String getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") AsPythonObjectBaseNode asPythonObject,
-                        @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
-            assert isNativeTypeObject(self);
-            return asPythonObject.execute(callGetTpDictNode.call(getterName, toSulong.execute(self)));
+                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") ToJavaBaseNode toJavaNode,
+                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
+            return toJavaNode.execute(callMemberGetterNode.call(getterName, toSulong.execute(self)));
         }
 
-        @Specialization(replaces = "doCachedMember")
-        public Object doUncached(Object self, NativeMember memberName,
+        @Specialization(replaces = {"doCachedObj", "getByMember", "getByMemberAttachType", "doCachedMember"})
+        static Object doGeneric(Object self, NativeMember memberName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Cached AsPythonObjectNode asPythonObject,
-                        @Cached WrapVoidPtrNode wrapVoidPtrNode,
-                        @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
-            assert isNativeTypeObject(self);
-            Object value = callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self));
-            if (memberName.getType() == NativeMemberType.OBJECT) {
-                return asPythonObject.execute(value);
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached CharPtrToJavaNode charPtrToJavaNode,
+                        @Cached VoidPtrToJavaNode voidPtrToJavaNode,
+                        @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
+            Object value = callMemberGetterNode.call(getterFuncName(memberName), toSulong.execute(self));
+            switch (memberName.getType()) {
+                case OBJECT:
+                    return toJavaNode.execute(value);
+                case CSTRING:
+                    return charPtrToJavaNode.execute(value);
+                case PRIMITIVE:
+                case POINTER:
+                    return voidPtrToJavaNode.execute(value);
             }
-            return wrapVoidPtrNode.execute(value);
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
-        protected Object doSlowPath(Object obj, NativeMember memberName) {
+        static Object doSlowPath(Object obj, NativeMember memberName) {
             String getterFuncName = getterFuncName(memberName);
             return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
         }
 
         @TruffleBoundary
-        protected String getterFuncName(NativeMember memberName) {
+        static String getterFuncName(NativeMember memberName) {
             String name = "get_" + memberName.getMemberName();
             assert NativeCAPISymbols.isValid(name) : "invalid native member getter function " + name;
             return name;
         }
 
-        static AsPythonObjectBaseNode createForMember(NativeMember member) {
-            if (member.getType() == NativeMemberType.OBJECT) {
-                return AsPythonObjectNodeGen.create();
+        static ToJavaBaseNode createForMember(NativeMember member) {
+            switch (member.getType()) {
+                case OBJECT:
+                    return ToJavaNodeGen.create();
+                case CSTRING:
+                    return CharPtrToJavaNodeGen.create();
+                case PRIMITIVE:
+                case POINTER:
+                    return VoidPtrToJavaNodeGen.create();
             }
-            return WrapVoidPtrNodeGen.create();
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
-        static AsPythonObjectBaseNode getUncachedForMember(NativeMember member) {
-            if (member.getType() == NativeMemberType.OBJECT) {
-                return AsPythonObjectNodeGen.getUncached();
+        static ToJavaBaseNode getUncachedForMember(NativeMember member) {
+            switch (member.getType()) {
+                case OBJECT:
+                    return ToJavaNodeGen.getUncached();
+                case CSTRING:
+                    return CharPtrToJavaNodeGen.getUncached();
+                case PRIMITIVE:
+                case POINTER:
+                    return VoidPtrToJavaNodeGen.getUncached();
             }
-            return WrapVoidPtrNodeGen.getUncached();
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
             return PythonLanguage.getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
-        }
-
-        private static boolean isNativeTypeObject(Object self) {
-            return IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(self), PythonBuiltinClassType.PythonClass);
         }
 
         public static GetTypeMemberNode create() {
@@ -2977,17 +3056,20 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class GetRefCntNode extends PNodeWithContext {
 
-        public abstract long execute(Object ptrObject);
+        public final long execute(Object ptrObject) {
+            return execute(CApiContext.LAZY_CONTEXT, ptrObject);
+        }
 
-        @Specialization(limit = "2", rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
-        static long doNativeObjectTyped(Object ptrObject,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        public abstract long execute(CApiContext cApiContext, Object ptrObject);
+
+        @Specialization(guards = "!isLazyContext(cApiContext)", limit = "2", rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static long doNativeObjectTypedWithContext(CApiContext cApiContext, Object ptrObject,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
             if (!lib.isNull(ptrObject)) {
-                CApiContext cApiContext = context.getCApiContext();
-                if (cApiContext != null) {
+                boolean haveCApiContext = cApiContext != null;
+                if (haveCApiContext) {
                     cApiContext.checkAccess(ptrObject, lib);
                 }
 
@@ -2996,29 +3078,47 @@ public abstract class CExtNodes {
                 if (lib.hasMembers(ptrObject)) {
                     return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberName()));
                 }
-                if (context.getCApiContext() != null) {
+                if (haveCApiContext) {
                     return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
                 }
             }
             return 0;
         }
 
-        @Specialization(limit = "2", replaces = "doNativeObjectTyped")
-        static long doNativeObject(Object ptrObject,
+        @Specialization(guards = "!isLazyContext(cApiContext)", limit = "2", replaces = "doNativeObjectTypedWithContext")
+        static long doNativeObjectWithContext(CApiContext cApiContext, Object ptrObject,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) {
+            if (!lib.isNull(ptrObject) && cApiContext != null) {
+                cApiContext.checkAccess(ptrObject, lib);
+                return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
+            }
+            return 0;
+        }
+
+        @Specialization(limit = "2", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class}, //
+                        replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext"})
+        static long doNativeObjectTyped(@SuppressWarnings("unused") CApiContext cApiContext, Object ptrObject,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
+            return doNativeObjectTypedWithContext(context.getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
+        }
+
+        @Specialization(limit = "2", replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext", "doNativeObjectTyped"})
+        static long doNativeObject(@SuppressWarnings("unused") CApiContext cApiContext, Object ptrObject,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) {
-            if (!lib.isNull(ptrObject)) {
-                CApiContext cApiContext = context.getCApiContext();
-                if (cApiContext != null) {
-                    cApiContext.checkAccess(ptrObject, lib);
-                }
-                if (context.getCApiContext() != null) {
-                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
-                }
-            }
-            return 0;
+            return doNativeObjectWithContext(context.getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
+        }
+
+        static boolean isLazyContext(CApiContext cApiContext) {
+            return CApiContext.LAZY_CONTEXT == cApiContext;
         }
     }
 
@@ -3416,6 +3516,53 @@ public abstract class CExtNodes {
         private static Object callBuiltin(PythonContext context, String builtinName, Object object) {
             Object attribute = PythonObjectLibrary.getUncached().lookupAttribute(context.getBuiltins(), null, builtinName);
             return CastToJavaStringNodeGen.getUncached().execute(PythonObjectLibrary.getUncached().callObject(attribute, null, object));
+        }
+    }
+
+    /**
+     * Attaches the appropriate LLVM type to the provided pointer object making the pointer to be
+     * typed (i.e. {@code interopLib.hasMetaObject(ptr) == true}) and thus allows to do direct
+     * member access via interop.<br/>
+     */
+    @GenerateUncached
+    public abstract static class AttachLLVMTypeNode extends Node {
+
+        public abstract TruffleObject execute(TruffleObject ptr);
+
+        @Specialization(guards = "lib.hasMetaObject(ptr)", limit = "1")
+        static TruffleObject doTyped(TruffleObject ptr,
+                        @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib) {
+            return ptr;
+        }
+
+        @Specialization(guards = "!lib.hasMetaObject(ptr)", limit = "1", replaces = "doTyped")
+        static TruffleObject doUntyped(TruffleObject ptr,
+                        @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
+                        @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
+                        @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
+                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+            Object type = asPythonObjectNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, ptr));
+            Object llvmType = getSulongTypeNode.execute(type);
+            if (llvmType == null) {
+                llvmType = getLLVMType.execute(LLVMType.PyObject);
+            }
+            return (TruffleObject) callPolyglotFromTypedNode.call(FUN_POLYGLOT_FROM_TYPED, ptr, llvmType);
+        }
+
+        @Specialization(limit = "1", replaces = {"doTyped", "doUntyped"})
+        static TruffleObject doGeneric(TruffleObject ptr,
+                        @CachedLibrary("ptr") InteropLibrary lib,
+                        @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
+                        @Shared("callGetObTypeNode") @Cached PCallCapiFunction callGetObTypeNode,
+                        @Shared("callPolyglotFromTypedNode") @Cached PCallCapiFunction callPolyglotFromTypedNode,
+                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+            if (!lib.hasMetaObject(ptr)) {
+                return doUntyped(ptr, lib, getSulongTypeNode, getLLVMType, callGetObTypeNode, callPolyglotFromTypedNode, asPythonObjectNode);
+            }
+            return ptr;
         }
     }
 
