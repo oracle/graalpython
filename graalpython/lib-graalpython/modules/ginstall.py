@@ -336,23 +336,16 @@ def known_packages():
             if not venv_path:
                 xit("SciPy can only be installed within a virtual env.")
 
-            r = subprocess.check_output(sys.executable + " -llvm-path", shell=True).decode("utf8")
-            llvm_bin_dir = r.splitlines()[-1].strip()
-            if not os.path.isdir(llvm_bin_dir):
-                xit("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
-
-            # currently we need 'ar', 'ranlib', and 'ld.lld'
-            llvm_bins = {"llvm-ar": ("ar",), "llvm-ranlib": ("ranlib",), "ld.lld": ("ld.lld", "ld")}
-            for binary in llvm_bins.keys():
-                llvm_bin = os.path.join(llvm_bin_dir, binary)
-                if not os.path.isfile(llvm_bin):
-                    xit("Could not locate llvm-ar at '{}'".format(llvm_bin))
-                else:
-                    for name in llvm_bins[binary]:
-                        dest = os.path.join(venv_path, "bin", name)
-                        if os.path.exists(dest):
-                            os.unlink(dest)
-                        os.symlink(llvm_bin, dest)
+            # currently we need 'ar', 'ranlib', 'ld', and 'ld.lld'
+            from distutils.sysconfig import get_config_var
+            
+            llvm_tools = {"AR": ("ar",), "RANLIB": ("ranlib",), "LD": ("ld.lld", "ld")}
+            for llvm_tool in llvm_tools.keys():
+                 for name in llvm_tools[llvm_tool]:
+                    dest = os.path.join(venv_path, "bin", name)
+                    if os.path.exists(dest):
+                        os.unlink(dest)
+                    os.symlink(get_config_var(llvm_tool), dest)
 
         # install dependencies
         numpy(**kwargs)

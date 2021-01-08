@@ -99,6 +99,7 @@ def _get_posix_vars():
     g['AR'] = __graalpython__.get_toolchain_path('AR')
     g['RANLIB'] = __graalpython__.get_toolchain_path('RANLIB')
     g['ARFLAGS'] = "rc"
+    g['LD'] = __graalpython__.get_toolchain_path('LD')
     g['EXE'] = ""
     g['LIBDIR'] = os.path.join(sys.prefix, 'lib')
     g['VERSION'] = get_python_version()
