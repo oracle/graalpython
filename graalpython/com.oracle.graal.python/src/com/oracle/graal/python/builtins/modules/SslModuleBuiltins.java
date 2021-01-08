@@ -17,6 +17,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -57,10 +58,11 @@ public class SslModuleBuiltins extends PythonBuiltins {
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
         PythonModule module = core.lookupBuiltinModule("_ssl");
-        // TODO set to meaningful values
-        module.setAttribute("OPENSSL_VERSION_NUMBER", PNone.NONE);
-        module.setAttribute("OPENSSL_VERSION_INFO", PNone.NONE);
-        module.setAttribute("OPENSSL_VERSION", PNone.NONE);
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        // TODO decide which values to pick
+        module.setAttribute("OPENSSL_VERSION_NUMBER", 269488287);
+        module.setAttribute("OPENSSL_VERSION_INFO", factory.createTuple(new int[]{1, 1, 1, 9, 15}));
+        module.setAttribute("OPENSSL_VERSION", "Java");
         module.setAttribute("_DEFAULT_CIPHERS", DEFAULT_CIPHERS);
         module.setAttribute("_OPENSSL_API_VERSION", PNone.NONE);
 

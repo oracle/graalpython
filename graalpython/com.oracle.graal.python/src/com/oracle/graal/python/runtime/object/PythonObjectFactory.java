@@ -334,6 +334,10 @@ public abstract class PythonObjectFactory extends Node {
         return createTuple(PythonBuiltinClassType.PTuple, objects);
     }
 
+    public final PTuple createTuple(int[] ints) {
+        return createTuple(new IntSequenceStorage(ints));
+    }
+
     public final PTuple createTuple(SequenceStorage store) {
         return createTuple(PythonBuiltinClassType.PTuple, store);
     }
