@@ -232,6 +232,9 @@ if __name__ == "__main__":
                     continue
                 print(f"Suite succeeded with {len(passing_tests)} tests")
                 break
+            elif p.returncode == -9:                
+                print(f"\nTimeout (return code -9)\nyou can try to increase the current timeout {tout}s by using --timeout=NNN")
+                break
             else:
                 print(f"Suite failed, retrying with {len(passing_tests)} tests")
 
