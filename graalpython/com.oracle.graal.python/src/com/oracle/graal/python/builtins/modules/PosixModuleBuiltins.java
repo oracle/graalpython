@@ -1639,14 +1639,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PTuple waitpid(VirtualFrame frame, long pid, int options,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
+            getContext().releaseGil();
             while (true) {
                 try {
                     long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
+                    getContext().acquireGil();
                     return factory().createTuple(new Object[]{result[0], result[1]});
                 } catch (PosixException e) {
                     errorProfile.enter();
+                    getContext().acquireGil();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                         getContext().triggerAsyncActions(frame);
+                        getContext().releaseGil();
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
