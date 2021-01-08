@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SslModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -101,7 +102,6 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
+import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
@@ -407,6 +408,7 @@ public final class Python3Core implements PythonCore {
                         new BufferBuiltins(),
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
+                        new SslModuleBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),

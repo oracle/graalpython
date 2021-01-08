@@ -143,6 +143,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ZlibCompress("Compress", "zlib"),
     ZlibDecompress("Decompress", "zlib"),
     PBufferedReader("BufferedReader", "_io"),
+    PSSLSession("SSLSession", "_ssl"),
+    PSSLContext("_SSLContext", "_ssl"),
+    PSSLSocket("_SSLSocket", "_ssl"),
+    PMemoryBIO("MemoryBIO", "_ssl"),
 
     // Errors and exceptions:
 
@@ -193,6 +197,14 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SocketGAIError("gaierror", "_socket"),
     SocketHError("herror", "_socket"),
     SocketTimeout("timeout", "_socket"),
+    // TODO hierarchy
+    SSLError("SSLError", "_ssl"),
+    SSLZeroReturnError("SSLZeroReturnError", "_ssl"),
+    SSLWantReadError("SSLWantReadError", "_ssl"),
+    SSLWantWriteError("SSLWantWriteError", "_ssl"),
+    SSLSyscallError("SSLSyscallError", "_ssl"),
+    SSLEOFError("SSLEOFError", "_ssl"),
+    SSLCertVerificationError("SSLCertVerificationError", "_ssl"),
 
     // todo: all OS errors
 
