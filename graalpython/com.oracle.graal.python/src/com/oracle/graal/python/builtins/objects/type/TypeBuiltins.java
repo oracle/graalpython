@@ -132,6 +132,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -990,9 +991,10 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode,
+                        @Exclusive @Cached CastToJavaStringNode castToJavaStringNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls, NativeMember.TP_NAME);
+            String tpName = castToJavaStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
             return getQualName(tpName);
         }
 
@@ -1045,9 +1047,10 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls, NativeMember.TP_NAME);
+            String tpName = castToJavaStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
             return getModuleName(tpName);
         }
 
@@ -1106,9 +1109,10 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static String getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpNameNode) {
+                        @Cached GetTypeMemberNode getTpNameNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls, NativeMember.TP_NAME);
+            String tpName = castToJavaStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
             return getQualName(tpName);
         }
 

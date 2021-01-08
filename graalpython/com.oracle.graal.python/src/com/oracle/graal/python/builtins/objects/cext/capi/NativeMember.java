@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.CSTRING;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.POINTER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.PRIMITIVE;
@@ -70,7 +71,7 @@ public enum NativeMember {
 
     // PyTypeObject
     TP_FLAGS("tp_flags", PRIMITIVE),
-    TP_NAME("tp_name"),
+    TP_NAME("tp_name", CSTRING),
     TP_BASE("tp_base", OBJECT),
     TP_BASES("tp_bases", OBJECT),
     TP_MRO("tp_mro", OBJECT),

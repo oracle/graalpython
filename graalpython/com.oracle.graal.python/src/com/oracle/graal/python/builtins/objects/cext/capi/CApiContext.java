@@ -51,11 +51,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AttachLLVMTypeNode;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -90,6 +91,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class CApiContext extends CExtContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
+
+    /**
+     * A dummy context to disambiguate between <it>context not yet created</it> and <it>context
+     * should be looked up lazily</it>
+     */
+    static final CApiContext LAZY_CONTEXT = new CApiContext();
 
     public static final long REFERENCE_COUNT_BITS = Integer.SIZE;
     public static final long REFERENCE_COUNT_MARKER = (1L << REFERENCE_COUNT_BITS);
@@ -130,6 +137,17 @@ public final class CApiContext extends CExtContext {
 
     /** same as {@code moduleobject.c: max_module_number} */
     private long maxModuleNumber;
+
+    /**
+     * Private dummy constructor just for {@link #LAZY_CONTEXT}.
+     */
+    private CApiContext() {
+        super(null, null, null);
+        nativeObjectsQueue = null;
+        nativeObjectWrapperList = null;
+        primitiveNativeWrapperCache = null;
+        llvmTypeCache = null;
+    }
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
@@ -263,6 +281,11 @@ public final class CApiContext extends CExtContext {
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(long l) {
         assert CApiGuards.isSmallLong(l);
         return getCachedPrimitiveNativeWrapper((int) l);
+    }
+
+    @Override
+    protected String[] getKnownCacheSymbols() {
+        return NativeCAPISymbols.getValues();
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
@@ -435,22 +458,22 @@ public final class CApiContext extends CExtContext {
     }
 
     public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
-                    GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode) {
-        return getPythonNativeObject(nativePtr, newRefProfile, validRefProfile, resurrectProfile, getObRefCntNode, addRefCntNode, false);
+                    GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, AttachLLVMTypeNode attachLLVMTypeNode) {
+        return getPythonNativeObject(nativePtr, newRefProfile, validRefProfile, resurrectProfile, getObRefCntNode, addRefCntNode, false, attachLLVMTypeNode);
     }
 
     public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
-                    GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, boolean steal) {
+                    GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
         CompilerAsserts.partialEvaluationConstant(addRefCntNode);
         CompilerAsserts.partialEvaluationConstant(steal);
 
-        int id = CApiContext.idFromRefCnt(getObRefCntNode.execute(nativePtr));
+        int id = CApiContext.idFromRefCnt(getObRefCntNode.execute(this, nativePtr));
 
         NativeObjectReference ref;
 
         // If there is no mapping, we need to create a new one.
         if (newRefProfile.profile(id == 0)) {
-            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
+            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal, attachLLVMTypeNode);
         } else if (validRefProfile.profile(id > 0)) {
             PythonAbstractNativeObject nativeObject;
             ref = lookupNativeObjectReference(id);
@@ -473,15 +496,15 @@ public final class CApiContext extends CExtContext {
                 }
                 return nativeObject;
             }
-            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
+            return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal, attachLLVMTypeNode);
         } else {
             LOGGER.warning(() -> String.format("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
         }
         return new PythonAbstractNativeObject(nativePtr);
     }
 
-    PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal) {
-        PythonAbstractNativeObject nativeObject = new PythonAbstractNativeObject(nativePtr);
+    PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal, AttachLLVMTypeNode attachLLVMTypeNode) {
+        PythonAbstractNativeObject nativeObject = new PythonAbstractNativeObject(attachLLVMTypeNode.execute(nativePtr));
         int nativeRefID = nativeObjectWrapperList.reserve();
         assert nativeRefID != -1;
 
@@ -750,6 +773,8 @@ public final class CApiContext extends CExtContext {
         size_t,
         Py_ssize_t,
         Py_complex,
+        PyObject,
+        PyTypeObject,
         PyObject_ptr_t,
         char_ptr_t,
         void_ptr_t,

@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+
+import java.lang.reflect.Field;
+
 public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_GET_M_NAME = "graal_hpy_get_m_name";
     public static final String GRAAL_HPY_GET_M_DOC = "graal_hpy_get_m_doc";
@@ -118,4 +123,23 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_WRITE_PTR = "graal_hpy_write_ptr";
 
     public static final String GRAAL_HPY_BULK_FREE = "graal_hpy_bulk_free";
+
+    @CompilationFinal(dimensions = 1) private static final String[] VALUES;
+    static {
+        Field[] declaredFields = GraalHPyNativeSymbols.class.getDeclaredFields();
+        VALUES = new String[declaredFields.length - 1]; // omit the values field
+        for (int i = 0; i < declaredFields.length; i++) {
+            Field s = declaredFields[i];
+            if (s.getType() == String.class) {
+                try {
+                    VALUES[i] = (String) s.get(NativeCAPISymbols.class);
+                } catch (IllegalArgumentException | IllegalAccessException e) {
+                }
+            }
+        }
+    }
+
+    public static String[] getValues() {
+        return VALUES;
+    }
 }

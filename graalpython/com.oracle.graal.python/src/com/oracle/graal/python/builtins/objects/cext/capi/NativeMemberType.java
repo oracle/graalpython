@@ -51,5 +51,6 @@ public enum NativeMemberType {
 
     // must not do reference counting
     PRIMITIVE,
+    CSTRING,
     POINTER
 }

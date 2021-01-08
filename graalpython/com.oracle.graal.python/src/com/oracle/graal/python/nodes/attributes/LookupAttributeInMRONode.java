@@ -64,6 +64,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -286,7 +287,29 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return PNone.NO_VALUE;
     }
 
-    @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO"})
+    @Specialization(guards = {"mroLength == cachedMroLength", "cachedMroLength < 32"}, //
+                    replaces = {"lookupConstantMROCached", "lookupConstantMRO"}, //
+                    limit = "getAttributeAccessInlineCacheMaxDepth()")
+    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    protected Object lookupCachedLen(@SuppressWarnings("unused") Object klass,
+                    @Bind("getMro(klass)") MroSequenceStorage mro,
+                    @Bind("mro.length()") @SuppressWarnings("unused") int mroLength,
+                    @Cached("mro.length()") int cachedMroLength,
+                    @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
+        for (int i = 0; i < cachedMroLength; i++) {
+            Object kls = mro.getItemNormalized(i);
+            if (skipPythonClasses && kls instanceof PythonClass) {
+                continue;
+            }
+            Object value = readAttrNodes[i].execute(kls, key);
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+        }
+        return PNone.NO_VALUE;
+    }
+
+    @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO", "lookupCachedLen"})
     protected Object lookup(Object klass,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
         return lookupSlow(klass, key, ensureGetMroNode(), readAttrNode, skipPythonClasses);

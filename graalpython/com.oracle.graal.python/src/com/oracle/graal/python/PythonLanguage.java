@@ -41,11 +41,11 @@ import org.graalvm.options.OptionValues;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -190,6 +190,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * @see com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins
      */
     private final AtomicReference<CallTarget> scandirFinalizerCallTargetCache = new AtomicReference<>();
+
+    /** A shared shape for the C symbol cache (lazily initialized). */
+    private Shape cApiSymbolCache;
+    private Shape hpySymbolCache;
 
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
@@ -804,5 +808,27 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             });
         }
         return callTarget;
+    }
+
+    /**
+     * Returns the shape used for the C API symbol cache.
+     */
+    @TruffleBoundary
+    public synchronized Shape getCApiSymbolCacheShape() {
+        if (cApiSymbolCache == null) {
+            cApiSymbolCache = Shape.newBuilder().build();
+        }
+        return cApiSymbolCache;
+    }
+
+    /**
+     * Returns the shape used for the HPy API symbol cache.
+     */
+    @TruffleBoundary
+    public synchronized Shape getHPySymbolCacheShape() {
+        if (hpySymbolCache == null) {
+            hpySymbolCache = Shape.newBuilder().build();
+        }
+        return hpySymbolCache;
     }
 }
