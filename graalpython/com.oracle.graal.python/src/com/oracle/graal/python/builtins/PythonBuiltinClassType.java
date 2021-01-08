@@ -126,6 +126,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PZipImporter("zipimporter", "zipimport"),
     PBuffer("buffer", BuiltinNames.BUILTINS, false),
     PThread("start_new_thread", "_thread"),
+    PThreadLocal("_local", "_thread"),
     PLock("LockType", "_thread"),
     PRLock("RLock", "_thread"),
     PSemLock("SemLock", "_multiprocessing"),

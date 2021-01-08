@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -81,6 +82,15 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "_local", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PThreadLocal)
+    @GenerateNodeFactory
+    abstract static class ThreadLocalNode extends PythonBuiltinNode {
+        @Specialization
+        PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs) {
+            return factory().createThreadLocal(cls, args, keywordArgs);
+        }
     }
 
     @Builtin(name = "__truffle_get_timeout_max__", minNumOfPositionalArgs = 0)
