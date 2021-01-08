@@ -4,6 +4,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -12,7 +13,9 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -96,12 +99,25 @@ public class SslModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "txt2obj", minNumOfPositionalArgs = 1, parameterNames = {"txt", "name"})
+    @ArgumentClinic(name = "txt", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
-    abstract static class Txt2ObjNode extends PythonBinaryBuiltinNode {
+    abstract static class Txt2ObjNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object txt2obj(Object txt, Object name) {
+        Object txt2obj(String txt, boolean name) {
+            // TODO implement properly
+            if ("1.3.6.1.5.5.7.3.1".equals(txt)) {
+                return factory().createTuple(new Object[]{129, "serverAuth", "TLS Web Server Authentication", txt});
+            } else if ("1.3.6.1.5.5.7.3.2".equals(txt)) {
+                return factory().createTuple(new Object[]{130, "clientAuth", "TLS Web Client Authentication", txt});
+            }
             throw raise(NotImplementedError);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SslModuleBuiltinsClinicProviders.Txt2ObjNodeClinicProviderGen.INSTANCE;
         }
     }
 
