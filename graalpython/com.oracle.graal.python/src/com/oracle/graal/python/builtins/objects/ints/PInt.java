@@ -251,11 +251,21 @@ public final class PInt extends PythonBuiltinObject {
     public int asFileDescriptorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {
+        int result;
         try {
-            return castToJavaIntNode.execute(this);
+            result = castToJavaIntNode.execute(this);
         } catch (PException e) {
             throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
+        return asFileDescriptor(result, raiseNode);
+    }
+
+    @Ignore
+    public static int asFileDescriptor(int value, PRaiseNode raiseNode) {
+        if (value < 0) {
+            raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.S_CANNOT_BE_NEGATIVE_INTEGER_D, "file descriptor", value);
+        }
+        return value;
     }
 
     @SuppressWarnings("static-method")
