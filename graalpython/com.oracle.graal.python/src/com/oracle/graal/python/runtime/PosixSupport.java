@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,41 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.posix;
+package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 
-public class PDirEntry extends PythonBuiltinObject {
-
-    final Object dirEntryData;
-    final PosixFileHandle scandirPath;
-    volatile PTuple statCache;
-    volatile PTuple lstatCache;
-    volatile PosixPath pathCache;
-
-    public PDirEntry(Object cls, Shape instanceShape, Object dirEntryData, PosixFileHandle scandirPath) {
-        super(cls, instanceShape);
-        this.dirEntryData = dirEntryData;
-        this.scandirPath = scandirPath;
-    }
-
-    PTuple getStatCache(boolean followSymlinks) {
-        return followSymlinks ? statCache : lstatCache;
-    }
-
-    void setStatCache(boolean followSymlinks, PTuple value) {
-        if (followSymlinks) {
-            statCache = value;
-        } else {
-            lstatCache = value;
-        }
-    }
-
-    boolean produceBytes() {
-        return scandirPath instanceof PosixPath && ((PosixPath) scandirPath).wasBufferLike;
+public abstract class PosixSupport {
+    public void setEnv(@SuppressWarnings("unused") Env env) {
+        // nop
     }
 }

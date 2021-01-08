@@ -56,6 +56,7 @@ import java.nio.file.NotLinkException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -114,7 +115,7 @@ public enum OSErrorEnum {
     ENOLCK(37, "No record locks available"),
     ENOSYS(38, "Invalid system call number"),
     ENOTEMPTY(39, "Directory not empty"),
-    ELOOP(40, "Too many symbolic links encountered"),
+    ELOOP(40, "Too many symbolic links encountered", "Too many levels of symbolic links"),
     ENOMSG(42, "No message of desired type"),
     EIDRM(43, "Identifier removed"),
     ECHRNG(44, "Channel number out of range"),
@@ -207,12 +208,18 @@ public enum OSErrorEnum {
     ERFKILL(132, "Operation not possible due to RF-kill"),
     EHWPOISON(133, "Memory page has hardware error");
 
-    private String message;
-    private int number; // there can be more errors with the same number
+    private final String message;
+    private final String[] alternativeMessages;
+    private final int number; // there can be more errors with the same number
 
-    OSErrorEnum(int number, String message) {
+    OSErrorEnum(int number, String message, String... alternativeMessages) {
         this.number = number;
         this.message = message;
+        this.alternativeMessages = alternativeMessages;
+    }
+
+    OSErrorEnum(int number, String message) {
+        this(number, message, PythonUtils.EMPTY_STRING_ARRAY);
     }
 
     OSErrorEnum(int number) {
@@ -232,6 +239,11 @@ public enum OSErrorEnum {
         for (OSErrorEnum oserror : values()) {
             if (message.equals(oserror.getMessage())) {
                 return oserror;
+            }
+            for (String altMessage : oserror.alternativeMessages) {
+                if (message.equals(altMessage)) {
+                    return oserror;
+                }
             }
         }
         return null;
@@ -267,6 +279,10 @@ public enum OSErrorEnum {
             } else if (e instanceof ClosedChannelException) {
                 return new ErrorAndMessagePair(OSErrorEnum.EPIPE, OSErrorEnum.EPIPE.getMessage());
             } else if (e instanceof FileSystemException) {
+                // Unfortunately we don't have any better means of getting the error code than
+                // matching the error message. This is an issue if the Python code checks for
+                // specific error numbers like in the glob module: failing to match the correct
+                // error number of 40 (link loop) breaks that module's code
                 String reason = getReason((FileSystemException) e);
                 OSErrorEnum oserror = OSErrorEnum.fromMessage(reason);
                 if (oserror == null) {

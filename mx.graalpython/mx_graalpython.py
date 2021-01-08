@@ -386,6 +386,7 @@ class GraalPythonTags(object):
     unittest_jython = 'python-unittest-jython'
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
+    unittest_posix = 'python-unittest-posix'
     tagged = 'python-tagged-unittest'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
@@ -675,6 +676,11 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
             run_hpy_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+
+    with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
+        if task:
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py"])
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:

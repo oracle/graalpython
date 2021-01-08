@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,41 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.posix;
 
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.truffle.api.object.Shape;
+// This source contains functions that require POSIX functions without GNU extensions
+// These functions are called from NFIPosixSupport Java class using NFI
 
-public class PDirEntry extends PythonBuiltinObject {
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
 
-    final Object dirEntryData;
-    final PosixFileHandle scandirPath;
-    volatile PTuple statCache;
-    volatile PTuple lstatCache;
-    volatile PosixPath pathCache;
+/*
+  There are two versions of strerror_r and we need the POSIX one. The following lines double-check
+  that we got it. First, we check that _GNU_SOURCE has not been defined by any of the included headers.
+  Then we explicitly declare the function with POSIX signature which should force the compiler to
+  report an error in case we got the GNU version somehow.
+*/
+#ifdef _GNU_SOURCE
+#error "Someone defined _GNU_SOURCE"
+#endif
+int strerror_r(int errnum, char *buf, size_t buflen);
 
-    public PDirEntry(Object cls, Shape instanceShape, Object dirEntryData, PosixFileHandle scandirPath) {
-        super(cls, instanceShape);
-        this.dirEntryData = dirEntryData;
-        this.scandirPath = scandirPath;
-    }
-
-    PTuple getStatCache(boolean followSymlinks) {
-        return followSymlinks ? statCache : lstatCache;
-    }
-
-    void setStatCache(boolean followSymlinks, PTuple value) {
-        if (followSymlinks) {
-            statCache = value;
-        } else {
-            lstatCache = value;
-        }
-    }
-
-    boolean produceBytes() {
-        return scandirPath instanceof PosixPath && ((PosixPath) scandirPath).wasBufferLike;
+void call_strerror(int32_t error, char *buf, int32_t buflen) {
+    int err = strerror_r(error, buf, buflen);
+    if (err) {
+        snprintf(buf, buflen, "Unknown error %d", error);
     }
 }

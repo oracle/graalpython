@@ -184,6 +184,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
 
+    /**
+     * Caches per-engine singleton instance of call target used to release ScandirIterator.
+     * 
+     * @see com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins
+     */
+    private final AtomicReference<CallTarget> scandirFinalizerCallTargetCache = new AtomicReference<>();
+
     /** A shared shape for the C symbol cache (lazily initialized). */
     private Shape cApiSymbolCache;
     private Shape hpySymbolCache;
@@ -250,9 +257,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         OptionValues options = this.engineOptions;
         if (options == null) {
-            this.engineOptions = options = PythonOptions.createEngineOptions(env);
+            this.engineOptions = PythonOptions.createEngineOptions(env);
         } else {
-            assert options.equals(PythonOptions.createEngineOptions(env)) : "invalid engine options";
+            assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
         return context;
     }
@@ -563,6 +570,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID, clazz);
     }
 
+    /**
+     * Loggers that should report any known incompatibility with CPython, which is silently ignored
+     * in order to be able to continue the execution. Example is setting the stack size limit: it
+     * would be too drastic measure to raise error, because the program may continue and work
+     * correctly even if it is ignored.
+     *
+     * The logger name is prefixed with "compatibility" such that
+     * {@code --log.python.compatibility.level=LEVEL} can turn on compatibility related logging for
+     * all classes.
+     */
+    @TruffleBoundary
+    public static TruffleLogger getCompatibilityLogger(Class<?> clazz) {
+        return TruffleLogger.getLogger(ID, "compatibility." + clazz.getName());
+    }
+
     public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {
         try {
             SourceBuilder sourceBuilder = null;
@@ -772,6 +794,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             arithmeticOpCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
         }
         assert callTarget != null;
+        return callTarget;
+    }
+
+    public CallTarget getScandirFinalizerCallTarget(Function<PythonLanguage, RootNode> rootNodeSupplier) {
+        CallTarget callTarget = scandirFinalizerCallTargetCache.get();
+        if (callTarget == null) {
+            callTarget = scandirFinalizerCallTargetCache.updateAndGet((ct) -> {
+                if (ct == null) {
+                    return PythonUtils.getOrCreateCallTarget(rootNodeSupplier.apply(this));
+                }
+                return ct;
+            });
+        }
         return callTarget;
     }
 

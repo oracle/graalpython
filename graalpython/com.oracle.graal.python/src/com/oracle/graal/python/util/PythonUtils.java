@@ -53,6 +53,7 @@ import javax.management.ReflectionException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -221,6 +222,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String newString(byte[] bytes, int offset, int length) {
+        return new String(bytes, offset, length);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static String newString(char[] chars) {
         return new String(chars);
     }
@@ -258,5 +264,37 @@ public final class PythonUtils {
     @TruffleBoundary(allowInlining = true)
     public static StringBuilder appendCodePoint(StringBuilder sb, int codePoint) {
         return sb.appendCodePoint(codePoint);
+    }
+
+    @TruffleBoundary
+    public static String getPythonArch() {
+        String arch = System.getProperty("os.arch", "");
+        if (arch.equals("amd64")) {
+            // be compatible with CPython's designation
+            arch = "x86_64";
+        }
+        return arch;
+    }
+
+    @TruffleBoundary
+    public static String getPythonOSName() {
+        String property = System.getProperty("os.name");
+        String os = "java";
+        if (property != null) {
+            if (property.toLowerCase().contains("cygwin")) {
+                os = "cygwin";
+            } else if (property.toLowerCase().contains("linux")) {
+                os = "linux";
+            } else if (property.toLowerCase().contains("mac")) {
+                os = SysModuleBuiltins.PLATFORM_DARWIN;
+            } else if (property.toLowerCase().contains("windows")) {
+                os = SysModuleBuiltins.PLATFORM_WIN32;
+            } else if (property.toLowerCase().contains("sunos")) {
+                os = "sunos";
+            } else if (property.toLowerCase().contains("freebsd")) {
+                os = "freebsd";
+            }
+        }
+        return os;
     }
 }

@@ -49,7 +49,6 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -90,9 +89,11 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -529,6 +530,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         boolean typeCheck(Object instance, Object cls,
                         @CachedLibrary("instance") PythonObjectLibrary lib) {
             return lib.typeCheck(instance, cls);
+        }
+    }
+
+    @Builtin(name = "posix_module_backend", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PosixModuleBackendNode extends PythonBuiltinNode {
+        @Specialization
+        String posixModuleBackend(
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getBackend(getPosixSupport());
         }
     }
 

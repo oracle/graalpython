@@ -213,6 +213,7 @@ public final class PythonContext {
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
 
+    @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
     @CompilationFinal private NFIBz2Support nativeBz2lib;
 
@@ -256,7 +257,7 @@ public final class PythonContext {
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
-    private final PosixResources resources;
+    private PosixResources resources;
     private final AsyncHandler handler;
     private final AsyncHandler.SharedFinalizer sharedFinalizer;
 
@@ -273,11 +274,9 @@ public final class PythonContext {
         this.language = language;
         this.core = core;
         this.env = env;
-        this.resources = new PosixResources();
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
-        this.resources.setEnv(env);
         this.in = env.in();
         this.out = env.out();
         this.err = env.err();
@@ -330,6 +329,10 @@ public final class PythonContext {
         return builtinsModule;
     }
 
+    public Object getPosixSupport() {
+        return posixSupport;
+    }
+
     public boolean isNativeAccessAllowed() {
         return env.isNativeAccessAllowed();
     }
@@ -353,6 +356,7 @@ public final class PythonContext {
         out = env.out();
         err = env.err();
         resources.setEnv(env);
+        posixSupport.setEnv(env);
         optionValues = PythonOptions.createOptionValuesStorage(newEnv);
     }
 
@@ -434,6 +438,7 @@ public final class PythonContext {
     }
 
     public void initialize() {
+        initalizePosixSupport();
         core.initialize(this);
         setupRuntimeInformation(false);
         core.postInitialize();
@@ -540,6 +545,36 @@ public final class PythonContext {
 
         applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
+    }
+
+    private void initalizePosixSupport() {
+        String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
+        PosixSupport result;
+        switch (option) {
+            case "java":
+                result = new EmulatedPosixSupport(this);
+                break;
+            case "native":
+                result = NFIPosixSupport.createNative(this);
+                break;
+            case "llvm":
+                result = NFIPosixSupport.createLLVM(this);
+                break;
+            default:
+                throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
+        }
+        // The resources field will be removed once all posix builtins go through PosixSupport
+        if (result instanceof PosixResources) {
+            resources = (PosixResources) result;
+        } else {
+            resources = new PosixResources();
+            resources.setEnv(env);
+        }
+        if (LoggingPosixSupport.isEnabled()) {
+            posixSupport = new LoggingPosixSupport(result);
+        } else {
+            posixSupport = result;
+        }
     }
 
     private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;

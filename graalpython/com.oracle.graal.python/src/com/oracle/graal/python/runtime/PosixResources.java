@@ -70,14 +70,14 @@ import com.oracle.truffle.api.profiles.ValueProfile;
  *
  * It also manages the list of virtual child PIDs.
  */
-public class PosixResources {
-    private final int FD_STDIN = 0;
-    private final int FD_STDOUT = 1;
-    private final int FD_STDERR = 2;
+public class PosixResources extends PosixSupport {
+    private static final int FD_STDIN = 0;
+    private static final int FD_STDOUT = 1;
+    private static final int FD_STDERR = 2;
 
     /** Context-local file-descriptor mappings and PID mappings */
     private final SortedMap<Integer, ChannelWrapper> files;
-    private final Map<Integer, String> filePaths;
+    protected final Map<Integer, String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
@@ -153,18 +153,24 @@ public class PosixResources {
         Channel channel;
         int cnt;
         FileLock lock;
-
-        ChannelWrapper() {
-            this(null, 0);
-        }
+        boolean isStandardStream;
 
         ChannelWrapper(Channel channel) {
             this(channel, 1);
         }
 
         ChannelWrapper(Channel channel, int cnt) {
+            this(channel, cnt, false);
+        }
+
+        ChannelWrapper(Channel channel, int cnt, boolean isStandardStream) {
             this.channel = channel;
             this.cnt = cnt;
+            this.isStandardStream = isStandardStream;
+        }
+
+        static ChannelWrapper createForStandardStream() {
+            return new ChannelWrapper(null, 0, true);
         }
 
         void setNewChannel(InputStream inputStream) {
@@ -184,9 +190,9 @@ public class PosixResources {
         children = Collections.synchronizedList(new ArrayList<>());
         String osProperty = System.getProperty("os.name");
 
-        files.put(FD_STDIN, new ChannelWrapper());
-        files.put(FD_STDOUT, new ChannelWrapper());
-        files.put(FD_STDERR, new ChannelWrapper());
+        files.put(FD_STDIN, ChannelWrapper.createForStandardStream());
+        files.put(FD_STDOUT, ChannelWrapper.createForStandardStream());
+        files.put(FD_STDERR, ChannelWrapper.createForStandardStream());
         if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).contains("win")) {
             filePaths.put(FD_STDIN, "STDIN");
             filePaths.put(FD_STDOUT, "STDOUT");
@@ -203,6 +209,7 @@ public class PosixResources {
     }
 
     @TruffleBoundary
+    @Override
     public void setEnv(Env env) {
         synchronized (files) {
             files.get(FD_STDIN).setNewChannel(env.in());
@@ -224,7 +231,7 @@ public class PosixResources {
     }
 
     @TruffleBoundary
-    private void removeFD(int fd) throws IOException {
+    protected boolean removeFD(int fd) throws IOException {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
 
         if (channelWrapper != null) {
@@ -238,7 +245,9 @@ public class PosixResources {
                 files.remove(fd);
                 filePaths.remove(fd);
             }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -251,6 +260,11 @@ public class PosixResources {
             channelWrapper.cnt += 1;
             files.put(fd2, channelWrapper);
         }
+    }
+
+    protected boolean isStandardStream(int fd) {
+        ChannelWrapper channelWrapper = files.get(fd);
+        return channelWrapper != null && channelWrapper.isStandardStream;
     }
 
     @TruffleBoundary
