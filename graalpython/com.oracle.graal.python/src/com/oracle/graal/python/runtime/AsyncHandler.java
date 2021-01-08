@@ -256,6 +256,7 @@ public class AsyncHandler {
         }
     }
 
+    @TruffleBoundary
     private final void doReleaseGIL() {
         context.get().releaseGil();
         Thread.yield();
