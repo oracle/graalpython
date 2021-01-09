@@ -90,15 +90,21 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodesFactory.GetFullyQualifiedNameNodeGen;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -108,6 +114,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -684,6 +691,57 @@ public abstract class ObjectNodes {
                         @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             Object copyReg = importNode.execute(frame);
             return pol.lookupAndCallRegularMethod(copyReg, frame, "_reduce_ex", obj, proto);
+        }
+    }
+
+    /**
+     * Returns the fully qualified name of a class.
+     *
+     * The fully qualified name includes the name of the module (unless it is the
+     * {@link BuiltinNames#BUILTINS} module).
+     */
+    @ImportStatic(SpecialAttributeNames.class)
+    public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
+        public abstract String execute(VirtualFrame frame, Object cls);
+
+        @Specialization
+        String get(VirtualFrame frame, Object cls,
+                        @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
+                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode,
+                        @Cached CastToJavaStringNode castModuleToStringNode,
+                        @Cached CastToJavaStringNode castNameToStringNode) {
+            Object moduleName = readModuleNode.executeObject(frame, cls);
+            String qualName = castNameToStringNode.execute(readQualNameNode.executeObject(frame, cls));
+            if (moduleName == PNone.NO_VALUE || BuiltinNames.BUILTINS.equals(moduleName)) {
+                return qualName;
+            }
+            StringBuilder sb = PythonUtils.newStringBuilder();
+            PythonUtils.append(sb, castModuleToStringNode.execute(moduleName));
+            PythonUtils.append(sb, '.');
+            PythonUtils.append(sb, qualName);
+            return PythonUtils.sbToString(sb);
+        }
+
+        public static GetFullyQualifiedNameNode create() {
+            return GetFullyQualifiedNameNodeGen.create();
+        }
+    }
+
+    /**
+     * Returns the fully qualified name of the class of an object.
+     *
+     * The fully qualified name includes the name of the module (unless it is the
+     * {@link BuiltinNames#BUILTINS} module).
+     */
+    @ImportStatic(SpecialAttributeNames.class)
+    public abstract static class GetFullyQualifiedClassNameNode extends PNodeWithContext {
+        public abstract String execute(VirtualFrame frame, Object self);
+
+        @Specialization
+        String get(VirtualFrame frame, Object self,
+                        @Cached GetClassNode getClass,
+                        @Cached GetFullyQualifiedNameNode getFullyQualifiedNameNode) {
+            return getFullyQualifiedNameNode.execute(frame, getClass.execute(self));
         }
     }
 }
