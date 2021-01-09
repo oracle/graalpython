@@ -143,6 +143,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ZlibCompress("Compress", "zlib"),
     ZlibDecompress("Decompress", "zlib"),
     PBufferedReader("BufferedReader", "_io"),
+    PStatResult("stat_result", "os", false),
+    PTerminalSize("terminal_size", "os", false),
+    PUnameResult("uname_result", "posix", false),
+    PStructTime("struct_time", "time", false),
 
     // Errors and exceptions:
 
@@ -392,6 +396,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SyntaxWarning.base = Warning;
         UnicodeWarning.base = Warning;
         UserWarning.base = Warning;
+
+        PStatResult.base = PTuple;
+        PTerminalSize.base = PTuple;
+        PUnameResult.base = PTuple;
+        PStructTime.base = PTuple;
     }
 
     /* InteropLibrary messages */

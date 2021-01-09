@@ -1527,6 +1527,10 @@ public abstract class TypeNodes {
                 case PFrame:
                 case PMemoryView:
                 case PTuple:
+                case PStatResult:
+                case PTerminalSize:
+                case PUnameResult:
+                case PStructTime:
                     return 8;
                 case PythonClass:
                     return 40;
