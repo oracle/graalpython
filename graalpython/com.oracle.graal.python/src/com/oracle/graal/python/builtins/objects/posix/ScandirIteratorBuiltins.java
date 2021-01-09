@@ -160,7 +160,8 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
             if (ref.isReleased()) {
                 return;
             }
-            CallTarget callTarget = context.getLanguage().getScandirFinalizerCallTarget(ReleaserRootNode::new);
+            PythonLanguage language = context.getLanguage();
+            CallTarget callTarget = language.getOrComputeBuiltinCallTarget(ReleaserRootNode.class.getName(), () -> new ReleaserRootNode(language));
             callTarget.call(ref.getReference());
         }
 

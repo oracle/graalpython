@@ -41,7 +41,6 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.BiConsumer;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
@@ -75,8 +74,8 @@ public abstract class PythonBuiltins {
             } else {
                 declaresExplicitSelf = true;
             }
-            RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(builtin, factory.getNodeClass(),
-                            (b) -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
+            RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(factory.getNodeClass().getName() + builtin.name(),
+                            () -> new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf));
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();

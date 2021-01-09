@@ -38,7 +38,6 @@ import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
 
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -59,7 +58,6 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -76,13 +74,13 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -97,9 +95,9 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -183,13 +181,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
-
-    /**
-     * Caches per-engine singleton instance of call target used to release ScandirIterator.
-     * 
-     * @see com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins
-     */
-    private final AtomicReference<CallTarget> scandirFinalizerCallTargetCache = new AtomicReference<>();
 
     /** A shared shape for the C symbol cache (lazily initialized). */
     private Shape cApiSymbolCache;
@@ -689,9 +680,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.disposeThread(thread);
     }
 
-    public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, Function<Builtin, RootCallTarget> supplier) {
-        String key = builtin.name() + nodeClass.getName();
-        return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
+    public RootCallTarget getOrComputeBuiltinCallTarget(String key, Supplier<RootNode> supplier) {
+        return builtinCallTargetCache.computeIfAbsent(key, (k) -> PythonUtils.getOrCreateCallTarget(supplier.get()));
     }
 
     public Shape getEmptyShape() {
@@ -794,19 +784,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             arithmeticOpCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
         }
         assert callTarget != null;
-        return callTarget;
-    }
-
-    public CallTarget getScandirFinalizerCallTarget(Function<PythonLanguage, RootNode> rootNodeSupplier) {
-        CallTarget callTarget = scandirFinalizerCallTargetCache.get();
-        if (callTarget == null) {
-            callTarget = scandirFinalizerCallTargetCache.updateAndGet((ct) -> {
-                if (ct == null) {
-                    return PythonUtils.getOrCreateCallTarget(rootNodeSupplier.apply(this));
-                }
-                return ct;
-            });
-        }
         return callTarget;
     }
 
