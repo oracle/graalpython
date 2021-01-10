@@ -269,7 +269,6 @@ public final class Python3Core implements PythonCore {
                         "_ast",
                         "java",
                         "pyio_patches",
-                        "pwd",
                         "resource",
                         "_contextvars",
                         "pip_hook",

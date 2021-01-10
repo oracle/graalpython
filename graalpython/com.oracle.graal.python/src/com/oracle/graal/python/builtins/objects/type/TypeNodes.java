@@ -1533,6 +1533,7 @@ public abstract class TypeNodes {
                 case PStructTime:
                 case PProfilerEntry:
                 case PProfilerSubentry:
+                case PStructPasswd:
                     return 8;
                 case PythonClass:
                     return 40;
