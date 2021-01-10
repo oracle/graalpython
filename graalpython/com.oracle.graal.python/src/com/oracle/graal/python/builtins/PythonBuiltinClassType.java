@@ -151,6 +151,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PProfilerSubentry("profiler_subentry", "_lsprof", false),
     PStructPasswd("struct_passwd", "pwd", false),
     PStructRusage("struct_rusage", "resource", false),
+    PVersionInfo("version_info", "sys", false),
+    PFlags("flags", "sys", false),
+    PFloatInfo("float_info", "sys", false),
+    PIntInfo("int_info", "sys", false),
+    PHashInfo("hash_info", "sys", false),
+    PThreadInfo("thread_info", "sys", false),
+    PUnraisableHookArgs("UnraisableHookArgs", false),
 
     // Errors and exceptions:
 
@@ -409,6 +416,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PProfilerSubentry.base = PTuple;
         PStructPasswd.base = PTuple;
         PStructRusage.base = PTuple;
+        PVersionInfo.base = PTuple;
+        PFlags.base = PTuple;
+        PFloatInfo.base = PTuple;
+        PIntInfo.base = PTuple;
+        PHashInfo.base = PTuple;
+        PThreadInfo.base = PTuple;
+        PUnraisableHookArgs.base = PTuple;
     }
 
     /* InteropLibrary messages */

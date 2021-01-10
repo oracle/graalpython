@@ -1535,6 +1535,13 @@ public abstract class TypeNodes {
                 case PProfilerSubentry:
                 case PStructPasswd:
                 case PStructRusage:
+                case PVersionInfo:
+                case PFlags:
+                case PFloatInfo:
+                case PIntInfo:
+                case PHashInfo:
+                case PThreadInfo:
+                case PUnraisableHookArgs:
                     return 8;
                 case PythonClass:
                     return 40;

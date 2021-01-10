@@ -40,23 +40,17 @@ from builtins import BaseException
 
 
 def make_implementation_info():
-    from _descriptor import SimpleNamespace, make_named_tuple_class
-    version_info_type = make_named_tuple_class(
-        "version_info", ["major", "minor", "micro", "releaselevel", "serial"]
-    )
-    _version = version_info_type(version_info)
+    from _descriptor import SimpleNamespace
     result = SimpleNamespace(
         name="graalpython",
-        cache_tag="graalpython-"+str(_version.major) + str(_version.minor),
-        version=_version,
+        cache_tag="graalpython-"+str(version_info.major) + str(version_info.minor),
+        version=version_info,
         _multiarch=__gmultiarch
     )
-    version_info_type.seal()
     return result
 implementation = make_implementation_info()
 del make_implementation_info
 del __gmultiarch
-version_info = implementation.version
 implementation.hexversion = hexversion = ((version_info.major << 24) |
               (version_info.minor << 16) |
               (version_info.micro << 8) |
@@ -64,87 +58,7 @@ implementation.hexversion = hexversion = ((version_info.major << 24) |
               (version_info.serial << 0))
 
 
-def make_flags_class():
-    from _descriptor import make_named_tuple_class
-    names = ["bytes_warning", "debug", "dont_write_bytecode",
-             "hash_randomization", "ignore_environment", "inspect",
-             "interactive", "isolated", "no_site", "no_user_site", "optimize",
-             "quiet", "verbose", "dev_mode", "utf8_mode"]
-    return make_named_tuple_class("sys.flags", names)
-flags = make_flags_class()(__graalpython__.flags)
-type(flags).seal()
-del make_flags_class
-
-
-def make_float_info_class():
-    from _descriptor import make_named_tuple_class
-    return make_named_tuple_class(
-        "float_info",
-        ["max",
-         "max_exp",
-         "max_10_exp",
-         "min",
-         "min_exp",
-         "min_10_exp",
-         "dig",
-         "mant_dig",
-         "epsilon",
-         "radix",
-         "rounds"]
-    )
-float_info = make_float_info_class()(float_info)
-del make_float_info_class
-
 float_repr_style = 'short'
-
-def make_int_info_class():
-    from _descriptor import make_named_tuple_class
-    return make_named_tuple_class(
-        "int_info",
-        ["bits_per_digit",
-         "sizeof_digit"]
-    )
-int_info = make_int_info_class()((32, 4))
-del make_int_info_class
-
-
-def make_hash_info_class():
-    from _descriptor import make_named_tuple_class
-    return make_named_tuple_class(
-        "hash_info",
-        ["algorithm",
-         "cutoff",
-         "hash_bits",
-         "imag",
-         "inf",
-         "modulus",
-         "nan",
-         "seed_bits",
-         "width"]
-    )
-hash_info = make_hash_info_class()(hash_info)
-del make_hash_info_class
-
-
-def make_thread_info_class():
-    from _descriptor import make_named_tuple_class
-    return make_named_tuple_class(
-        "thread_info",
-        ["name",
-         "lock",
-         "version"]
-    )
-thread_info = make_thread_info_class()([None, None, None])
-del make_thread_info_class
-
-def make_unraisable_hook_args_class():
-    from _descriptor import make_named_tuple_class
-    return make_named_tuple_class(
-        "UnraisableHookArgs",
-        ["exc_type", "exc_value", "exc_traceback", "err_msg", "object"],
-    )
-__UnraisableHookArgs = make_unraisable_hook_args_class()
-del make_unraisable_hook_args_class
 
 
 meta_path = []

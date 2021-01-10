@@ -64,9 +64,11 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.DisabledNewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReduceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReprNodeGen;
@@ -79,6 +81,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.Standalone
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -113,8 +116,9 @@ public class StructSequence {
         public final int inSequence;
         public final String[] fieldNames;
         public final String[] fieldDocStrings;
+        public final boolean allowInstances;
 
-        public Descriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
+        public Descriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
             assert fieldNames.length == fieldDocStrings.length;
             assert type.getBase() == PythonBuiltinClassType.PTuple;
             assert !type.isAcceptableBase();
@@ -123,6 +127,11 @@ public class StructSequence {
             this.inSequence = inSequence;
             this.fieldNames = fieldNames;
             this.fieldDocStrings = fieldDocStrings;
+            this.allowInstances = allowInstances;
+        }
+
+        public Descriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
+            this(type, docString, inSequence, fieldNames, fieldDocStrings, true);
         }
 
         // This shifts the names in a confusing way, but that is what CPython does:
@@ -166,7 +175,11 @@ public class StructSequence {
         createMethod(core, klass, ReduceNode.class, () -> ReduceNodeGen.create(desc), false);
 
         if (klass.getAttribute(__NEW__) == PNone.NO_VALUE) {
-            createMethod(core, klass, NewNode.class, () -> NewNodeGen.create(desc), true);
+            if (desc.allowInstances) {
+                createMethod(core, klass, NewNode.class, () -> NewNodeGen.create(desc), true);
+            } else {
+                createMethod(core, klass, DisabledNewNode.class, () -> DisabledNewNodeGen.create(desc), true);
+            }
         }
 
         klass.setAttribute(__DOC__, desc.docString);
@@ -193,6 +206,22 @@ public class StructSequence {
         });
         PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), klass, constructor ? 1 : 0, callTarget);
         klass.setAttribute(builtin.name(), function);
+    }
+
+    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    public abstract static class DisabledNewNode extends PythonVarargsBuiltinNode {
+
+        private final PythonBuiltinClassType type;
+
+        DisabledNewNode(Descriptor desc) {
+            this.type = desc.type;
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public PTuple error(Object cls, Object[] arguments, PKeyword[] keywords) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, type.getPrintName());
+        }
     }
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "sequence", "dict"})
