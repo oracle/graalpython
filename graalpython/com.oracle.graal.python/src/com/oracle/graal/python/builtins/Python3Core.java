@@ -273,7 +273,6 @@ public final class Python3Core implements PythonCore {
                         "resource",
                         "_contextvars",
                         "pip_hook",
-                        "_lsprof",
                         "marshal",
                         "_struct",
                         "bool",

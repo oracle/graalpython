@@ -1531,6 +1531,8 @@ public abstract class TypeNodes {
                 case PTerminalSize:
                 case PUnameResult:
                 case PStructTime:
+                case PProfilerEntry:
+                case PProfilerSubentry:
                     return 8;
                 case PythonClass:
                     return 40;
