@@ -150,6 +150,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PProfilerEntry("profiler_entry", "_lsprof", false),
     PProfilerSubentry("profiler_subentry", "_lsprof", false),
     PStructPasswd("struct_passwd", "pwd", false),
+    PStructRusage("struct_rusage", "resource", false),
 
     // Errors and exceptions:
 
@@ -407,6 +408,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PProfilerEntry.base = PTuple;
         PProfilerSubentry.base = PTuple;
         PStructPasswd.base = PTuple;
+        PStructRusage.base = PTuple;
     }
 
     /* InteropLibrary messages */
