@@ -10,6 +10,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.ssl.SSLProtocolVersion;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -38,15 +39,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     public static final int PROTO_TLSv1_1 = 0x0302;
     public static final int PROTO_TLSv1_2 = 0x0303;
     public static final int PROTO_TLSv1_3 = 0x0304;
-
-    public static final int SSL_VERSION_SSL2 = 0;
-    public static final int SSL_VERSION_SSL3 = 1;
-    public static final int SSL_VERSION_TLS = 2;
-    public static final int SSL_VERSION_TLS1 = 3;
-    public static final int SSL_VERSION_TLS1_1 = 4;
-    public static final int SSL_VERSION_TLS1_2 = 5;
-    public static final int SSL_VERSION_TLS_CLIENT = 0x10;
-    public static final int SSL_VERSION_TLS_SERVER = 0x11;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -89,15 +81,15 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("PROTO_TLSv1_2", PROTO_TLSv1_2);
         module.setAttribute("PROTO_TLSv1_3", PROTO_TLSv1_3);
 
-        module.setAttribute("PROTOCOL_SSLv2", SSL_VERSION_SSL2);
-        module.setAttribute("PROTOCOL_SSLv3", SSL_VERSION_SSL3);
-        module.setAttribute("PROTOCOL_SSLv23", SSL_VERSION_TLS);
-        module.setAttribute("PROTOCOL_TLS", SSL_VERSION_TLS);
-        module.setAttribute("PROTOCOL_TLS_CLIENT", SSL_VERSION_TLS_CLIENT);
-        module.setAttribute("PROTOCOL_TLS_SERVER", SSL_VERSION_TLS_SERVER);
-        module.setAttribute("PROTOCOL_TLSv1", SSL_VERSION_TLS1);
-        module.setAttribute("PROTOCOL_TLSv1_1", SSL_VERSION_TLS1_1);
-        module.setAttribute("PROTOCOL_TLSv1_2", SSL_VERSION_TLS1_2);
+        module.setAttribute("PROTOCOL_SSLv2", SSLProtocolVersion.SSL2.getId());
+        module.setAttribute("PROTOCOL_SSLv3", SSLProtocolVersion.SSL3.getId());
+        module.setAttribute("PROTOCOL_SSLv23", SSLProtocolVersion.TLS.getId());
+        module.setAttribute("PROTOCOL_TLS", SSLProtocolVersion.TLS.getId());
+        module.setAttribute("PROTOCOL_TLS_CLIENT", SSLProtocolVersion.TLS_CLIENT.getId());
+        module.setAttribute("PROTOCOL_TLS_SERVER", SSLProtocolVersion.TLS_SERVER.getId());
+        module.setAttribute("PROTOCOL_TLSv1", SSLProtocolVersion.TLS1.getId());
+        module.setAttribute("PROTOCOL_TLSv1_1", SSLProtocolVersion.TLS1_1.getId());
+        module.setAttribute("PROTOCOL_TLSv1_2", SSLProtocolVersion.TLS1_2.getId());
     }
 
     @Builtin(name = "txt2obj", minNumOfPositionalArgs = 1, parameterNames = {"txt", "name"})
