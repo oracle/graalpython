@@ -124,6 +124,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object accept(PSocket socket) {
+            getContext().releaseGil();
             try {
                 SocketChannel acceptSocket = SocketUtils.accept(this, socket);
                 if (acceptSocket == null) {
@@ -141,6 +142,8 @@ public class SocketBuiltins extends PythonBuiltins {
                 return factory().createTuple(output);
             } catch (IOException e) {
                 throw raise(OSError);
+            } finally {
+                getContext().acquireGil();
             }
         }
     }
@@ -207,11 +210,14 @@ public class SocketBuiltins extends PythonBuiltins {
         Object connect(PSocket socket, PTuple address,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] hostAndPort = getObjectArrayNode.execute(address);
+            getContext().releaseGil();
             try {
                 doConnect(socket, hostAndPort);
                 return PNone.NONE;
             } catch (IOException e) {
                 throw raise(OSError);
+            } finally {
+                getContext().acquireGil();
             }
         }
 
@@ -311,6 +317,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object listen(PSocket socket, int backlog) {
+            getContext().releaseGil();
             try {
                 InetAddress host = InetAddress.getByName(socket.serverHost);
                 InetSocketAddress socketAddress = new InetSocketAddress(host, socket.serverPort);
@@ -326,6 +333,8 @@ public class SocketBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } catch (IOException e) {
                 throw raise(OSError);
+            } finally {
+                getContext().acquireGil();
             }
         }
 
@@ -343,12 +352,16 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags) {
             ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
+            getContext().releaseGil();
             try {
                 int length = SocketUtils.recv(this, socket, readBytes);
+                getContext().acquireGil();
                 return factory().createBytes(PythonUtils.getBufferArray(readBytes), length);
             } catch (NotYetConnectedException e) {
+                getContext().acquireGil();
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
             } catch (IOException e) {
+                getContext().acquireGil();
                 throw raiseOSError(frame, OSErrorEnum.EBADF, e);
             }
         }
@@ -410,15 +423,20 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile byteStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItem) {
+            getContext().releaseGil();
             SequenceStorage storage = buffer.getSequenceStorage();
             int bufferLen = lenNode.execute(storage);
             if (byteStorage.profile(storage instanceof ByteSequenceStorage)) {
                 ByteBuffer byteBuffer = ((ByteSequenceStorage) storage).getBufferView();
                 try {
-                    return SocketUtils.recv(this, socket, byteBuffer);
+                    int len = SocketUtils.recv(this, socket, byteBuffer);
+                    getContext().acquireGil();
+                    return len;
                 } catch (NotYetConnectedException e) {
+                    getContext().acquireGil();
                     throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
                 } catch (IOException e) {
+                    getContext().acquireGil();
                     throw raiseOSError(frame, OSErrorEnum.EBADF, e);
                 }
             } else {
@@ -428,14 +446,17 @@ public class SocketBuiltins extends PythonBuiltins {
                 try {
                     length = SocketUtils.recv(this, socket, byteBuffer);
                 } catch (NotYetConnectedException e) {
+                    getContext().acquireGil();
                     throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
                 } catch (IOException e) {
+                    getContext().acquireGil();
                     throw raiseOSError(frame, OSErrorEnum.EBADF, e);
                 }
                 for (int i = 0; i < length; i++) {
                     // we don't allow generalization
                     setItem.execute(frame, storage, i, targetBuffer[i]);
                 }
+                getContext().acquireGil();
                 return length;
             }
         }
@@ -477,12 +498,15 @@ public class SocketBuiltins extends PythonBuiltins {
                 throw raise(OSError);
             }
 
+            getContext().releaseGil();
             int written;
             ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
             try {
                 written = SocketUtils.send(this, socket, buffer);
             } catch (IOException e) {
                 throw raise(OSError);
+            } finally {
+                getContext().acquireGil();
             }
             if (written == 0) {
                 throw raiseOSError(frame, OSErrorEnum.EWOULDBLOCK);
@@ -500,6 +524,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes,
                         @Cached ConditionProfile hasTimeoutProfile) {
             // TODO: do not ignore flags
+            getContext().releaseGil();
             ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
             long timeoutMillis = socket.getTimeoutInMilliseconds();
             TimeoutHelper timeoutHelper = null;
@@ -515,6 +540,8 @@ public class SocketBuiltins extends PythonBuiltins {
                     written = SocketUtils.send(this, socket, buffer, timeoutMillis);
                 } catch (IOException e) {
                     throw raise(OSError);
+                } finally {
+                    getContext().acquireGil();
                 }
                 if (written == 0) {
                     throw raiseOSError(frame, OSErrorEnum.EWOULDBLOCK);
