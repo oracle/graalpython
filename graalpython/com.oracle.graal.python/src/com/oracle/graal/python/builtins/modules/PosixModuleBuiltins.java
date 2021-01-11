@@ -348,7 +348,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "open", minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"}, keywordOnlyNames = {"dir_fd"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
-    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
@@ -382,7 +382,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "close", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryClinicBuiltinNode {
 
@@ -404,8 +404,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "read", minNumOfPositionalArgs = 2, parameterNames = {"fd", "length"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
-    @ArgumentClinic(name = "length", conversion = ClinicConversion.Index, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "length", conversion = ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBinaryClinicBuiltinNode {
 
@@ -444,7 +444,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "write", minNumOfPositionalArgs = 2, parameterNames = {"fd", "data"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "data", conversion = ClinicConversion.Buffer)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
@@ -474,7 +474,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "dup", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class DupNode extends PythonUnaryClinicBuiltinNode {
 
@@ -495,8 +495,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "dup2", minNumOfPositionalArgs = 2, parameterNames = {"fd", "fd2", "inheritable"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
-    @ArgumentClinic(name = "fd2", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "fd2", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
     abstract static class Dup2Node extends PythonTernaryClinicBuiltinNode {
@@ -525,7 +525,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_inheritable", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class GetInheritableNode extends PythonUnaryClinicBuiltinNode {
 
@@ -546,8 +546,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "set_inheritable", minNumOfPositionalArgs = 2, parameterNames = {"fd", "inheritable"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
-    @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class SetInheritableNode extends PythonBinaryClinicBuiltinNode {
 
@@ -587,9 +587,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "lseek", minNumOfPositionalArgs = 3, parameterNames = {"fd", "pos", "how"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "pos", conversionClass = OffsetConversionNode.class)
-    @ArgumentClinic(name = "how", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "how", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class LseekNode extends PythonTernaryClinicBuiltinNode {
 
@@ -610,7 +610,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "ftruncate", minNumOfPositionalArgs = 2, parameterNames = {"fd", "length"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "length", conversionClass = OffsetConversionNode.class)
     @GenerateNodeFactory
     abstract static class FtruncateNode extends PythonBinaryClinicBuiltinNode {
@@ -673,7 +673,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_blocking", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class GetBlockingNode extends PythonUnaryClinicBuiltinNode {
 
@@ -694,8 +694,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "set_blocking", minNumOfPositionalArgs = 2, parameterNames = {"fd", "blocking"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
-    @ArgumentClinic(name = "blocking", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "blocking", conversion = ClinicConversion.IntToBoolean)
     @GenerateNodeFactory
     abstract static class SetBlockingNode extends PythonBinaryClinicBuiltinNode {
 
@@ -818,7 +818,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "fstat", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class FStatNode extends PythonUnaryClinicBuiltinNode {
 
@@ -1071,7 +1071,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isatty", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
-    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class IsattyNode extends PythonUnaryClinicBuiltinNode {
 
@@ -1411,7 +1411,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "access", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "effective_ids", "follow_symlinks"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
-    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @ArgumentClinic(name = "effective_ids", defaultValue = "false", conversion = ClinicConversion.Boolean)
     @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
@@ -1432,7 +1432,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "chmod", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
-    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
@@ -1516,7 +1516,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
-    @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "code", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class StrErrorNode extends PythonUnaryClinicBuiltinNode {
 
@@ -1675,7 +1675,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "urandom", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"size"})
-    @ArgumentClinic(name = "size", conversion = ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "size", conversion = ClinicConversion.Index)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
@@ -1717,7 +1717,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "umask", minNumOfPositionalArgs = 1, parameterNames = {"mask"})
-    @ArgumentClinic(name = "mask", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "mask", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class UmaskNode extends PythonUnaryClinicBuiltinNode {
 

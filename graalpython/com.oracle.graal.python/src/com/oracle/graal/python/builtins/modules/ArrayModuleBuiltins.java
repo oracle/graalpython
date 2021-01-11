@@ -319,7 +319,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_array_reconstructor", minNumOfPositionalArgs = 4, numOfPositionalOnlyArgs = 4, parameterNames = {"arrayType", "typeCode", "mformatCode", "items"})
     @ArgumentClinic(name = "typeCode", conversion = ArgumentClinic.ClinicConversion.String)
-    @ArgumentClinic(name = "mformatCode", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "mformatCode", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
     abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
         @Specialization(guards = "mformatCode == cachedCode")

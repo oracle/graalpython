@@ -151,3 +151,6 @@ def test_class_attr():
 
     AAA().foo()
     CCC().bar()
+
+def test_reduce_ex_with_none():
+    assert_raises(TypeError, object(), None)

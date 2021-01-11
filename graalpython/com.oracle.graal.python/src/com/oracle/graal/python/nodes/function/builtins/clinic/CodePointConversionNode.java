@@ -99,4 +99,10 @@ public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise 
     public static CodePointConversionNode create(@BuiltinName String builtinName, @DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return CodePointConversionNodeGen.create(builtinName, defaultValue, useDefaultForNone);
     }
+
+    @ClinicConverterFactory
+    public static CodePointConversionNode create(@BuiltinName String builtinName, @UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return CodePointConversionNodeGen.create(builtinName, -1, false);
+    }
 }

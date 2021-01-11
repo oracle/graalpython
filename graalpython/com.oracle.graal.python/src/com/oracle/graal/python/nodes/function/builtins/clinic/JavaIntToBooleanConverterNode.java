@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,44 +40,58 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
+/**
+ * Implements the {@code bool(accept=int)} argument clinic conversion.
+ */
+public abstract class JavaIntToBooleanConverterNode extends ArgumentCastNode {
+    private final boolean defaultValue;
 
-    protected SliceIndexConversionNode(int defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
+    protected JavaIntToBooleanConverterNode(boolean defaultValue) {
+        this.defaultValue = defaultValue;
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
-    int doOthers(VirtualFrame frame, Object value,
-                    @Cached CastToJavaIntLossyNode castToInt,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (lib.canBeIndex(value)) {
-            return castToInt.execute(lib.asIndexWithFrame(value, frame));
-        }
-        throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
+    @Specialization(guards = "isNoValue(none)")
+    boolean doNoValue(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
     }
 
-    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
-    public static SliceIndexConversionNode create(@DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
-        return SliceIndexConversionNodeGen.create(defaultValue, useDefaultForNone);
+    @Specialization
+    static boolean doBoolean(boolean b) {
+        return b;
     }
 
-    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
-    public static SliceIndexConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
-        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
-        return SliceIndexConversionNodeGen.create(0, false);
+    @Specialization
+    static boolean doInt(int i) {
+        return i != 0;
+    }
+
+    @Specialization
+    static boolean doLong(long i) {
+        return i != 0;
+    }
+
+    @Specialization(guards = "!isNoValue(value)")
+    static Object doOthers(VirtualFrame frame, Object value,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        return lib.asJavaLong(lib.asPIntWithFrame(value, frame), frame) != 0;
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Boolean)
+    public static JavaIntToBooleanConverterNode create(@DefaultValue boolean defaultValue) {
+        return JavaIntToBooleanConverterNodeGen.create(defaultValue);
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Boolean)
+    public static JavaIntToBooleanConverterNode create() {
+        return JavaIntToBooleanConverterNode.create(false);
     }
 }

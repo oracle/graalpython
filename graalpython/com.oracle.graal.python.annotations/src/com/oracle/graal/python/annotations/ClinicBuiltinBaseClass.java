@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,30 +38,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins;
+package com.oracle.graal.python.annotations;
 
-import com.oracle.graal.python.annotations.ClinicBuiltinBaseClass;
-import com.oracle.graal.python.nodes.argument.ReadAndCastArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.truffle.api.dsl.CreateCast;
-
-@ClinicBuiltinBaseClass
-public abstract class PythonClinicBuiltinNode extends PythonBuiltinNode {
-    protected abstract ArgumentClinicProvider getArgumentClinic();
-
-    @CreateCast("arguments")
-    protected ReadArgumentNode[] createCasts(ReadArgumentNode[] reads) {
-        ReadArgumentNode[] result = new ReadArgumentNode[reads.length];
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        for (int i = 0; i < reads.length; i++) {
-            if (clinic.hasCastNode(i)) {
-                result[i] = new ReadAndCastArgumentNode(reads[i], clinic.createCastNode(i, this));
-            } else {
-                result[i] = reads[i];
-            }
-        }
-        return result;
-    }
+/**
+ * Marks base classes of builtins that support argument clinic providers. Used to check that builtin
+ * nodes with clinic annotation inherit from the right base classes.
+ */
+public @interface ClinicBuiltinBaseClass {
 }

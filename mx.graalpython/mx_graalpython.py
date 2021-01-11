@@ -32,8 +32,8 @@ import json
 import os
 import platform
 import re
-import shutil
 import shlex
+import shutil
 import sys
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
@@ -197,12 +197,25 @@ def _dev_pythonhome():
 
 
 def punittest(ars):
+    '''
+    Runs GraalPython junit tests and memory leak tests, which can be skipped using --no-leak-tests.
+
+    Any other arguments are forwarded to mx's unittest function. If there is no explicit test filter
+    in the arguments array, then we append filter that includes all GraalPython junit tests.
+    '''
     args = []
+    skip_leak_tests = False
     if "--regex" not in ars:
         args += ['--regex', r'(graal\.python)|(com\.oracle\.truffle\.tck\.tests)']
+    if "--no-leak-tests" in ars:
+        skip_leak_tests = True
+        ars.remove("--no-leak-tests")
     args += ars
     with _pythonhome_context():
         mx_unittest.unittest(args)
+
+        if skip_leak_tests:
+            return
 
         common_args = ["--lang", "python",
                        "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",

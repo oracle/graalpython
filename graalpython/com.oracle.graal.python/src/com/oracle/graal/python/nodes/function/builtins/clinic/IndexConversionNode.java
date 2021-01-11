@@ -79,4 +79,10 @@ public abstract class IndexConversionNode extends IntConversionBaseNode {
     public static IndexConversionNode create(@DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return IndexConversionNodeGen.create(defaultValue, useDefaultForNone);
     }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    public static IndexConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return IndexConversionNodeGen.create(0, false);
+    }
 }

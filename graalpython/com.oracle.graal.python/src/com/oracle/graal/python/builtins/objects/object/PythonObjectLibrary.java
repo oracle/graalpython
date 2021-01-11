@@ -837,6 +837,17 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * @see #asPIntWithState
+     */
+    public final Object asPIntWithFrame(Object receiver, VirtualFrame frame) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return asPIntWithState(receiver, state);
+    }
+
+    /**
      * Checks whether the receiver can be coerced to a Java long.
      *
      * <br>

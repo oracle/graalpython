@@ -37,10 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import platform
 import sys
 import unittest
-
-import platform
 
 # The platform.system() == 'Java' is to make it possible to run with Jython
 if platform.system() == 'Java' or sys.implementation.name == "graalpython":
@@ -70,6 +69,7 @@ if platform.system() == 'Java' or sys.implementation.name == "graalpython":
             Arrays.fill(array, self.instance)
             self.assertValueEqual(array[0], self.instance)
             self.assertValueEqual(array[1], self.instance)
+            self.assertRaises(TypeError, jarray.zeros, None)
 
         def test_array(self):
             if self.type is None:
