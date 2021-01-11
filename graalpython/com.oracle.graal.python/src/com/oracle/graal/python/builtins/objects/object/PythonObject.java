@@ -131,7 +131,7 @@ public class PythonObject extends PythonAbstractObject {
     public void setAttribute(Object name, Object value) {
         assert name instanceof String || name instanceof HiddenPythonKey || name instanceof HiddenKey : name.getClass().getSimpleName();
         CompilerAsserts.neverPartOfCompilation();
-        DynamicObjectLibrary.getUncached().putWithFlags(getStorage(), name, value, 0);
+        DynamicObjectLibrary.getUncached().put(getStorage(), name, value);
     }
 
     @SuppressWarnings("deprecation")
