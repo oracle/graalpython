@@ -1870,7 +1870,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     stdout.start();
                     stderr.start();
                 }
-                int exitStatus = proc.waitFor();
+                context.releaseGil();
+                int exitStatus = -1;
+                try {
+                    exitStatus = proc.waitFor();
+                } finally {
+                    context.acquireGil();
+                }
                 if (stdsArePipes) {
                     stdout.finish();
                     stderr.finish();
