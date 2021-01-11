@@ -69,7 +69,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InitNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone repr(PThreadLocal self) {
+        PNone repr(@SuppressWarnings("unused") PThreadLocal self) {
             return PNone.NONE;
         }
     }
