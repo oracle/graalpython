@@ -113,6 +113,10 @@ public final class DynamicObjectStorage extends HashingStorage {
         return store.getShape();
     }
 
+    public DynamicObject getStore() {
+        return store;
+    }
+
     protected static Object[] keyArray(DynamicObjectStorage self) {
         return DynamicObjectStorage.keyArray(self.store.getShape());
     }

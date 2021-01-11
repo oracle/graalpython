@@ -76,7 +76,7 @@ import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
 import com.oracle.graal.python.nodes.literal.BytesLiteralNode;
-import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory;
+import com.oracle.graal.python.nodes.literal.DictLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
 import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
@@ -245,11 +245,11 @@ public class NodeFactory {
     }
 
     public ExpressionNode createDictLiteral() {
-        return DictLiteralNodeFactory.create(new ExpressionNode[0], new ExpressionNode[0]);
+        return DictLiteralNode.create(new ExpressionNode[0], new ExpressionNode[0]);
     }
 
     public ExpressionNode createDictLiteral(ExpressionNode[] keys, ExpressionNode[] values) {
-        return DictLiteralNodeFactory.create(keys, values);
+        return DictLiteralNode.create(keys, values);
     }
 
     public TupleLiteralNode createTupleLiteral(ExpressionNode... values) {
