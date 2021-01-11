@@ -143,7 +143,12 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run() {
-            getContext().getImportLock().lock();
+            getContext().releaseGil();
+            try {
+                getContext().getImportLock().lock();
+            } finally {
+                getContext().acquireGil();
+            }
             return PNone.NONE;
         }
     }
