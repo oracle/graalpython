@@ -1,5 +1,7 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+
 public enum SSLProtocolVersion {
     SSL2(0),
     SSL3(1),
@@ -14,5 +16,19 @@ public enum SSLProtocolVersion {
 
     SSLProtocolVersion(int protocolId) {
         this.protocolId = protocolId;
+    }
+
+    public int getId() {
+        return protocolId;
+    }
+
+    @ExplodeLoop
+    public static SSLProtocolVersion fromId(int protocolId) {
+        for (SSLProtocolVersion version : SSLProtocolVersion.values()) {
+            if (version.getId() == protocolId) {
+                return version;
+            }
+        }
+        return null;
     }
 }

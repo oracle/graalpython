@@ -32,6 +32,8 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.concurrent.Semaphore;
 
+import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
+import com.oracle.graal.python.builtins.objects.ssl.SSLProtocolVersion;
 import org.graalvm.collections.EconomicMap;
 import org.tukaani.xz.FinishableOutputStream;
 
@@ -977,5 +979,9 @@ public abstract class PythonObjectFactory extends Node {
 
     public PBuffered createBufferRandom(Object clazz) {
         return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
+    }
+
+    public PSSLContext createSSLContext(Object clazz, SSLProtocolVersion version) {
+        return trace(new PSSLContext(clazz, getShape(clazz), version));
     }
 }

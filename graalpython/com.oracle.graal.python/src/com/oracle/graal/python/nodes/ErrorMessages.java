@@ -303,6 +303,7 @@ public abstract class ErrorMessages {
     public static final String INTEGRITY_CHECKS_ONLY_SUPPORTED_BY = "Integrity checks are only supported by FORMAT_XZ";
     public static final String INTERMEDIATE_OVERFLOW_IN = "intermediate overflow in %s";
     public static final String INVALD_OR_UNREADABLE_CLASSPATH = "invalid or unreadable classpath: '%s' - %m";
+    public static final String INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION = "invalid or unsupported protocol version";
     public static final String INVALID_ARGS = "%s: invalid arguments";
     public static final String INVALID_ARGS_FOR_ALLOCFUNC = "invalid arguments for allocfunc (expected 2 but got %s)";
     public static final String INVALID_ARGS_FOR_FASTCALL_METHOD = "invalid arguments for fastcall method (expected 3 but got %s)";

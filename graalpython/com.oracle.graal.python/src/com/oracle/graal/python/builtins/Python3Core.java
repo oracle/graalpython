@@ -45,6 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -408,7 +409,8 @@ public final class Python3Core implements PythonCore {
                         new BufferBuiltins(),
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
-                        new SslModuleBuiltins(),
+                        new SSLModuleBuiltins(),
+                        new SSLContextBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),
