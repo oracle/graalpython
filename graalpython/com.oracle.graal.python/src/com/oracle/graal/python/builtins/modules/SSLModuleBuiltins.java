@@ -81,15 +81,15 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("PROTO_TLSv1_2", PROTO_TLSv1_2);
         module.setAttribute("PROTO_TLSv1_3", PROTO_TLSv1_3);
 
-        module.setAttribute("PROTOCOL_SSLv2", SSLProtocolVersion.SSL2.getId());
-        module.setAttribute("PROTOCOL_SSLv3", SSLProtocolVersion.SSL3.getId());
-        module.setAttribute("PROTOCOL_SSLv23", SSLProtocolVersion.TLS.getId());
-        module.setAttribute("PROTOCOL_TLS", SSLProtocolVersion.TLS.getId());
-        module.setAttribute("PROTOCOL_TLS_CLIENT", SSLProtocolVersion.TLS_CLIENT.getId());
-        module.setAttribute("PROTOCOL_TLS_SERVER", SSLProtocolVersion.TLS_SERVER.getId());
-        module.setAttribute("PROTOCOL_TLSv1", SSLProtocolVersion.TLS1.getId());
-        module.setAttribute("PROTOCOL_TLSv1_1", SSLProtocolVersion.TLS1_1.getId());
-        module.setAttribute("PROTOCOL_TLSv1_2", SSLProtocolVersion.TLS1_2.getId());
+        module.setAttribute("PROTOCOL_SSLv2", SSLProtocolVersion.SSL2.getPythonId());
+        module.setAttribute("PROTOCOL_SSLv3", SSLProtocolVersion.SSL3.getPythonId());
+        module.setAttribute("PROTOCOL_SSLv23", SSLProtocolVersion.TLS.getPythonId());
+        module.setAttribute("PROTOCOL_TLS", SSLProtocolVersion.TLS.getPythonId());
+        module.setAttribute("PROTOCOL_TLS_CLIENT", SSLProtocolVersion.TLS_CLIENT.getPythonId());
+        module.setAttribute("PROTOCOL_TLS_SERVER", SSLProtocolVersion.TLS_SERVER.getPythonId());
+        module.setAttribute("PROTOCOL_TLSv1", SSLProtocolVersion.TLS1.getPythonId());
+        module.setAttribute("PROTOCOL_TLSv1_1", SSLProtocolVersion.TLS1_1.getPythonId());
+        module.setAttribute("PROTOCOL_TLSv1_2", SSLProtocolVersion.TLS1_2.getPythonId());
     }
 
     @Builtin(name = "txt2obj", minNumOfPositionalArgs = 1, parameterNames = {"txt", "name"})

@@ -1,20 +1,37 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -30,11 +47,25 @@ public class SSLContextBuiltins extends PythonBuiltins {
     abstract static class SSLContextNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         PSSLContext createContext(Object type, int protocol) {
-            SSLProtocolVersion version = SSLProtocolVersion.fromId(protocol);
+            SSLProtocolVersion version = SSLProtocolVersion.fromPythonId(protocol);
             if (version == null) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION);
+                throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION);
             }
-            return factory().createSSLContext(type, version);
+            try {
+                return factory().createSSLContext(type, version, createSSLContext(version));
+            } catch (NoSuchAlgorithmException e) {
+                throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION);
+            } catch (KeyManagementException e) {
+                // TODO when does this happen?
+                throw raise(SSLError, e);
+            }
+        }
+
+        @TruffleBoundary
+        private static SSLContext createSSLContext(SSLProtocolVersion version) throws NoSuchAlgorithmException, KeyManagementException {
+            SSLContext context = SSLContext.getInstance(version.getJavaId());
+            context.init(null, null, null);
+            return context;
         }
 
         @Override
@@ -43,12 +74,64 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "check_hostname", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class CheckHostnameNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static boolean getCheckHostname(PSSLContext self, @SuppressWarnings("unused") PNone none) {
+            return self.getCheckHostname();
+        }
+
+        @Specialization(guards = "!isNoValue(value)", limit = "3")
+        static Object setCheckHostname(PSSLContext self, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            self.setCheckHostname(lib.isTrue(value));
+            // TODO check_hostname = True sets verify_mode = CERT_REQUIRED
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "protocol", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ProtocolNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int getProtocol(PSSLContext self) {
-            return self.getVersion().getId();
+            return self.getVersion().getPythonId();
+        }
+    }
+
+    @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
+    @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
+    @ArgumentClinic(name = "server_hostname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "null", useDefaultForNone = true)
+    @GenerateNodeFactory
+    abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
+        @Specialization
+        // TODO parameters
+        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, String serverHostname, Object owner, Object session) {
+            // TODO hostname encode as IDNA?
+            // TODO hostname can be null
+            // TODO server mode?
+            Socket javaSocket = sock.getSocket().socket();
+            SSLContext javaContext = context.getContext();
+            try {
+                SSLSocket newSocket = createSocket(serverSide, serverHostname, javaSocket, javaContext);
+                return factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, newSocket);
+            } catch (IOException e) {
+                // TODO better error handling
+                throw raise(SSLError, e);
+            }
+        }
+
+        @TruffleBoundary
+        private static SSLSocket createSocket(boolean serverSide, String serverHostname, Socket javaSocket, SSLContext javaContext) throws IOException {
+            SSLSocket newSocket = (SSLSocket) javaContext.getSocketFactory().createSocket(javaSocket, serverHostname, javaSocket.getPort(), false);
+            newSocket.setUseClientMode(!serverSide);
+            return newSocket;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.WrapSocketNodeClinicProviderGen.INSTANCE;
         }
     }
 }

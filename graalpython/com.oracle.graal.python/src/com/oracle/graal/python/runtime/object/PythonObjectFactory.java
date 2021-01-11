@@ -32,8 +32,9 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.concurrent.Semaphore;
 
-import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
-import com.oracle.graal.python.builtins.objects.ssl.SSLProtocolVersion;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+
 import org.graalvm.collections.EconomicMap;
 import org.tukaani.xz.FinishableOutputStream;
 
@@ -117,6 +118,9 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
+import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
+import com.oracle.graal.python.builtins.objects.ssl.SSLProtocolVersion;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
@@ -136,6 +140,7 @@ import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -309,11 +314,19 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBytes createBytes(byte[] array) {
-        return createBytes(PythonBuiltinClassType.PBytes, array);
+        return createBytes(array, array.length);
     }
 
     public PBytes createBytes(Object cls, byte[] array) {
-        return trace(new PBytes(cls, getShape(cls), array));
+        return createBytes(cls, array, array.length);
+    }
+
+    public PBytes createBytes(byte[] array, int length) {
+        return createBytes(new ByteSequenceStorage(array, length));
+    }
+
+    public PBytes createBytes(Object cls, byte[] array, int length) {
+        return createBytes(cls, new ByteSequenceStorage(array, length));
     }
 
     public PBytes createBytes(SequenceStorage storage) {
@@ -981,7 +994,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
     }
 
-    public PSSLContext createSSLContext(Object clazz, SSLProtocolVersion version) {
-        return trace(new PSSLContext(clazz, getShape(clazz), version));
+    public PSSLContext createSSLContext(Object clazz, SSLProtocolVersion version, SSLContext context) {
+        return trace(new PSSLContext(clazz, getShape(clazz), version, context));
+    }
+
+    public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLSocket javaSocket) {
+        return trace(new PSSLSocket(clazz, getShape(clazz), context, javaSocket));
     }
 }

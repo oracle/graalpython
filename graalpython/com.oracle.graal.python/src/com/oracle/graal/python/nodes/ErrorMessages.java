@@ -541,6 +541,7 @@ public abstract class ErrorMessages {
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";
+    public static final String SIZE_SHOULD_NOT_BE_NEGATIVE = "size should not be negative";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";
