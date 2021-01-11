@@ -138,7 +138,7 @@ import com.sun.security.auth.UnixNumericGroupPrincipal;
  * option that would allow to change this.</li>
  * <li>It ignores {@code PyUnicode_FSConverter} and takes any String paths as-is and bytes objects
  * that are passed as paths are always converted to Strings using UTF-8.</li>>
- * <li>Fork does not actually for the process, any arguments related to resources inheritance for
+ * <li>Fork does not actually fork the process, any arguments related to resources inheritance for
  * the child process, are silently ignored.</li>
  * <li>All file descriptors are not inheritable (newly spawned processes will not see them).</li>
  * <li>When using {@code scandir}, some attributes of the directory entries that are fetched eagerly
@@ -151,6 +151,7 @@ import com.sun.security.auth.UnixNumericGroupPrincipal;
  * time, when updating the modification time.</li>
  * <li>{@code faccessAt} does not support: effective IDs, and no follow symlinks unless the mode is
  * only F_OK.</li>
+ * <li>{@code select} supports only network sockets, but not regular files.</li>
  * </ul>
  */
 @ExportLibrary(PosixSupportLibrary.class)
