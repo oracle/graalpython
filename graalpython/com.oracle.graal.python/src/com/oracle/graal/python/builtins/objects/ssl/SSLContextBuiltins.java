@@ -10,6 +10,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -39,6 +40,15 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SSLContextBuiltinsClinicProviders.SSLContextNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "protocol", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ProtocolNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int getProtocol(PSSLContext self) {
+            return self.getVersion().getId();
         }
     }
 }
