@@ -23,7 +23,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = "_ssl")
-public class SslModuleBuiltins extends PythonBuiltins {
+public class SSLModuleBuiltins extends PythonBuiltins {
     // Taken from CPython
     static final String DEFAULT_CIPHERS = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
 
@@ -50,7 +50,7 @@ public class SslModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return SslModuleBuiltinsFactory.getFactories();
+        return SSLModuleBuiltinsFactory.getFactories();
     }
 
     @Override
@@ -119,7 +119,7 @@ public class SslModuleBuiltins extends PythonBuiltins {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return SslModuleBuiltinsClinicProviders.Txt2ObjNodeClinicProviderGen.INSTANCE;
+            return SSLModuleBuiltinsClinicProviders.Txt2ObjNodeClinicProviderGen.INSTANCE;
         }
     }
 
