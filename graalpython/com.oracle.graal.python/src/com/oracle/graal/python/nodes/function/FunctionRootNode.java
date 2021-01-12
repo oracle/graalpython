@@ -62,6 +62,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     private final SourceSection sourceSection;
     private final boolean isGenerator;
     private final ValueProfile generatorFrameProfile;
+    private final ExpressionNode doc;
 
     @Child private ExpressionNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -70,7 +71,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     private boolean isPythonInternal;
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor,
-                    ExpressionNode uninitializedBody, ExecutionCellSlots executionCellSlots, Signature signature) {
+                    ExpressionNode uninitializedBody, ExecutionCellSlots executionCellSlots, Signature signature, ExpressionNode doc) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.executionCellSlots = executionCellSlots;
 
@@ -83,6 +84,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         this.uninitializedBody = uninitializedBody;
         this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
         this.isPythonInternal = isRewritten;
+        this.doc = doc;
     }
 
     /**
@@ -98,6 +100,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         this.generatorFrameProfile = other.isGenerator ? ValueProfile.createClassProfile() : null;
         this.isPythonInternal = other.isPythonInternal;
         this.uninitializedBody = other.uninitializedBody;
+        this.doc = other.doc;
     }
 
     @Override
@@ -108,7 +111,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @Override
     protected RootNode cloneUninitialized() {
         return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isPythonInternal, getFrameDescriptor(), uninitializedBody, executionCellSlots,
-                        getSignature());
+                        getSignature(), doc);
     }
 
     /**
@@ -119,7 +122,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
         ExpressionNode newUninitializedBody = bodyFun.apply(NodeUtil.cloneNode(uninitializedBody));
         newUninitializedBody.accept(nodeVisitor);
         return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, true, getFrameDescriptor(), newUninitializedBody, executionCellSlots,
-                        newSignature);
+                        newSignature, doc);
     }
 
     public boolean isLambda() {
@@ -218,6 +221,10 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     public ExecutionCellSlots getExecutionCellSlots() {
         return executionCellSlots;
+    }
+
+    public ExpressionNode getDoc() {
+        return doc;
     }
 
 }

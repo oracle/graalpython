@@ -192,3 +192,59 @@ def test_module_code():
 #     ct = type(foo.__code__)
 #     del foo
 #     ct(2, 0, 0, 128, 0, b"lambda a,b: a+b", tuple(), ("a", "b"), tuple(), "hello.py", "<lambda>", 0, b"", tuple(), tuple())
+
+
+def test_function_code_consts():
+    codestr = """
+"module doc"
+a = 1
+def fn():
+    "fn doc"
+    def inner():
+        return "this is fun"
+    return inner()
+"""
+    import types
+
+    code = compile(codestr, "<test>", "exec")
+    assert "module doc" in code.co_consts
+    assert 1 in code.co_consts
+    assert "fn" in code.co_consts
+    assert "fn doc" not in code.co_consts
+    for const in code.co_consts:
+        if type(const) == types.CodeType:
+            code = const 
+    assert "fn doc" in code.co_consts
+    assert "fn.<locals>.inner" in code.co_consts
+    assert "this is fun" not in code.co_consts
+    for const in code.co_consts:
+        if type(const) == types.CodeType:
+            code = const
+    assert "this is fun" in code.co_consts
+
+
+def test_generator_code_consts():
+    codestr = """
+"module doc"
+def gen():
+    "gen doc"
+    def inner():
+        return "this is fun"
+    yield inner()
+"""
+    import types
+
+    code = compile(codestr, "<test>", "exec")
+    assert "module doc" in code.co_consts
+    assert "gen" in code.co_consts
+    assert "gen doc" not in code.co_consts
+    for const in code.co_consts:
+        if type(const) == types.CodeType:
+            code = const 
+    assert "gen doc" in code.co_consts
+    assert "gen.<locals>.inner" in code.co_consts
+    assert "this is fun" not in code.co_consts
+    for const in code.co_consts:
+        if type(const) == types.CodeType:
+            code = const
+    assert "this is fun" in code.co_consts

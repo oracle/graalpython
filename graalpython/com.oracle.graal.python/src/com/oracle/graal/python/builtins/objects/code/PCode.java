@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.PRootNodeWithFileName;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
@@ -277,22 +278,42 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static Object[] extractConstants(RootNode rootNode) {
-        List<Object> constants = new ArrayList<>();
-        rootNodeForExtraction(rootNode).accept(new NodeVisitor() {
-            public boolean visit(Node node) {
-                if (node instanceof SimpleLiteralNode) {
-                    constants.add(((SimpleLiteralNode) node).getValue());
-                } else if (node instanceof FunctionDefinitionNode) {
-                    constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(PythonLanguage.getCurrent()), ((FunctionDefinitionNode) node).getCallTarget()));
-                } else if (node instanceof GeneratorExpressionNode) {
-                    // TODO: we do it this way here since we cannot deserialize generator
-                    // expressions right now
-                    constants.addAll(Arrays.asList(extractConstants(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
+        ConstantsVisitor visitor = new ConstantsVisitor();
+        return visitor.findConstants(rootNodeForExtraction(rootNode));
+    }
+
+    private static class ConstantsVisitor implements NodeVisitor {
+        List<Object> constants;
+
+        Object[] findConstants(RootNode node) {
+            constants = new ArrayList<>();
+            this.visit(node);
+            return constants.toArray();
+        }
+
+        @Override
+        public boolean visit(Node node) {
+            if (node instanceof FunctionRootNode) {
+                ExpressionNode doc = ((FunctionRootNode) node).getDoc();
+                if (doc != null) {
+                    doc.accept(this);
                 }
+            } else if (node instanceof SimpleLiteralNode) {
+                constants.add(((SimpleLiteralNode) node).getValue());
+            } else if (node instanceof FunctionDefinitionNode) {
+                FunctionDefinitionNode fdNode = (FunctionDefinitionNode) node;
+                constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(PythonLanguage.getCurrent()), fdNode.getCallTarget()));
+                constants.add(fdNode.getQualname());
                 return true;
+            } else if (node instanceof GeneratorExpressionNode) {
+                // TODO: we do it this way here since we cannot deserialize generator
+                // expressions right now
+                constants.addAll(Arrays.asList(extractConstants(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
             }
-        });
-        return constants.toArray();
+            NodeUtil.forEachChild(node, this);
+            return true;
+        }
+
     }
 
     @TruffleBoundary

@@ -841,7 +841,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         String name = node.name;
         String qualname = node.scope.getQualname();
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(),
-                        signature);
+                        signature, doc);
         RootCallTarget ct = PythonUtils.getOrCreateCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
             funcDef = GeneratorFunctionDefinitionNode.create(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
@@ -1003,7 +1003,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          */
         FrameDescriptor fd = scopeEnvironment.getCurrentFrame();
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTargetNode.getSourceSection(), funcname, scopeEnvironment.isInGeneratorScope(), fd, returnTargetNode,
-                        scopeEnvironment.getExecutionCellSlots(), signature);
+                        scopeEnvironment.getExecutionCellSlots(), signature, null);
 
         /**
          * Definition

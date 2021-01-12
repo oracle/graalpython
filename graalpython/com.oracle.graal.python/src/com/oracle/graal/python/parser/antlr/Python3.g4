@@ -285,6 +285,7 @@ import java.util.Arrays;
     }
 	private PythonSSTNodeFactory factory;
 	private ParserMode parserMode;
+        private int optimizeLevel = 0;
 	private ScopeEnvironment scopeEnvironment;
 	private LoopState loopState;
 
@@ -365,6 +366,25 @@ import java.util.Arrays;
         this.parserMode = parserMode;
     }
 
+    public void setOptimizeLevel(int optimizeLevel) {
+        this.optimizeLevel = optimizeLevel;
+    }
+
+    private SSTNode optimize(SSTNode node) {
+        if (optimizeLevel > 1) {
+            if (node instanceof BlockSSTNode) {
+                BlockSSTNode block  = (BlockSSTNode)node;
+                SSTNode[] statements = block.getStatements();
+                if (statements.length > 0 && statements[0] instanceof ExpressionStatementSSTNode
+                        && ((ExpressionStatementSSTNode)statements[0]).getExpression() instanceof StringLiteralSSTNode) {
+                    //optimize >=2 -> documentation needs to be remove from the block
+                    return new BlockSSTNode(Arrays.copyOfRange(statements, 1, statements.length));
+                }
+            }
+        }
+        return node;
+    }
+
     protected static class PythonRecognitionException extends RecognitionException{
         static final long serialVersionUID = 1L;
             
@@ -440,7 +460,7 @@ locals
 		| simple_stmt
 		| compound_stmt
 	)* EOF
-	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
+	{ $result = optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx))); }
 	{
             if ($interactive || $curInlineLocals != null) {
                scopeEnvironment.popScope();
@@ -462,8 +482,8 @@ locals
 	)* EOF
 	{ 
             Token stopToken = $stmt.stop;
-            $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), 
-                stopToken != null ?  getStopIndex(stopToken) : getLastIndex($ctx)); }
+            $result = optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), 
+                stopToken != null ?  getStopIndex(stopToken) : getLastIndex($ctx))); }
 	{ 
            scopeEnvironment.popScope(); 
         }
@@ -485,7 +505,7 @@ locals
 		NEWLINE
 		| stmt
 	)* EOF
-	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
+	{ $result = optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx))); }
 	{
             scopeEnvironment.popScope();
 	}
@@ -559,7 +579,7 @@ funcdef
         }
 	s = suite
 	{ 
-            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, $s.result, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
+            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, optimize($s.result), getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
             scopeEnvironment.popScope();
             loopState = savedLoopState;
             push(funcDef);
@@ -806,7 +826,7 @@ expr_stmt
                     if (value instanceof StarSSTNode) {
                         throw new PythonRecognitionException("can't use starred expression here", this, _input, $ctx, $ctx.start);
                     }
-                    if (start == start()) {
+                    if (start == start()) { 
                         push(new ExpressionStatementSSTNode(value));
                     } else {
                         push(factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex(_localctx), rhsStopIndex));
@@ -1004,7 +1024,11 @@ assert_stmt
 		',' test
 		{ message = $test.result; }
 	)?
-	{ push(new AssertSSTNode($e.result, message, getStartIndex($ctx), getLastIndex($ctx))); }
+	{   
+            if (optimizeLevel < 1) {
+                push(new AssertSSTNode($e.result, message, getStartIndex($ctx), getLastIndex($ctx))); 
+            }
+        }
 ;
 
 compound_stmt
@@ -1667,7 +1691,7 @@ locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
         }
     { LoopState savedLoopState = saveLoopState(); }
 	':' suite
-	{ push(factory.createClassDefinition($NAME.text, baseClasses, $suite.result, getStartIndex($ctx), getStopIndex($suite.stop))); }
+	{ push(factory.createClassDefinition($NAME.text, baseClasses, optimize($suite.result), getStartIndex($ctx), getStopIndex($suite.stop))); }
 	{ scopeEnvironment.popScope(); }
 	{ loopState = savedLoopState; }
 ;

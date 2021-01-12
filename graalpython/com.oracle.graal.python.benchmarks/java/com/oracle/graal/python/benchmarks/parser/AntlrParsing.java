@@ -62,7 +62,7 @@ public class AntlrParsing extends ParserBenchRunner {
             for (Source source : getSources()) {
                 try {
                     PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, parser);
-                    bh.consume(parser.parseWithANTLR(PythonParser.ParserMode.File, core, sstFactory, source, null, null));
+                    bh.consume(parser.parseWithANTLR(PythonParser.ParserMode.File, 0, core, sstFactory, source, null, null));
                 } catch (RuntimeException e) {
                     // do nothing
                 }
