@@ -45,11 +45,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
@@ -302,6 +303,13 @@ public abstract class IsExpressionNode extends BinaryOpNode {
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
             return doObjectPNone(right, left, language, ctxt);
+        }
+
+        // pstring (may be interned)
+        @Specialization
+        static boolean doPString(PString left, PString right,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            return lib.isSame(left, right);
         }
 
         // everything else

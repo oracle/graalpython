@@ -2480,11 +2480,7 @@ class AbstractPickleTests(unittest.TestCase):
             # contents) while Python pickler issues two calls to write: one for
             # the frame header and one for the frame binary contents.
             writer = ChunkAccumulator()
-            # self.pickler(writer, proto).dump(objects)
-            # disable pickler memo until GR-27634 is fixed (id builtin)
-            p = self.pickler(writer, proto)
-            p.fast = True
-            p.dump(objects)
+            self.pickler(writer, proto).dump(objects)
 
             # Actually read the binary content of the chunks after the end
             # of the call to dump: any memoryview passed to write should not

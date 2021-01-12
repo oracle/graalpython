@@ -40,16 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import static com.oracle.graal.python.nodes.PGuards.cannotBeOverridden;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -59,6 +60,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -67,6 +70,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -76,6 +80,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -555,6 +560,54 @@ public abstract class StringNodes {
 
         public static CountNode create() {
             return StringNodesFactory.CountNodeGen.create();
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class InternStringNode extends Node {
+        public abstract PString execute(Object string);
+
+        @Specialization
+        static PString doString(String string,
+                        @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode,
+                        @Cached PythonObjectFactory factory) {
+            final PString interned = factory.createString(string);
+            writeNode.execute(interned, PString.INTERNED, true);
+            return interned;
+        }
+
+        @Specialization(limit = "1")
+        static PString doPString(PString string,
+                        @CachedLibrary("string") PythonObjectLibrary lib,
+                        @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode) {
+            if (cannotBeOverridden(lib.getLazyPythonClass(string))) {
+                writeNode.execute(string, PString.INTERNED, true);
+                return string;
+            }
+            return null;
+        }
+
+        @Fallback
+        static PString doOthers(@SuppressWarnings("unused") Object string) {
+            return null;
+        }
+
+        public static InternStringNode create() {
+            return StringNodesFactory.InternStringNodeGen.create();
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    public abstract static class IsInternedStringNode extends Node {
+        public abstract boolean execute(PString string);
+
+        @Specialization
+        boolean doIt(PString string,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+            final Object isInterned = readNode.execute(string, PString.INTERNED);
+            return isInterned instanceof Boolean && (boolean) isInterned;
         }
     }
 }

@@ -61,12 +61,24 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_ELLIPSIS;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_BYTES;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_FROZENSET;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_TUPLE;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_UNICODE;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_NONE;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_NOTIMPLEMENTED;
+import static com.oracle.graal.python.runtime.object.IDUtils.getId;
 
 import org.graalvm.collections.Pair;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -74,38 +86,288 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.IDUtils;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ObjectNodes {
+
+    @GenerateUncached
+    abstract static class GetObjectIdNode extends Node {
+        private static final HiddenKey OBJECT_ID = new HiddenKey("_id");
+
+        public abstract long execute(Object self);
+
+        protected static Assumption getSingleThreadedAssumption() {
+            return PythonLanguage.getCurrent().singleThreadedAssumption;
+        }
+
+        protected static boolean isIDableObject(Object object) {
+            return object instanceof PythonObject || object instanceof PythonAbstractNativeObject;
+        }
+
+        @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption()")
+        static long singleThreadedObject(Object self,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            Object objectId = readNode.execute(self, OBJECT_ID);
+            if (objectId == PNone.NO_VALUE) {
+                objectId = context.getNextObjectId();
+                writeNode.execute(self, OBJECT_ID, objectId);
+            }
+            assert objectId instanceof Long : "internal object id hidden key must be a long at this point";
+            return (long) objectId;
+        }
+
+        @Specialization(guards = "isIDableObject(self)", replaces = "singleThreadedObject")
+        static long multiThreadedObject(Object self,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            Object objectId = readNode.execute(self, OBJECT_ID);
+            if (objectId == PNone.NO_VALUE) {
+                synchronized (self) {
+                    objectId = readNode.execute(self, OBJECT_ID);
+                    if (objectId == PNone.NO_VALUE) {
+                        objectId = context.getNextObjectId();
+                        writeNode.execute(self, OBJECT_ID, objectId);
+                    }
+                }
+            }
+            assert objectId instanceof Long : "internal object id hidden key must be a long at this point";
+            return (long) objectId;
+        }
+    }
+
+    /**
+     * Implements the contract from {@code builtin_id}. All objects have their own unique id
+     * computed as follows:
+     *
+     * <ul>
+     * <li>{@link PythonObject}, {@link PythonAbstractNativeObject}: auto incremented <b>62 bit</b>
+     * {@link Long} counter</li>
+     * <li><i>Foreign objects</i>, {@link String}: auto incremented <b>62 bit</b> {@link Long}
+     * counter</li>
+     * <li>{@link Integer}, {@link Long}: the actual value if value fits in a <b>62 bit</b> unsigned
+     * {@link Long}, else a <b>126 bit</b>
+     * {@link com.oracle.graal.python.builtins.objects.ints.PInt} (long long id)</li>
+     * <li>{@link Double}: the IEEE754 representation if it fits in a <b>63 bit</b> unsigned
+     * {@link Long}, else a <b>127 bit</b>
+     * {@link com.oracle.graal.python.builtins.objects.ints.PInt} (long long id)</li>
+     * </ul>
+     *
+     * <br>
+     * In addition the following types have predefined (reserved ids):
+     * {@link PythonBuiltinClassType}, {@link PNone},
+     * {@link com.oracle.graal.python.builtins.objects.PNotImplemented},
+     * {@link com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis}
+     *
+     * <br>
+     * Ids are reserved also for <b>empty</b>:
+     * {@link com.oracle.graal.python.builtins.objects.bytes.PBytes},
+     * {@link com.oracle.graal.python.builtins.objects.set.PFrozenSet}, {@link String} and
+     * {@link com.oracle.graal.python.builtins.objects.tuple.PTuple}
+     */
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    @GenerateUncached
+    public abstract static class GetIdNode extends Node {
+        public abstract Object execute(Object self);
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object id(PBytes self,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+                        @Cached IsBuiltinClassProfile isBuiltin,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                return ID_EMPTY_BYTES;
+            }
+            return getObjectIdNode.execute(self);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object id(PFrozenSet self,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+                        @Cached IsBuiltinClassProfile isBuiltin,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                return ID_EMPTY_FROZENSET;
+            }
+            return getObjectIdNode.execute(self);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object id(PTuple self,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+                        @Cached IsBuiltinClassProfile isBuiltin,
+                        @CachedLibrary("self") PythonObjectLibrary pol) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                return ID_EMPTY_TUPLE;
+            }
+            return getObjectIdNode.execute(self);
+        }
+
+        @Specialization
+        static Object id(@SuppressWarnings("unused") PEllipsis self) {
+            return ID_ELLIPSIS;
+        }
+
+        @Specialization
+        static Object id(@SuppressWarnings("unused") PNone self) {
+            return ID_NONE;
+        }
+
+        @Specialization
+        static Object id(@SuppressWarnings("unused") PNotImplemented self) {
+            return ID_NOTIMPLEMENTED;
+        }
+
+        @Specialization
+        static Object id(PythonBuiltinClassType self) {
+            return getId(self);
+        }
+
+        @Specialization
+        static Object id(PythonAbstractNativeObject self,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(self);
+        }
+
+        @Specialization
+        static Object id(boolean self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            Object bool = self ? context.getCore().getTrue() : context.getCore().getFalse();
+            return getObjectIdNode.execute(bool);
+        }
+
+        @Specialization
+        static Object id(double self,
+                        @Cached PythonObjectFactory factory) {
+            return IDUtils.getId(self, factory);
+        }
+
+        @Specialization
+        static Object id(PFloat self,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(self);
+        }
+
+        @Specialization
+        static Object id(long self,
+                        @Cached PythonObjectFactory factory) {
+            return IDUtils.getId(self, factory);
+        }
+
+        @Specialization
+        static Object id(PInt self,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(self);
+        }
+
+        @Specialization
+        static Object id(int self) {
+            return IDUtils.getId(self);
+        }
+
+        @Specialization
+        static Object id(String self,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            if (self.length() == 0) {
+                return ID_EMPTY_UNICODE;
+            }
+            return context.getNextStringId(self);
+        }
+
+        @Specialization
+        static Object id(PString self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode,
+                        @Cached StringNodes.StringMaterializeNode materializeNode) {
+            if (isInternedStringNode.execute(self)) {
+                return id(materializeNode.execute(self), context);
+            }
+            return getObjectIdNode.execute(self);
+        }
+
+        protected static boolean isPrimitiveBuiltinObject(PythonObject object) {
+            return object instanceof PFloat || object instanceof PInt || object instanceof PString;
+        }
+
+        @Specialization(guards = "!isPrimitiveBuiltinObject(self)")
+        static Object id(PythonObject self,
+                        @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            return getObjectIdNode.execute(self);
+        }
+
+        @Specialization(guards = "pol.isForeignObject(self)", limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object idForeign(Object self,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary pol) {
+            return context.getNextObjectId(self);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class GetIdentityHashNode extends Node {
+        public abstract int execute(Object object);
+
+        @Specialization
+        static int idHash(Object object,
+                        @Cached GetIdNode getIdNode) {
+            final Object id = getIdNode.execute(object);
+            if (id instanceof Long) {
+                return Long.hashCode((long) id);
+            } else {
+                assert id instanceof PInt;
+                return Long.hashCode(((PInt) id).longValue());
+            }
+        }
+    }
+
     @ImportStatic({PythonOptions.class, PGuards.class})
     abstract static class FastIsListSubClassNode extends Node {
         abstract boolean execute(VirtualFrame frame, Object object);
 
         @Specialization
         @SuppressWarnings("unused")
-        public boolean isList(VirtualFrame frame, PList object) {
+        static boolean isList(VirtualFrame frame, PList object) {
             return true;
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public boolean isList(VirtualFrame frame, Object object,
+        static boolean isList(VirtualFrame frame, Object object,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached IsBuiltinClassProfile objProfile,
                         @CachedLibrary(value = "object") PythonObjectLibrary pol) {
@@ -123,12 +385,12 @@ public abstract class ObjectNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        public boolean isList(VirtualFrame frame, PTuple object) {
+        static boolean isList(VirtualFrame frame, PTuple object) {
             return true;
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public boolean isList(VirtualFrame frame, Object object,
+        static boolean isList(VirtualFrame frame, Object object,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached IsBuiltinClassProfile objProfile,
                         @CachedLibrary(value = "object") PythonObjectLibrary pol) {
@@ -146,12 +408,12 @@ public abstract class ObjectNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        public boolean isList(VirtualFrame frame, PDict object) {
+        static boolean isList(VirtualFrame frame, PDict object) {
             return true;
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public boolean isList(VirtualFrame frame, Object object,
+        static boolean isList(VirtualFrame frame, Object object,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached IsBuiltinClassProfile objProfile,
                         @CachedLibrary(value = "object") PythonObjectLibrary pol) {
