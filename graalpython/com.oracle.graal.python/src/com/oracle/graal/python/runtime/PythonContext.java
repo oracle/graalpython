@@ -54,6 +54,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -207,7 +208,7 @@ public final class PythonContext {
 
     private final PythonLanguage language;
     private PythonModule mainModule;
-    private final PythonCore core;
+    private final Python3Core core;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final List<AtExitHook> atExitHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
@@ -271,7 +272,7 @@ public final class PythonContext {
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
         this.language = language;
         this.core = core;
         this.env = env;
