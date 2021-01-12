@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes;
 import java.io.IOException;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -65,8 +66,6 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(BuiltinNames.class)
 public abstract class WriteUnraisableNode extends Node {
-    static final String UNRAISABLE_HOOK_ARGUMENTS_CLASS = "__UnraisableHookArgs";
-
     public abstract void execute(VirtualFrame frame, PBaseException exception, String message, Object object);
 
     @Specialization(limit = "1")
@@ -76,13 +75,10 @@ public abstract class WriteUnraisableNode extends Node {
                     @Cached PythonObjectFactory factory,
                     @Cached GetExceptionTracebackNode getExceptionTracebackNode,
                     @Cached("create(UNRAISABLEHOOK)") GetAttributeNode getUnraisableHook,
-                    @Cached CallNode callUnraisableHook,
-                    @Cached("create(UNRAISABLE_HOOK_ARGUMENTS_CLASS)") GetAttributeNode getArgumentsFactory,
-                    @Cached CallNode callArgumentsFactory) {
+                    @Cached CallNode callUnraisableHook) {
         try {
             PythonModule sysModule = contextRef.get().getCore().lookupBuiltinModule("sys");
             Object unraisablehook = getUnraisableHook.executeObject(frame, sysModule);
-            Object argumentsFactory = getArgumentsFactory.executeObject(frame, sysModule);
             Object exceptionType = lib.getLazyPythonClass(exception);
             Object traceback = getExceptionTracebackNode.execute(exception);
             if (traceback == null) {
@@ -92,8 +88,7 @@ public abstract class WriteUnraisableNode extends Node {
             if (message != null) {
                 messageObj = formatMessage(message);
             }
-            Object hookArguments = callArgumentsFactory.execute(frame, argumentsFactory,
-                            factory.createTuple(new Object[]{exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE}));
+            Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLE_HOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
             callUnraisableHook.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
             ignoreException(contextRef.get(), message);

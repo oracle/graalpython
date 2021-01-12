@@ -1527,6 +1527,21 @@ public abstract class TypeNodes {
                 case PFrame:
                 case PMemoryView:
                 case PTuple:
+                case PStatResult:
+                case PTerminalSize:
+                case PUnameResult:
+                case PStructTime:
+                case PProfilerEntry:
+                case PProfilerSubentry:
+                case PStructPasswd:
+                case PStructRusage:
+                case PVersionInfo:
+                case PFlags:
+                case PFloatInfo:
+                case PIntInfo:
+                case PHashInfo:
+                case PThreadInfo:
+                case PUnraisableHookArgs:
                     return 8;
                 case PythonClass:
                     return 40;

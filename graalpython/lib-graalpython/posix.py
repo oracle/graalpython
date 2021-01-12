@@ -37,43 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from _descriptor import make_named_tuple_class
-
-
-stat_result = make_named_tuple_class("stat_result", [
-    "st_mode", "st_ino", "st_dev", "st_nlink",
-    "st_uid", "st_gid", "st_size",
-    None, None, None,
-    "st_atime", "st_mtime", "st_ctime",
-    "st_atime_ns", "st_mtime_ns", "st_ctime_ns"
-], 10)
-
-stat_result.__qualname__ = 'stat_result'
-stat_result.__name__ = 'stat_result'
-stat_result.__module__ = 'os'
-
-
-old_stat = stat
-@__graalpython__.builtin
-def stat(filename, follow_symlinks=True, dir_fd=None):
-    return stat_result(old_stat(filename, follow_symlinks=follow_symlinks, dir_fd=dir_fd))
-
-old_lstat = lstat
-@__graalpython__.builtin
-def lstat(filename, dir_fd=None):
-    return stat_result(old_lstat(filename, dir_fd=dir_fd))
-
-old_fstat = fstat
-@__graalpython__.builtin
-def fstat(fd):
-    return stat_result(old_fstat(fd))
-
-
-__dir_entry_old_stat = DirEntry.stat
-def __dir_entry_stat(self, *, follow_symlinks=True):
-    return stat_result(__dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
-DirEntry.stat = __dir_entry_stat
-
 
 # TODO lstat exception for graal_python_executable
 # @__graalpython__.builtin
@@ -131,22 +94,4 @@ def WSTOPSIG(status):
     return 0
 
 
-uname_result = make_named_tuple_class("posix.uname_result", [
-    "sysname", "nodename", "release", "version", "machine"
-])
-
-old_uname = uname
-@__graalpython__.builtin
-def uname():
-    return uname_result(old_uname())
-
-
 error = OSError
-
-terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])
-
-old_get_terminal_size = get_terminal_size
-
-@__graalpython__.builtin
-def get_terminal_size(fd=None):
-    return terminal_size(old_get_terminal_size() if fd is None else old_get_terminal_size(fd))

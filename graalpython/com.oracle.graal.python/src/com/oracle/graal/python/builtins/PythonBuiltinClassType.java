@@ -143,6 +143,21 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ZlibCompress("Compress", "zlib"),
     ZlibDecompress("Decompress", "zlib"),
     PBufferedReader("BufferedReader", "_io"),
+    PStatResult("stat_result", "os", false),
+    PTerminalSize("terminal_size", "os", false),
+    PUnameResult("uname_result", "posix", false),
+    PStructTime("struct_time", "time", false),
+    PProfilerEntry("profiler_entry", "_lsprof", false),
+    PProfilerSubentry("profiler_subentry", "_lsprof", false),
+    PStructPasswd("struct_passwd", "pwd", false),
+    PStructRusage("struct_rusage", "resource", false),
+    PVersionInfo("version_info", "sys", false),
+    PFlags("flags", "sys", false),
+    PFloatInfo("float_info", "sys", false),
+    PIntInfo("int_info", "sys", false),
+    PHashInfo("hash_info", "sys", false),
+    PThreadInfo("thread_info", "sys", false),
+    PUnraisableHookArgs("UnraisableHookArgs", false),
 
     // Errors and exceptions:
 
@@ -392,6 +407,22 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SyntaxWarning.base = Warning;
         UnicodeWarning.base = Warning;
         UserWarning.base = Warning;
+
+        PStatResult.base = PTuple;
+        PTerminalSize.base = PTuple;
+        PUnameResult.base = PTuple;
+        PStructTime.base = PTuple;
+        PProfilerEntry.base = PTuple;
+        PProfilerSubentry.base = PTuple;
+        PStructPasswd.base = PTuple;
+        PStructRusage.base = PTuple;
+        PVersionInfo.base = PTuple;
+        PFlags.base = PTuple;
+        PFloatInfo.base = PTuple;
+        PIntInfo.base = PTuple;
+        PHashInfo.base = PTuple;
+        PThreadInfo.base = PTuple;
+        PUnraisableHookArgs.base = PTuple;
     }
 
     /* InteropLibrary messages */

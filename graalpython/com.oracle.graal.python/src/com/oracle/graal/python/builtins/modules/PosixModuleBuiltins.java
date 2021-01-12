@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
@@ -108,6 +110,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -119,6 +122,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -159,6 +163,58 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int X_OK = 1;
     private static final int W_OK = 2;
     private static final int R_OK = 4;
+
+    static final StructSequence.Descriptor STAT_RESULT_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PStatResult,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "stat_result: Result from stat, fstat, or lstat.\n\n" +
+                    "This object may be accessed either as a tuple of\n" +
+                    "  (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)\n" +
+                    "or via the attributes st_mode, st_ino, st_dev, st_nlink, st_uid, and so on.\n" +
+                    "\n" +
+                    "Posix/windows: If your platform supports st_blksize, st_blocks, st_rdev,\n" +
+                    "or st_flags, they are available as attributes only.\n" +
+                    "\n" +
+                    "See os.stat for more information.",
+                    // @formatter:on
+                    10,
+                    new String[]{
+                                    "st_mode", "st_ino", "st_dev", "st_nlink", "st_uid", "st_gid", "st_size",
+                                    null, null, null,
+                                    "st_atime", "st_mtime", "st_ctime",
+                                    "st_atime_ns", "st_mtime_ns", "st_ctime_ns"
+                    },
+                    new String[]{
+                                    "protection bits", "inode", "device", "number of hard links",
+                                    "user ID of owner", "group ID of owner", "total size, in bytes",
+                                    "integer time of last access", "integer time of last modification", "integer time of last change",
+                                    "time of last access", "time of last modification", "time of last change",
+                                    "time of last access in nanoseconds", "time of last modification in nanoseconds", "time of last change in nanoseconds"
+                    });
+
+    private static final StructSequence.Descriptor TERMINAL_SIZE_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PTerminalSize,
+                    "A tuple of (columns, lines) for holding terminal window size",
+                    2,
+                    new String[]{"columns", "lines"},
+                    new String[]{"width of the terminal window in characters", "height of the terminal window in characters"});
+
+    private static final StructSequence.Descriptor UNAME_RESULT_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PUnameResult,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "uname_result: Result from os.uname().\n\n" +
+                    "This object may be accessed either as a tuple of\n" +
+                    "  (sysname, nodename, release, version, machine),\n" +
+                    "or via the attributes sysname, nodename, release, version, and machine.\n" +
+                    "\n" +
+                    "See os.uname for more information.",
+                    // @formatter:on
+                    5,
+                    new String[]{"sysname", "nodename", "release", "version", "machine"},
+                    new String[]{
+                                    "operating system name", "name of machine on network (implementation-defined)",
+                                    "operating system release", "operating system version", "hardware identifier"
+                    });
 
     private static boolean terminalIsInteractive(PythonContext context) {
         return context.getOption(PythonOptions.TerminalIsInteractive);
@@ -210,6 +266,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         builtinConstants.put("_have_functions", core.factory().createList());
         builtinConstants.put("environ", core.factory().createDict());
+
+        StructSequence.initType(core, STAT_RESULT_DESC);
+        StructSequence.initType(core, TERMINAL_SIZE_DESC);
+        StructSequence.initType(core, UNAME_RESULT_DESC);
+
+        // The stat_result and terminal_size classes are formally part of the 'os' module, although
+        // they are exposed by the 'posix' module. In CPython, they are defined in posixmodule.c,
+        // with their __module__ being set to 'os', and later they are imported by os.py.
+        // Our infrastructure in PythonBuiltinClassType currently does not allow us to
+        // define a class in one module (os) and make it public in another (posix), so we create
+        // them directly in the 'os' module, and expose them in the `posix` module as well.
+        // Note that the classes are still re-imported by os.py.
+        PythonModule posix = core.lookupBuiltinModule("posix");
+        posix.setAttribute(PythonBuiltinClassType.PStatResult.getName(), core.lookupType(PythonBuiltinClassType.PStatResult));
+        posix.setAttribute(PythonBuiltinClassType.PTerminalSize.getName(), core.lookupType(PythonBuiltinClassType.PTerminalSize));
     }
 
     @Override
@@ -234,6 +305,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PythonModule posix = core.lookupBuiltinModule("posix");
         Object environAttr = posix.getAttribute("environ");
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
+    }
+
+    @Builtin(name = "stat_result", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "sequence", "dict"}, constructsClass = PythonBuiltinClassType.PStatResult)
+    @ImportStatic(PosixModuleBuiltins.class)
+    @GenerateNodeFactory
+    public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        public PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
+                        @Cached("create(STAT_RESULT_DESC)") StructSequence.NewNode newNode) {
+            PTuple p = (PTuple) newNode.call(frame, cls, sequence, dict);
+            Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
+            for (int i = 7; i <= 9; i++) {
+                if (data[i + 3] == PNone.NONE) {
+                    data[i + 3] = data[i];
+                }
+            }
+            return p;
+        }
     }
 
     @Builtin(name = "execv", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
@@ -732,8 +822,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // TODO default value should be fileno(stdout)
             try {
                 int[] result = posixLib.getTerminalSize(getPosixSupport(), fd);
-                // TODO intrinsify the named tuple
-                return factory().createTuple(new Object[]{result[0], result[1]});
+                return factory().createStructSeq(TERMINAL_SIZE_DESC, result[0], result[1]);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -856,7 +945,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PTuple uname(VirtualFrame frame,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                return factory().createTuple(posixLib.uname(getPosixSupport()));
+                return factory().createStructSeq(UNAME_RESULT_DESC, posixLib.uname(getPosixSupport()));
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1938,8 +2027,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             res[i + 3] = seconds + nsFraction * 1.0e-9;
             res[i + 6] = factory.createInt(convertToNanoseconds(seconds, nsFraction));
         }
-        // TODO intrinsify the os.stat_result named tuple and create the instance directly
-        return factory.createTuple(res);
+        return factory.createStructSeq(STAT_RESULT_DESC, res);
     }
 
     @TruffleBoundary

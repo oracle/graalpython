@@ -42,53 +42,6 @@ FunctionType = type(_f)
 descriptor = type(FunctionType.__code__)
 
 
-def make_named_tuple_class(name, fields, n_in_seq=None):
-    sealed = False
-    class named_tuple(tuple):
-        __name__ = name
-        __qualname__ = name
-        # TODO only first n_sequence_fields items should be accesible by []
-        n_sequence_fields = len(fields) if n_in_seq is None else n_in_seq
-        fields = fields
-
-        @classmethod
-        def seal(cls):
-            nonlocal sealed
-            sealed = True
-
-        def __new__(cls, *args, **kwargs):
-            if sealed:
-                raise TypeError("cannot create '{}' instances".format(name))
-            return super(named_tuple, cls).__new__(cls, *args, **kwargs)
-
-        def __str__(self):
-            return self.__repr__()
-
-        def __repr__(self):
-            sb = [name, "("]
-            for i, f in enumerate([f for f in fields if f is not None][:self.n_sequence_fields]):
-                sb.append(f)
-                sb.append("=")
-                sb.append(repr(self[i]))
-                sb.append(", ")
-            sb.pop()
-            sb.append(")")
-            return "".join(sb)
-
-    def _define_named_tuple_methods():
-        for i, name in enumerate(fields):
-            if name is not None:
-                def make_func(i):
-                    def func(self):
-                        return self[i]
-                    return func
-                setattr(named_tuple, name, descriptor(fget=make_func(i), name=name, owner=named_tuple))
-
-
-    _define_named_tuple_methods()
-    return named_tuple
-
-
 def recursive_repr(fillfn):
     def inner(fn):
         data = None

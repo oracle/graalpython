@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +54,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -72,9 +76,48 @@ import com.oracle.truffle.tools.profiler.impl.CPUSamplerInstrument;
 
 @CoreFunctions(defineModule = "_lsprof")
 public class LsprofModuleBuiltins extends PythonBuiltins {
+
+    static final StructSequence.Descriptor PROFILER_ENTRY_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PProfilerEntry,
+                    null,
+                    6,
+                    new String[]{
+                                    "code", "callcount", "reccallcount", "totaltime", "inlinetime", "calls"
+                    },
+                    new String[]{
+                                    "code object or built-in function name",
+                                    "how many times this was called",
+                                    "how many times called recursively",
+                                    "total time in this entry",
+                                    "inline time in this entry (not in subcalls)",
+                                    "details of the calls"
+                    });
+
+    static final StructSequence.Descriptor PROFILER_SUBENTRY_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PProfilerSubentry,
+                    null,
+                    5,
+                    new String[]{
+                                    "code", "callcount", "reccallcount", "totaltime", "inlinetime"
+                    },
+                    new String[]{
+                                    "called code object or built-in function name",
+                                    "how many times this is called",
+                                    "how many times this is called recursively",
+                                    "total time spent in this call",
+                                    "inline time (not in further subcalls)"
+                    });
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return LsprofModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        StructSequence.initType(core, PROFILER_ENTRY_DESC);
+        StructSequence.initType(core, PROFILER_SUBENTRY_DESC);
     }
 
     public static PythonBuiltins newProfilerBuiltins() {
@@ -229,7 +272,7 @@ class ProfilerBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PList doit(Profiler self) {
             double avgSampleSeconds = self.sampler.getPeriod() / 1000D;
-            List<PList> entries = new ArrayList<>();
+            List<PTuple> entries = new ArrayList<>();
             for (ProfilerNode<Payload> node : self.sampler.getRootNodes()) {
                 countNode(entries, node, avgSampleSeconds);
             }
@@ -237,18 +280,19 @@ class ProfilerBuiltins extends PythonBuiltins {
             return factory().createList(entries.toArray());
         }
 
-        private void countNode(List<PList> entries, ProfilerNode<Payload> node, double avgSampleTime) {
+        private void countNode(List<PTuple> entries, ProfilerNode<Payload> node, double avgSampleTime) {
             Collection<ProfilerNode<Payload>> children = node.getChildren();
             Object[] profilerEntry = getProfilerEntry(node, avgSampleTime);
             Object[] calls = new Object[children.size()];
             int callIdx = 0;
             for (ProfilerNode<Payload> childNode : children) {
                 countNode(entries, childNode, avgSampleTime);
-                calls[callIdx++] = factory().createList(getProfilerEntry(childNode, avgSampleTime));
+                calls[callIdx++] = factory().createStructSeq(LsprofModuleBuiltins.PROFILER_SUBENTRY_DESC, getProfilerEntry(childNode, avgSampleTime));
             }
             assert callIdx == calls.length;
+            profilerEntry = Arrays.copyOf(profilerEntry, 6);
             profilerEntry[profilerEntry.length - 1] = factory().createList(calls);
-            entries.add(factory().createList(profilerEntry));
+            entries.add(factory().createStructSeq(LsprofModuleBuiltins.PROFILER_ENTRY_DESC, profilerEntry));
         }
 
         private static Object[] getProfilerEntry(ProfilerNode<Payload> node, double avgSampleTime) {
@@ -270,8 +314,7 @@ class ProfilerBuiltins extends PythonBuiltins {
                             hitCount,
                             0,
                             otherHitCount * avgSampleTime,
-                            selfHitCount * avgSampleTime,
-                            PNone.NONE
+                            selfHitCount * avgSampleTime
             };
             return profilerEntry;
         }
