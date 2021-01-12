@@ -56,7 +56,11 @@ class TestSlots(HPyTest):
         assert p.x == 1
         assert p.y == 2
 
+<<<<<<< HEAD
     def test_sq_item(self):
+=======
+    def test_sq_item_and_sq_length(self):
+>>>>>>> hpy-import
         mod = self.make_module("""
             @DEFINE_PointObject
 
@@ -66,15 +70,30 @@ class TestSlots(HPyTest):
                 return HPyLong_FromLong(ctx, (long)idx*2);
             }
 
+<<<<<<< HEAD
             @EXPORT_POINT_TYPE(&Point_getitem)
+=======
+            HPyDef_SLOT(Point_length, Point_length_impl, HPy_sq_length);
+            static HPy_ssize_t Point_length_impl(HPyContext ctx, HPy self)
+            {
+                return 1234;
+            }
+
+            @EXPORT_POINT_TYPE(&Point_getitem, &Point_length)
+>>>>>>> hpy-import
             @INIT
         """)
         p = mod.Point()
         assert p[4] == 8
         assert p[21] == 42
+<<<<<<< HEAD
 
     # TODO: enable test once supported
     @pytest.mark.xfail
+=======
+        assert len(p) == 1234
+
+>>>>>>> hpy-import
     def test_tp_destroy(self):
         import gc
         mod = self.make_module("""
