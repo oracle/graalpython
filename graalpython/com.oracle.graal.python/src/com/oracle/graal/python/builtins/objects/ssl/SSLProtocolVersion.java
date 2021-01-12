@@ -10,8 +10,8 @@ public enum SSLProtocolVersion {
     TLS1_1(4, "TLSv1.1"),
     TLS1_2(5, "TLSv1.2"),
     // TODO figure out what these mean
-    TLS_CLIENT(0x10, "TODO"),
-    TLS_SERVER(0x11, "TODO");
+    TLS_CLIENT(0x10, "TLS"),
+    TLS_SERVER(0x11, "TLS");
 
     private final int pythonId;
     private final String javaId;
