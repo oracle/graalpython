@@ -49,22 +49,22 @@ public class SSLContextBuiltins extends PythonBuiltins {
         PSSLContext createContext(Object type, int protocol) {
             SSLProtocolVersion version = SSLProtocolVersion.fromPythonId(protocol);
             if (version == null) {
-                throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION);
+                throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
             }
             try {
                 return factory().createSSLContext(type, version, createSSLContext(version));
             } catch (NoSuchAlgorithmException e) {
-                throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION);
+                throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e.getMessage());
             } catch (KeyManagementException e) {
                 // TODO when does this happen?
                 throw raise(SSLError, e);
-            }
+	    }
         }
 
         @TruffleBoundary
         private static SSLContext createSSLContext(SSLProtocolVersion version) throws NoSuchAlgorithmException, KeyManagementException {
             SSLContext context = SSLContext.getInstance(version.getJavaId());
-            context.init(null, null, null);
+	    context.init(null, null, null);
             return context;
         }
 
@@ -99,7 +99,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getVersion().getPythonId();
         }
     }
-
+    
     @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
     @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "server_hostname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "null", useDefaultForNone = true)
