@@ -17,6 +17,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -27,10 +28,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
@@ -58,13 +61,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
             } catch (KeyManagementException e) {
                 // TODO when does this happen?
                 throw raise(SSLError, e);
-	    }
+            }
         }
 
         @TruffleBoundary
         private static SSLContext createSSLContext(SSLProtocolVersion version) throws NoSuchAlgorithmException, KeyManagementException {
             SSLContext context = SSLContext.getInstance(version.getJavaId());
-	    context.init(null, null, null);
+            context.init(null, null, null);
             return context;
         }
 
@@ -99,7 +102,39 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getVersion().getPythonId();
         }
     }
-    
+
+    @Builtin(name = "verify_mode", minNumOfPositionalArgs = 1, isGetter = true, isSetter = true, parameterNames = {"$self", "value"})
+    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class VerifyModeNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static int get(PSSLContext self, @SuppressWarnings("unused") PNone value) {
+            return self.getVerifyMode();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object set(PSSLContext self, int value) {
+            if (value == SSLModuleBuiltins.SSL_CERT_NONE && self.getCheckHostname()) {
+                throw raise(ValueError, ErrorMessages.CANNOT_SET_VERIFY_MODE_TO_CERT_NONE);
+            }
+            switch (value) {
+                case SSLModuleBuiltins.SSL_CERT_NONE:
+                case SSLModuleBuiltins.SSL_CERT_OPTIONAL:
+                case SSLModuleBuiltins.SSL_CERT_REQUIRED:
+                    self.setVerifyMode(value);
+                    return PNone.NONE;
+                default:
+                    throw raise(ValueError, ErrorMessages.INVALID_VALUE_FOR_VERIFY_MODE);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.VerifyModeNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
     @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "server_hostname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "null", useDefaultForNone = true)

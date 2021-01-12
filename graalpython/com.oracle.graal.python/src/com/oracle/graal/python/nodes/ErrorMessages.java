@@ -148,6 +148,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_MMAP_FILE = "cannot mmap file";
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
     public static final String CANNOT_RESIZE_BUFFER = "cannot resize buffer";
+    public static final String CANNOT_SET_VERIFY_MODE_TO_CERT_NONE = "Cannot set verify_mode to CERT_NONE when check_hostname is enabled.";
     public static final String CANNOT_SPECIFY_FILTERS = "Cannot specify filters except with FORMAT_RAW";
     public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
@@ -345,6 +346,8 @@ public abstract class ErrorMessages {
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
     public static final String INIT_TAKES_ONE_ARG = "%N.__init__() takes exactly one argument (the instance to initialize)";
     public static final String INIT_TAKES_ONE_ARG_OBJECT = "object.__init__() takes exactly one argument (the instance to initialize)";
+    public static final String INVALID_VALUE_NAN = "Invalid value NaN (not a number)";
+    public static final String INVALID_VALUE_FOR_VERIFY_MODE = "invalid value for verify_mode";
     public static final String IS_NOT_SUBTYPE_OF = "%s.__new__(%N): %N is not a subtype of %s";
     public static final String IS_NOT_TYPE_OBJ = "%s is not a type object (%p)";
     public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_CLSS_WAS = "issubclass() arg 2 must be a class or tuple of classes";
