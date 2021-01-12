@@ -321,7 +321,11 @@ public abstract class ObjectNodes {
             return getObjectIdNode.execute(self);
         }
 
-        @Specialization
+        protected static boolean isPrimitiveBuiltinObject(PythonObject object) {
+            return object instanceof PFloat || object instanceof PInt || object instanceof PString;
+        }
+
+        @Specialization(guards = "!isPrimitiveBuiltinObject(self)")
         static Object id(PythonObject self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(self);
