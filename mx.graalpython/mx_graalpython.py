@@ -1977,7 +1977,7 @@ def update_hpy_import_cmd(args):
         vc_git.pull(hpy_repo_path, update=True)
 
     # determine short revision of HPy
-    import_version = vc_git.git_command(hpy_repo_path, ["rev-parse", "--short", "HEAD"])
+    import_version = vc_git.git_command(hpy_repo_path, ["rev-parse", "--short", "HEAD"]).strip()
     mx.log("Determined HPy revision {}".format(import_version))
 
     if vc_git.isDirty(hpy_repo_path):
