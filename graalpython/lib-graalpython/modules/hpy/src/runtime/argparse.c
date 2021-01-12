@@ -2,11 +2,12 @@
 
 #define _BREAK_IF_OPTIONAL(current_arg) if (HPy_IsNull(current_arg)) break;
 
-int _HPyArg_ParseItem(HPyContext ctx, HPy current_arg, const char **fmt, va_list vl)
+static
+int _HPyArg_ParseItem(HPyContext ctx, HPy current_arg, const char **fmt, va_list *vl)
 {
     switch (*(*fmt)++) {
     case 'i': {
-        int *output = va_arg(vl, int *);
+        int *output = va_arg(*vl, int *);
         _BREAK_IF_OPTIONAL(current_arg);
         long value = HPyLong_AsLong(ctx, current_arg);
         if (value == -1 && HPyErr_Occurred(ctx))
@@ -15,7 +16,7 @@ int _HPyArg_ParseItem(HPyContext ctx, HPy current_arg, const char **fmt, va_list
         break;
     }
     case 'l': {
-        long *output = va_arg(vl, long *);
+        long *output = va_arg(*vl, long *);
         _BREAK_IF_OPTIONAL(current_arg);
         long value = HPyLong_AsLong(ctx, current_arg);
         if (value == -1 && HPyErr_Occurred(ctx))
@@ -23,17 +24,17 @@ int _HPyArg_ParseItem(HPyContext ctx, HPy current_arg, const char **fmt, va_list
         *output = value;
         break;
     }
-    /* case 'd': { */
-    /*     double* output = va_arg(vl, double *); */
-    /*     _BREAK_IF_OPTIONAL(current_arg); */
-    /*     double value = HPyFloat_AsDouble(ctx, current_arg); */
-    /*     if (value == -1.0 && HPy_ErrOccurred()) */
-    /*         return 0; */
-    /*     *output = value; */
-    /*     break; */
-    /* } */
+    case 'd': {
+        double* output = va_arg(*vl, double *);
+        _BREAK_IF_OPTIONAL(current_arg);
+        double value = HPyFloat_AsDouble(ctx, current_arg);
+        if (value == -1.0 && HPyErr_Occurred(ctx))
+            return 0;
+        *output = value;
+        break;
+    }
     case 'O': {
-        HPy *output = va_arg(vl, HPy *);
+        HPy *output = va_arg(*vl, HPy *);
         _BREAK_IF_OPTIONAL(current_arg);
         *output = current_arg;
         break;
@@ -66,19 +67,22 @@ HPyArg_Parse(HPyContext ctx, HPy *args, HPy_ssize_t nargs, const char *fmt, ...)
           current_arg = args[i];
         }
         if (!HPy_IsNull(current_arg) || optional) {
-          if (!_HPyArg_ParseItem(ctx, current_arg, &fmt1, vl)) {
+          if (!_HPyArg_ParseItem(ctx, current_arg, &fmt1, &vl)) {
+            va_end(vl);
             return 0;
           }
         }
         else {
           HPyErr_SetString(ctx, ctx->h_TypeError,
                            "XXX: required positional argument missing");
+          va_end(vl);
           return 0;
         }
         i++;
     }
     if (i < nargs) {
         HPyErr_SetString(ctx, ctx->h_TypeError, "XXX: mismatched args (too many arguments for fmt)");
+        va_end(vl);
         return 0;
     }
 
@@ -105,6 +109,7 @@ HPyArg_ParseKeywords(HPyContext ctx, HPy *args, HPy_ssize_t nargs, HPy kw,
   while (keywords[nkw] != NULL) {
     if (!*keywords[nkw]) {
       HPyErr_SetString(ctx, ctx->h_TypeError, "XXX: Empty keyword parameter name");
+      va_end(vl);
       return 0;
     }
     nkw++;
@@ -124,12 +129,14 @@ HPyArg_ParseKeywords(HPyContext ctx, HPy *args, HPy_ssize_t nargs, HPy kw,
       }
       if (i >= nkw) {
         HPyErr_SetString(ctx, ctx->h_TypeError, "XXX: mismatched args (too few keywords for fmt)");
+        va_end(vl);
         return 0;
       }
       current_arg = HPy_NULL;
       if (i < nargs) {
         if (keyword_only) {
           HPyErr_SetString(ctx, ctx->h_TypeError, "XXX: keyword only argument passed as positional argument");
+          va_end(vl);
           return 0;
         }
         current_arg = args[i];
@@ -138,18 +145,21 @@ HPyArg_ParseKeywords(HPyContext ctx, HPy *args, HPy_ssize_t nargs, HPy kw,
         current_arg = HPyDict_GetItem(ctx, kw, HPyUnicode_FromString(ctx, keywords[i]));
       }
       if (!HPy_IsNull(current_arg) || optional) {
-        if (!_HPyArg_ParseItem(ctx, current_arg, &fmt1, vl)) {
+        if (!_HPyArg_ParseItem(ctx, current_arg, &fmt1, &vl)) {
+          va_end(vl);
           return 0;
         }
       }
       else {
         HPyErr_SetString(ctx, ctx->h_TypeError, "XXX: no value for required argument");
+        va_end(vl);
         return 0;
       }
       i++;
   }
   if (i != nkw) {
       HPyErr_SetString(ctx, ctx->h_TypeError, "XXX: mismatched args (too many keywords for fmt)");
+      va_end(vl);
       return 0;
   }
 
