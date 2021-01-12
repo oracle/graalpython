@@ -263,7 +263,7 @@ class WithTempFilesTests(unittest.TestCase):
     def test_stat(self):
         sr1 = os.stat(TEST_FULL_PATH1)
         self.assertEqual(int(sr1.st_atime), sr1[7])
-        self.assertEqual(sr1.st_atime_ns/1000000000, sr1.st_atime)
+        self.assertTrue(abs(sr1.st_atime_ns/1000000000 - sr1.st_atime) < 1e-4)
         self.assertEqual(0, sr1.st_size)
         self.assertEqual(sr1.st_ino, os.stat(TEST_FULL_PATH2).st_ino)       # follow_symlinks = True
         sr2 = os.stat(TEST_FULL_PATH2, follow_symlinks=False)
@@ -304,7 +304,7 @@ class WithTempFilesTests(unittest.TestCase):
         self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime - stat_result.st_atime) < 10)
         with open(TEST_FULL_PATH2, os.O_RDWR) as fd:
             os.utime(fd, times=(12345, 67890))
-            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10)
+            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10000000000)
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java',
                          'Due to bug in OpenJDK 8 on Linux we cannot set atime/mtime of symlinks')
@@ -320,7 +320,7 @@ class WithTempFilesTests(unittest.TestCase):
         self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime - stat_result.st_atime) < 10)
         with open(TEST_FULL_PATH2, os.O_RDWR) as fd:
             os.utime(fd, times=(12345, 67890))
-            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10)
+            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10000000000)
 
     @unittest.skipUnless(sys.platform != 'darwin', 'faccessat on MacOSX does not support follow_symlinks')
     def test_access(self):
