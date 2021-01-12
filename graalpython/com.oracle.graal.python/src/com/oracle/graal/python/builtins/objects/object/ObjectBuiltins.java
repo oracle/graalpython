@@ -246,10 +246,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile overridesInit,
                         @Cached("create(__INIT__)") LookupAttributeInMRONode lookupInit,
                         @Cached("createLookupProfile()") ValueProfile profileInit,
-                        @Cached("createIdentityProfile()") ValueProfile profileInitFactory,
+                        @Cached("createClassProfile()") ValueProfile profileInitFactory,
                         @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
                         @Cached("createLookupProfile()") ValueProfile profileNew,
-                        @Cached("createIdentityProfile()") ValueProfile profileNewFactory) {
+                        @Cached("createClassProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = lib.getLazyPythonClass(self);
                 if (overridesNew.profile(overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class))) {

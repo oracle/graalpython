@@ -339,7 +339,7 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached("createBinaryProfile()") ConditionProfile lazyTypeInitProfile,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
-                        @Cached("createIdentityProfile()") ValueProfile storageProfile) {
+                        @Cached("createClassProfile()") ValueProfile storageProfile) {
             Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
             if (lazyTypeInitProfile.profile(tupleObj == PNone.NO_VALUE)) {
                 // Special case: lazy type initialization (should happen at most only once per type)

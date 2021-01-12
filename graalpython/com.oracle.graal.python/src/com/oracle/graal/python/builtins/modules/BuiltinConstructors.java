@@ -1786,10 +1786,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 if (profileNewFactory == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    profileNewFactory = ValueProfile.createIdentityProfile();
+                    profileNewFactory = ValueProfile.createClassProfile();
                 }
                 if (profileInitFactory == null) {
-                    profileInitFactory = ValueProfile.createIdentityProfile();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    profileInitFactory = ValueProfile.createClassProfile();
                 }
                 if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
