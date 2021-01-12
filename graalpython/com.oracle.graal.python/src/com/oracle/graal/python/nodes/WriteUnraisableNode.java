@@ -73,7 +73,7 @@ public abstract class WriteUnraisableNode extends Node {
         executeInternal(null, exception, message, object);
     }
 
-    protected abstract void executeInternal(Frame frame, PBaseException exception, String message,  Object object);
+    protected abstract void executeInternal(Frame frame, PBaseException exception, String message, Object object);
 
     @Specialization
     static void writeUnraisable(VirtualFrame frame, PBaseException exception, String message, Object object,

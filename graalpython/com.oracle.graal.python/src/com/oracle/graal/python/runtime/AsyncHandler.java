@@ -238,7 +238,9 @@ public class AsyncHandler {
 
     void activateGIL() {
         CompilerAsserts.neverPartOfCompilation();
-        executorService.scheduleWithFixedDelay(() -> { shouldReleaseGil = true; }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
+        executorService.scheduleWithFixedDelay(() -> {
+            shouldReleaseGil = true;
+        }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
     }
 
     void triggerAsyncActions(VirtualFrame frame) {
@@ -265,9 +267,9 @@ public class AsyncHandler {
 
     /**
      * We have a GIL, so when we enter this method, we own the GIL. Some async actions may cause us
-     * to relinquish the GIL, and then other threads may come and start processing async
-     * actions. That is fine, this processing can go on in parallel. E.g., Thread-1 may processes a
-     * few weakref callbacks, then process a GIL release action. Thread-2 will still see the
+     * to relinquish the GIL, and then other threads may come and start processing async actions.
+     * That is fine, this processing can go on in parallel. E.g., Thread-1 may processes a few
+     * weakref callbacks, then process a GIL release action. Thread-2 will still see the
      * hasScheduledAction flag be true when it next enters this method (in fact, Thread-2 may be
      * sitting in this method because it was processing an earlier GIL release action, but it
      * doesn't matter). Thread-2 will continue to process actions. If it's done, it will acquire the
