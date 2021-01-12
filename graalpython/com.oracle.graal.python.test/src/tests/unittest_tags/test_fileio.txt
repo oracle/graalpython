@@ -23,12 +23,14 @@
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testBadModeArgument
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testBytesOpen
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testConstructorHandlesNULChars
+*graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidFd
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidFd_overflow
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidInit
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidModeStrings
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testTruncateOnWindows
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUnclosedFDOnException
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUnicodeOpen
+*graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUtf8BytesOpen
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testWarnings
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.test_open_code
 *graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testAttributes
@@ -58,10 +60,12 @@
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testBadModeArgument
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testBytesOpen
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testConstructorHandlesNULChars
+*graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testInvalidFd
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testInvalidInit
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testInvalidModeStrings
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testTruncateOnWindows
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUnclosedFDOnException
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUnicodeOpen
+*graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUtf8BytesOpen
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testWarnings
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.test_open_code

@@ -24,6 +24,7 @@
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_nonexisting_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkdtemp.test_read_only_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkstemp.test_basic
+*graalpython.lib-python.3.test.test_tempfile.TestMkstemp.test_basic_with_bytes_names
 *graalpython.lib-python.3.test.test_tempfile.TestMkstemp.test_choose_directory
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_basic
 *graalpython.lib-python.3.test.test_tempfile.TestMkstempInner.test_basic_many
@@ -73,6 +74,7 @@
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_explicit_cleanup
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_flags
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_mkdtemp_failure
+*graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_modes
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryDirectory.test_multiple_close
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_basic
 *graalpython.lib-python.3.test.test_tempfile.TestTemporaryFile.test_mode_and_encoding

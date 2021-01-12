@@ -89,6 +89,9 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestDocString.test_existing_docstring_not_overridden
 *graalpython.lib-python.3.test.test_dataclasses.TestEq.test_no_eq
 *graalpython.lib-python.3.test.test_dataclasses.TestEq.test_overwriting_eq
+*graalpython.lib-python.3.test.test_dataclasses.TestFieldNoAnnotation.test_field_without_annotation
+*graalpython.lib-python.3.test.test_dataclasses.TestFieldNoAnnotation.test_field_without_annotation_but_annotation_in_base
+*graalpython.lib-python.3.test.test_dataclasses.TestFieldNoAnnotation.test_field_without_annotation_but_annotation_in_base_not_dataclass
 *graalpython.lib-python.3.test.test_dataclasses.TestFrozen.test_frozen
 *graalpython.lib-python.3.test.test_dataclasses.TestFrozen.test_frozen_hash
 *graalpython.lib-python.3.test.test_dataclasses.TestFrozen.test_inherit
@@ -108,10 +111,13 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestInit.test_overwriting_init
 *graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_base
 *graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_class_var
+*graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_duplicate_field_names
 *graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_funny_class_names_names
 *graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_init_var
+*graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_invalid_type_specification
 *graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_no_mutate_namespace
 *graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_no_types
+*graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_non_identifier_field_names
 *graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_simple
 *graalpython.lib-python.3.test.test_dataclasses.TestMakeDataclass.test_underscore_field_names
 *graalpython.lib-python.3.test.test_dataclasses.TestOrdering.test_functools_total_ordering
