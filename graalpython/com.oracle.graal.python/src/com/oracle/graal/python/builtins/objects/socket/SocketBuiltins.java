@@ -730,8 +730,14 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "getsockopt", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSockOptionNode extends PythonBuiltinNode {
+        private static final int SO_TYPE = 3;
+
         @Specialization
-        Object setSockOpt(PSocket socket, @SuppressWarnings("unused") Object level, Object option) {
+        Object getSockOpt(PSocket socket, @SuppressWarnings("unused") Object level, int option) {
+            // TODO implement more of these
+            if (option == SO_TYPE) {
+                return socket.getType();
+            }
             return socket.getSockOpt(option);
         }
     }
