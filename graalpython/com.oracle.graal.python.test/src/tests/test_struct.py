@@ -194,3 +194,30 @@ def test_pack_into():
     # Test bogus offset (issue 3694)
     sb = small_buf
     assert_raises((TypeError, struct.error), struct.pack_into, b'', sb, None)
+
+
+def test_unpack_from():
+    test_string = b'abcd01234'
+    fmt = '4s'
+    s = struct.Struct(fmt)
+    for cls in (bytes, bytearray):
+        data = cls(test_string)
+        assert s.unpack_from(data) == (b'abcd',)
+        assert s.unpack_from(data, 2) == (b'cd01',)
+        assert s.unpack_from(data, 4) == (b'0123',)
+        for i in range(6):
+            assert s.unpack_from(data, i) == (data[i:i+4],)
+        for i in range(6, len(test_string) + 1):
+            assert_raises(struct.error, s.unpack_from, data, i)
+    for cls in (bytes, bytearray):
+        data = cls(test_string)
+        assert struct.unpack_from(fmt, data) == (b'abcd',)
+        assert struct.unpack_from(fmt, data, 2) == (b'cd01',)
+        assert struct.unpack_from(fmt, data, 4) == (b'0123',)
+        for i in range(6):
+            assert struct.unpack_from(fmt, data, i) == (data[i:i+4],)
+        for i in range(6, len(test_string) + 1):
+            assert_raises(struct.error, struct.unpack_from, fmt, data, i)
+
+    # keyword arguments
+    assert s.unpack_from(buffer=test_string, offset=2) == (b'cd01',)
