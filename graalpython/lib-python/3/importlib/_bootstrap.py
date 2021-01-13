@@ -984,11 +984,24 @@ _NEEDS_LOADING = object()
 
 
 def _find_and_load(name, import_):
+    # (tfel) Truffle change: CPython actually tests if name is in sys.modules
+    # *before* ever calling this function (see the "optimization" in import.c
+    # PyImport_ImportModuleLevelObject). Afaict,tThis "optimization" is the only
+    # thing that avoids a deadlock situation tested for in
+    # test_threaded_import.py#test_circular_imports. Honestly, I also think that
+    # while this deadlock doesn't occur the scenario still is a problem even on
+    # CPython. If two parallel threads process circular imports, one of them
+    # will accept an incomplete module object (see comment in this file's
+    # _lock_unlock_module) - but the fromlist is processed immediately
+    # afterwards! So the thread may still error since it's not able to complete
+    # the import on an incomplete module ...
     """Find and load the module."""
-    with _ModuleLockManager(name):
-        module = sys.modules.get(name, _NEEDS_LOADING)
-        if module is _NEEDS_LOADING:
-            return _find_and_load_unlocked(name, import_)
+    module = sys.modules.get(name, _NEEDS_LOADING)
+    if module is _NEEDS_LOADING:
+        with _ModuleLockManager(name):
+            module = sys.modules.get(name, _NEEDS_LOADING)
+            if module is _NEEDS_LOADING:
+                return _find_and_load_unlocked(name, import_)
 
     if module is None:
         message = ('import of {} halted; '
