@@ -33,7 +33,7 @@ import java.nio.file.DirectoryStream;
 import java.util.concurrent.Semaphore;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLEngine;
 
 import org.graalvm.collections.EconomicMap;
 import org.tukaani.xz.FinishableOutputStream;
@@ -724,8 +724,20 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PArray(cls, getShape(cls), formatString, format, length));
     }
 
+    public PByteArray createByteArray(byte[] array) {
+        return createByteArray(array, array.length);
+    }
+
     public PByteArray createByteArray(Object cls, byte[] array) {
-        return trace(new PByteArray(cls, getShape(cls), array));
+        return createByteArray(cls, array, array.length);
+    }
+
+    public PByteArray createByteArray(byte[] array, int lenght) {
+        return createByteArray(new ByteSequenceStorage(array, lenght));
+    }
+
+    public PByteArray createByteArray(Object cls, byte[] array, int lenght) {
+        return createByteArray(cls, new ByteSequenceStorage(array, lenght));
     }
 
     public PByteArray createByteArray(SequenceStorage storage) {
@@ -734,10 +746,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public PByteArray createByteArray(Object cls, SequenceStorage storage) {
         return trace(new PByteArray(cls, getShape(cls), storage));
-    }
-
-    public PByteArray createByteArray(byte[] array) {
-        return trace(new PByteArray(PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PByteArray.getInstanceShape(getLanguage()), array));
     }
 
     /*
@@ -998,7 +1006,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSSLContext(clazz, getShape(clazz), version, context));
     }
 
-    public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLSocket javaSocket) {
-        return trace(new PSSLSocket(clazz, getShape(clazz), context, javaSocket));
+    public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, PSocket socket, SSLEngine engine) {
+        return trace(new PSSLSocket(clazz, getShape(clazz), context, socket, engine));
     }
 }

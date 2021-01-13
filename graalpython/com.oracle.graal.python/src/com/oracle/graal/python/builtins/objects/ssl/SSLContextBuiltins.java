@@ -3,14 +3,12 @@ package com.oracle.graal.python.builtins.objects.ssl;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.io.IOException;
-import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLEngine;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -143,25 +141,18 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         // TODO parameters
         Object wrap(PSSLContext context, PSocket sock, boolean serverSide, String serverHostname, Object owner, Object session) {
+            // TODO hostname
             // TODO hostname encode as IDNA?
             // TODO hostname can be null
-            // TODO server mode?
-            Socket javaSocket = sock.getSocket().socket();
             SSLContext javaContext = context.getContext();
-            try {
-                SSLSocket newSocket = createSocket(serverSide, serverHostname, javaSocket, javaContext);
-                return factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, newSocket);
-            } catch (IOException e) {
-                // TODO better error handling
-                throw raise(SSLError, e);
-            }
+            return factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, sock, createSSLEngine(javaContext, !serverSide));
         }
 
         @TruffleBoundary
-        private static SSLSocket createSocket(boolean serverSide, String serverHostname, Socket javaSocket, SSLContext javaContext) throws IOException {
-            SSLSocket newSocket = (SSLSocket) javaContext.getSocketFactory().createSocket(javaSocket, serverHostname, javaSocket.getPort(), false);
-            newSocket.setUseClientMode(!serverSide);
-            return newSocket;
+        private static SSLEngine createSSLEngine(SSLContext javaContext, boolean clientMode) {
+            SSLEngine engine = javaContext.createSSLEngine();
+            engine.setUseClientMode(clientMode);
+            return engine;
         }
 
         @Override

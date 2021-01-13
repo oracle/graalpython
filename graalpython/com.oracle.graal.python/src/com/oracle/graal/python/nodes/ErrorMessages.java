@@ -647,6 +647,9 @@ public abstract class ErrorMessages {
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
     public static final String CANNOT_INTERN_P = "can't intern %p";
 
+    // SSL errors
+    public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
+
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
     public static final String WHILE_S_DATA = "while %s data";

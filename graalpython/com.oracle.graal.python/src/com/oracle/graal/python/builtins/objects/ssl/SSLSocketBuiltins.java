@@ -1,16 +1,13 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLEngine;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -49,43 +46,29 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             if (len < 0) {
                 throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
-            try {
-                byte[] tmp = new byte[len];
-                int readLen = doRead(self.getJavaSocket(), tmp);
-                return factory().createBytes(tmp, readLen);
-            } catch (IOException e) {
-                throw raise(OSError, e);
-            } catch (OutOfMemoryError e) {
-                throw raise(MemoryError);
-            }
+            ByteBuffer output = ByteBuffer.allocate(len);
+            SSLEngineHelper.read(this, self, output);
+            return factory().createBytes(output.array(), output.limit());
         }
 
         @Specialization(guards = "!isNoValue(buffer)")
         Object readInto(PSSLSocket self, int len, Object buffer) {
             throw raise(NotImplementedError);
         }
-
-        @TruffleBoundary
-        private static int doRead(SSLSocket socket, byte[] into) throws IOException {
-            return socket.getInputStream().read(into);
-        }
     }
 
     @Builtin(name = "write", minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer"})
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "lib.isBuffer(buffer)", limit = "3")
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
         Object write(PSSLSocket self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary lib) {
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
             try {
-                byte[] bytes = lib.getBufferBytes(buffer);
-                int lenght = lib.getBufferLength(buffer);
-                SSLSocket javaSocket = self.getJavaSocket();
-                doWrite(bytes, lenght, javaSocket);
+                byte[] bytes = bufferLib.getBufferBytes(buffer);
+                int lenght = bufferLib.getBufferLength(buffer);
+                ByteBuffer input = ByteBuffer.wrap(bytes, 0, lenght);
+                SSLEngineHelper.write(this, self, input);
                 return lenght;
-            } catch (IOException e) {
-                // TODO better error handling
-                throw raise(SSLError, e);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -96,11 +79,6 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         Object error(Object self, Object buffer) {
             throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
         }
-
-        @TruffleBoundary
-        private static void doWrite(byte[] bytes, int lenght, SSLSocket javaSocket) throws IOException {
-            javaSocket.getOutputStream().write(bytes, 0, lenght);
-        }
     }
 
     @Builtin(name = "do_handshake", minNumOfPositionalArgs = 1)
@@ -108,18 +86,8 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class DoHandshakeNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doHandshake(PSSLSocket self) {
-            try {
-                startHandshake(self.getJavaSocket());
-            } catch (IOException e) {
-                // TODO more specific error handling
-                throw raise(SSLError, e);
-            }
+            SSLEngineHelper.handshake(this, self);
             return PNone.NONE;
-        }
-
-        @TruffleBoundary
-        private static void startHandshake(SSLSocket javaSocket) throws IOException {
-            javaSocket.startHandshake();
         }
     }
 
@@ -137,14 +105,15 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class VersionNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getVersion(PSSLSocket self) {
-            return doGetVersion(self.getJavaSocket());
+            if (self.isHandshakeComplete()) {
+                return getProtocol(self.getEngine());
+            }
+            return PNone.NONE;
         }
 
         @TruffleBoundary
-        private static Object doGetVersion(SSLSocket javaSocket) {
-            // FIXME this forces a handshake, we need to if on whether the handshake has been done
-            // already
-            return javaSocket.getSession().getProtocol();
+        private static String getProtocol(SSLEngine engine) {
+            return engine.getSession().getProtocol();
         }
     }
 }
