@@ -2257,7 +2257,7 @@ def threading_setup():
 def threading_cleanup(*original_values):
     global environment_altered
 
-    _MAX_COUNT = 100
+    _MAX_COUNT = 10
 
     for count in range(_MAX_COUNT):
         values = _thread._count(), threading._dangling
