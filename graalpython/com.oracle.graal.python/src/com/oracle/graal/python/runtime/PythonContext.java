@@ -865,6 +865,7 @@ public final class PythonContext {
             }
 
             // join threads outside the synchronized block otherwise we could run into a dead lock
+            releaseGil();
             try {
                 for (WeakReference<Thread> threadRef : threadList) {
                     Thread thread = threadRef.get();
@@ -875,6 +876,8 @@ public final class PythonContext {
                 }
             } catch (InterruptedException e) {
                 LOGGER.finest("got interrupt while joining threads");
+            } finally {
+                acquireGil();
             }
         }
     }
