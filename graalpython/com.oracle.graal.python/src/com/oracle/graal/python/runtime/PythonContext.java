@@ -871,6 +871,7 @@ public final class PythonContext {
                     Thread thread = threadRef.get();
                     if (thread != null) {
                         LOGGER.finest("joining thread " + thread);
+                        thread.interrupt();
                         thread.join();
                     }
                 }
