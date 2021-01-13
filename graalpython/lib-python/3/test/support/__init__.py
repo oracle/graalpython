@@ -2995,7 +2995,7 @@ def run_in_subinterp(code):
                                      "if tracemalloc module is tracing "
                                      "memory allocations")
     # Truffle change - remove use of testcapi here
-    return subprocess.check_result([sys.executable, "-c", code])
+    return subprocess.call([sys.executable, "-c", code])
     # import _testcapi
     # return _testcapi.run_in_subinterp(code)
 
