@@ -8,8 +8,10 @@
 *graalpython.lib-python.3.test.test_genericpath.PathLikeTests.test_path_samefile
 *graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_commonprefix
 *graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_exists
+*graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_exists_fd
 *graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_filetime
 *graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_getsize
+*graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_invalid_paths
 *graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_isdir
 *graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_isfile
 *graalpython.lib-python.3.test.test_genericpath.TestGenericTest.test_no_argument
