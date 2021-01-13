@@ -331,6 +331,12 @@ def known_packages():
 
     @pip_package()
     def scipy(**kwargs):
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        scipy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                scipy_build_env[key] = os.environ[key]
+        
         if sys.implementation.name == "graalpython":
             venv_path = os.environ.get("VIRTUAL_ENV", None)
             if not venv_path:
@@ -347,14 +353,11 @@ def known_packages():
                         os.unlink(dest)
                     os.symlink(get_config_var(llvm_tool), dest)
 
+            scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
+
         # install dependencies
         numpy(**kwargs)
 
-        # honor following selected env variables: BLAS, LAPACK, ATLAS
-        scipy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
-        for key in ("BLAS", "LAPACK", "ATLAS"):
-            if key in os.environ:
-                scipy_build_env[key] = os.environ[key]
         install_from_pypi("scipy==1.3.1", env=scipy_build_env, **kwargs)
 
     @pip_package()
