@@ -141,7 +141,12 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
             SelectResult result;
             try {
-                result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                getContext().releaseGil();
+                try {
+                    result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                } finally {
+                    getContext().acquireGil();
+                }
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             } catch (ChannelNotSelectableException e) {
