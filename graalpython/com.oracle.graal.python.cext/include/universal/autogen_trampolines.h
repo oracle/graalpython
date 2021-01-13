@@ -59,10 +59,6 @@ static inline HPy HPyLong_FromUnsignedLong(HPyContext ctx, unsigned long value) 
      return WRAP(ctx->ctx_Long_FromUnsignedLong ( ctx, value )); 
 }
 
-static inline HPy HPyLong_FromUnsignedLong(HPyContext ctx, unsigned long value) {
-     return ctx->ctx_Long_FromUnsignedLong ( ctx, value ); 
-}
-
 static inline HPy HPyLong_FromLongLong(HPyContext ctx, long long v) {
      return WRAP(ctx->ctx_Long_FromLongLong ( ctx, v ));
 }
@@ -77,14 +73,6 @@ static inline HPy HPyLong_FromSize_t(HPyContext ctx, size_t value) {
 
 static inline HPy HPyLong_FromSsize_t(HPyContext ctx, HPy_ssize_t value) {
      return WRAP(ctx->ctx_Long_FromSsize_t ( ctx, value )); 
-}
-
-static inline HPy HPyLong_FromSize_t(HPyContext ctx, size_t value) {
-     return ctx->ctx_Long_FromSize_t ( ctx, value ); 
-}
-
-static inline HPy HPyLong_FromSsize_t(HPyContext ctx, HPy_ssize_t value) {
-     return ctx->ctx_Long_FromSsize_t ( ctx, value ); 
 }
 
 static inline long HPyLong_AsLong(HPyContext ctx, HPy h) {
@@ -105,18 +93,6 @@ static inline HPy_ssize_t HPy_Length(HPyContext ctx, HPy h) {
 
 static inline int HPyNumber_Check(HPyContext ctx, HPy h) {
      return ctx->ctx_Number_Check ( ctx, UNWRAP(h) ); 
-}
-
-static inline double HPyFloat_AsDouble(HPyContext ctx, HPy h) {
-     return ctx->ctx_Float_AsDouble ( ctx, h ); 
-}
-
-static inline HPy_ssize_t HPy_Length(HPyContext ctx, HPy h) {
-     return ctx->ctx_Length ( ctx, h ); 
-}
-
-static inline int HPyNumber_Check(HPyContext ctx, HPy h) {
-     return ctx->ctx_Number_Check ( ctx, h ); 
 }
 
 static inline HPy HPy_Add(HPyContext ctx, HPy h1, HPy h2) {
@@ -359,34 +335,6 @@ static inline HPy_hash_t HPy_Hash(HPyContext ctx, HPy obj) {
      return ctx->ctx_Hash ( ctx, UNWRAP(obj) ); 
 }
 
-static inline HPy HPy_Repr(HPyContext ctx, HPy obj) {
-     return ctx->ctx_Repr ( ctx, obj ); 
-}
-
-static inline HPy HPy_Str(HPyContext ctx, HPy obj) {
-     return ctx->ctx_Str ( ctx, obj ); 
-}
-
-static inline HPy HPy_ASCII(HPyContext ctx, HPy obj) {
-     return ctx->ctx_ASCII ( ctx, obj ); 
-}
-
-static inline HPy HPy_Bytes(HPyContext ctx, HPy obj) {
-     return ctx->ctx_Bytes ( ctx, obj ); 
-}
-
-static inline HPy HPy_RichCompare(HPyContext ctx, HPy v, HPy w, int op) {
-     return ctx->ctx_RichCompare ( ctx, v, w, op ); 
-}
-
-static inline int HPy_RichCompareBool(HPyContext ctx, HPy v, HPy w, int op) {
-     return ctx->ctx_RichCompareBool ( ctx, v, w, op ); 
-}
-
-static inline HPy_hash_t HPy_Hash(HPyContext ctx, HPy obj) {
-     return ctx->ctx_Hash ( ctx, obj ); 
-}
-
 static inline int HPyBytes_Check(HPyContext ctx, HPy h) {
      return ctx->ctx_Bytes_Check ( ctx, UNWRAP(h) );
 }
@@ -427,10 +375,6 @@ static inline int HPyList_Check(HPyContext ctx, HPy h) {
      return ctx->ctx_List_Check ( ctx, UNWRAP(h) ); 
 }
 
-static inline int HPyList_Check(HPyContext ctx, HPy h) {
-     return ctx->ctx_List_Check ( ctx, h ); 
-}
-
 static inline HPy HPyList_New(HPyContext ctx, HPy_ssize_t len) {
      return WRAP(ctx->ctx_List_New ( ctx, len ));
 }
@@ -441,10 +385,6 @@ static inline int HPyList_Append(HPyContext ctx, HPy h_list, HPy h_item) {
 
 static inline int HPyDict_Check(HPyContext ctx, HPy h) {
      return ctx->ctx_Dict_Check ( ctx, UNWRAP(h) ); 
-}
-
-static inline int HPyDict_Check(HPyContext ctx, HPy h) {
-     return ctx->ctx_Dict_Check ( ctx, h ); 
 }
 
 static inline HPy HPyDict_New(HPyContext ctx) {
@@ -460,7 +400,7 @@ static inline HPy HPyDict_GetItem(HPyContext ctx, HPy h_dict, HPy h_key) {
 }
 
 static inline HPy HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n) {
-     return ctx->ctx_Tuple_FromArray ( ctx, items, n ); 
+     return WRAP(ctx->ctx_Tuple_FromArray ( ctx, (_HPyPtr)items, n ));
 }
 
 static inline HPy HPy_FromPyObject(HPyContext ctx, cpy_PyObject *obj) {
@@ -469,10 +409,6 @@ static inline HPy HPy_FromPyObject(HPyContext ctx, cpy_PyObject *obj) {
 
 static inline cpy_PyObject *HPy_AsPyObject(HPyContext ctx, HPy h) {
      return ctx->ctx_AsPyObject ( ctx, UNWRAP(h) ); 
-}
-
-static inline HPy HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n) {
-     return WRAP(ctx->ctx_Tuple_FromArray ( ctx, items, n )); 
 }
 
 static inline void _HPy_CallRealFunctionFromTrampoline(HPyContext ctx, HPyFunc_Signature sig, void *func, void *args) {

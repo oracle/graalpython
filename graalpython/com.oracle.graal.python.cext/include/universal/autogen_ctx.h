@@ -32,23 +32,27 @@
 
 */
 
+typedef HPy* _HPyPtr;
+typedef HPy _HPyConst;
+
 #define HPy void*
 #define HPyListBuilder void*
 #define HPyTupleBuilder void*
 
+
 struct _HPyContext_s {
     int ctx_version;
-    HPy h_None;
-    HPy h_True;
-    HPy h_False;
-    HPy h_ValueError;
-    HPy h_TypeError;
-    HPy h_BaseObjectType;
-    HPy h_TypeType;
-    HPy h_LongType;
-    HPy h_UnicodeType;
-    HPy h_TupleType;
-    HPy h_ListType;
+    _HPyConst h_None;
+    _HPyConst h_True;
+    _HPyConst h_False;
+    _HPyConst h_ValueError;
+    _HPyConst h_TypeError;
+    _HPyConst h_BaseObjectType;
+    _HPyConst h_TypeType;
+    _HPyConst h_LongType;
+    _HPyConst h_UnicodeType;
+    _HPyConst h_TupleType;
+    _HPyConst h_ListType;
     HPy (*ctx_Module_Create)(HPyContext ctx, HPyModuleDef *def);
     HPy (*ctx_Dup)(HPyContext ctx, HPy h);
     void (*ctx_Close)(HPyContext ctx, HPy h);
@@ -102,7 +106,7 @@ struct _HPyContext_s {
     HPy (*ctx_Err_NoMemory)(HPyContext ctx);
     int (*ctx_IsTrue)(HPyContext ctx, HPy h);
     HPy (*ctx_Type_FromSpec)(HPyContext ctx, HPyType_Spec *spec, HPyType_SpecParam *params);
-    HPy (*ctx_Type_GenericNew)(HPyContext ctx, HPy type, HPy *args, HPy_ssize_t nargs, HPy kw);
+    HPy (*ctx_Type_GenericNew)(HPyContext ctx, HPy type, _HPyPtr args, HPy_ssize_t nargs, HPy kw);
     HPy (*ctx_GetAttr)(HPyContext ctx, HPy obj, HPy name);
     HPy (*ctx_GetAttr_s)(HPyContext ctx, HPy obj, const char *name);
     int (*ctx_HasAttr)(HPyContext ctx, HPy obj, HPy name);
@@ -141,7 +145,7 @@ struct _HPyContext_s {
     int (*ctx_Dict_SetItem)(HPyContext ctx, HPy h_dict, HPy h_key, HPy h_val);
     HPy (*ctx_Dict_GetItem)(HPyContext ctx, HPy h_dict, HPy h_key);
     void (*ctx_FatalError)(HPyContext ctx, const char *message);
-    HPy (*ctx_Tuple_FromArray)(HPyContext ctx, HPy items[], HPy_ssize_t n);
+    HPy (*ctx_Tuple_FromArray)(HPyContext ctx, _HPyPtr items, HPy_ssize_t n);
     HPy (*ctx_FromPyObject)(HPyContext ctx, cpy_PyObject *obj);
     cpy_PyObject *(*ctx_AsPyObject)(HPyContext ctx, HPy h);
     void (*ctx_CallRealFunctionFromTrampoline)(HPyContext ctx, HPyFunc_Signature sig, void *func, void *args);
