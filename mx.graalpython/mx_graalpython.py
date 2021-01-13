@@ -1989,6 +1989,17 @@ def update_hpy_import_cmd(args):
     vc.git_command(SUITE.dir, ["checkout", HPY_IMPORT_ORPHAN_BRANCH_NAME])
     assert not SUITE.vc.isDirty(SUITE.dir)
 
+    def import_file(src_file, dest_file):
+        mx.logv("Importing HPy file {} to {}".format(src_file, dest_file))
+
+        # ensure that relative parent directories already exist (ignore existing)
+        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+
+        # copy file (overwrite existing)
+        mx.copyfile(src_file, dest_file)
+        # we may copy ignored files
+        vc.add(SUITE.dir, dest_file, abortOnError=False)
+
     def import_files(from_dir, to_dir):
         mx.log("Importing HPy files from {}".format(from_dir))
         for dirpath, _, filenames in os.walk(from_dir):
@@ -1997,16 +2008,7 @@ def update_hpy_import_cmd(args):
             for filename in filenames:
                 src_file = join(dirpath, filename)
                 dest_file = join(to_dir, relative_dir_path, filename)
-                mx.logv("Importing HPy file {} to {}".format(src_file, dest_file))
-
-                # ensure that relative parent directories already exist (ignore existing)
-                os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-
-                # copy file (overwrite existing)
-                mx.copyfile(src_file, dest_file)
-                # we may copy ignored files
-                vc.add(SUITE.dir, dest_file, abortOnError=False)
-
+                import_file(src_file, dest_file)
 
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.dependency("com.oracle.graal.python.cext").dir, "include")
@@ -2015,13 +2017,16 @@ def update_hpy_import_cmd(args):
     # but exclude subdir 'cpython' (since that's only for CPython)
     import_files(hpy_repo_include_dir, header_dest)
 
-    # runtime sources go into 'lib-graalpython/module/hpy/src
+    # runtime sources go into 'lib-graalpython/module/hpy/src'
     runtime_files_dest = join(_get_core_home(), "modules", "hpy", "src")
     import_files(hpy_repo_runtime_dir, runtime_files_dest)
 
-    # tests go to 'lib-graalpython/module/hpy/tests
+    # tests go to 'lib-graalpython/module/hpy/tests'
     test_files_dest = _hpy_test_root()
     import_files(hpy_repo_test_dir, test_files_dest)
+
+    # 'version.py' goes to 'lib-graalpython/module/hpy/'
+    import_file(join(hpy_repo_path, "hpy", "devel", "version.py"), join(_get_core_home(), "modules", "hpy", "version.py"))
 
     SUITE.vc.git_command(SUITE.dir, ["add", header_dest, runtime_files_dest, test_files_dest])
     raw_input("Check that the updated files look as intended, then press RETURN...")
