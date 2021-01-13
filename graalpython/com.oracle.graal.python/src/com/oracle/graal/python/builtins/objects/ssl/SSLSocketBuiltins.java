@@ -1,6 +1,5 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
@@ -15,14 +14,19 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -51,9 +55,32 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             return factory().createBytes(output.array(), output.limit());
         }
 
-        @Specialization(guards = "!isNoValue(buffer)")
-        Object readInto(PSSLSocket self, int len, Object buffer) {
-            throw raise(NotImplementedError);
+        @Specialization
+        Object readInto(PSSLSocket self, int len, PByteArray buffer,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
+            if (len < 0) {
+                throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
+            }
+            // TODO write directly to the backing array
+            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
+            int length = Math.min(len, lenNode.execute(storage));
+            ByteBuffer output = ByteBuffer.allocate(length);
+            SSLEngineHelper.read(this, self, output);
+            for (int i = 0; i < output.limit(); i++) {
+                setItemScalarNode.execute(storage, i, output.get(i));
+            }
+            return output.limit();
+        }
+
+        // TODO arrays, memoryview
+        // TODO proper error for bytes
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object error(Object self, Object len, Object buffer) {
+            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
         }
     }
 
