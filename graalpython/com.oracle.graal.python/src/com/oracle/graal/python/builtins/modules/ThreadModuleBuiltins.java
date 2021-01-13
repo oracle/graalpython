@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.lang.ref.WeakReference;
 import java.util.List;
@@ -66,6 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -84,6 +84,13 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         return ThreadModuleBuiltinsFactory.getFactories();
     }
 
+    @Override
+    public void initialize(PythonCore core) {
+        builtinConstants.put("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
+        builtinConstants.put("TIMEOUT_MAX", TIMEOUT_MAX);
+        super.initialize(core);
+    }
+
     @Builtin(name = "_local", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PThreadLocal)
     @GenerateNodeFactory
     abstract static class ThreadLocalNode extends PythonBuiltinNode {
@@ -93,12 +100,12 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__truffle_get_timeout_max__", minNumOfPositionalArgs = 0)
+    @Builtin(name = "allocate_lock", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    abstract static class GetTimeoutMaxConstNode extends PythonBuiltinNode {
+    abstract static class AllocateLockNode extends PythonBuiltinNode {
         @Specialization
-        double getId() {
-            return TIMEOUT_MAX;
+        PLock construct() {
+            return factory().createLock(PythonBuiltinClassType.PLock);
         }
     }
 
@@ -152,7 +159,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
 
         private long setAndGetStackSizeInternal(long stackSize) {
             if (invalidSizeProfile.profile(stackSize < 0)) {
-                throw raise(ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
             }
             return getContext().getAndSetPythonsThreadStackSize(stackSize);
         }
