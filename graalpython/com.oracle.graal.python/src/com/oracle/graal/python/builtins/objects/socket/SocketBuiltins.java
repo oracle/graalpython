@@ -298,18 +298,23 @@ public class SocketBuiltins extends PythonBuiltins {
 
         @Specialization
         Object get(PSocket socket) {
+            if (!socket.isBlocking()) {
+                return 0.0;
+            }
+            int timeout = 0;
             try {
                 if (socket.getSocket() != null) {
-                    return getSoTimeout(socket.getSocket());
+                    timeout = getSoTimeout(socket.getSocket());
+                } else if (socket.getServerSocket() != null) {
+                    timeout = getSoTimeout(socket.getServerSocket());
                 }
-
-                if (socket.getServerSocket() != null) {
-                    return getSoTimeout(socket.getServerSocket());
+                if (timeout == 0) {
+                    return PNone.NONE;
                 }
+                return (double) timeout;
             } catch (IOException e) {
                 throw raise(OSError);
             }
-            return PNone.NONE;
         }
     }
 
@@ -607,9 +612,24 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "settimeout", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SetTimeoutNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNone(none)")
+        Object setTimeout(PSocket socket, @SuppressWarnings("unused") PNone none) {
+            try {
+                SetBlockingNode.setBlocking(socket, true);
+            } catch (IOException e) {
+                throw raise(OSError);
+            }
+            return PNone.NONE;
+        }
+
         @Specialization
         @TruffleBoundary
-        Object setTimeout(PSocket socket, Integer value) {
+        Object setTimeout(PSocket socket, int value) {
+            try {
+                SetBlockingNode.setBlocking(socket, value != 0);
+            } catch (IOException e) {
+                throw raise(OSError);
+            }
             try {
                 if (socket.getSocket() != null) {
                     socket.getSocket().socket().setSoTimeout(value);
@@ -627,8 +647,8 @@ public class SocketBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setTimeout(PSocket socket, double value) {
-            Integer intValue = (int) value;
-            return setTimeout(socket, intValue);
+            // Round up to avoid numbers < 0.5 from putting the socket into non-blocking mode
+            return setTimeout(socket, (int) Math.ceil(value));
         }
     }
 
