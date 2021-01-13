@@ -39,6 +39,15 @@
 import sys
 import struct
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
 ISBIGENDIAN = sys.byteorder == "big"
 
 
@@ -159,3 +168,29 @@ def test_pack_large_long():
         assert struct.unpack(fmt, b'\x00' * struct.calcsize(fmt)) == (0,)
         assert struct.pack(fmt, 18446744073709551615) == b'\xff\xff\xff\xff\xff\xff\xff\xff'
         assert struct.unpack(fmt, b'\xff\xff\xff\xff\xff\xff\xff\xff') == (18446744073709551615,)
+
+def test_pack_into():
+    test_string = b'Reykjavik rocks, eow!'
+    writable_buf = bytearray(b' '*100)
+    fmt = '21s'
+    s = struct.Struct(fmt)
+
+    # Test without offset
+    s.pack_into(writable_buf, 0, test_string)
+    from_buf = writable_buf[:len(test_string)]
+    assert bytes(from_buf) == test_string
+
+    # Test with offset.
+    s.pack_into(writable_buf, 10, test_string)
+    from_buf = writable_buf[:len(test_string)+10]
+    assert bytes(from_buf) == test_string[:10] + test_string
+
+    # Go beyond boundaries.
+    small_buf = bytearray(b' '*10)
+
+    assert_raises((ValueError, struct.error), s.pack_into, small_buf, 0, test_string)
+    assert_raises((ValueError, struct.error), s.pack_into, small_buf, 2, test_string)
+
+    # Test bogus offset (issue 3694)
+    sb = small_buf
+    assert_raises((TypeError, struct.error), struct.pack_into, b'', sb, None)
