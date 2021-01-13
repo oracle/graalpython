@@ -379,6 +379,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         UnicodeEncodeError.base = UnicodeError;
         UnicodeTranslateError.base = UnicodeError;
         RecursionError.base = RuntimeError;
+        StructError.base = Exception;
 
         // warnings
         Warning.base = Exception;
