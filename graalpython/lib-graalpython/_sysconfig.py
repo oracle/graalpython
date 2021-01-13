@@ -89,7 +89,8 @@ def _get_posix_vars():
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_path('CC')
     if darwin_native:
-        g['LDSHARED'] = g['LDSHARED_LINUX'] + " -Wl,-undefined,dynamic_lookup"
+        g['LDSHARED'] = __graalpython__.get_toolchain_path('CC') + " -bundle -undefined dynamic_lookup"
+        g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
     else:
         g['LDSHARED'] = g['LDSHARED_LINUX']
     g['SOABI'] = so_abi
