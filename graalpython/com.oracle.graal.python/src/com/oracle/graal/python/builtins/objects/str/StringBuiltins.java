@@ -573,9 +573,8 @@ public final class StringBuiltins extends PythonBuiltins {
         // common and specialized cases --------------------
 
         @Specialization
-        boolean doStringPrefixStartEnd(String self, String substr, int start, int end) {
-            int len = self.length();
-            return doIt(self, substr, adjustStart(start, len), adjustEnd(end, len));
+        boolean doStringPrefix(String self, String substr, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return doIt(self, substr, 0, self.length());
         }
 
         @Specialization
@@ -585,14 +584,14 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doStringPrefix(String self, String substr, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return doIt(self, substr, 0, self.length());
+        boolean doStringPrefixStartEnd(String self, String substr, int start, int end) {
+            int len = self.length();
+            return doIt(self, substr, adjustStart(start, len), adjustEnd(end, len));
         }
 
         @Specialization
-        boolean doTuplePrefixStartEnd(String self, PTuple substrs, int start, int end) {
-            int len = self.length();
-            return doIt(self, substrs, adjustStart(start, len), adjustEnd(end, len));
+        boolean doTuplePrefix(String self, PTuple substrs, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return doIt(self, substrs, 0, self.length());
         }
 
         @Specialization
@@ -602,13 +601,14 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doTuplePrefix(String self, PTuple substrs, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return doIt(self, substrs, 0, self.length());
+        boolean doTuplePrefixStartEnd(String self, PTuple substrs, int start, int end) {
+            int len = self.length();
+            return doIt(self, substrs, adjustStart(start, len), adjustEnd(end, len));
         }
 
         // generic cases --------------------
 
-        @Specialization(guards = "!isPTuple(substr)", replaces = {"doStringPrefixStartEnd", "doStringPrefixStart", "doStringPrefix"})
+        @Specialization(guards = "!isPTuple(substr)", replaces = {"doStringPrefixStartEnd", "doStringPrefixStart"})
         boolean doObjectPrefixGeneric(VirtualFrame frame, Object self, Object substr, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringCheckedNode castPrefixNode) {
@@ -620,7 +620,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return doIt(selfStr, prefixStr, istart, iend);
         }
 
-        @Specialization(replaces = {"doTuplePrefixStartEnd", "doTuplePrefixStart", "doTuplePrefix"})
+        @Specialization(replaces = {"doTuplePrefixStartEnd", "doTuplePrefixStart"})
         boolean doTuplePrefixGeneric(VirtualFrame frame, Object self, PTuple substrs, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "startswith", self);
