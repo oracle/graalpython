@@ -260,9 +260,13 @@ public class AsyncHandler {
 
     @TruffleBoundary
     private final void doReleaseGIL() {
-        context.get().releaseGil();
+        PythonContext ctx = context.get();
+        if (ctx == null) {
+            return;
+        }
+        ctx.releaseGil();
         Thread.yield();
-        context.get().acquireGil();
+        ctx.acquireGil();
     }
 
     /**
