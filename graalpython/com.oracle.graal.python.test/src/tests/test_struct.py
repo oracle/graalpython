@@ -221,3 +221,39 @@ def test_unpack_from():
 
     # keyword arguments
     assert s.unpack_from(buffer=test_string, offset=2) == (b'cd01',)
+
+def test_iter_unpack():
+    from collections import abc
+    import operator
+
+    s = struct.Struct('>ibcp')
+    it = s.iter_unpack(b"")
+    assert isinstance(it, abc.Iterator)
+    assert isinstance(it, abc.Iterable)
+    assert_raises(struct.error, s.iter_unpack, b"123456")
+
+    s = struct.Struct('>')
+    assert_raises(struct.error, s.iter_unpack, b"")
+
+    s = struct.Struct('>IB')
+    b = bytes(range(1, 16))
+    it = s.iter_unpack(b)
+    assert next(it) == (0x01020304, 5)
+    assert next(it) == (0x06070809, 10)
+    assert next(it) == (0x0b0c0d0e, 15)
+    assert_raises(StopIteration, next, it)
+    assert_raises(StopIteration, next, it)
+
+    lh = operator.length_hint
+    s = struct.Struct('>IB')
+    b = bytes(range(1, 16))
+    it = s.iter_unpack(b)
+    assert lh(it) == 3
+    next(it)
+    assert lh(it) == 2
+    next(it)
+    assert lh(it) == 1
+    next(it)
+    assert lh(it) == 0
+    assert_raises(StopIteration, next, it)
+    assert lh(it) == 0
