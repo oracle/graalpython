@@ -503,7 +503,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_toolchain_path", minNumOfPositionalArgs = 1)
+    @Builtin(name = "get_toolchain_tool_path", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
