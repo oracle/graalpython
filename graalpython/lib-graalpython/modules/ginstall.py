@@ -331,37 +331,21 @@ def known_packages():
 
     @pip_package()
     def scipy(**kwargs):
-        if sys.implementation.name == "graalpython":
-            venv_path = os.environ.get("VIRTUAL_ENV", None)
-            if not venv_path:
-                xit("SciPy can only be installed within a virtual env.")
-
-            r = subprocess.check_output(sys.executable + " -llvm-path", shell=True).decode("utf8")
-            llvm_bin_dir = r.splitlines()[-1].strip()
-            if not os.path.isdir(llvm_bin_dir):
-                xit("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
-
-            # currently we need 'ar', 'ranlib', and 'ld.lld'
-            llvm_bins = {"llvm-ar": ("ar",), "llvm-ranlib": ("ranlib",), "ld.lld": ("ld.lld", "ld")}
-            for binary in llvm_bins.keys():
-                llvm_bin = os.path.join(llvm_bin_dir, binary)
-                if not os.path.isfile(llvm_bin):
-                    xit("Could not locate llvm-ar at '{}'".format(llvm_bin))
-                else:
-                    for name in llvm_bins[binary]:
-                        dest = os.path.join(venv_path, "bin", name)
-                        if os.path.exists(dest):
-                            os.unlink(dest)
-                        os.symlink(llvm_bin, dest)
-
-        # install dependencies
-        numpy(**kwargs)
-
         # honor following selected env variables: BLAS, LAPACK, ATLAS
         scipy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
         for key in ("BLAS", "LAPACK", "ATLAS"):
             if key in os.environ:
                 scipy_build_env[key] = os.environ[key]
+        
+        if sys.implementation.name == "graalpython":
+            if not os.environ.get("VIRTUAL_ENV", None):
+                xit("SciPy can only be installed within a venv.")
+            from distutils.sysconfig import get_config_var
+            scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
+
+        # install dependencies
+        numpy(**kwargs)
+
         install_from_pypi("scipy==1.3.1", env=scipy_build_env, **kwargs)
 
     @pip_package()

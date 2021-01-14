@@ -75,11 +75,11 @@ def _get_posix_vars():
     so_ext = ".so" if not darwin_native else ".dylib"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
 
-    toolchain_cxx = __graalpython__.get_toolchain_path('CXX')
+    toolchain_cxx = __graalpython__.get_toolchain_tool_path('CXX')
     have_cxx = toolchain_cxx is not None
 
     g = {}
-    g['CC'] = __graalpython__.get_toolchain_path('CC')
+    g['CC'] = __graalpython__.get_toolchain_tool_path('CC')
     g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
     g['OPT'] = "-stdlib=libc++ -DNDEBUG -O1"
     g['CONFINCLUDEPY'] = get_python_inc()
@@ -87,20 +87,23 @@ def _get_posix_vars():
     g['CFLAGS'] = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -O1 -DHPY_UNIVERSAL_ABI"
     g['LDFLAGS'] = ""
     g['CCSHARED'] = "-fPIC"
-    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_path('CC')
+    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_tool_path('CC')
     if darwin_native:
-        g['LDSHARED'] = g['LDSHARED_LINUX'] + " -Wl,-undefined,dynamic_lookup"
+        g['LDSHARED'] = __graalpython__.get_toolchain_tool_path('CC') + " -bundle -undefined dynamic_lookup"
+        g['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
     else:
         g['LDSHARED'] = g['LDSHARED_LINUX']
     g['SOABI'] = so_abi
     g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
     g['SO'] = "." + so_abi + so_ext # deprecated in Python 3, for backward compatibility
-    g['AR'] = __graalpython__.get_toolchain_path('AR')
-    g['RANLIB'] = __graalpython__.get_toolchain_path('RANLIB')
+    g['AR'] = __graalpython__.get_toolchain_tool_path('AR')
+    g['RANLIB'] = __graalpython__.get_toolchain_tool_path('RANLIB')
     g['ARFLAGS'] = "rc"
+    g['LD'] = __graalpython__.get_toolchain_tool_path('LD')
     g['EXE'] = ""
     g['LIBDIR'] = os.path.join(sys.prefix, 'lib')
     g['VERSION'] = get_python_version()
     g['Py_HASH_ALGORITHM'] = 0 # does not give any specific info about the hashing algorithm
+    g['NM'] = __graalpython__.get_toolchain_tool_path('NM')
     return g

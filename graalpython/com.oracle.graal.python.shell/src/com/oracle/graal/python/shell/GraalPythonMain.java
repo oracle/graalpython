@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
 import org.graalvm.nativeimage.ImageInfo;
@@ -55,9 +56,6 @@ import org.graalvm.polyglot.PolyglotException.StackFrame;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
-
-import com.oracle.truffle.llvm.toolchain.launchers.common.Driver;
-import java.util.function.Function;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
@@ -241,10 +239,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     } else {
                         unrecognized.add(arg);
                     }
-                    break;
-                case "-llvm-path":
-                    print(new Driver("llvm-ar").getLLVMBinDir().toString());
-                    System.exit(0);
                     break;
                 case "-u":
                     unbufferedIO = true;

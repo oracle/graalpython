@@ -486,7 +486,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_toolchain_path", minNumOfPositionalArgs = 1)
+    @Builtin(name = "get_toolchain_tool_path", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
@@ -501,6 +501,29 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             return toolPath.toString();
+        }
+    }
+
+    @Builtin(name = "get_toolchain_paths", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class GetToolchainPathsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        protected Object getPaths(String key) {
+            Env env = getContext().getEnv();
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            List<TruffleFile> pathsList = toolchain.getPaths(key);
+            if (pathsList == null) {
+                return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+            }
+            Object[] paths = new Object[pathsList.size()];
+            int i = 0;
+            for (TruffleFile f : pathsList) {
+                paths[i++] = f.toString();
+            }
+            return factory().createTuple(paths);
         }
     }
 
