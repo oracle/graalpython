@@ -40,6 +40,16 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     public static final int PROTO_TLSv1_2 = 0x0303;
     public static final int PROTO_TLSv1_3 = 0x0304;
 
+    private static final int SSL_OP_CRYPTOPRO_TLSEXT_BUG = 0x80000000;
+    private static final int SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS = 0x00000800;
+    private static final int SSL_OP_LEGACY_SERVER_CONNECT = 0x00000004;
+    private static final int SSL_OP_TLSEXT_PADDING = 0x00000010;
+    private static final int SSL_OP_SAFARI_ECDHE_ECDSA_BUG = 0x00000040;
+
+    private static final int SSL_OP_ALL = (SSL_OP_CRYPTOPRO_TLSEXT_BUG | SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS | SSL_OP_LEGACY_SERVER_CONNECT | SSL_OP_TLSEXT_PADDING | SSL_OP_SAFARI_ECDHE_ECDSA_BUG);
+
+    private static final int OP_ALL = SSL_OP_ALL & ~SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLModuleBuiltinsFactory.getFactories();
@@ -90,6 +100,8 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("PROTOCOL_TLSv1", SSLProtocolVersion.TLS1.getPythonId());
         module.setAttribute("PROTOCOL_TLSv1_1", SSLProtocolVersion.TLS1_1.getPythonId());
         module.setAttribute("PROTOCOL_TLSv1_2", SSLProtocolVersion.TLS1_2.getPythonId());
+
+        module.setAttribute("OP_ALL", OP_ALL);
     }
 
     @Builtin(name = "txt2obj", minNumOfPositionalArgs = 1, parameterNames = {"txt", "name"})
