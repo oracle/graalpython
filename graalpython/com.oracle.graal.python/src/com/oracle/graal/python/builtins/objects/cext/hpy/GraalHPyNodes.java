@@ -1157,6 +1157,38 @@ public class GraalHPyNodes {
     }
 
     /**
+     * Similar to {@link HPyAsPythonObjectNode}, this node converts a Boolean value to Python Boolean.
+     */
+    @GenerateUncached
+    public abstract static class HPyPrimitiveAsPythonBooleanNode extends CExtToJavaNode {
+
+        @Specialization
+        static Object doByte(@SuppressWarnings("unused") GraalHPyContext hpyContext, byte b) {
+            return b != 0;
+        }
+
+        @Specialization
+        static Object doShort(@SuppressWarnings("unused") GraalHPyContext hpyContext, short i) {
+            return i != 0;
+        }
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long l) {
+            // If the integer is out of byte range, we just to a lossy cast since that's the same
+            // sematics as we should just read a single byte.
+            return l != 0;
+        }
+
+        @Specialization(replaces = {"doByte", "doShort", "doLong"})
+        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n) {
+            if (n instanceof Number) {
+                return ((Number) n).longValue() != 0;
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
      * A special and simple node for converting everything to {@code None}. This is needed for
      * reading members of type {@code HPyMember_None}.
      */
