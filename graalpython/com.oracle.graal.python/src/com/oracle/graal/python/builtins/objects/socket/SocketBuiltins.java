@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.socket;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.io.IOException;
@@ -82,6 +84,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -301,17 +305,18 @@ public class SocketBuiltins extends PythonBuiltins {
             if (!socket.isBlocking()) {
                 return 0.0;
             }
-            int timeout = 0;
+            int miliseconds = 0;
             try {
                 if (socket.getSocket() != null) {
-                    timeout = getSoTimeout(socket.getSocket());
+                    miliseconds = getSoTimeout(socket.getSocket());
                 } else if (socket.getServerSocket() != null) {
-                    timeout = getSoTimeout(socket.getServerSocket());
+                    miliseconds = getSoTimeout(socket.getServerSocket());
                 }
-                if (timeout == 0) {
+                if (miliseconds == 0) {
                     return PNone.NONE;
                 }
-                return (double) timeout;
+                // Convert to seconds
+                return (double) miliseconds / 1000.0;
             } catch (IOException e) {
                 throw raise(OSError);
             }
@@ -622,33 +627,41 @@ public class SocketBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization
-        @TruffleBoundary
-        Object setTimeout(PSocket socket, int value) {
+        @Specialization(guards = "!isNone(secondsObj)")
+        Object setTimeout(PSocket socket, Object secondsObj,
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
             try {
-                SetBlockingNode.setBlocking(socket, value != 0);
+                double seconds = castToJavaDoubleNode.execute(secondsObj);
+                if (seconds < 0.0) {
+                    throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
+                }
+                // Rounding up because CPython does that
+                return doSetTimeout(socket, (int) Math.ceil(seconds * 1000.0));
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_FLOAT);
+            }
+        }
+
+        @TruffleBoundary
+        private Object doSetTimeout(PSocket socket, int miliseconds) {
+            try {
+                SetBlockingNode.setBlocking(socket, miliseconds != 0);
             } catch (IOException e) {
                 throw raise(OSError);
             }
             try {
                 if (socket.getSocket() != null) {
-                    socket.getSocket().socket().setSoTimeout(value);
+                    socket.getSocket().socket().setSoTimeout(miliseconds);
                 }
 
                 if (socket.getServerSocket() != null) {
-                    socket.getServerSocket().socket().setSoTimeout(value);
+                    socket.getServerSocket().socket().setSoTimeout(miliseconds);
                 }
             } catch (SocketException e) {
                 throw raise(OSError);
             }
 
             return PNone.NONE;
-        }
-
-        @Specialization
-        Object setTimeout(PSocket socket, double value) {
-            // Round up to avoid numbers < 0.5 from putting the socket into non-blocking mode
-            return setTimeout(socket, (int) Math.ceil(value));
         }
     }
 
