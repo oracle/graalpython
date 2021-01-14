@@ -2994,10 +2994,9 @@ def run_in_subinterp(code):
             raise unittest.SkipTest("run_in_subinterp() cannot be used "
                                      "if tracemalloc module is tracing "
                                      "memory allocations")
-    # Truffle change - remove use of testcapi here
-    return subprocess.call([sys.executable, "-c", code])
-    # import _testcapi
-    # return _testcapi.run_in_subinterp(code)
+    assert sys.implementation.name != "graalpython", "Truffle change - we do not support subinterp yet"
+    import _testcapi
+    return _testcapi.run_in_subinterp(code)
 
 
 def check_free_after_iterating(test, iter, cls, args=()):
