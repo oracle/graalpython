@@ -342,7 +342,9 @@ class EnvBuilder:
                 os.chmod(path, 0o755)
             for suffix in ('python', 'python3'):
                 path = os.path.join(binpath, suffix)
-                if not os.path.exists(path):
+                # Truffle change: always re-create Python executables if not symlinks
+                if not self.symlinks:
+                    # End of Truffle change
                     # Issue 18807: make copies if
                     # symlinks are not wanted
                     copier(context.env_exe, path, relative_symlinks_ok=True)
