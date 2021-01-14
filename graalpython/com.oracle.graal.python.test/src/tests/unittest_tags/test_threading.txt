@@ -87,6 +87,7 @@
 *graalpython.lib-python.3.test.test_threading.LockTests.test_weakref_deleted
 *graalpython.lib-python.3.test.test_threading.LockTests.test_weakref_exists
 *graalpython.lib-python.3.test.test_threading.LockTests.test_with
+*graalpython.lib-python.3.test.test_threading.MiscTestCase.test__all__
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test__is_owned
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test_acquire_contended
 *graalpython.lib-python.3.test.test_threading.PyRLockTests.test_acquire_destroy
@@ -118,13 +119,16 @@
 *graalpython.lib-python.3.test.test_threading.SubinterpThreadingTests.test_daemon_threads_fatal_error
 *graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_2_join_in_forked_process
 *graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_3_join_in_forked_from_thread
+*graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads
 *graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_clear_threads_states_after_fork
 *graalpython.lib-python.3.test.test_threading.ThreadJoinOnShutdown.test_reinit_tls_after_fork
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_BoundedSemaphore_limit
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_PyThreadState_SetAsyncExc
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_daemon_param
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_dummy_thread_after_fork
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_enumerate_after_join
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_finalization_shutdown
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_finalize_runnning_thread
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_foreign_thread
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_frame_tstate_tracing
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_ident_of_no_threading_threads
@@ -134,6 +138,8 @@
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_main_thread
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_main_thread_after_fork
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_main_thread_after_fork_from_nonmain_thread
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_main_thread_during_shutdown
+*graalpython.lib-python.3.test.test_threading.ThreadTests.test_no_refcycle_through_target
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_old_threading_api
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_repr_daemon
 *graalpython.lib-python.3.test.test_threading.ThreadTests.test_repr_stopped
