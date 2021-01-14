@@ -41,6 +41,7 @@ import sys
 import time
 import gc
 import itertools
+import weakref
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare_with_message, unhandled_error_compare
 __dir__ = __file__.rpartition("/")[0]
 
@@ -408,8 +409,9 @@ class TestObject(object):
         mv2.release()
         assert mv3[2] == 126
         del mv1
+        mv3ref = weakref.ref(mv3)
         del mv3
-        for i in range(10):
+        while mv3ref() is not None:
             gc.collect()
             time.sleep(0.1)
         assert obj.get_bufcount() == 0
