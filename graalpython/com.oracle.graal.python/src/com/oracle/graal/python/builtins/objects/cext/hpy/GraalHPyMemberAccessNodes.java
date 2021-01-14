@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetGetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyPrimitiveAsPythonCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyUnsignedPrimitiveAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
@@ -179,7 +180,6 @@ public class GraalHPyMemberAccessNodes {
             case HPY_MEMBER_FLOAT:
             case HPY_MEMBER_DOUBLE:
             case HPY_MEMBER_STRING:
-            case HPY_MEMBER_CHAR:
             case HPY_MEMBER_BYTE:
             case HPY_MEMBER_BOOL:
             case HPY_MEMBER_UBYTE:
@@ -188,6 +188,8 @@ public class GraalHPyMemberAccessNodes {
             case HPY_MEMBER_HPYSSIZET:
                 // no conversion needed
                 return null;
+            case HPY_MEMBER_CHAR:
+                return HPyPrimitiveAsPythonCharNodeGen.create();
             case HPY_MEMBER_UINT:
             case HPY_MEMBER_ULONG:
             case HPY_MEMBER_LONGLONG:

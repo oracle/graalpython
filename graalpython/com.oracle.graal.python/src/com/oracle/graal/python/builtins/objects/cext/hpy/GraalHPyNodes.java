@@ -636,7 +636,8 @@ public class GraalHPyNodes {
                 Object deleterObject = PNone.NONE;
                 if (!readOnly) {
                     setterObject = HPyWriteMemberNode.createBuiltinFunction(language, name, type, offset);
-                    // Members are, of course, not deletable; this built-in function will throw a TypeError.
+                    // Members are, of course, not deletable; this built-in function will throw a
+                    // TypeError.
                     deleterObject = HPyDeleteMemberNode.createBuiltinFunction(language, name);
                 }
 
@@ -1115,6 +1116,43 @@ public class GraalHPyNodes {
                 }
             }
             throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     * Similar to {@link HPyAsPythonObjectNode}, this node converts a native primitive value to an
+     * appropriate Python char value (a single-char Python string).
+     */
+    @GenerateUncached
+    public abstract static class HPyPrimitiveAsPythonCharNode extends CExtToJavaNode {
+
+        @Specialization
+        static Object doByte(@SuppressWarnings("unused") GraalHPyContext hpyContext, byte b) {
+            return PythonUtils.newString(new char[]{(char) b});
+        }
+
+        @Specialization
+        static Object doShort(@SuppressWarnings("unused") GraalHPyContext hpyContext, short i) {
+            return createString((char) i);
+        }
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long l) {
+            // If the integer is out of byte range, we just to a lossy cast since that's the same
+            // sematics as we should just read a single byte.
+            return createString((char) l);
+        }
+
+        @Specialization(replaces = {"doByte", "doShort", "doLong"})
+        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n) {
+            if (n instanceof Number) {
+                return createString((char) ((Number) n).shortValue());
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private static String createString(char c) {
+            return PythonUtils.newString(new char[]{c});
         }
     }
 
