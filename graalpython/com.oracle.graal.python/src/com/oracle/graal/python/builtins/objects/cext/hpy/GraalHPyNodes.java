@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNod
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadOnlyMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterHandleCloseNodeGen;
@@ -626,8 +627,9 @@ public class GraalHPyNodes {
                     memberDoc = fromCharPointerNode.execute(doc);
                 }
 
-                boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
                 int type = valueLib.asInt(callHelperNode.call(context, GRAAL_HPY_MEMBER_GET_TYPE, memberDef));
+                boolean isReadyOnlyType = GraalHPyMemberAccessNodes.isReadOnlyType(type);
+                boolean readOnly = isReadyOnlyType || valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
 
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
@@ -639,6 +641,8 @@ public class GraalHPyNodes {
                     // Members are, of course, not deletable; this built-in function will throw a
                     // TypeError.
                     deleterObject = HPyDeleteMemberNode.createBuiltinFunction(language, name);
+                } else if (isReadyOnlyType) {
+                    setterObject = deleterObject = HPyReadOnlyMemberNode.createBuiltinFunction(language, name);
                 }
 
                 // read class 'property' from 'builtins/property.py'
@@ -1157,7 +1161,8 @@ public class GraalHPyNodes {
     }
 
     /**
-     * Similar to {@link HPyAsPythonObjectNode}, this node converts a Boolean value to Python Boolean.
+     * Similar to {@link HPyAsPythonObjectNode}, this node converts a Boolean value to Python
+     * Boolean.
      */
     @GenerateUncached
     public abstract static class HPyPrimitiveAsPythonBooleanNode extends CExtToJavaNode {

@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyDeleteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadOnlyMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyWriteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
@@ -217,7 +218,8 @@ public class GraalHPyMemberAccessNodes {
             case HPY_MEMBER_DOUBLE:
                 return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_D;
             case HPY_MEMBER_STRING:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_STRING;
+            case HPY_MEMBER_STRING_INPLACE:
+                return null;
             case HPY_MEMBER_OBJECT:
             case HPY_MEMBER_OBJECT_EX:
             case HPY_MEMBER_NONE:
@@ -234,8 +236,6 @@ public class GraalHPyMemberAccessNodes {
                 return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_UI;
             case HPY_MEMBER_ULONG:
                 return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_UL;
-            case HPY_MEMBER_STRING_INPLACE:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_STRING_IN_PLACE;
             case HPY_MEMBER_LONGLONG:
                 return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_LL;
             case HPY_MEMBER_ULONGLONG:
@@ -281,6 +281,14 @@ public class GraalHPyMemberAccessNodes {
                 return null;
         }
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
+    }
+
+    /**
+     * Special case: members with type {@code STRING} and {@code STRING_INPLACE} are always
+     * read-only.
+     */
+    static boolean isReadOnlyType(int type) {
+        return type == HPY_MEMBER_STRING || type == HPY_MEMBER_STRING_INPLACE;
     }
 
     public static class HPyMemberNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
@@ -405,6 +413,7 @@ public class GraalHPyMemberAccessNodes {
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object self,
                         @Cached PRaiseNode raiseNode) {
+            // TODO: deleting of members with type OBJECT is allowed
             throw raiseNode.raise(PythonBuiltinClassType.TypeError);
         }
 
@@ -412,6 +421,24 @@ public class GraalHPyMemberAccessNodes {
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
             RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(builtin, HPyDeleteMemberNode.class,
                             builtin -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyDeleteMemberNodeGen.create()), true)));
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
+        }
+    }
+
+    @Builtin(minNumOfPositionalArgs = 1, parameterNames = "$self")
+    protected abstract static class HPyReadOnlyMemberNode extends PythonUnaryBuiltinNode {
+        private static final Builtin builtin = HPyReadOnlyMemberNode.class.getAnnotation(Builtin.class);
+
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unused") Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.READONLY_ATTRIBUTE);
+        }
+
+        @TruffleBoundary
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
+            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(builtin, HPyReadOnlyMemberNode.class,
+                            builtin -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create()), true)));
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
@@ -446,24 +473,27 @@ public class GraalHPyMemberAccessNodes {
                 throw raise(PythonBuiltinClassType.SystemError, "Attempting to write to offset %d but object '%s' has no associated native space.", offset, self);
             }
 
-            // convert value if needed
-            Object nativeValue;
-            if (toNativeNode != null) {
-                // The conversion to a native primitive may call arbitrary user code. So we need to
-                // prepare an indirect call.
-                Object savedState = IndirectCallContext.enter(frame, getContext(), this);
-                try {
-                    nativeValue = toNativeNode.execute(hPyContext, value);
-                } finally {
-                    IndirectCallContext.exit(frame, getContext(), savedState);
+            if (accessor != null) {
+                // convert value if needed
+                Object nativeValue;
+                if (toNativeNode != null) {
+                    // The conversion to a native primitive may call arbitrary user code. So we need
+                    // to
+                    // prepare an indirect call.
+                    Object savedState = IndirectCallContext.enter(frame, getContext(), this);
+                    try {
+                        nativeValue = toNativeNode.execute(hPyContext, value);
+                    } finally {
+                        IndirectCallContext.exit(frame, getContext(), savedState);
+                    }
+                } else {
+                    nativeValue = value;
                 }
-            } else {
-                nativeValue = value;
-            }
 
-            // This will call pure C functions that won't ever access the Python stack nor the
-            // exception state. So, we don't need to setup an indirect call.
-            ensureCallHPyFunctionNode().call(hPyContext, accessor, nativeSpacePtr, (long) offset, nativeValue);
+                // This will call pure C functions that won't ever access the Python stack nor the
+                // exception state. So, we don't need to setup an indirect call.
+                ensureCallHPyFunctionNode().call(hPyContext, accessor, nativeSpacePtr, (long) offset, nativeValue);
+            }
             return value;
         }
 
