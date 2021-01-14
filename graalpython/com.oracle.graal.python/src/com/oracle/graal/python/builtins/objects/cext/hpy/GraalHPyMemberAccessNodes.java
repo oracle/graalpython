@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins.GetRefNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyDeleteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyWriteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
@@ -113,7 +114,9 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -380,6 +383,24 @@ public class GraalHPyMemberAccessNodes {
             RootNode rootNode = new BuiltinFunctionRootNode(language, builtin,
                             new HPyMemberNodeFactory<>(HPyReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+        }
+    }
+
+    @Builtin(minNumOfPositionalArgs = 1, parameterNames = "$self")
+    protected abstract static class HPyDeleteMemberNode extends PythonUnaryBuiltinNode {
+        private static final Builtin builtin = HPyDeleteMemberNode.class.getAnnotation(Builtin.class);
+
+        @Specialization
+        static Object doGeneric(@SuppressWarnings("unused") Object self,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError);
+        }
+
+        @TruffleBoundary
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
+            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(builtin, HPyDeleteMemberNode.class,
+                            builtin -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyDeleteMemberNodeGen.create()), true)));
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
 

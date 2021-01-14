@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyDeleteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
@@ -632,8 +633,11 @@ public class GraalHPyNodes {
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
                 Object setterObject = PNone.NONE;
+                Object deleterObject = PNone.NONE;
                 if (!readOnly) {
                     setterObject = HPyWriteMemberNode.createBuiltinFunction(language, name, type, offset);
+                    // Members are, of course, not deletable; this built-in function will throw a TypeError.
+                    deleterObject = HPyDeleteMemberNode.createBuiltinFunction(language, name);
                 }
 
                 // read class 'property' from 'builtins/property.py'
@@ -641,6 +645,7 @@ public class GraalHPyNodes {
                 Object propertyObject = callPropertyClassNode.execute(property, PythonUtils.EMPTY_OBJECT_ARRAY, new PKeyword[]{
                                 new PKeyword("fget", getterObject),
                                 new PKeyword("fset", setterObject),
+                                new PKeyword("fdel", deleterObject),
                                 new PKeyword("doc", memberDoc),
                                 new PKeyword("name", name)
                 });
