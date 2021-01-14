@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -588,5 +589,25 @@ public final class PInt extends PythonBuiltinObject {
 
     private boolean fitsIn(BigInteger left, BigInteger right) {
         return fitsIn(value, left, right);
+    }
+
+    /**
+     * Creates a Python {@code int} object from a Java {@code long} value by interpreting it as an
+     * unsigned number.
+     * 
+     * @param factory Python object factory
+     * @param profile condition profile for the case when the unsigned value fits into Java
+     *            {@code long}
+     * @param value the value
+     * @return either {@code Long} or {@code PInt} containing an unsigned value with bit pattern
+     *         matching that of {@code value}
+     */
+    public static Object createPythonIntFromUnsignedLong(PythonObjectFactory factory, ConditionProfile profile, long value) {
+        return profile.profile(value >= 0) ? value : factory.createInt(longToUnsignedBigInt(value));
+    }
+
+    @TruffleBoundary
+    private static BigInteger longToUnsignedBigInt(long l) {
+        return BigInteger.valueOf(l >>> 32).shiftLeft(32).add(BigInteger.valueOf(l & 0xFFFFFFFFL));
     }
 }

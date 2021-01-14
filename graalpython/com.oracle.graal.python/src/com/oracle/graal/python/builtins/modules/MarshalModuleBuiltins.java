@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -204,16 +205,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private static final char TYPE_SET = '<';
     private static final char TYPE_FROZENSET = '>';
     private static final int MAX_MARSHAL_STACK_DEPTH = 2000;
-    private static final int CURRENT_VERSION = 1;
-    private static final String CURRENT_VERSION_STR = "1";
-
-    static final class InternedString {
-        public final String string;
-
-        private InternedString(String string) {
-            this.string = string;
-        }
-    }
+    private static final String CURRENT_VERSION_STR = "4";
+    private static final int CURRENT_VERSION = Integer.parseInt(CURRENT_VERSION_STR);
 
     abstract static class MarshallerNode extends PNodeWithState {
 
@@ -355,15 +348,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePString(PString v, int version, DataOutputStream buffer) {
-            writeByte(TYPE_STRING, version, buffer);
+        void handlePString(PString v, int version, DataOutputStream buffer,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
+            if (version >= 3 && isInternedStringNode.execute(v)) {
+                writeByte(TYPE_INTERNED, version, buffer);
+            } else {
+                writeByte(TYPE_STRING, version, buffer);
+            }
             writeString(v.getValue(), version, buffer);
-        }
-
-        @Specialization
-        void handleInternedString(InternedString v, int version, DataOutputStream buffer) {
-            writeByte(TYPE_INTERNED, version, buffer);
-            writeString(v.string, version, buffer);
         }
 
         @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
@@ -525,6 +517,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
 
         @Child private CodeNodes.CreateCodeNode createCodeNode;
+        @Child private StringNodes.InternStringNode internStringNode;
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
 
@@ -585,8 +578,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return text;
         }
 
-        private String readInternedString() {
+        @TruffleBoundary
+        private String readJavaInternedString() {
             return readString().intern();
+        }
+
+        private PString readInternedString() {
+            return ensureInternStringNode().execute(readString());
         }
 
         private byte[] readBytes() {
@@ -629,7 +627,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private PCode readCode() {
             String sourceCode = readString();
-            String fileName = readInternedString();
+            // TODO: fix me and use PString interning if needed
+            String fileName = readJavaInternedString();
             int flags = readInt();
             byte[] codeString = readBytes();
             int firstLineNo = readInt();
@@ -759,6 +758,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 createCodeNode = insert(CodeNodes.CreateCodeNode.create());
             }
             return createCodeNode;
+        }
+
+        private StringNodes.InternStringNode ensureInternStringNode() {
+            if (internStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                internStringNode = insert(StringNodes.InternStringNode.create());
+            }
+            return internStringNode;
         }
 
         @Specialization

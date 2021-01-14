@@ -49,7 +49,6 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -70,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -90,9 +88,11 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -184,23 +184,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute("stdlib_home", stdlibHome);
         mod.setAttribute("capi_home", capiHome);
         mod.setAttribute("platform_id", toolchain.getIdentifier());
-        mod.setAttribute("flags", core.factory().createTuple(new Object[]{
-                        0, // bytes_warning
-                        PInt.intValue(!context.getOption(PythonOptions.PythonOptimizeFlag)), // debug
-                        PInt.intValue(context.getOption(PythonOptions.DontWriteBytecodeFlag)),  // dont_write_bytecode
-                        0, // hash_randomization
-                        PInt.intValue(context.getOption(PythonOptions.IgnoreEnvironmentFlag)), // ignore_environment
-                        PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
-                        PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
-                        PInt.intValue(context.getOption(PythonOptions.IsolateFlag)), // isolated
-                        PInt.intValue(context.getOption(PythonOptions.NoSiteFlag)), // no_site
-                        PInt.intValue(context.getOption(PythonOptions.NoUserSiteFlag)), // no_user_site
-                        PInt.intValue(context.getOption(PythonOptions.PythonOptimizeFlag)), // optimize
-                        PInt.intValue(context.getOption(PythonOptions.QuietFlag)), // quiet
-                        PInt.intValue(context.getOption(PythonOptions.VerboseFlag)), // verbose
-                        false, // dev_mode
-                        0, // utf8_mode
-        }));
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute("executable_list", executableList);
@@ -529,6 +512,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         boolean typeCheck(Object instance, Object cls,
                         @CachedLibrary("instance") PythonObjectLibrary lib) {
             return lib.typeCheck(instance, cls);
+        }
+    }
+
+    @Builtin(name = "posix_module_backend", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PosixModuleBackendNode extends PythonBuiltinNode {
+        @Specialization
+        String posixModuleBackend(
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getBackend(getPosixSupport());
         }
     }
 

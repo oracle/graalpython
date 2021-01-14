@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -124,6 +125,26 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements In
 
     public final PythonContext getContext() {
         return getContextRef().get();
+    }
+
+    public final Object getPosixSupport() {
+        return getContext().getPosixSupport();
+    }
+
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+    }
+
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, null);
+    }
+
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, filename2);
+    }
+
+    public final PException raiseOSError(VirtualFrame frame, int code, String message) {
+        return getConstructAndRaiseNode().raiseOSError(frame, code, message, null, null);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {

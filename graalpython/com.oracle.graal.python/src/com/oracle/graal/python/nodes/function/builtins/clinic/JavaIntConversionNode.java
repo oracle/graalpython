@@ -84,4 +84,10 @@ public abstract class JavaIntConversionNode extends IntConversionBaseNode {
     public static JavaIntConversionNode create(@DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return JavaIntConversionNodeGen.create(defaultValue, useDefaultForNone);
     }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    public static JavaIntConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return JavaIntConversionNodeGen.create(0, false);
+    }
 }

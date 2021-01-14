@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
@@ -51,8 +53,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
 
@@ -73,5 +73,11 @@ public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
     public static SliceIndexConversionNode create(@DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return SliceIndexConversionNodeGen.create(defaultValue, useDefaultForNone);
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    public static SliceIndexConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return SliceIndexConversionNodeGen.create(0, false);
     }
 }

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class ErrorMessages {
+
     public static final String ABSOLUTE_VALUE_TOO_LARGE = "absolute value too large";
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
     public static final String ARG_AFTER_MUST_BE_MAPPING = "%s() argument after ** must be a mapping, not %p";
@@ -63,6 +64,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
     public static final String ARG_SHOULD_BE_INT_BYTESLIKE_OBJ = "argument should be integer or bytes-like object, not '%p'";
+    public static final String ARG_SHOULD_BE_INT_OR_NONE = "argument should be integer or None, not %p";
     public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %d";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
     public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
@@ -154,6 +156,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_SPECIFY_MEM_LIMIT = "Cannot specify memory limit with FORMAT_RAW";
     public static final String CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = "Cannot specify both preset and filter chain";
+    public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
     public static final String CANNOT_USE_TO_INITIALIZE_ARRAY = "cannot use a %p to initialize an array with typecode '%s'";
     public static final String CANT_CONCAT_S_TO_P = "can't concat %s to %p";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
@@ -166,6 +169,7 @@ public abstract class ErrorMessages {
     public static final String CANT_SET_S_S = "can't set %s.%s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE = "can't set attributes of %s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE_S = "can't set attributes of built-in/extension type '%s'";
+    public static final String CANT_SPECIFY_DIRFD_WITHOUT_PATH = "%s: can't specify dir_fd without matching path";
     public static final String CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING = "can't specify a timeout for a non-blocking call";
     public static final String CANT_SUM_BYTEARRAY = "sum() can't sum bytearray [use b''.join(seq) instead]";
     public static final String CANT_SUM_BYTES = "sum() can't sum bytes [use b''.join(seq) instead]";
@@ -190,6 +194,7 @@ public abstract class ErrorMessages {
     public static final String COMPLEX_ZERO_TO_NEGATIVE_POWER = "0.0 to a negative or complex power";
     public static final String COMPLEX_MODULO = "complex modulo";
     public static final String COMPLEX_RETURNED_NON_COMPLEX = "__complex__ returned non-complex (type %p)";
+    public static final String CONSTRUCTOR_REQUIRES_A_SEQUENCE = "constructor requires a sequence";
     public static final String CONTIGUOUS_BUFFER = "contiguous buffer";
     public static final String CONVERTER_FUNC_FAILED_TO_SET_ERROR = "converter function failed to set an error on failure";
     public static final String CORRUPTED_CAPI_LIB_OBJ = "corrupted C API library object: %s";
@@ -242,6 +247,8 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
     public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";
+    public static final String FD_IS_GREATER_THAN_MAXIMUM = "fd is greater than maximum";
+    public static final String FD_IS_LESS_THAN_MINIMUM = "fd is less than minimum";
     public static final String FILE_NOT_OPENED_FOR_READING = "file not opened for reading";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
@@ -404,6 +411,7 @@ public abstract class ErrorMessages {
     public static final String MODULE_S_HAS_NO_ATTR_S = "module '%s' has no attribute '%s'";
     public static final String MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED = "multi-dimensional sub-views are not implemented";
     public static final String MULTIPLE_BASES_LAYOUT_CONFLICT = "multiple bases have instance lay-out conflict";
+    public static final String MUST_BE = "%s: '%s' must be %s";
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
@@ -419,6 +427,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS = "%s must be strings";
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
+    public static final String MUST_RETURN_2TUPLE = "%p.__divmod__() must return a 2-tuple, not %p";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String S_MUST_RETURN_S_NOT_P = "%s must return a %s, not %p";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
@@ -513,6 +522,8 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NULL_WO_SETTING_ERROR = "%s returned NULL without setting an error";
     public static final String RETURNED_RESULT_WITH_ERROR_SET = "%s returned a result with an error set";
     public static final String RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = "%s returned an unexpected return code; expected 'int' but was %s";
+    public static final String S_EMBEDDED_NULL_CHARACTER_IN_S = "%sembedded null character in %s";
+    public static final String S_S_SHOULD_BE_S_NOT_P = "%s%s should be %s, not %p";
     public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
@@ -551,6 +562,10 @@ public abstract class ErrorMessages {
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";
     public static final String SUB_VIEWS_NOT_IMPLEMENTED = "sub-views are not implemented";
     public static final String SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE = "super(type, obj): obj must be an instance or subtype of type";
+    public static final String TAKES_A_DICT_AS_SECOND_ARG_IF_ANY = "%s() takes a dict as second arg, if any";
+    public static final String TAKES_A_D_SEQUENCE = "%s() takes a %d-sequence (%d-sequence given)";
+    public static final String TAKES_AN_AT_LEAST_D_SEQUENCE = "%s() takes an at least %d-sequence (%d-sequence given)";
+    public static final String TAKES_AN_AT_MOST_D_SEQUENCE = "%s() takes an at most %d-sequence (%d-sequence given)";
     public static final String TAKES_D_OR_D_ARGS = "%s takes %d or %d arguments";
     public static final String TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = "%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s";
     public static final String TAKES_D_POS_ARG_S_BUT_GIVEN_S = "%s() takes %d positional argument%s but %d %s given%s";
@@ -577,6 +592,7 @@ public abstract class ErrorMessages {
     public static final String TYPE_NAME_NO_NULL_CHARS = "type name must not contain null characters";
     public static final String TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ = "type '%p' is not supported by the foreign object";
     public static final String TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION = "type() doesn't support MRO entry resolution; use types.new_class()";
+    public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
     public static final String UNHASHABLE_TYPE = "unhashable type: '%p'";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";

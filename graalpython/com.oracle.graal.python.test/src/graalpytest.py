@@ -650,6 +650,7 @@ class TestRunner(object):
         # eval session scope
         eval_scope("session")
 
+        testcases = []
         for module in self.test_modules():
             if module is None:
                 continue
@@ -665,7 +666,6 @@ class TestRunner(object):
                 print(u"\n\u25B9 ", module.__name__, end="")
             # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
             module_dict = dict(module.__dict__)
-            testcases = []
             for k, v in module_dict.items():
                 if (k.startswith("Test") or k.endswith("Test") or k.endswith("Tests")) and isinstance(v, type):
                     testcases.append(TestCase.runClass(v))

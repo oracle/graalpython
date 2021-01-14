@@ -29,7 +29,6 @@ import java.io.ByteArrayOutputStream;
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.DirectoryStream;
 import java.util.concurrent.Semaphore;
 
 import javax.net.ssl.SSLContext;
@@ -40,6 +39,7 @@ import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -146,6 +147,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.BufferFormat;
@@ -153,7 +155,6 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -317,6 +318,15 @@ public abstract class PythonObjectFactory extends Node {
         return createBytes(array, array.length);
     }
 
+    public PBytes createBytes(byte[] array, int offset, int length) {
+        if (length != array.length) {
+            byte[] buf = new byte[length];
+            PythonUtils.arraycopy(array, offset, buf, 0, buf.length);
+            return createBytes(PythonBuiltinClassType.PBytes, buf);
+        }
+        return createBytes(PythonBuiltinClassType.PBytes, array);
+    }
+
     public PBytes createBytes(Object cls, byte[] array) {
         return createBytes(cls, array, array.length);
     }
@@ -363,6 +373,11 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PTuple createTuple(Object cls, SequenceStorage store) {
         return trace(new PTuple(cls, getShape(cls), store));
+    }
+
+    public final PTuple createStructSeq(Descriptor desc, Object... values) {
+        assert desc.inSequence <= values.length && values.length <= desc.fieldNames.length;
+        return createTuple(desc.type, new ObjectSequenceStorage(values, desc.inSequence));
     }
 
     public final PComplex createComplex(Object cls, double real, double imag) {
@@ -942,16 +957,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
-    public PScandirIterator createScandirIterator(Object cls, String path, DirectoryStream<TruffleFile> next, boolean produceBytes) {
-        return trace(new PScandirIterator(cls, getShape(cls), path, next, produceBytes));
+    public PScandirIterator createScandirIterator(PythonContext context, Object dirStream, PosixFileHandle path) {
+        return trace(new PScandirIterator(PythonBuiltinClassType.PScandirIterator, PythonBuiltinClassType.PScandirIterator.getInstanceShape(getLanguage()), context, dirStream, path));
     }
 
-    public PDirEntry createDirEntry(String name, TruffleFile file, boolean produceBytes) {
-        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(getLanguage()), name, file, produceBytes));
-    }
-
-    public Object createDirEntry(Object cls, String name, TruffleFile file) {
-        return trace(new PDirEntry(cls, getShape(cls), name, file, false));
+    public PDirEntry createDirEntry(Object dirEntryData, PosixFileHandle path) {
+        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(getLanguage()), dirEntryData, path));
     }
 
     public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {

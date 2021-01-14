@@ -353,12 +353,16 @@ class FileIO(_RawIOBase):
                         fd_is_own = True
                     except TypeError:
                         raise TypeError("expected integer from opener")
-            st = _os.fstat(self.__fd__)
-            # On Unix, fopen will succeed for directories.
-            # In Python, there should be no file objects referring to
-            # directories, so we need a check.
-            if FileIO.__isdir__(st.st_mode):
-                raise OSError(21) # EISDIR
+            # We do not check this for stdin/out/err, because it is not necessary and more importantly
+            # it runs during context initialization and requires IO access so otherwise we would not be
+            # able to start GraalPython without IO allowed
+            if self.__fd__ not in [0, 1, 2]:
+                st = _os.fstat(self.__fd__)
+                # On Unix, fopen will succeed for directories.
+                # In Python, there should be no file objects referring to
+                # directories, so we need a check.
+                if FileIO.__isdir__(st.st_mode):
+                    raise OSError(21) # EISDIR
             self.__blksize__ = DEFAULT_BUFFER_SIZE
             self.name = name
             if self.__appending__:

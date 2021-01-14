@@ -803,6 +803,17 @@ public abstract class PythonObjectLibrary extends Library {
     public abstract double asJavaDoubleWithState(Object receiver, ThreadState threadState);
 
     /**
+     * @see #asJavaDoubleWithState(Object, ThreadState)
+     */
+    public final double asJavaDoubleWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
+            return asJavaDoubleWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return asJavaDouble(receiver);
+        }
+    }
+
+    /**
      * @see #asJavaDoubleWithState
      */
     public final double asJavaDouble(Object receiver) {
@@ -834,6 +845,17 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public final Object asPInt(Object receiver) {
         return asPIntWithState(receiver, null);
+    }
+
+    /**
+     * @see #asPIntWithState
+     */
+    public final Object asPIntWithFrame(Object receiver, VirtualFrame frame) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return asPIntWithState(receiver, state);
     }
 
     /**

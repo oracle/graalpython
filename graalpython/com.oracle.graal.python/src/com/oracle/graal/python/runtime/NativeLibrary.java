@@ -205,7 +205,7 @@ public class NativeLibrary {
     private Object loadLibrary(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
         if (context.getEnv().isNativeAccessAllowed()) {
-            String path = getLibPath(context);
+            String path = getLibPath(context, name);
             String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
@@ -239,7 +239,7 @@ public class NativeLibrary {
         throw NativeLibraryCannotBeLoaded.INSTANCE;
     }
 
-    private String getLibPath(PythonContext context) {
+    public static String getLibPath(PythonContext context, String name) {
         CompilerAsserts.neverPartOfCompilation();
         String libPythonName = name + ImpModuleBuiltins.ExtensionSuffixesNode.getSoAbi(context);
         TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
@@ -333,11 +333,10 @@ public class NativeLibrary {
 
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
-                        @Cached("createIdentityProfile()") ValueProfile functionProfile,
                         @Cached("createClassProfile()") ValueProfile functionClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @CachedLibrary(limit = "1") InteropLibrary funInterop) {
-            NativeFunction function = functionClassProfile.profile(functionProfile.profile(functionIn));
+            NativeFunction function = functionClassProfile.profile(functionIn);
             Object funObj = lib.getCachedFunction(ctx, function);
             return invoke(function, args, funObj, funInterop);
         }

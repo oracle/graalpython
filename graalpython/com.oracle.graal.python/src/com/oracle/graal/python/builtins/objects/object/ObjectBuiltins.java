@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -82,15 +83,13 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -105,6 +104,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -246,10 +246,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile overridesInit,
                         @Cached("create(__INIT__)") LookupAttributeInMRONode lookupInit,
                         @Cached("createLookupProfile()") ValueProfile profileInit,
-                        @Cached("createIdentityProfile()") ValueProfile profileInitFactory,
+                        @Cached("createClassProfile()") ValueProfile profileInitFactory,
                         @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
                         @Cached("createLookupProfile()") ValueProfile profileNew,
-                        @Cached("createIdentityProfile()") ValueProfile profileNewFactory) {
+                        @Cached("createClassProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = lib.getLazyPythonClass(self);
                 if (overridesNew.profile(overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class))) {
@@ -369,23 +369,19 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization
+
+        @Specialization(guards = "isNone(self)")
+        @SuppressWarnings("unused")
+        String reprNone(VirtualFrame frame, PNone self) {
+            return "None";
+        }
+
+        @Specialization(guards = "!isNone(self)")
         String repr(VirtualFrame frame, Object self,
-                        @Cached("create()") GetClassNode getClass,
-                        @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
-                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
-            if (self == PNone.NONE) {
-                return "None";
-            }
-            Object type = getClass.execute(self);
-            Object moduleName = readModuleNode.executeObject(frame, type);
-            Object qualName = readQualNameNode.executeObject(frame, type);
-            if (moduleName != PNone.NO_VALUE && !BuiltinNames.BUILTINS.equals(moduleName)) {
-                return PythonUtils.format("<%s.%s object at 0x%x>", moduleName, qualName, PythonAbstractObject.systemHashCode(self));
-            }
-            return PythonUtils.format("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(self));
+                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode) {
+            String fqcn = getFullyQualifiedClassNameNode.execute(frame, self);
+            return PythonUtils.format("<%s object at 0x%x>", fqcn, PythonAbstractObject.systemHashCode(self));
         }
     }
 
@@ -826,6 +822,8 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    // Note: this must not inherit from PythonUnaryBuiltinNode, i.e. must not be AST inlined.
+    // The CommonReduceNode seems to need a fresh frame, otherwise it can mess up the existing one.
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
@@ -836,10 +834,17 @@ public class ObjectBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __REDUCE_EX__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "protocol"})
-    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class ReduceExNode extends PythonBuiltinNode {
+    // Note: this must not inherit from PythonBinaryClinicBuiltinNode, i.e. must not be AST inlined.
+    // The CommonReduceNode seems to need a fresh frame, otherwise it can mess up the existing one.
+    public abstract static class ReduceExNode extends PythonClinicBuiltinNode {
         static final Object REDUCE_FACTORY = ObjectBuiltinsFactory.ReduceNodeFactory.getInstance();
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ReduceExNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         @SuppressWarnings("unused")

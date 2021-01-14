@@ -42,6 +42,7 @@ package com.oracle.graal.python.util;
 
 import java.lang.management.ManagementFactory;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -53,6 +54,7 @@ import javax.management.ReflectionException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -92,6 +94,19 @@ public final class PythonUtils {
     public static void arraycopy(Object src, int srcPos, Object dest, int destPos, int length) {
         try {
             System.arraycopy(src, srcPos, dest, destPos, length);
+        } catch (Throwable t) {
+            // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
+     * Executes Arrays.copyOf and puts all exceptions on the slow path.
+     */
+    public static <T> T[] arrayCopyOf(T[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
         } catch (Throwable t) {
             // this is really unexpected and we want to break exception edges in compiled code
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -160,6 +175,19 @@ public final class PythonUtils {
         return (int) r;
     }
 
+    public static long multiplyExact(long x, long y) throws OverflowException {
+        // copy&paste from Math.multiplyExact
+        long r = x * y;
+        long ax = Math.abs(x);
+        long ay = Math.abs(y);
+        if (((ax | ay) >>> 31 != 0)) {
+            if (((y != 0) && (r / y != x)) || (x == Long.MIN_VALUE && y == -1)) {
+                throw OverflowException.INSTANCE;
+            }
+        }
+        return r;
+    }
+
     private static final MBeanServer SERVER;
     private static final String OPERATION_NAME = "gcRun";
     private static final Object[] PARAMS = new Object[]{null};
@@ -221,6 +249,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String newString(byte[] bytes, int offset, int length) {
+        return new String(bytes, offset, length);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static String newString(char[] chars) {
         return new String(chars);
     }
@@ -258,5 +291,37 @@ public final class PythonUtils {
     @TruffleBoundary(allowInlining = true)
     public static StringBuilder appendCodePoint(StringBuilder sb, int codePoint) {
         return sb.appendCodePoint(codePoint);
+    }
+
+    @TruffleBoundary
+    public static String getPythonArch() {
+        String arch = System.getProperty("os.arch", "");
+        if (arch.equals("amd64")) {
+            // be compatible with CPython's designation
+            arch = "x86_64";
+        }
+        return arch;
+    }
+
+    @TruffleBoundary
+    public static String getPythonOSName() {
+        String property = System.getProperty("os.name");
+        String os = "java";
+        if (property != null) {
+            if (property.toLowerCase().contains("cygwin")) {
+                os = "cygwin";
+            } else if (property.toLowerCase().contains("linux")) {
+                os = "linux";
+            } else if (property.toLowerCase().contains("mac")) {
+                os = SysModuleBuiltins.PLATFORM_DARWIN;
+            } else if (property.toLowerCase().contains("windows")) {
+                os = SysModuleBuiltins.PLATFORM_WIN32;
+            } else if (property.toLowerCase().contains("sunos")) {
+                os = "sunos";
+            } else if (property.toLowerCase().contains("freebsd")) {
+                os = "freebsd";
+            }
+        }
+        return os;
     }
 }

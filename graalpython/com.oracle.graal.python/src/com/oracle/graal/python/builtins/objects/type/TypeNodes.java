@@ -339,7 +339,7 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached("createBinaryProfile()") ConditionProfile lazyTypeInitProfile,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
-                        @Cached("createIdentityProfile()") ValueProfile storageProfile) {
+                        @Cached("createClassProfile()") ValueProfile storageProfile) {
             Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
             if (lazyTypeInitProfile.profile(tupleObj == PNone.NO_VALUE)) {
                 // Special case: lazy type initialization (should happen at most only once per type)
@@ -1527,6 +1527,21 @@ public abstract class TypeNodes {
                 case PFrame:
                 case PMemoryView:
                 case PTuple:
+                case PStatResult:
+                case PTerminalSize:
+                case PUnameResult:
+                case PStructTime:
+                case PProfilerEntry:
+                case PProfilerSubentry:
+                case PStructPasswd:
+                case PStructRusage:
+                case PVersionInfo:
+                case PFlags:
+                case PFloatInfo:
+                case PIntInfo:
+                case PHashInfo:
+                case PThreadInfo:
+                case PUnraisableHookArgs:
                     return 8;
                 case PythonClass:
                     return 40;

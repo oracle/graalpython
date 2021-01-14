@@ -44,10 +44,13 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -58,23 +61,53 @@ import com.sun.security.auth.module.UnixSystem;
 @CoreFunctions(defineModule = "pwd")
 public class PwdModuleBuiltins extends PythonBuiltins {
 
+    static final StructSequence.Descriptor STRUCT_PASSWD_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PStructPasswd,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "pwd.struct_passwd: Results from getpw*() routines.\n\n" +
+                    "This object may be accessed either as a tuple of\n" +
+                    "  (pw_name,pw_passwd,pw_uid,pw_gid,pw_gecos,pw_dir,pw_shell)\n" +
+                    "or via the object attributes as named in the above tuple.",
+                    // @formatter:on
+                    7,
+                    new String[]{
+                                    "pw_name", "pw_passwd", "pw_uid", "pw_gid", "pw_gecos", "pw_dir", "pw_shell",
+                    },
+                    new String[]{
+                                    "user name", "password", "user id", "group id", "real name", "home directory", "shell program"
+                    });
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PwdModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        StructSequence.initType(core, STRUCT_PASSWD_DESC);
     }
 
     @Builtin(name = "getpwuid", minNumOfPositionalArgs = 1, parameterNames = {"uid"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GetpwuidNode extends PythonUnaryBuiltinNode {
+        // TODO: this ignores the uid and just returns the info for the current user
+        // TODO: this should use argument clinic to properly cast the argument
+        // GR-28184
 
         @Specialization
         Object doGetpwuid(int uid) {
-            return factory().createTuple(createPwuidObject(uid));
+            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(uid));
+        }
+
+        @Specialization
+        Object doGetpwuid(long uid) {
+            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(uid));
         }
 
         @TruffleBoundary
-        public Object[] createPwuidObject(int uid) {
+        public Object[] createPwuidObject(Object uid) {
             String osName = System.getProperty("os.name");
             String username = System.getProperty("user.name");
             String password = "NOT_AVAILABLE";

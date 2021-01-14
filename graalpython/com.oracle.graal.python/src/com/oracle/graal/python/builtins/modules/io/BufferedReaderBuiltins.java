@@ -579,7 +579,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "truncate", minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos"})
-    @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class TruncateNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
         @Override

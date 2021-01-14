@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.function.builtins;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -73,7 +72,7 @@ public final class WrapTpNew extends SlotWrapper {
     @Child private LookupAttributeInMRONode lookupNewNode;
     @CompilationFinal private ValueProfile builtinProfile;
     @CompilationFinal private byte state = 0;
-    @CompilationFinal private PythonBuiltinClassType owner;
+    private final PythonBuiltinClassType owner;
     // we cache two node classes here, otherwise we use a truffle boundary lookup
     @CompilationFinal(dimensions = 1) private Pair<?, ?>[] cachedFactoriesNodeClasses = new Pair<?, ?>[2];
 
@@ -81,8 +80,9 @@ public final class WrapTpNew extends SlotWrapper {
     private static final short NOT_CLASS_STATE = 0b01000000;
     private static final short IS_UNSAFE_STATE = 0b00100000;
 
-    public WrapTpNew(BuiltinCallNode func) {
+    public WrapTpNew(BuiltinCallNode func, PythonBuiltinClassType owner) {
         super(func);
+        this.owner = owner;
     }
 
     @Override
@@ -93,9 +93,9 @@ public final class WrapTpNew extends SlotWrapper {
                                                      // check was already done
         } catch (ArrayIndexOutOfBoundsException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException(getOwner().getName() + ".__new__ called without arguments");
+            throw new IllegalStateException(owner.getName() + ".__new__ called without arguments");
         }
-        if (arg0 != getOwner()) {
+        if (arg0 != owner) {
             if (isType == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
@@ -108,14 +108,14 @@ public final class WrapTpNew extends SlotWrapper {
                     state |= NOT_CLASS_STATE;
                 }
                 throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
-                                "%s.__new__(X): X is not a type object (%p)", getOwner().getName(), arg0);
+                                "%s.__new__(X): X is not a type object (%p)", owner.getName(), arg0);
             }
             if (isSubtype == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
                 isSubtype = insert(IsSubtypeNode.create());
             }
-            if (!isSubtype.execute(arg0, getOwner())) {
+            if (!isSubtype.execute(arg0, owner)) {
                 if ((state & NOT_SUBTP_STATE) == 0) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     reportPolymorphicSpecialize();
@@ -123,7 +123,7 @@ public final class WrapTpNew extends SlotWrapper {
                 }
                 throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
                                 ErrorMessages.IS_NOT_SUBTYPE_OF,
-                                getOwner().getName(), arg0, arg0, getOwner().getName());
+                                owner.getName(), arg0, arg0, owner.getName());
             }
             // CPython walks the bases and checks that the first non-heaptype base has the new that
             // we're in. We have our optimizations for this lookup that the compiler can then
@@ -153,7 +153,7 @@ public final class WrapTpNew extends SlotWrapper {
                         }
                         throw getRaiseNode().raise(PythonBuiltinClassType.TypeError,
                                         "%s.__new__(%N) is not safe, use %N.__new__()",
-                                        getOwner().getName(), arg0, arg0);
+                                        owner.getName(), arg0, arg0);
                     }
                 }
                 // we explicitly allow non-Java functions to pass here, since a PythonBuiltinClass
@@ -186,37 +186,12 @@ public final class WrapTpNew extends SlotWrapper {
         return factory.getNodeClass();
     }
 
-    private final PRaiseNode getRaiseNode() {
+    private PRaiseNode getRaiseNode() {
         if (raiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             raiseNode = insert(PRaiseNode.create());
         }
         return raiseNode;
-    }
-
-    private PythonBuiltinClassType getOwner() {
-        if (owner == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            Builtin[] builtins = null;
-            Class<?> cls = getNode().getClass();
-            while (cls != null) {
-                builtins = cls.getAnnotationsByType(Builtin.class);
-                if (builtins.length == 0) {
-                    cls = cls.getSuperclass();
-                } else {
-                    break;
-                }
-            }
-            for (Builtin builtin : builtins) {
-                owner = builtin.constructsClass();
-                if (owner != PythonBuiltinClassType.nil) {
-                    // we have an assertion PythonBuiltins#initializeEachFactoryWith that ensures
-                    // this is the only constructor @Builtin
-                    break;
-                }
-            }
-        }
-        return owner;
     }
 
     @Override

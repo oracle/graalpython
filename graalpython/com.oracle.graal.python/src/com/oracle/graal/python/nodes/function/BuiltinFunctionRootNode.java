@@ -80,18 +80,25 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     private final boolean declaresExplicitSelf;
     @Child private BuiltinCallNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
+    private final PythonBuiltinClassType constructsClass;
 
-    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
+    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf,
+                    PythonBuiltinClassType constructsClass) {
         super(language);
         CompilerAsserts.neverPartOfCompilation();
-        this.signature = createSignature(factory, builtin, declaresExplicitSelf);
+        this.signature = createSignature(factory, builtin, declaresExplicitSelf, constructsClass != PythonBuiltinClassType.nil);
         this.builtin = builtin;
         this.name = builtin.name();
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
+        this.constructsClass = constructsClass;
         if (builtin.alwaysNeedsCallerFrame()) {
             setNeedsCallerFrame();
         }
+    }
+
+    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
+        this(language, builtin, factory, declaresExplicitSelf, builtin.constructsClass());
     }
 
     public static class StandaloneBuiltinFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
@@ -137,7 +144,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     /**
      * Should return a signature compatible with {@link #createArgumentsList(Builtin, boolean)}
      */
-    private static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf) {
+    private static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf, boolean constructsClass) {
         String[] parameterNames = builtin.parameterNames();
         int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
@@ -150,7 +157,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         if (!declaresExplicitSelf) {
             // if we don't take the explicit self, we still need to accept it by signature
             maxNumPosArgs++;
-        } else if (builtin.constructsClass() != PythonBuiltinClassType.nil && maxNumPosArgs == 0) {
+        } else if (constructsClass && maxNumPosArgs == 0) {
             // we have this convention to always declare the cls argument without setting the num
             // args
             maxNumPosArgs = 1;
@@ -161,7 +168,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 // PythonLanguage.getLogger().log(Level.FINEST, "missing parameter names for builtin
                 // " + factory);
                 parameterNames = new String[maxNumPosArgs];
-                parameterNames[0] = builtin.constructsClass() != PythonBuiltinClassType.nil ? "$cls" : "$self";
+                parameterNames[0] = constructsClass ? "$cls" : "$self";
                 for (int i = 1, p = 'a'; i < parameterNames.length; i++, p++) {
                     parameterNames[i] = Character.toString((char) p);
                 }
@@ -173,7 +180,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                     assert parameterNames.length + 1 == maxNumPosArgs : "not enough parameter ids on " + factory;
                     parameterNames = Arrays.copyOf(parameterNames, parameterNames.length + 1);
                     PythonUtils.arraycopy(parameterNames, 0, parameterNames, 1, parameterNames.length - 1);
-                    parameterNames[0] = builtin.constructsClass() != PythonBuiltinClassType.nil ? "$cls" : "$self";
+                    parameterNames[0] = constructsClass ? "$cls" : "$self";
                 }
             }
         }
@@ -198,7 +205,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     /**
      * Must return argument reads compatible with
-     * {@link #createSignature(NodeFactory, Builtin, boolean)}
+     * {@link #createSignature(NodeFactory, Builtin, boolean, boolean)}
      */
     private static ReadArgumentNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
         ArrayList<ReadArgumentNode> args = new ArrayList<>();
@@ -318,8 +325,8 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
             if (builtin.reverseOperation()) {
                 body = insert(new WrapBinaryfuncR(newBody));
-            } else if (builtin.constructsClass() != PythonBuiltinClassType.nil) {
-                body = insert(new WrapTpNew(newBody));
+            } else if (constructsClass != PythonBuiltinClassType.nil) {
+                body = insert(new WrapTpNew(newBody, constructsClass));
             } else {
                 body = insert(newBody);
             }

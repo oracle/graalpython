@@ -73,6 +73,7 @@ import javax.tools.JavaFileObject;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ArgumentsClinic;
+import com.oracle.graal.python.annotations.ClinicBuiltinBaseClass;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.processor.ArgumentClinicModel.ArgumentClinicData;
 import com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinAnnotation;
@@ -82,6 +83,9 @@ import com.oracle.graal.python.processor.CodeWriter.Block;
 public class ArgumentClinicProcessor extends AbstractProcessor {
     private static final boolean LOGGING = false;
     private static final String BuiltinAnnotationClass = "com.oracle.graal.python.builtins.Builtin";
+    private static final String BUILTINS_BASE_CLASSES_PACKAGE = "com.oracle.graal.python.nodes.function.builtins";
+
+    private Element[] clinicBuiltinBaseClasses;
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
@@ -104,6 +108,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         }
         try {
             ConverterFactory.initBuiltins(processingEnv.getElementUtils());
+            clinicBuiltinBaseClasses = getClinicBuiltinBases(roundEnv);
             doProcess(roundEnv);
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -244,6 +249,8 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
             if (type.getEnclosingElement() == null) {
                 throw error(e, "ArgumentClinicProcessor supports only inner classes at moment.");
             }
+
+            checkClinicBuiltinBaseClass(clinicBuiltinBaseClasses, type);
             BuiltinClinicData builtinClinicData = getBuiltinClinicData(type, getBuiltinAnnotation(type));
             TypeElement enclosingType = (TypeElement) type.getEnclosingElement();
             enclosingTypes.computeIfAbsent(enclosingType, k -> new HashSet<>()).add(builtinClinicData);
@@ -251,28 +258,51 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         return enclosingTypes;
     }
 
+    private Element[] getClinicBuiltinBases(RoundEnvironment roundEnv) throws ProcessingError {
+        // To better support incremental compilation we do not ask the roundEnv, but scan known
+        // package that should contain all clinic builtin base classes. We also report error on any
+        // @ClinicBuiltinBaseClass annotated class that is not in that package
+        Set<? extends Element> clinicBuiltinsBasesInEnv = roundEnv.getElementsAnnotatedWith(ClinicBuiltinBaseClass.class);
+        for (Element x : clinicBuiltinsBasesInEnv) {
+            if (!((TypeElement) x).getQualifiedName().toString().startsWith(BUILTINS_BASE_CLASSES_PACKAGE)) {
+                throw new ProcessingError(x, "All @ClinicBuiltinBaseClass classes should be in package %s.", BUILTINS_BASE_CLASSES_PACKAGE);
+            }
+        }
+        return processingEnv.getElementUtils().getPackageElement(BUILTINS_BASE_CLASSES_PACKAGE).getEnclosedElements().stream().filter(
+                        x -> x.getAnnotation(ClinicBuiltinBaseClass.class) != null).toArray(Element[]::new);
+    }
+
     private BuiltinClinicData getBuiltinClinicData(TypeElement type, BuiltinAnnotation builtinAnnotation) throws ProcessingError {
-        ArgumentClinic[] rawArgAnnotations;
+        ArrayList<ArgumentClinic> rawArgAnnotations;
         ArgumentsClinic argsClinicAnnotation = type.getAnnotation(ArgumentsClinic.class);
         if (argsClinicAnnotation == null) {
-            rawArgAnnotations = new ArgumentClinic[]{type.getAnnotation(ArgumentClinic.class)};
+            rawArgAnnotations = new ArrayList<>(1);
+            rawArgAnnotations.add(type.getAnnotation(ArgumentClinic.class));
         } else {
-            rawArgAnnotations = argsClinicAnnotation.value();
+            rawArgAnnotations = new ArrayList<>(Arrays.asList(argsClinicAnnotation.value()));
         }
 
-        Map<String, ConverterFactory> converterFactories = getConverterFactories(type);
+        Map<String, ConverterFactory[]> converterFactories = getConverterFactories(type);
         String[] argNames = builtinAnnotation.argumentNames;
         List<ArgumentClinicData> arguments = new ArrayList<>(argNames.length);
         for (int i = 0; i < argNames.length; i++) {
             String name = argNames[i];
-            ArgumentClinic clinicAnnotation = Arrays.stream(rawArgAnnotations).filter(x -> x.name().equals(name)).findFirst().orElse(null);
+            ArgumentClinic clinicAnnotation = rawArgAnnotations.stream().filter(x -> x.name().equals(name)).findFirst().orElse(null);
+            if (clinicAnnotation != null) {
+                rawArgAnnotations.remove(clinicAnnotation);
+            }
             arguments.add(ArgumentClinicData.create(clinicAnnotation, type, builtinAnnotation, i, converterFactories.get(name)));
+        }
+
+        if (rawArgAnnotations.size() != 0) {
+            throw new ProcessingError(type, "The builtin is annotated with argument clinic for arguments that the builtin does no take: %s.",
+                            rawArgAnnotations.stream().map(ArgumentClinic::name).collect(Collectors.joining(", ")));
         }
 
         return new BuiltinClinicData(type, builtinAnnotation, arguments);
     }
 
-    private Map<String, ConverterFactory> getConverterFactories(TypeElement type) throws ProcessingError {
+    private Map<String, ConverterFactory[]> getConverterFactories(TypeElement type) throws ProcessingError {
         List<AnnotationMirror> rawArgMirrors;
         AnnotationMirror argsClinicMirror = findAnnotationMirror(type, ArgumentsClinic.class.getCanonicalName());
         if (argsClinicMirror != null) {
@@ -281,7 +311,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
             rawArgMirrors = Collections.singletonList(findAnnotationMirror(type, ArgumentClinic.class.getCanonicalName()));
         }
 
-        Map<String, ConverterFactory> converterFactories = new HashMap<>();
+        Map<String, ConverterFactory[]> converterFactories = new HashMap<>();
         for (AnnotationMirror m : rawArgMirrors) {
             String name = (String) getAnnotationValue(m, "name").getValue();
             AnnotationValue v = findAnnotationValue(m, "conversionClass");
@@ -291,6 +321,18 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
             }
         }
         return converterFactories;
+    }
+
+    private void checkClinicBuiltinBaseClass(Element[] clinicBuiltinBases, TypeElement type) throws ProcessingError {
+        boolean hasCorrectBaseClass = false;
+        for (Element baseClass : clinicBuiltinBases) {
+            if (processingEnv.getTypeUtils().isSubtype(type.asType(), baseClass.asType())) {
+                hasCorrectBaseClass = true;
+            }
+        }
+        if (!hasCorrectBaseClass) {
+            throw error(type, "Argument clinic annotated node must inherit from @ClinicBuiltinBaseClass annotated base class, e.g., PythonBinaryClinicBuiltinNode.");
+        }
     }
 
     private static AnnotationMirror findAnnotationMirror(TypeElement type, String annotationQualifiedName) {
@@ -325,6 +367,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         String builtinName = null;
         Stream<?> parameterNames = null;
         Stream<?> keywordOnlyNames = null;
+        int minNumOfPositionalArgs = -1;
         AnnotationMirror annot = findAnnotationMirror(type, BuiltinAnnotationClass);
         if (annot != null) {
             for (Entry<? extends ExecutableElement, ? extends AnnotationValue> item : annot.getElementValues().entrySet()) {
@@ -334,6 +377,8 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
                     keywordOnlyNames = ((List<AnnotationValue>) item.getValue().getValue()).stream().map(AnnotationValue::getValue);
                 } else if (item.getKey().getSimpleName().toString().equals("name")) {
                     builtinName = (String) item.getValue().getValue();
+                } else if (item.getKey().getSimpleName().toString().equals("minNumOfPositionalArgs")) {
+                    minNumOfPositionalArgs = (int) item.getValue().getValue();
                 }
             }
         }
@@ -343,7 +388,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         if (keywordOnlyNames != null) {
             parameterNames = Stream.concat(parameterNames, keywordOnlyNames);
         }
-        return new BuiltinAnnotation(builtinName, parameterNames.toArray(String[]::new));
+        return new BuiltinAnnotation(builtinName, parameterNames.toArray(String[]::new), minNumOfPositionalArgs);
     }
 
     private static ProcessingError error(Element element, String fmt, Object... args) throws ProcessingError {

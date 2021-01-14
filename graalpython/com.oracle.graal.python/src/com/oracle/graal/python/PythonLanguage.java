@@ -38,7 +38,6 @@ import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
 
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -59,7 +58,6 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -76,13 +74,13 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -97,9 +95,9 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -250,9 +248,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         OptionValues options = this.engineOptions;
         if (options == null) {
-            this.engineOptions = options = PythonOptions.createEngineOptions(env);
+            this.engineOptions = PythonOptions.createEngineOptions(env);
         } else {
-            assert options.equals(PythonOptions.createEngineOptions(env)) : "invalid engine options";
+            assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
         return context;
     }
@@ -563,6 +561,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID, clazz);
     }
 
+    /**
+     * Loggers that should report any known incompatibility with CPython, which is silently ignored
+     * in order to be able to continue the execution. Example is setting the stack size limit: it
+     * would be too drastic measure to raise error, because the program may continue and work
+     * correctly even if it is ignored.
+     *
+     * The logger name is prefixed with "compatibility" such that
+     * {@code --log.python.compatibility.level=LEVEL} can turn on compatibility related logging for
+     * all classes.
+     */
+    @TruffleBoundary
+    public static TruffleLogger getCompatibilityLogger(Class<?> clazz) {
+        return TruffleLogger.getLogger(ID, "compatibility." + clazz.getName());
+    }
+
     public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {
         try {
             SourceBuilder sourceBuilder = null;
@@ -667,9 +680,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.disposeThread(thread);
     }
 
-    public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, Function<Builtin, RootCallTarget> supplier) {
-        String key = builtin.name() + nodeClass.getName();
-        return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
+    public RootCallTarget getOrComputeBuiltinCallTarget(String key, Supplier<RootNode> supplier) {
+        return builtinCallTargetCache.computeIfAbsent(key, (k) -> PythonUtils.getOrCreateCallTarget(supplier.get()));
     }
 
     public Shape getEmptyShape() {

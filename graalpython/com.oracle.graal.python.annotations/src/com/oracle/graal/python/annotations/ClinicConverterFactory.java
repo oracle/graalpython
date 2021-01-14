@@ -45,7 +45,9 @@ import java.lang.annotation.Target;
 
 /**
  * Annotates the factory method (which must be static) in the class specified by
- * {@link ArgumentClinic#conversionClass()}.
+ * {@link ArgumentClinic#conversionClass()}. There can be more such methods, but they must take
+ * different number of arguments. The argument clinic code generator will choose the one suitable
+ * given the provided extra arguments and other properties of the {@link ArgumentClinic} annotation.
  */
 @Target(ElementType.METHOD)
 public @interface ClinicConverterFactory {

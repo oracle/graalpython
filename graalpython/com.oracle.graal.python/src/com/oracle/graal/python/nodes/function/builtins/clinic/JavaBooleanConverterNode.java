@@ -90,4 +90,9 @@ public abstract class JavaBooleanConverterNode extends ArgumentCastNode {
     public static JavaBooleanConverterNode create(@DefaultValue boolean defaultValue) {
         return JavaBooleanConverterNodeGen.create(defaultValue);
     }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Boolean)
+    public static JavaBooleanConverterNode createWithNoDefault() {
+        return JavaBooleanConverterNodeGen.create(false);
+    }
 }

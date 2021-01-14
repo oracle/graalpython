@@ -40,12 +40,14 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
+import com.oracle.graal.python.annotations.ClinicBuiltinBaseClass;
 import com.oracle.graal.python.nodes.argument.ReadAndCastArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.dsl.CreateCast;
 
+@ClinicBuiltinBaseClass
 public abstract class PythonClinicBuiltinNode extends PythonBuiltinNode {
     protected abstract ArgumentClinicProvider getArgumentClinic();
 

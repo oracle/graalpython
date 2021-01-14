@@ -107,6 +107,11 @@ public @interface ArgumentClinic {
          */
         Boolean,
         /**
+         * Corresponds to CPython's {@code bool(accept=int)} converter. Supports
+         * {@link #defaultValue()}.
+         */
+        IntToBoolean,
+        /**
          * GraalPython specific converter that narrows any String representation to Java String.
          * Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */

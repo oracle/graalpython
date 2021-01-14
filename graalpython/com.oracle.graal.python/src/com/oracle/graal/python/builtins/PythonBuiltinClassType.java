@@ -132,8 +132,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSocket("socket", "_socket"),
     PStaticmethod("staticmethod", BuiltinNames.BUILTINS),
     PClassmethod("classmethod", BuiltinNames.BUILTINS),
-    PScandirIterator("ScandirIterator", "posix", false),
-    PDirEntry("DirEntry", "posix"),
+    PScandirIterator("ScandirIterator", false, "posix", false),
+    PDirEntry("DirEntry", true, "posix", false),
     PLZMACompressor("LZMACompressor", "_lzma"),
     PLZMADecompressor("LZMADecompressor", "_lzma"),
     LsprofProfiler("Profiler", "_lsprof"),
@@ -143,6 +143,21 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ZlibCompress("Compress", "zlib"),
     ZlibDecompress("Decompress", "zlib"),
     PBufferedReader("BufferedReader", "_io"),
+    PStatResult("stat_result", "os", false),
+    PTerminalSize("terminal_size", "os", false),
+    PUnameResult("uname_result", "posix", false),
+    PStructTime("struct_time", "time", false),
+    PProfilerEntry("profiler_entry", "_lsprof", false),
+    PProfilerSubentry("profiler_subentry", "_lsprof", false),
+    PStructPasswd("struct_passwd", "pwd", false),
+    PStructRusage("struct_rusage", "resource", false),
+    PVersionInfo("version_info", "sys", false),
+    PFlags("flags", "sys", false),
+    PFloatInfo("float_info", "sys", false),
+    PIntInfo("int_info", "sys", false),
+    PHashInfo("hash_info", "sys", false),
+    PThreadInfo("thread_info", "sys", false),
+    PUnraisableHookArgs("UnraisableHookArgs", false),
     PSSLSession("SSLSession", "_ssl"),
     PSSLContext("_SSLContext", "_ssl"),
     PSSLSocket("_SSLSocket", "_ssl"),
@@ -248,15 +263,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
 
-    PythonBuiltinClassType(String name, String publicInModule, boolean basetype) {
+    PythonBuiltinClassType(String name, boolean isPublic, String module, boolean basetype) {
         this.name = name;
-        this.publicInModule = publicInModule;
-        if (publicInModule != null && publicInModule != BuiltinNames.BUILTINS) {
-            printName = publicInModule + "." + name;
+        this.publicInModule = isPublic ? module : null;
+        if (module != null && module != BuiltinNames.BUILTINS) {
+            printName = module + "." + name;
         } else {
             printName = name;
         }
         this.basetype = basetype;
+    }
+
+    PythonBuiltinClassType(String name, String publicInModule, boolean basetype) {
+        this(name, publicInModule != null, publicInModule, basetype);
     }
 
     PythonBuiltinClassType(String name, String publicInModule) {
@@ -407,6 +426,22 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SyntaxWarning.base = Warning;
         UnicodeWarning.base = Warning;
         UserWarning.base = Warning;
+
+        PStatResult.base = PTuple;
+        PTerminalSize.base = PTuple;
+        PUnameResult.base = PTuple;
+        PStructTime.base = PTuple;
+        PProfilerEntry.base = PTuple;
+        PProfilerSubentry.base = PTuple;
+        PStructPasswd.base = PTuple;
+        PStructRusage.base = PTuple;
+        PVersionInfo.base = PTuple;
+        PFlags.base = PTuple;
+        PFloatInfo.base = PTuple;
+        PIntInfo.base = PTuple;
+        PHashInfo.base = PTuple;
+        PThreadInfo.base = PTuple;
+        PUnraisableHookArgs.base = PTuple;
     }
 
     /* InteropLibrary messages */

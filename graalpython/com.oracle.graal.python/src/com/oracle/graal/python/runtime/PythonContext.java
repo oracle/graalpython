@@ -54,6 +54,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -81,6 +82,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
@@ -206,13 +208,14 @@ public final class PythonContext {
 
     private final PythonLanguage language;
     private PythonModule mainModule;
-    private final PythonCore core;
+    private final Python3Core core;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final List<AtExitHook> atExitHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
-    private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+    private final IDUtils idUtils = new IDUtils();
 
+    @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
     @CompilationFinal private NFIBz2Support nativeBz2lib;
 
@@ -256,7 +259,7 @@ public final class PythonContext {
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
-    private final PosixResources resources;
+    private PosixResources resources;
     private final AsyncHandler handler;
     private final AsyncHandler.SharedFinalizer sharedFinalizer;
 
@@ -269,15 +272,13 @@ public final class PythonContext {
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
         this.language = language;
         this.core = core;
         this.env = env;
-        this.resources = new PosixResources();
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
-        this.resources.setEnv(env);
         this.in = env.in();
         this.out = env.out();
         this.err = env.err();
@@ -296,9 +297,16 @@ public final class PythonContext {
         return pythonThreadStackSize.getAndSet(value);
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public long getNextGlobalId() {
-        return globalId.incrementAndGet();
+    public long getNextObjectId() {
+        return idUtils.getNextObjectId();
+    }
+
+    public long getNextObjectId(Object object) {
+        return idUtils.getNextObjectId(object);
+    }
+
+    public long getNextStringId(String string) {
+        return idUtils.getNextStringId(string);
     }
 
     public <T> T getOption(OptionKey<T> key) {
@@ -330,6 +338,10 @@ public final class PythonContext {
         return builtinsModule;
     }
 
+    public Object getPosixSupport() {
+        return posixSupport;
+    }
+
     public boolean isNativeAccessAllowed() {
         return env.isNativeAccessAllowed();
     }
@@ -353,6 +365,7 @@ public final class PythonContext {
         out = env.out();
         err = env.err();
         resources.setEnv(env);
+        posixSupport.setEnv(env);
         optionValues = PythonOptions.createOptionValuesStorage(newEnv);
     }
 
@@ -434,6 +447,7 @@ public final class PythonContext {
     }
 
     public void initialize() {
+        initalizePosixSupport();
         core.initialize(this);
         setupRuntimeInformation(false);
         core.postInitialize();
@@ -540,6 +554,36 @@ public final class PythonContext {
 
         applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
+    }
+
+    private void initalizePosixSupport() {
+        String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
+        PosixSupport result;
+        switch (option) {
+            case "java":
+                result = new EmulatedPosixSupport(this);
+                break;
+            case "native":
+                result = NFIPosixSupport.createNative(this);
+                break;
+            case "llvm":
+                result = NFIPosixSupport.createLLVM(this);
+                break;
+            default:
+                throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
+        }
+        // The resources field will be removed once all posix builtins go through PosixSupport
+        if (result instanceof PosixResources) {
+            resources = (PosixResources) result;
+        } else {
+            resources = new PosixResources();
+            resources.setEnv(env);
+        }
+        if (LoggingPosixSupport.isEnabled()) {
+            posixSupport = new LoggingPosixSupport(result);
+        } else {
+            posixSupport = result;
+        }
     }
 
     private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;

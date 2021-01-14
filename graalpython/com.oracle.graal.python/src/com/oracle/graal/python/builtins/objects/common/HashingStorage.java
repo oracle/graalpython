@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -79,9 +78,9 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
@@ -697,7 +696,7 @@ public abstract class HashingStorage {
                     ConditionProfile lengthTwoProfile, PRaiseNode raise, LookupAndCallBinaryNode getItemNode, IsBuiltinClassProfile isTypeErrorProfile,
                     IsBuiltinClassProfile errorProfile, HashingStorageLibrary lib) throws PException {
         Object it = iterableLib.getIteratorWithFrame(iterable, frame);
-        ArrayList<PSequence> elements = new ArrayList<>();
+        ArrayBuilder<PSequence> elements = new ArrayBuilder<>();
         boolean isStringKey = false;
         try {
             while (true) {
@@ -709,24 +708,24 @@ public abstract class HashingStorage {
                 int len = seqLenNode.execute(element);
 
                 if (lengthTwoProfile.profile(len != 2)) {
-                    throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, arrayListSize(elements), len);
+                    throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
                 }
 
                 // really check for Java String since PString can be subclassed
                 isStringKey = isStringKey || getItemNode.executeObject(frame, element, 0) instanceof String;
 
-                arrayListAdd(elements, element);
+                elements.add(element);
             }
         } catch (PException e) {
             if (isTypeErrorProfile.profileException(e, TypeError)) {
-                throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, arrayListSize(elements));
+                throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_DICT_UPDATE_SEQ, elements.size());
             } else {
                 e.expectStopIteration(errorProfile);
             }
         }
-        HashingStorage storage = storageSupplier.get(isStringKey, arrayListSize(elements) + kwargs.length);
-        for (int j = 0; j < arrayListSize(elements); j++) {
-            PSequence element = arrayListGet(elements, j);
+        HashingStorage storage = storageSupplier.get(isStringKey, elements.size() + kwargs.length);
+        for (int j = 0; j < elements.size(); j++) {
+            PSequence element = elements.get(j);
             Object key = getItemNode.executeObject(frame, element, 0);
             Object value = getItemNode.executeObject(frame, element, 1);
             storage = lib.setItem(storage, key, value);
@@ -737,18 +736,4 @@ public abstract class HashingStorage {
         return storage;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    private static PSequence arrayListGet(ArrayList<PSequence> elements, int j) {
-        return elements.get(j);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static boolean arrayListAdd(ArrayList<PSequence> elements, PSequence element) {
-        return elements.add(element);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static int arrayListSize(ArrayList<PSequence> elements) {
-        return elements.size();
-    }
 }

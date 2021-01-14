@@ -37,49 +37,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from _descriptor import make_named_tuple_class
 
-
-stat_result = make_named_tuple_class("stat_result", [
-    "st_mode", "st_ino", "st_dev", "st_nlink",
-    "st_uid", "st_gid", "st_size", "st_atime",
-    "st_mtime", "st_ctime"
-])
-stat_result.__qualname__ = 'stat_result'
-stat_result.__name__ = 'stat_result'
-stat_result.__module__ = 'os'
-stat_result.st_atime_ns = property(lambda s: int(s.st_atime * 1000))
-stat_result.st_mtime_ns = property(lambda s: int(s.st_mtime * 1000))
-
-old_stat = stat
-
-
-@__graalpython__.builtin
-def stat(filename, follow_symlinks=True):
-    return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
-
-
-__dir_entry_old_stat = DirEntry.stat
-def __dir_entry_stat(self, follow_symlinks=True):
-    return stat_result(__dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
-DirEntry.stat = __dir_entry_stat
-
-
-@__graalpython__.builtin
-def lstat(filename):
-    if not __graalpython__.is_native:
-        from sys import executable as graal_python_executable
-        if filename == graal_python_executable:
-            return stat_result((0,0,0,0,0,0,0,0,0,0))
-    return stat_result(old_stat(filename, False))
-
-
-old_fstat = fstat
-
-
-@__graalpython__.builtin
-def fstat(fd):
-    return stat_result(old_fstat(fd))
+# TODO lstat exception for graal_python_executable
+# @__graalpython__.builtin
+# def lstat(filename):
+#     if not __graalpython__.is_native:
+#         from sys import executable as graal_python_executable
+#         if filename == graal_python_executable:
+#             return stat_result((0,0,0,0,0,0,0,0,0,0))
+#     return legacy_stat_result(old_stat(filename, False))
 
 
 @__graalpython__.builtin
@@ -96,11 +62,6 @@ def fspath(path):
         return __fspath__()
     else:
         raise TypeError("expected str, bytes or os.PathLike object, not %r" % type(path))
-
-
-@__graalpython__.builtin
-def scandir(path):
-    return ScandirIterator(path)
 
 
 @__graalpython__.builtin
@@ -133,22 +94,4 @@ def WSTOPSIG(status):
     return 0
 
 
-uname_result = make_named_tuple_class("posix.uname_result", [
-    "sysname", "nodename", "release", "version", "machine"
-])
-old_uname = uname
-
-
-@__graalpython__.builtin
-def uname():
-    return uname_result(old_uname())
-
 error = OSError
-
-terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])
-
-old_get_terminal_size = get_terminal_size
-
-@__graalpython__.builtin
-def get_terminal_size(fd = None):
-    return terminal_size(old_get_terminal_size(fd))
