@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -419,10 +420,10 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInInt32(nativeWrapper)"}, replaces = "doWrapperToUInt32Pos")
         @SuppressWarnings("unused")
-        static int doWrapperToUInt32(Frame frame, PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
+        static int doWrapperToUInt32(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
                         @Cached ConditionProfile negativeProfile) {
-            return doIntToUInt32(frame, nativeWrapper.getInt(), signed, targetTypeSize, raiseNativeNode, negativeProfile);
+            return doIntToUInt32(nativeWrapper.getInt(), signed, targetTypeSize, raiseNativeNode, negativeProfile);
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInUInt64(nativeWrapper)"})
@@ -433,12 +434,12 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInInt64(nativeWrapper)"}, replaces = "doWrapperToUInt64Pos")
         @SuppressWarnings("unused")
-        static long doWrapperToUInt64(Frame frame, PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
+        static long doWrapperToUInt64(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
                         @Cached ConditionProfile negativeProfile) {
             long value = nativeWrapper.getLong();
             if (negativeProfile.profile(value < 0)) {
-                return raiseNegativeValue(frame, raiseNativeNode);
+                throw raiseNegativeValue(raiseNativeNode);
             }
             return value;
         }
@@ -457,11 +458,11 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
         @SuppressWarnings("unused")
-        static int doIntToUInt32(Frame frame, int value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
+        static int doIntToUInt32(int value, int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
                         @Cached ConditionProfile negativeProfile) {
             if (negativeProfile.profile(value < 0)) {
-                return raiseNegativeValue(frame, raiseNativeNode);
+                throw raiseNegativeValue(raiseNativeNode);
             }
             return value;
         }
@@ -480,25 +481,25 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
         @SuppressWarnings("unused")
-        static int doIntToUInt64(Frame frame, int value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
+        static int doIntToUInt64(int value, int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
                         @Cached ConditionProfile negativeProfile) {
             if (negativeProfile.profile(value < 0)) {
-                return raiseNegativeValue(frame, raiseNativeNode);
+                throw raiseNegativeValue(raiseNativeNode);
             }
             return value;
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doIntOther(Frame frame, @SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
+        static long doIntOther(@SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            throw raiseUnsupportedSize(raiseNativeNode, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        static long doLong4(Frame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseTooLarge(frame, raiseNativeNode, targetTypeSize);
+        static long doLong4(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            throw raiseTooLarge(raiseNativeNode, targetTypeSize);
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
@@ -515,11 +516,11 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
         @SuppressWarnings("unused")
-        static long doLongToUInt64(Frame frame, long value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
+        static long doLongToUInt64(long value, int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
                         @Cached ConditionProfile negativeProfile) {
             if (negativeProfile.profile(value < 0)) {
-                return raiseNegativeValue(frame, raiseNativeNode);
+                throw raiseNegativeValue(raiseNativeNode);
             }
             return value;
         }
@@ -530,54 +531,54 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doPInt(Frame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
+        static long doPInt(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            throw raiseUnsupportedSize(raiseNativeNode, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
         @TruffleBoundary
         static int doPIntTo32Bit(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             try {
                 if (signed != 0) {
                     return obj.intValueExact();
                 } else if (obj.bitLength() <= 32) { // investigate the use of NarrowBigIntegerNode
                                                     // (avoid the truffle boundary)
                     if (obj.isNegative()) {
-                        return raiseNegativeValue(raiseNativeNode);
+                        throw raiseNegativeValue(raiseNativeNode);
                     }
                     return obj.intValue();
                 }
             } catch (OverflowException e) {
                 // fall through
             }
-            return raiseTooLarge(raiseNativeNode, targetTypeSize);
+            throw raiseTooLarge(raiseNativeNode, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
         @TruffleBoundary
         static long doPIntTo64Bit(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
             try {
                 if (signed != 0) {
                     return obj.longValueExact();
                 } else if (obj.bitLength() <= 64) {
                     if (obj.isNegative()) {
-                        return raiseNegativeValue(raiseNativeNode);
+                        throw raiseNegativeValue(raiseNativeNode);
                     }
                     return obj.longValue();
                 }
             } catch (OverflowException e) {
                 // fall through
             }
-            return raiseTooLarge(raiseNativeNode, targetTypeSize);
+            throw raiseTooLarge(raiseNativeNode, targetTypeSize);
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doPInt(Frame frame, @SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
+        static long doPInt(@SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            throw raiseUnsupportedSize(raiseNativeNode, targetTypeSize);
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)", "!isInteger(obj)", "!isPInt(obj)"})
@@ -586,24 +587,16 @@ public abstract class CExtCommonNodes {
             return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
         }
 
-        private static int raiseTooLarge(PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
-            return raiseNativeNode.raiseIntWithoutFrame(-1, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        private static PException raiseTooLarge(PRaiseNode raiseNativeNode, long targetTypeSize) {
+            throw raiseNativeNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
-        private static int raiseTooLarge(Frame frame, PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
-            return raiseNativeNode.raiseInt(frame, -1, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        private static PException raiseUnsupportedSize(PRaiseNode raiseNativeNode, long targetTypeSize) {
+            throw raiseNativeNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
-        private static Integer raiseUnsupportedSize(Frame frame, PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        private static int raiseNegativeValue(PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseIntWithoutFrame(-1, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
-        }
-
-        private static int raiseNegativeValue(Frame frame, PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+        private static PException raiseNegativeValue(PRaiseNode raiseNativeNode) {
+            throw raiseNativeNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
         }
 
         static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {

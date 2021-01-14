@@ -2595,7 +2595,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 try {
                     return toSulongNode.execute(factory().createNativeVoidPtr(pointer, lib.asPointer(pointer)));
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.shouldNotReachHere(e);
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
             return toSulongNode.execute(factory().createNativeVoidPtr(pointer));
@@ -2606,6 +2606,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyLongAsVoidPtr extends PythonUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
+        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
 
         @Specialization
         static long doPointer(int n) {
@@ -2642,9 +2643,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return asPrimitiveNode.executeLong(frame, n, 0, Long.BYTES);
             } catch (UnexpectedResultException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
+                throw CompilerDirectives.shouldNotReachHere();
+            } catch (PException e) {
+                ensureTransformExcNode().execute(e);
+                return -1;
             }
+        }
+
+        private TransformExceptionToNativeNode ensureTransformExcNode() {
+            if (transformExceptionToNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
+            }
+            return transformExceptionToNativeNode;
         }
     }
 
