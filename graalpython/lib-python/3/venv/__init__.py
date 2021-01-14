@@ -183,30 +183,41 @@ class EnvBuilder:
         create_if_needed(binpath)
         return context
 
+
     def _install_compilers(self, context):
-        # Put the Graal LLVM compiler tools on the path
-        r = subprocess.check_output(sys.executable + " -llvm-path", shell=True).decode("utf8")
-        llvm_bin_dir = r.splitlines()[-1].strip()
-        if not os.path.isdir(llvm_bin_dir):
-            print("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
-        llvm_bins = {
-            "llvm-ar": ("ar",),
+        """Puts the Graal LLVM compiler tools on the path"""
+        
+        # Table of well-known LLVM tools that must be queried by a variable name.
+        llvm_tools = {
+            "AR": ("ar",),
+            "RANLIB": ("ranlib",),
+            "NM": ("nm",),
+            "LD": ("ld.lld", "ld", "lld"),
+            "CC": ("clang", "cc"),
+            "CXX": ("clang++", "c++"),
+        }
+        # Table of additional LLVM tools to use if they are available.
+        _llvm_bins = {
             "llvm-as": ("as",),
-            "llvm-ranlib": ("ranlib",),
-            "llvm-nm": ("nm",),
-            "ld.lld": ("ld.lld", "ld", "lld"),
-            "clang": ("clang", "cc"),
-            "clang++": ("clang++", "c++"),
             "clang-cl": ("cl",),
             "clang-cpp": ("cpp",),
         }
         bin_dir = os.path.join(context.env_dir, context.bin_name)
-        for binary in llvm_bins:
-            llvm_bin = os.path.join(llvm_bin_dir, binary)
-            for name in llvm_bins[binary]:
-                dest = os.path.join(bin_dir, name)
-                if not os.path.exists(dest):
-                    os.symlink(llvm_bin, dest)
+        def create_symlinks(table, resolver):
+            for tool_var in table:
+                tool_path = resolver(tool_var)
+                if os.path.exists(tool_path):
+                    for name in llvm_tools[tool_var]:
+                        dest = os.path.join(bin_dir, name)
+                        if not os.path.exists(dest):
+                            os.symlink(tool_path, dest)
+        
+        create_symlinks(llvm_tools, __graalpython__.get_toolchain_tool_path)
+        # NOTE: function 'get_toolcahin_paths' returns a tuple
+        llvm_path = __graalpython__.get_toolchain_paths("PATH")
+        if llvm_path and llvm_path[0]:
+            create_symlinks(_llvm_bins, lambda binary_name: os.path.join(llvm_path[0], binary_name))
+
 
     def _patch_shebang(self, context):
         # Truffle change: we need to patch the pip/pip3 (and maybe other) 
