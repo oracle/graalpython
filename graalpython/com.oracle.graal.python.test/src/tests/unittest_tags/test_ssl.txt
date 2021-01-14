@@ -34,6 +34,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_compression_disabled
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_default_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ecdh_curve
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_handshake_timeout
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_min_max_version_mismatch
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_min_max_version_sslv3
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_min_max_version_tlsv1_1
@@ -44,6 +45,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_tlsv1
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_tlsv1_1
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_tlsv1_2
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_rude_shutdown
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_selected_alpn_protocol_if_server_uses_alpn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_alert
