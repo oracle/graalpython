@@ -43,7 +43,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "_SSLContext", constructsClass = PythonBuiltinClassType.PSSLContext, minNumOfPositionalArgs = 2, parameterNames = {"type", "protocol"})
-    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class SSLContextNode extends PythonBinaryClinicBuiltinNode {
         @Specialization

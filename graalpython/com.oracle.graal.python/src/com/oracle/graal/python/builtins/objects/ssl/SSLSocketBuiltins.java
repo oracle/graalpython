@@ -21,8 +21,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -42,9 +43,9 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "read", minNumOfPositionalArgs = 1, parameterNames = {"$self", "len", "buffer"})
-    @ArgumentClinic(name = "len", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @ArgumentClinic(name = "len", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class ReadNode extends PythonTernaryBuiltinNode {
+    abstract static class ReadNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(guards = "isNoValue(buffer)")
         Object read(PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer) {
             if (len < 0) {
@@ -81,6 +82,11 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object error(Object self, Object len, Object buffer) {
             throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLSocketBuiltinsClinicProviders.ReadNodeClinicProviderGen.INSTANCE;
         }
     }
 
