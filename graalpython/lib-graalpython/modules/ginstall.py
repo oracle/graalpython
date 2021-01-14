@@ -338,21 +338,9 @@ def known_packages():
                 scipy_build_env[key] = os.environ[key]
         
         if sys.implementation.name == "graalpython":
-            venv_path = os.environ.get("VIRTUAL_ENV", None)
-            if not venv_path:
-                xit("SciPy can only be installed within a virtual env.")
-
-            # currently we need 'ar', 'ranlib', 'ld', and 'ld.lld'
+            if not os.environ.get("VIRTUAL_ENV", None):
+                xit("SciPy can only be installed within a venv.")
             from distutils.sysconfig import get_config_var
-            
-            llvm_tools = {"AR": ("ar",), "RANLIB": ("ranlib",), "LD": ("ld.lld", "ld")}
-            for llvm_tool in llvm_tools.keys():
-                 for name in llvm_tools[llvm_tool]:
-                    dest = os.path.join(venv_path, "bin", name)
-                    if os.path.exists(dest):
-                        os.unlink(dest)
-                    os.symlink(get_config_var(llvm_tool), dest)
-
             scipy_build_env["LDFLAGS"] = get_config_var("LDFLAGS")
 
         # install dependencies
