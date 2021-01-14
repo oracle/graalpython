@@ -107,6 +107,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -327,6 +328,7 @@ public class GraalHPyMemberAccessNodes {
 
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CExtAsPythonObjectNode asPythonObjectNode;
+        @Child private PForeignToPTypeNode fromForeign;
         @Child private ReadAttributeFromObjectNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
@@ -339,6 +341,9 @@ public class GraalHPyMemberAccessNodes {
             this.accessor = accessor;
             this.offset = offset;
             this.asPythonObjectNode = asPythonObjectNode;
+            if (asPythonObjectNode == null) {
+                fromForeign = PForeignToPTypeNode.create();
+            }
         }
 
         @Specialization
@@ -357,7 +362,9 @@ public class GraalHPyMemberAccessNodes {
             if (asPythonObjectNode != null) {
                 return asPythonObjectNode.execute(hPyContext, nativeResult);
             }
-            return nativeResult;
+            // We still need to use 'PForeignToPTypeNode' to ensure that we do not introduce unknown
+            // values into our value space.
+            return fromForeign.executeConvert(nativeResult);
         }
 
         private PCallHPyFunction ensureCallHPyFunctionNode() {
