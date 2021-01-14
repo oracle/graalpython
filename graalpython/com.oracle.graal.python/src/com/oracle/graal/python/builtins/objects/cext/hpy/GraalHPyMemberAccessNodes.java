@@ -81,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyF
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativePrimitiveNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNoneNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetGetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterToSulongNodeGen;
@@ -186,6 +185,7 @@ public class GraalHPyMemberAccessNodes {
             case HPY_MEMBER_USHORT:
             case HPY_MEMBER_STRING_INPLACE:
             case HPY_MEMBER_HPYSSIZET:
+            case HPY_MEMBER_NONE:
                 // no conversion needed
                 return null;
             case HPY_MEMBER_BOOL:
@@ -200,8 +200,6 @@ public class GraalHPyMemberAccessNodes {
             case HPY_MEMBER_OBJECT:
             case HPY_MEMBER_OBJECT_EX:
                 return HPyAsPythonObjectNodeGen.create();
-            case HPY_MEMBER_NONE:
-                return HPyAsNoneNodeGen.create();
         }
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
@@ -360,11 +358,14 @@ public class GraalHPyMemberAccessNodes {
                 throw raise(PythonBuiltinClassType.SystemError, "Attempting to read from offset %d but object '%s' has no associated native space.", offset, self);
             }
 
-            // This will call pure C functions that won't ever access the Python stack nor the
-            // exception state. So, we don't need to setup an indirect call.
-            Object nativeResult = ensureCallHPyFunctionNode().call(hPyContext, accessor, nativeSpacePtr, (long) offset);
-            if (asPythonObjectNode != null) {
-                return asPythonObjectNode.execute(hPyContext, nativeResult);
+            Object nativeResult = PNone.NONE;
+            if (accessor != null) {
+                // This will call pure C functions that won't ever access the Python stack nor the
+                // exception state. So, we don't need to setup an indirect call.
+                nativeResult = ensureCallHPyFunctionNode().call(hPyContext, accessor, nativeSpacePtr, (long) offset);
+                if (asPythonObjectNode != null) {
+                    return asPythonObjectNode.execute(hPyContext, nativeResult);
+                }
             }
             // We still need to use 'PForeignToPTypeNode' to ensure that we do not introduce unknown
             // values into our value space.

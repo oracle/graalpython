@@ -1188,19 +1188,6 @@ public class GraalHPyNodes {
         }
     }
 
-    /**
-     * A special and simple node for converting everything to {@code None}. This is needed for
-     * reading members of type {@code HPyMember_None}.
-     */
-    @GenerateUncached
-    public abstract static class HPyAsNone extends CExtToJavaNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object doGeneric(GraalHPyContext hpyContext, Object value) {
-            return PNone.NONE;
-        }
-    }
-
     @GenerateUncached
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
 
