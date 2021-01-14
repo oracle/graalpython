@@ -220,6 +220,7 @@ public class Python3Parser extends Parser {
 	    }
 		private PythonSSTNodeFactory factory;
 		private ParserMode parserMode;
+	        private int optimizeLevel = 0;
 		private ScopeEnvironment scopeEnvironment;
 		private LoopState loopState;
 
@@ -298,6 +299,25 @@ public class Python3Parser extends Parser {
 
 	    public void setParserMode(ParserMode parserMode) {
 	        this.parserMode = parserMode;
+	    }
+
+	    public void setOptimizeLevel(int optimizeLevel) {
+	        this.optimizeLevel = optimizeLevel;
+	    }
+
+	    private SSTNode optimize(SSTNode node) {
+	        if (optimizeLevel > 1) {
+	            if (node instanceof BlockSSTNode) {
+	                BlockSSTNode block  = (BlockSSTNode)node;
+	                SSTNode[] statements = block.getStatements();
+	                if (statements.length > 0 && statements[0] instanceof ExpressionStatementSSTNode
+	                        && ((ExpressionStatementSSTNode)statements[0]).getExpression() instanceof StringLiteralSSTNode) {
+	                    //optimize >=2 -> documentation needs to be remove from the block
+	                    return new BlockSSTNode(Arrays.copyOfRange(statements, 1, statements.length));
+	                }
+	            }
+	        }
+	        return node;
 	    }
 
 	    protected static class PythonRecognitionException extends RecognitionException{
@@ -492,7 +512,7 @@ public class Python3Parser extends Parser {
 			}
 			setState(180);
 			match(EOF);
-			 _localctx.result =  new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex(_localctx),  getLastIndex(_localctx)); 
+			 _localctx.result =  optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex(_localctx),  getLastIndex(_localctx))); 
 
 			            if (_localctx.interactive || _localctx.curInlineLocals != null) {
 			               scopeEnvironment.popScope();
@@ -628,8 +648,8 @@ public class Python3Parser extends Parser {
 			match(EOF);
 			 
 			            Token stopToken = (_localctx.stmt!=null?(_localctx.stmt.stop):null);
-			            _localctx.result =  new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex(_localctx), 
-			                stopToken != null ?  getStopIndex(stopToken) : getLastIndex(_localctx)); 
+			            _localctx.result =  optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex(_localctx), 
+			                stopToken != null ?  getStopIndex(stopToken) : getLastIndex(_localctx))); 
 			 
 			           scopeEnvironment.popScope(); 
 			        
@@ -769,7 +789,7 @@ public class Python3Parser extends Parser {
 			}
 			setState(214);
 			match(EOF);
-			 _localctx.result =  new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex(_localctx),  getLastIndex(_localctx)); 
+			 _localctx.result =  optimize(new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex(_localctx),  getLastIndex(_localctx))); 
 
 			            scopeEnvironment.popScope();
 				
@@ -1149,7 +1169,7 @@ public class Python3Parser extends Parser {
 			setState(274);
 			_localctx.s = suite();
 			 
-			            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, _localctx.parameters.result, _localctx.s.result, getStartIndex(_localctx), getStopIndex(_localctx.s));
+			            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, _localctx.parameters.result, optimize(_localctx.s.result), getStartIndex(_localctx), getStopIndex(_localctx.s));
 			            scopeEnvironment.popScope();
 			            loopState = savedLoopState;
 			            push(funcDef);
@@ -2882,7 +2902,7 @@ public class Python3Parser extends Parser {
 				                    if (value instanceof StarSSTNode) {
 				                        throw new PythonRecognitionException("can't use starred expression here", this, _input, _localctx, _localctx.start);
 				                    }
-				                    if (start == start()) {
+				                    if (start == start()) { 
 				                        push(new ExpressionStatementSSTNode(value));
 				                    } else {
 				                        push(factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex(_localctx), rhsStopIndex));
@@ -4145,7 +4165,11 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 push(new AssertSSTNode(_localctx.e.result, message, getStartIndex(_localctx), getLastIndex(_localctx))); 
+			   
+			            if (optimizeLevel < 1) {
+			                push(new AssertSSTNode(_localctx.e.result, message, getStartIndex(_localctx), getLastIndex(_localctx))); 
+			            }
+			        
 			}
 		}
 		catch (RecognitionException re) {
@@ -8130,7 +8154,7 @@ public class Python3Parser extends Parser {
 			match(COLON);
 			setState(1561);
 			_localctx.suite = suite();
-			 push(factory.createClassDefinition((_localctx.NAME!=null?_localctx.NAME.getText():null), baseClasses, _localctx.suite.result, getStartIndex(_localctx), getStopIndex((_localctx.suite!=null?(_localctx.suite.stop):null)))); 
+			 push(factory.createClassDefinition((_localctx.NAME!=null?_localctx.NAME.getText():null), baseClasses, optimize(_localctx.suite.result), getStartIndex(_localctx), getStopIndex((_localctx.suite!=null?(_localctx.suite.stop):null)))); 
 			 scopeEnvironment.popScope(); 
 			 loopState = savedLoopState; 
 			}

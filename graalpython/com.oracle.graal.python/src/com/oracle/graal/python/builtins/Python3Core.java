@@ -737,7 +737,7 @@ public final class Python3Core implements PythonCore {
     private void loadFile(String s, String prefix) {
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
-            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null, null));
+            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         PythonModule mod = lookupBuiltinModule(s);

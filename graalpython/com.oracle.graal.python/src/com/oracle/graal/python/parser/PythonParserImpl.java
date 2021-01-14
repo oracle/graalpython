@@ -108,7 +108,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     @Override
     public SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory) {
         Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstring-expr>").build();
-        return parseWithANTLR(ParserMode.FStringExpression, PythonLanguage.getCore(), nodeFactory, source, null,
+        return parseWithANTLR(ParserMode.FStringExpression, 0, PythonLanguage.getCore(), nodeFactory, source, null,
                         null).antlrResult;
     }
 
@@ -137,7 +137,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         if (!source.equals(lastParserResult.source)) {
             // we need to parse the source again
             PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source, this);
-            lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null, null);
+            lastParserResult = parseWithANTLR(ParserMode.File, 0, PythonLanguage.getCore(), sstFactory, source, null, null);
         }
         if (rootNode instanceof ModuleRootNode) {
             // serialize whole module
@@ -257,7 +257,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @Override
-    public Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
+    public Node parse(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
         if (logFiles) {
             if (source.getPath() == null) {
                 System.out.println("Parsing source without path " + source.getCharacters().length());
@@ -272,10 +272,10 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
 
         Node result;
         if (timeStatistics <= 0) {
-            result = parseN(mode, errors, source, currentFrame, argumentNames);
+            result = parseN(mode, optimizeLevel, errors, source, currentFrame, argumentNames);
         } else {
             long start = System.currentTimeMillis();
-            result = parseN(mode, errors, source, currentFrame, argumentNames);
+            result = parseN(mode, optimizeLevel, errors, source, currentFrame, argumentNames);
             long end = System.currentTimeMillis();
             if (timeStatistics > 0) {
                 timeInParser = timeInParser + (end - start);
@@ -291,7 +291,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         return result;
     }
 
-    public CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame, String[] argumentNames) {
+    public CacheItem parseWithANTLR(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame, String[] argumentNames) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         String sourceText = source.getCharacters().toString();
         // Preprocessing
@@ -320,6 +320,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         Python3Parser parser = getPython3Parser(sourceText);
         parser.setFactory(sstFactory);
         parser.setParserMode(mode);
+        parser.setOptimizeLevel(optimizeLevel);
         SSTNode parserSSTResult = null;
 
         try {
@@ -376,9 +377,9 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @TruffleBoundary
-    public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
+    public Node parseN(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
         PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source, this);
-        CacheItem parserSSTResult = parseWithANTLR(mode, errors, sstFactory, source, currentFrame, argumentNames);
+        CacheItem parserSSTResult = parseWithANTLR(mode, optimizeLevel, errors, sstFactory, source, currentFrame, argumentNames);
         try {
             return sstFactory.createParserResult(parserSSTResult.antlrResult, mode, currentFrame);
         } catch (Exception e) {

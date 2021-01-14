@@ -127,9 +127,11 @@ public interface PythonParser {
      * according the TruffleLanguage.ParsingRequest can be influence the result of parsing if there
      * are provided argumentsNames.
      *
+     * @param optimizeLevel The level corresponds to optimization level from CPython 0 - default -
+     *            no optimization, 1 - skip asserts, 2 - skip module and functions documentations
      * @return {@link PNode} for {@link ParserMode#InlineEvaluation}, and otherwise {@link RootNode}
      */
-    Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] arguments);
+    Node parse(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, Frame currentFrame, String[] arguments);
 
     /**
      * Check if an expression can be parsed as an identifier
