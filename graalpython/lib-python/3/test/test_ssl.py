@@ -3402,6 +3402,8 @@ class ThreadedTests(unittest.TestCase):
 
     def test_socketserver(self):
         """Using socketserver to create and manage SSL connections."""
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("missing threading support")
         server = make_https_server(self, certfile=SIGNED_CERTFILE)
         # try to connect
         if support.verbose:
