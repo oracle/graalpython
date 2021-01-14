@@ -162,6 +162,124 @@ public class SSLContextBuiltins extends PythonBuiltins {
 	}
     }
 
+    @Builtin(name = "load_verify_locations", minNumOfPositionalArgs = 1, parameterNames = {"$self", "cafile", "capath", "cadata"})
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
+        @Specialization
+        Object load(PSSLContext self, Object cafile, Object capath, Object cadata) {
+	    // TODO
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "load_cert_chain", minNumOfPositionalArgs = 2, parameterNames = {"$self", "certfile", "keyfile", "password"})
+    @ArgumentClinic(name = "certfile", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "keyfile", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "password", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"\"", useDefaultForNone = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class LoadCertChainNode extends PythonQuaternaryClinicBuiltinNode {
+
+        private static final String END_CERTIFICATE = "END CERTIFICATE";
+        private static final String BEGIN_CERTIFICATE = "BEGIN CERTIFICATE";
+        private static final String END_PRIVATE_KEY = "END PRIVATE KEY";
+        private static final String BEGIN_PRIVATE_KEY = "BEGIN PRIVATE KEY";
+
+        @Specialization
+        Object load(VirtualFrame frame, PSSLContext self, String certfile, String keyfile, String password) {
+            // TODO trufflefile ?
+            File certPem = new File(certfile);
+            if (!certPem.exists()) {
+                throw raiseOSError(frame, OSErrorEnum.ENOENT);
+            }
+            File pkPem = "".equals(keyfile) ? certPem : new File(keyfile);
+
+            try {
+                // TODO: preliminary implementation - import and convert PEM format to java keystore
+                X509Certificate[] cert = getCertificates(certPem);
+                KeyStore keystore = KeyStore.getInstance("JKS");
+                keystore.load(null);
+                PrivateKey key = getPrivateKey(pkPem);
+                keystore.setKeyEntry(pkPem.getName(), key, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, cert);
+
+                KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+                kmf.init(keystore, password.toCharArray());
+                KeyManager[] km = kmf.getKeyManagers();
+                self.getContext().init(km, null, null);
+            } catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | InvalidKeySpecException | UnrecoverableKeyException | KeyManagementException ex) {
+                throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, ex.getMessage());
+            } catch (IOException ex) {
+                // TODO
+                throw raise(ValueError, ex.getMessage());
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.LoadCertChainNodeClinicProviderGen.INSTANCE;
+        }
+
+        private X509Certificate[] getCertificates(File pem) throws IOException, CertificateException {
+            try (BufferedReader r = new BufferedReader(new FileReader(pem))) {
+                String line;
+                while ((line = r.readLine()) != null) {
+                    if (line.contains(BEGIN_CERTIFICATE)) {
+                        break;
+                    }
+                }
+                if (line == null) {
+                    // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
+                    // (_ssl.c:3991)"
+                    throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
+                }
+                StringBuilder sb = new StringBuilder();
+                List<X509Certificate> res = new ArrayList<>();
+                while ((line = r.readLine()) != null) {
+                    if (line.contains(END_CERTIFICATE)) {
+                        String hexString = sb.toString();
+                        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+                        X509Certificate cert = (X509Certificate) factory.generateCertificate(new ByteArrayInputStream(DatatypeConverter.parseBase64Binary(hexString)));
+                        res.add(cert);
+                        sb = new StringBuilder();
+                    } else {
+                        sb.append(line);
+                    }
+
+                }
+                return res.toArray(new X509Certificate[res.size()]);
+            }
+        }
+
+        private PrivateKey getPrivateKey(File pkPem) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+            try (BufferedReader r = new BufferedReader(new FileReader(pkPem))) {
+                String line;
+                while ((line = r.readLine()) != null) {
+                    if (line.contains(BEGIN_PRIVATE_KEY)) {
+                        break;
+                    }
+                }
+                if (line == null) {
+                    // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
+                    // (_ssl.c:3991)"
+                    throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no private key found in keyfile/certfile");
+                }
+                StringBuilder sb = new StringBuilder();
+                while ((line = r.readLine()) != null) {
+                    if (line.contains(END_PRIVATE_KEY)) {
+                        break;
+                    }
+                    sb.append(line);
+                }
+                byte[] bytes = DatatypeConverter.parseBase64Binary(sb.toString());
+                PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
+                final KeyFactory factory = KeyFactory.getInstance("RSA");
+                return (RSAPrivateKey) factory.generatePrivate(spec);
+            }
+        }
+    }
+
     @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
     @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "server_hostname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "null", useDefaultForNone = true)

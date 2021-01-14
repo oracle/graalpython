@@ -665,7 +665,8 @@ public abstract class ErrorMessages {
 
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
-
+    public static final String SSL_PEM_LIB_S = "[SSL] PEM lib %s";
+    
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
     public static final String WHILE_S_DATA = "while %s data";

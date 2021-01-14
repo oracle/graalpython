@@ -87,6 +87,7 @@ public final class PythonUtils {
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int[] EMPTY_INT_ARRAY = new int[0];
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
+    public static final char[] EMPTY_CHAR_ARRAY = new char[0];
 
     /**
      * Executes System.arraycopy and puts all exceptions on the slow path.
