@@ -316,7 +316,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
                 // Convert to seconds
-                return (double) miliseconds / 1000.0;
+                return miliseconds / 1000.0;
             } catch (IOException e) {
                 throw raise(OSError);
             }
