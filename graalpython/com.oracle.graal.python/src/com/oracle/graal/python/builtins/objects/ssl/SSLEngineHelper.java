@@ -1,16 +1,19 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLWantReadError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLWantWriteError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLZeroReturnError;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ByteChannel;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
+import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -61,28 +64,30 @@ public class SSLEngineHelper {
             }
         }
         SSLEngine engine = socket.getEngine();
-        SocketChannel javaSocket = socket.getSocket().getSocket();
+        ByteChannel javaSocket = null;
+        PSocket pSocket = socket.getSocket();
+        if (pSocket != null) {
+            if (pSocket.getSocket() != null) {
+                javaSocket = pSocket.getSocket();
+            } else {
+                // TODO what now? It could be ServerSocket
+            }
+        }
         // Whether we can write directly to targetBuffer
         boolean writeDirectlyToTarget = true;
         boolean hanshakeComplete = socket.isHandshakeComplete();
+        int netBufferSize = engine.getSession().getPacketBufferSize();
+        boolean currentlyWriting = writing;
+        boolean needToObtainMoreInput = false;
         try {
-            int netBufferSize = engine.getSession().getPacketBufferSize();
-            boolean currentlyWriting = writing;
-            boolean needsRecv = false;
+            // Flush output that didn't get written in the last call (for non-blocking)
+            emitOutput(node, networkOutboundBIO, javaSocket);
             // TODO check engine.isInboundDone/engine.isOutboundDone
             while (!hanshakeComplete ||
                             (writing ? appInput.hasRemaining() : targetBuffer.hasRemaining())) {
-                if (needsRecv) {
-                    // Network input
-                    networkInboundBIO.ensureWriteCapacity(netBufferSize);
-                    ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
-                    try {
-                        // TODO direct use of socket
-                        javaSocket.read(writeBuffer);
-                    } finally {
-                        networkInboundBIO.applyWrite(writeBuffer);
-                    }
-                    needsRecv = false;
+                if (needToObtainMoreInput) {
+                    obtainMoreInput(node, networkInboundBIO, javaSocket, netBufferSize);
+                    needToObtainMoreInput = false;
                 }
                 SSLEngineResult result;
                 if (currentlyWriting) {
@@ -124,19 +129,10 @@ public class SSLEngineHelper {
                         writeDirectlyToTarget = false;
                         break;
                     case BUFFER_UNDERFLOW:
-                        needsRecv = true;
+                        needToObtainMoreInput = true;
                         break;
                     case OK:
-                        // Network output
-                        if (networkOutboundBIO.getPending() > 0) {
-                            ByteBuffer readBuffer = networkOutboundBIO.getBufferForReading();
-                            try {
-                                // TODO direct use of socket
-                                javaSocket.write(readBuffer);
-                            } finally {
-                                networkOutboundBIO.applyRead(readBuffer);
-                            }
-                        }
+                        emitOutput(node, networkOutboundBIO, javaSocket);
                         switch (result.getHandshakeStatus()) {
                             case NEED_TASK:
                                 hanshakeComplete = false;
@@ -177,5 +173,45 @@ public class SSLEngineHelper {
         assert !appInput.hasRemaining();
         // TODO handle other socket errors (NotYetConnected)
         // TODO handle OOM
+    }
+
+    private static void obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, ByteChannel javaSocket, int netBufferSize) throws IOException {
+        if (javaSocket == null) {
+            // MemoryBIO input
+            throw node.raise(SSLWantReadError, ErrorMessages.SSL_WANT_READ);
+        }
+        // Network input
+        networkInboundBIO.ensureWriteCapacity(netBufferSize);
+        ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
+        try {
+            // TODO direct use of socket
+            int readBytes = javaSocket.read(writeBuffer);
+            // TODO if (readBytes < 0)
+            if (readBytes == 0) {
+                throw node.raise(SSLWantReadError, ErrorMessages.SSL_WANT_READ);
+            }
+        } finally {
+            networkInboundBIO.applyWrite(writeBuffer);
+        }
+    }
+
+    private static void emitOutput(PNodeWithRaise node, MemoryBIO networkOutboundBIO, ByteChannel javaSocket) throws IOException {
+        if (networkOutboundBIO.getPending() > 0) {
+            if (javaSocket == null) {
+                // MemoryBIO outut
+                throw node.raise(SSLWantWriteError, ErrorMessages.SSL_WANT_WRITE);
+            }
+            // Network output
+            ByteBuffer readBuffer = networkOutboundBIO.getBufferForReading();
+            try {
+                // TODO direct use of socket
+                int writtenBytes = javaSocket.write(readBuffer);
+                if (writtenBytes == 0) {
+                    throw node.raise(SSLWantWriteError, ErrorMessages.SSL_WANT_WRITE);
+                }
+            } finally {
+                networkOutboundBIO.applyRead(readBuffer);
+            }
+        }
     }
 }

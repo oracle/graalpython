@@ -669,6 +669,8 @@ public abstract class ErrorMessages {
     
     public static final String HANDSHAKE_NOT_DONE_YET = "handshake not done yet";
     public static final String S_CHANNEL_BINDING_NOT_IMPLEMENTED = "'%s' channel binding type not implemented";
+    public static final String SSL_WANT_READ = "The operation did not complete (read)";
+    public static final String SSL_WANT_WRITE = "The operation did not complete (write)";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
