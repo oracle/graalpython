@@ -1,8 +1,8 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
-import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import javax.net.ssl.SSLContext;
 
+import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
@@ -11,6 +11,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     private final SSLContext context;
     private boolean checkHostname;
     private int verifyMode;
+    private String[] ciphers;
 
     public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, SSLContext context) {
         super(cls, instanceShape);
@@ -44,4 +45,11 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.verifyMode = verifyMode;
     }
 
+    public String[] getCiphers() {
+        return ciphers;
+    }
+
+    public void setCiphers(String[] ciphers) {
+        this.ciphers = ciphers;
+    }
 }

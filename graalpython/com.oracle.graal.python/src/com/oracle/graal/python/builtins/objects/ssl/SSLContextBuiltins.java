@@ -1,26 +1,44 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.security.KeyFactory;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.xml.bind.DatatypeConverter;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -41,26 +59,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.security.KeyFactory;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.xml.bind.DatatypeConverter;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -137,10 +135,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getVerifyMode();
         }
 
-	@Specialization(guards = "canBeInteger(value)", limit = "3")
+        @Specialization(guards = "canBeInteger(value)", limit = "3")
         Object set(PSSLContext self, Object value,
-	  @CachedLibrary("value") PythonObjectLibrary lib) {
-	    int mode = lib.asSize(value);
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            int mode = lib.asSize(value);
             if (mode == SSLModuleBuiltins.SSL_CERT_NONE && self.getCheckHostname()) {
                 throw raise(ValueError, ErrorMessages.CANNOT_SET_VERIFY_MODE_TO_CERT_NONE);
             }
@@ -154,12 +152,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     throw raise(ValueError, ErrorMessages.INVALID_VALUE_FOR_VERIFY_MODE);
             }
         }
-	
-	@SuppressWarnings("unused")
+
+        @SuppressWarnings("unused")
         @Specialization(guards = "!canBeInteger(value)")
         Object set(PSSLContext self, Object value) {
-	    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);	    
-	}
+            throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
+        }
     }
 
     @Builtin(name = "load_verify_locations", minNumOfPositionalArgs = 1, parameterNames = {"$self", "cafile", "capath", "cadata"})
@@ -168,7 +166,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(PSSLContext self, Object cafile, Object capath, Object cadata) {
-	    // TODO
+            // TODO
             return PNone.NONE;
         }
     }
@@ -280,6 +278,36 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "set_ciphers", minNumOfPositionalArgs = 2, parameterNames = {"$self", "cipherlist"})
+    @ArgumentClinic(name = "cipherlist", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    abstract static class SetCiphers extends PythonClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object setCiphers(PSSLContext self, String cipherlist) {
+            String[] ciphers = cipherlist.split(":");
+            // TODO fix this
+            // @formatter:off
+            /*
+            // Try creating an engine to verify the list is valid
+            try {
+                SSLEngine engine = self.getContext().createSSLEngine();
+                engine.setEnabledCipherSuites(ciphers);
+            } catch (IllegalArgumentException e) {
+                throw raise(SSLError, ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+            }
+            self.setCiphers(ciphers);
+             */
+            // @formatter:on
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.SetCiphersClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
     @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "server_hostname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "null", useDefaultForNone = true)
@@ -296,14 +324,16 @@ public class SSLContextBuiltins extends PythonBuiltins {
             // TODO hostname
             // TODO hostname encode as IDNA?
             // TODO hostname can be null
-            SSLContext javaContext = context.getContext();
-            return factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, sock, createSSLEngine(javaContext, !serverSide));
+            return factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, sock, createSSLEngine(context, !serverSide));
         }
 
         @TruffleBoundary
-        private static SSLEngine createSSLEngine(SSLContext javaContext, boolean clientMode) {
-            SSLEngine engine = javaContext.createSSLEngine();
+        private static SSLEngine createSSLEngine(PSSLContext context, boolean clientMode) {
+            SSLEngine engine = context.getContext().createSSLEngine();
             engine.setUseClientMode(clientMode);
+            if (context.getCiphers() != null) {
+                engine.setEnabledCipherSuites(context.getCiphers());
+            }
             return engine;
         }
 

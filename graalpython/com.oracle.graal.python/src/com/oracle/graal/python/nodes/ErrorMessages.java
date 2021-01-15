@@ -666,7 +666,7 @@ public abstract class ErrorMessages {
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
     public static final String SSL_PEM_LIB_S = "[SSL] PEM lib %s";
-    
+    public static final String NO_CIPHER_CAN_BE_SELECTED = "No cipher can be selected.";
     public static final String HANDSHAKE_NOT_DONE_YET = "handshake not done yet";
     public static final String S_CHANNEL_BINDING_NOT_IMPLEMENTED = "'%s' channel binding type not implemented";
     public static final String SSL_WANT_READ = "The operation did not complete (read)";
