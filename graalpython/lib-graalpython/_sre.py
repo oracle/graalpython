@@ -264,14 +264,9 @@ class SRE_Pattern():
             try:
                 self.__compiled_regexes[(pattern, flags)] = tregex_compile_internal(pattern, flags, fallback_compiler)
             except ValueError as e:
-                message = str(e)
-                boundary = message.rfind(" at position ")
-                if boundary == -1:
-                    raise error(message, pattern)
-                else:
-                    position = int(message[boundary + len(" at position "):])
-                    message = message[:boundary]
-                    raise error(message, pattern, position)
+                if len(e.args) == 2:
+                    raise error(e.args[0], pattern, e.args[1]) from None
+                raise
         return self.__compiled_regexes[(pattern, flags)]
 
 
