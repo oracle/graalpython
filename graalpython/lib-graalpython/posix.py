@@ -49,22 +49,6 @@
 
 
 @__graalpython__.builtin
-def fspath(path):
-    """Return the file system path representation of the object.
-
-    If the object is str or bytes, then allow it to pass through as-is. If the
-    object defines __fspath__(), then return the result of that method. All other
-    types raise a TypeError."""
-    if isinstance(path, str) or isinstance(path, bytes):
-        return path
-    __fspath__ = getattr(path, "__fspath__", None)
-    if __fspath__:
-        return __fspath__()
-    else:
-        raise TypeError("expected str, bytes or os.PathLike object, not %r" % type(path))
-
-
-@__graalpython__.builtin
 def WIFSIGNALED(status):
     return status > 128
 

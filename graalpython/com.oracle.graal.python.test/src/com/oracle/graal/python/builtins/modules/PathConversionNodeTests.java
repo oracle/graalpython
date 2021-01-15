@@ -323,6 +323,13 @@ public class PathConversionNodeTests {
     }
 
     @Test
+    public void fspathBytesLike() {
+        expectedException.expect(PException.class);
+        expectedException.expectMessage("TypeError: expected C.__fspath__() to return str or bytes, not bytearray");
+        call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return bytearray(b'abc')\nC()"));
+    }
+
+    @Test
     public void unsupportedType1() {
         expectedException.expect(PException.class);
         expectedException.expectMessage("TypeError: fun: arg should be string, bytes, os.PathLike, integer or None, not float");

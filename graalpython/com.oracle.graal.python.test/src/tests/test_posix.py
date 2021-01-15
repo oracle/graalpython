@@ -185,6 +185,37 @@ class PosixTests(unittest.TestCase):
         orig = os.umask(0o22)
         self.assertEqual(0o22, os.umask(orig))
 
+    def test_fspath(self):
+        class StringSubclass(str):
+            pass
+
+        class Wrap:
+            def __init__(self, val):
+                self.val = val
+
+            def __fspath__(self):
+                return self.val
+
+        for x in ['abc', b'abc', StringSubclass('abc')]:
+            self.assertEqual(x, os.fspath(x))
+            self.assertEqual(x, os.fspath(Wrap(x)))
+
+        for x in [bytearray(b'abc'), 42, 3.14]:
+            with self.assertRaisesRegex(TypeError, f"expected str, bytes or os.PathLike object, not {type(x).__name__}"):
+                os.fspath(x)
+        for x in [bytearray(b'abc'), 42, 3.14]:
+            with self.assertRaisesRegex(TypeError, r"expected Wrap.__fspath__\(\) to return str or bytes, not " + type(x).__name__):
+                os.fspath(Wrap(x))
+
+    def test_path_convertor(self):
+        class C:
+            def __fspath__(self):
+                return bytearray(b'.')
+
+        os.close(os.open(bytearray(b'.'), 0))
+        with self.assertRaisesRegex(TypeError, r"expected C.__fspath__\(\) to return str or bytes, not bytearray"):
+            os.open(C(), 0)
+
 
 class WithCurdirFdTests(unittest.TestCase):
 

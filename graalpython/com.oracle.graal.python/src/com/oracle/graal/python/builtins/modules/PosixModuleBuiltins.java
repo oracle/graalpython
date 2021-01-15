@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.FspathNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -92,6 +93,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -1892,6 +1894,40 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "fspath", minNumOfPositionalArgs = 1, parameterNames = {"path"})
+    @GenerateNodeFactory
+    public abstract static class FspathNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "isPath(value)")
+        Object doTrivial(Object value) {
+            return value;
+        }
+
+        @Specialization(guards = "!isPath(value)", limit = "3")
+        Object callFspath(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+            Object func = lib.lookupAttributeOnType(value, __FSPATH__);
+            if (func == PNone.NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, value);
+            }
+            Object pathObject = methodLib.callUnboundMethodWithState(func, PArguments.getThreadState(frame), value);
+            if (isPath(pathObject)) {
+                return pathObject;
+            }
+            throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
+        }
+
+        protected static boolean isPath(Object obj) {
+            return PGuards.isString(obj) || obj instanceof PBytes;
+        }
+
+        // Can be used as an equivalent of PyOS_FSPath()
+        public static FspathNode create() {
+            return FspathNodeFactory.create();
+        }
+    }
+
     // ------------------
     // Helpers
 
@@ -2216,8 +2252,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Object pathObject = methodLib.callUnboundMethodWithState(func, PArguments.getThreadState(frame), value);
             // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes
             // by design
-            if (pathObject instanceof PBytesLike) {
-                return doBytes((PBytesLike) pathObject, toByteArrayNode, posixLib);
+            if (pathObject instanceof PBytes) {
+                return doBytes((PBytes) pathObject, toByteArrayNode, posixLib);
             }
             if (pathObject instanceof PString) {
                 return doUnicode((PString) pathObject, castToJavaStringNode, posixLib);
