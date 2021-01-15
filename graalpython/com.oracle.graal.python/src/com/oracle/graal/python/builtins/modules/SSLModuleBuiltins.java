@@ -175,4 +175,14 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             throw raise(NotImplementedError);
         }
     }
+
+    @Builtin(name = "get_default_verify_paths")
+    @GenerateNodeFactory
+    abstract static class GetDefaultVerifyPathsNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object get() {
+            throw raise(NotImplementedError);
+        }
+    }
 }
