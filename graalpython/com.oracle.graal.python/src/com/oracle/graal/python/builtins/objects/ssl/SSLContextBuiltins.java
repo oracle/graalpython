@@ -285,6 +285,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "server_hostname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "null", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
+        @Specialization(guards = "serverHostname == null")
+        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, @SuppressWarnings("unused") Object serverHostname, Object owner, Object session) {
+            return wrap(context, sock, serverSide, null, owner, session);
+        }
+
         @Specialization
         // TODO parameters
         Object wrap(PSSLContext context, PSocket sock, boolean serverSide, String serverHostname, Object owner, Object session) {
