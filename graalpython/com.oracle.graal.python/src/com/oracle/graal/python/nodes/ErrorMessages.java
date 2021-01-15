@@ -556,6 +556,7 @@ public abstract class ErrorMessages {
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";
+    public static final String S_SHOULD_BE_A_VALID_FILESYSTEMPATH = "%s should be a valid filesystem path";
     public static final String SIZE_SHOULD_NOT_BE_NEGATIVE = "size should not be negative";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
@@ -671,6 +672,8 @@ public abstract class ErrorMessages {
     public static final String S_CHANNEL_BINDING_NOT_IMPLEMENTED = "'%s' channel binding type not implemented";
     public static final String SSL_WANT_READ = "The operation did not complete (read)";
     public static final String SSL_WANT_WRITE = "The operation did not complete (write)";
+    public static final String CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED = "cafile, capath and cadata cannot be all omitted";
+    public static final String SSL_CTX_NOT_SERVER_CONTEXT = "SSLContext is not a server context.";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";

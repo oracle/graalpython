@@ -39,10 +39,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -64,6 +68,11 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
+
+    private static final String END_CERTIFICATE = "END CERTIFICATE";
+    private static final String BEGIN_CERTIFICATE = "BEGIN CERTIFICATE";
+    private static final String END_PRIVATE_KEY = "END PRIVATE KEY";
+    private static final String BEGIN_PRIVATE_KEY = "BEGIN PRIVATE KEY";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -182,14 +191,142 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "get_ciphers", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetCiphersNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PList getCiphers(PSSLContext self) {
+            String[] suites = self.getContext().getSupportedSSLParameters().getCipherSuites();
+            Object[] dicts = new Object[suites.length];
+            for (int i = 0; i < suites.length; i++) {
+                // TODO: what other fields
+                dicts[i] = factory().createDict(new PKeyword[]{new PKeyword("name", suites[i])});
+            }
+            return factory().createList(dicts);
+        }
+    }
+
+    @Builtin(name = "set_ciphers", minNumOfPositionalArgs = 2, parameterNames = {"$self", "cipherlist"})
+    @ArgumentClinic(name = "cipherlist", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    abstract static class SetCiphersNode extends PythonClinicBuiltinNode {        
+        @Specialization
+        Object getCiphers(PSSLContext self, String cipherlist) {
+            String[] ciphers = cipherlist.split(":");
+            // TODO: the openssl format comming from python isn't what jdk expects to be set
+            // self.getContext().getSupportedSSLParameters().setCipherSuites(ciphers);
+            return PNone.NONE;
+        }
+	
+	@Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.SetCiphersNodeClinicProviderGen.INSTANCE;
+        }
+    }
+    
+    @Builtin(name = "num_tickets", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class NumTicketsNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static int get(PSSLContext self, @SuppressWarnings("unused") PNone value) {
+            return self.getNumTickets();
+        }
+
+        @Specialization(guards = "canBeInteger(value)", limit = "1")
+        Object set(PSSLContext self, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            int num = lib.asSize(value);
+            if (num < 0) {
+                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "value");
+            }
+            if (self.getVersion() != SSLProtocolVersion.TLS_SERVER) {
+                throw raise(ValueError, ErrorMessages.SSL_CTX_NOT_SERVER_CONTEXT);
+            }
+            self.setNumTickets(num);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!canBeInteger(value)")
+        Object set(PSSLContext self, Object value) {
+            throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
+        }
+    }
+
+    @Builtin(name = "set_default_verify_paths", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SetDefaultVerifyPathsNode extends PythonBuiltinNode {
+        @Specialization
+        Object set(PSSLContext self) {
+            self.setDefaultVerifyPaths();
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "load_verify_locations", minNumOfPositionalArgs = 1, parameterNames = {"$self", "cafile", "capath", "cadata"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
-        @Specialization
-        Object load(PSSLContext self, Object cafile, Object capath, Object cadata) {
-            // TODO
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"isNoValue(cafile)", "isNoValue(capath)", "isNoValue(cadata)"})
+        Object load(PSSLContext self, PNone cafile, PNone capath, PNone cadata) {
+            throw raise(TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
+        }
+
+        @Specialization(guards = "isSomeValue(cafile, capath, cadata)", limit = "3")
+        Object load(PSSLContext self, Object cafile, Object capath, Object cadata,
+                        @CachedLibrary("cafile") PythonObjectLibrary fileLib,
+                        @CachedLibrary("capath") PythonObjectLibrary pathLib) {
+            File file = null;
+            if (cafile != PNone.NO_VALUE) {
+                // TODO TruffleFile
+                file = new File(fileLib.asPath(cafile));
+                if (!file.exists()) {
+                    throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
+                }
+            }
+
+            File path = null;
+            if (capath != PNone.NO_VALUE) {
+                // TODO TruffleFile
+                path = new File(pathLib.asPath(capath));
+                if (!path.exists()) {
+                    throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "capath");
+                }
+            }
+
+            if (cadata != PNone.NO_VALUE) {
+                // TODO handle cadata
+            }
+
+            if (file != null || path != null) {
+                // TODO handle capath
+                // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
+                try {
+                    X509Certificate[] cert = getCertificates(file);
+                    if (cert == null) {
+                        // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
+                        // (_ssl.c:3991)"
+                        throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
+                    }
+                    KeyStore keystore = KeyStore.getInstance("JKS");
+                    keystore.load(null);
+                    KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+                    kmf.init(keystore, PythonUtils.EMPTY_CHAR_ARRAY);
+                    KeyManager[] km = kmf.getKeyManagers();
+                    self.getContext().init(km, null, null);
+                } catch (Exception ex) {
+                    // TODO
+                    throw raise(ValueError, ex.getMessage());
+                }
+            }
+
             return PNone.NONE;
+        }
+
+        protected boolean isSomeValue(Object cafile, Object capath, Object cadata) {
+            return !PGuards.isNoValue(cafile) || !PGuards.isNoValue(capath) || !PGuards.isNoValue(cadata);
         }
     }
 
@@ -200,12 +337,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LoadCertChainNode extends PythonQuaternaryClinicBuiltinNode {
-
-        private static final String END_CERTIFICATE = "END CERTIFICATE";
-        private static final String BEGIN_CERTIFICATE = "BEGIN CERTIFICATE";
-        private static final String END_PRIVATE_KEY = "END PRIVATE KEY";
-        private static final String BEGIN_PRIVATE_KEY = "BEGIN PRIVATE KEY";
-
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, String certfile, String keyfile, String password) {
             // TODO trufflefile ?
@@ -218,10 +349,20 @@ public class SSLContextBuiltins extends PythonBuiltins {
             try {
                 // TODO: preliminary implementation - import and convert PEM format to java keystore
                 X509Certificate[] cert = getCertificates(certPem);
+                if (cert == null) {
+                    // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
+                    // (_ssl.c:3991)"
+                    throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
+                }
                 KeyStore keystore = KeyStore.getInstance("JKS");
                 keystore.load(null);
-                PrivateKey key = getPrivateKey(pkPem);
-                keystore.setKeyEntry(pkPem.getName(), key, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, cert);
+                PrivateKey pk = getPrivateKey(pkPem);
+                if (pk == null) {
+                    // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
+                    // (_ssl.c:3991)"
+                    throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no private key found in keyfile/certfile");
+                }
+                keystore.setKeyEntry(pkPem.getName(), pk, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, cert);
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
                 kmf.init(keystore, password.toCharArray());
@@ -240,93 +381,59 @@ public class SSLContextBuiltins extends PythonBuiltins {
         protected ArgumentClinicProvider getArgumentClinic() {
             return SSLContextBuiltinsClinicProviders.LoadCertChainNodeClinicProviderGen.INSTANCE;
         }
+    }
 
-        private X509Certificate[] getCertificates(File pem) throws IOException, CertificateException {
-            try (BufferedReader r = new BufferedReader(new FileReader(pem))) {
-                String line;
-                while ((line = r.readLine()) != null) {
-                    if (line.contains(BEGIN_CERTIFICATE)) {
-                        break;
-                    }
+    private static X509Certificate[] getCertificates(File pem) throws IOException, CertificateException {
+        try (BufferedReader r = new BufferedReader(new FileReader(pem))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                if (line.contains(BEGIN_CERTIFICATE)) {
+                    break;
                 }
-                if (line == null) {
-                    // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
-                    // (_ssl.c:3991)"
-                    throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
-                }
-                StringBuilder sb = new StringBuilder();
-                List<X509Certificate> res = new ArrayList<>();
-                while ((line = r.readLine()) != null) {
-                    if (line.contains(END_CERTIFICATE)) {
-                        String hexString = sb.toString();
-                        CertificateFactory factory = CertificateFactory.getInstance("X.509");
-                        X509Certificate cert = (X509Certificate) factory.generateCertificate(new ByteArrayInputStream(DatatypeConverter.parseBase64Binary(hexString)));
-                        res.add(cert);
-                        sb = new StringBuilder();
-                    } else {
-                        sb.append(line);
-                    }
-
-                }
-                return res.toArray(new X509Certificate[res.size()]);
             }
-        }
-
-        private PrivateKey getPrivateKey(File pkPem) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-            try (BufferedReader r = new BufferedReader(new FileReader(pkPem))) {
-                String line;
-                while ((line = r.readLine()) != null) {
-                    if (line.contains(BEGIN_PRIVATE_KEY)) {
-                        break;
-                    }
-                }
-                if (line == null) {
-                    // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
-                    // (_ssl.c:3991)"
-                    throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no private key found in keyfile/certfile");
-                }
-                StringBuilder sb = new StringBuilder();
-                while ((line = r.readLine()) != null) {
-                    if (line.contains(END_PRIVATE_KEY)) {
-                        break;
-                    }
+            if (line == null) {
+                return null;
+            }
+            StringBuilder sb = new StringBuilder();
+            List<X509Certificate> res = new ArrayList<>();
+            while ((line = r.readLine()) != null) {
+                if (line.contains(END_CERTIFICATE)) {
+                    String hexString = sb.toString();
+                    CertificateFactory factory = CertificateFactory.getInstance("X.509");
+                    X509Certificate cert = (X509Certificate) factory.generateCertificate(new ByteArrayInputStream(DatatypeConverter.parseBase64Binary(hexString)));
+                    res.add(cert);
+                    sb = new StringBuilder();
+                } else {
                     sb.append(line);
                 }
-                byte[] bytes = DatatypeConverter.parseBase64Binary(sb.toString());
-                PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
-                final KeyFactory factory = KeyFactory.getInstance("RSA");
-                return (RSAPrivateKey) factory.generatePrivate(spec);
+
             }
+            return res.toArray(new X509Certificate[res.size()]);
         }
     }
 
-    @Builtin(name = "set_ciphers", minNumOfPositionalArgs = 2, parameterNames = {"$self", "cipherlist"})
-    @ArgumentClinic(name = "cipherlist", conversion = ArgumentClinic.ClinicConversion.String)
-    @GenerateNodeFactory
-    abstract static class SetCiphers extends PythonClinicBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object setCiphers(PSSLContext self, String cipherlist) {
-            String[] ciphers = cipherlist.split(":");
-            // TODO fix this
-            // @formatter:off
-            /*
-            // Try creating an engine to verify the list is valid
-            try {
-                SSLEngine engine = self.getContext().createSSLEngine();
-                engine.setEnabledCipherSuites(ciphers);
-            } catch (IllegalArgumentException e) {
-                throw raise(SSLError, ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+    private static PrivateKey getPrivateKey(File pkPem) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        try (BufferedReader r = new BufferedReader(new FileReader(pkPem))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                if (line.contains(BEGIN_PRIVATE_KEY)) {
+                    break;
+                }
             }
-            self.setCiphers(ciphers);
-             */
-            // @formatter:on
-            return PNone.NONE;
-        }
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return SSLContextBuiltinsClinicProviders.SetCiphersClinicProviderGen.INSTANCE;
+            if (line == null) {
+                return null;
+            }
+            StringBuilder sb = new StringBuilder();
+            while ((line = r.readLine()) != null) {
+                if (line.contains(END_PRIVATE_KEY)) {
+                    break;
+                }
+                sb.append(line);
+            }
+            byte[] bytes = DatatypeConverter.parseBase64Binary(sb.toString());
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
+            final KeyFactory factory = KeyFactory.getInstance("RSA");
+            return (RSAPrivateKey) factory.generatePrivate(spec);
         }
     }
 

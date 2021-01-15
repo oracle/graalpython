@@ -13,6 +13,12 @@ public final class PSSLContext extends PythonBuiltinObject {
     private int verifyMode;
     private String[] ciphers;
     private long options;
+    private boolean setDefaultVerifyPaths = false;
+
+    // number of TLS v1.3 session tickets
+    // TODO can this be set in java?
+    // TODO '2' is openssl default, but should we return it even though it might not be right?
+    private int numTickets = 2;
 
     public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, SSLContext context) {
         super(cls, instanceShape);
@@ -61,4 +67,22 @@ public final class PSSLContext extends PythonBuiltinObject {
     public void setOptions(long options) {
         this.options = options;
     }
+    
+    void setDefaultVerifyPaths() {
+        this.setDefaultVerifyPaths = true;
+    }
+
+    boolean getDefaultVerifyPaths() {
+        // TODO and where should this be used from?
+        return this.setDefaultVerifyPaths;
+    }
+
+    int getNumTickets() {
+        return this.numTickets;
+    }
+
+    void setNumTickets(int numTickets) {
+        this.numTickets = numTickets;
+    }
+
 }
