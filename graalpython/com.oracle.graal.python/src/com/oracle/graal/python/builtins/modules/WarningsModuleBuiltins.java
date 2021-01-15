@@ -124,22 +124,19 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         builtinConstants.put(SpecialAttributeNames.__DOC__, "_warnings provides basic warning filtering support.\n" +
                         "It is a helper module to speed up interpreter start-up.");
-        builtinConstants.put("_defaultaction", "default");
-        builtinConstants.put("_onceregistry", PythonObjectFactory.getUncached().createDict());
-        builtinConstants.put("filters", initFilters());
-        super.initialize(core);
-    }
-
-    @Override
-    public void postInitialize(PythonCore core) {
-        super.postInitialize(core);
-        PythonModule warningsModule = core.lookupBuiltinModule("_warnings");
-        // we need to copy these, since they must still be available even if the user `del`s the
+        // we need to copy the attrs, since they must still be available even if the user `del`s the
         // attrs
-        warningsModule.setAttribute(FILTERS, warningsModule.getAttribute("filters"));
-        warningsModule.setAttribute(DEFAULTACTION, warningsModule.getAttribute("_defaultaction"));
-        warningsModule.setAttribute(ONCEREGISTRY, warningsModule.getAttribute("_onceregistry"));
-        DynamicObjectLibrary.getUncached().putLong(warningsModule, FILTERS_VERSION, 0);
+        Object defaultaction = "default";
+        builtinConstants.put("_defaultaction", defaultaction);
+        builtinConstants.put(DEFAULTACTION, defaultaction);
+        Object onceregistry = PythonObjectFactory.getUncached().createDict();
+        builtinConstants.put("_onceregistry", onceregistry);
+        builtinConstants.put(ONCEREGISTRY, onceregistry);
+        Object filters = initFilters();
+        builtinConstants.put("filters", filters);
+        builtinConstants.put(FILTERS, filters);
+        builtinConstants.put(FILTERS_VERSION, 0L);
+        super.initialize(core);
     }
 
     private static PTuple createFilter(PythonBuiltinClassType cat, String id, Object mod) {
