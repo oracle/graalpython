@@ -667,6 +667,9 @@ public abstract class ErrorMessages {
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
     public static final String SSL_PEM_LIB_S = "[SSL] PEM lib %s";
     
+    public static final String HANDSHAKE_NOT_DONE_YET = "handshake not done yet";
+    public static final String S_CHANNEL_BINDING_NOT_IMPLEMENTED = "'%s' channel binding type not implemented";
+
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
     public static final String WHILE_S_DATA = "while %s data";

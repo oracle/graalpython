@@ -1,12 +1,18 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.nio.ByteBuffer;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -17,10 +23,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -147,6 +155,127 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static String getProtocol(SSLEngine engine) {
             return engine.getSession().getProtocol();
+        }
+    }
+
+    @Builtin(name = "pending", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PendingNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int getPending(PSSLSocket self) {
+            return self.getApplicationInboundBIO().getPending();
+        }
+    }
+
+    @Builtin(name = "getpeercert", minNumOfPositionalArgs = 1, parameterNames = {"$self", "der"})
+    @ArgumentClinic(name = "der", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
+    @GenerateNodeFactory
+    abstract static class GetPeerCertNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization(guards = "der")
+        Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der) {
+            if (!self.isHandshakeComplete()) {
+                throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
+            }
+            Certificate certificate = getCertificate(self.getEngine());
+            if (certificate != null) {
+                try {
+                    return factory().createBytes(getEncoded(certificate));
+                } catch (CertificateEncodingException e) {
+                    // Fallthrough
+                }
+            }
+            // msimacek: In CPython, this is able to return unverified certificates. I don't see a
+            // way to do it in the Java API
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!der")
+        PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der) {
+            if (!self.isHandshakeComplete()) {
+                throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
+            }
+            Certificate certificate = getCertificate(self.getEngine());
+            if (certificate instanceof X509Certificate) {
+                // TODO implement
+                throw raise(NotImplementedError);
+            }
+            return factory().createDict();
+        }
+
+        @TruffleBoundary
+        private static Certificate getCertificate(SSLEngine engine) {
+            try {
+                Certificate[] certificates = engine.getSession().getPeerCertificates();
+                if (certificates.length != 0) {
+                    return certificates[0];
+                } else {
+                    return null;
+                }
+            } catch (SSLPeerUnverifiedException e) {
+                return null;
+            }
+        }
+
+        @TruffleBoundary
+        private static byte[] getEncoded(Certificate certificate) throws CertificateEncodingException {
+            return certificate.getEncoded();
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLSocketBuiltinsClinicProviders.GetPeerCertNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "get_channel_binding", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sb_type"})
+    @ArgumentClinic(name = "sb_type", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"tls-unique\"")
+    @GenerateNodeFactory
+    abstract static class GetChannelBinding extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object getChannelBinding(PSSLSocket self, String sbType) {
+            if ("tls-unique".equals(sbType)) {
+                // JDK doesn't have an API to access what we need. Bouncycastle could provide this
+                throw raise(NotImplementedError);
+            }
+            throw raise(ValueError, ErrorMessages.S_CHANNEL_BINDING_NOT_IMPLEMENTED, sbType);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLSocketBuiltinsClinicProviders.GetChannelBindingClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "cipher", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CipherNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getCipher(PSSLSocket self) {
+            Object[] cipherTuple = getCipherTuple(self.getEngine());
+            if (cipherTuple == null) {
+                return PNone.NONE;
+            }
+            return factory().createTuple(cipherTuple);
+        }
+
+        @TruffleBoundary
+        private static Object[] getCipherTuple(SSLEngine engine) {
+            SSLSession session = engine.getSession();
+            String cipherSuite = session.getCipherSuite();
+            String protocol = session.getProtocol();
+            if (cipherSuite != null && protocol != null) {
+                // TODO I don't see a nice way to obtain the number of bits, we have to rely on
+                // string matching
+                int cipherBits = 0;
+                if (cipherSuite.contains("_AES_128_")) {
+                    cipherBits = 128;
+                } else if (cipherSuite.contains("_AES_256_")) {
+                    cipherBits = 256;
+                }
+                return new Object[]{cipherSuite, protocol, cipherBits};
+            }
+            return null;
         }
     }
 }
