@@ -783,7 +783,10 @@ def bind_port(sock, host=HOST):
         if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
 
-    sock.bind((host, 0))
+    # XXX GraalVM change: bind to a specific port
+    # Our bind with port 0 doesn't know the real port until listen() is called
+    # sock.bind((host, 0))
+    sock.bind((host, 8756))
     port = sock.getsockname()[1]
     return port
 
