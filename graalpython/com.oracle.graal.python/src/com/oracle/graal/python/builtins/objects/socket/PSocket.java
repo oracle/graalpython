@@ -59,8 +59,8 @@ public class PSocket extends PythonBuiltinObject implements Channel {
     public static final int AF_INET = 2;
     public static final int AF_INET6 = 23;
 
-    public static final int SOCK_DGRAM = 1;
-    public static final int SOCK_STREAM = 2;
+    public static final int SOCK_STREAM = 1;
+    public static final int SOCK_DGRAM = 2;
 
     public static final int AI_PASSIVE = 1;
     public static final int AI_CANONNAME = 2;
