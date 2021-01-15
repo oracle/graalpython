@@ -921,7 +921,7 @@ public class ListBuiltins extends PythonBuiltins {
                         @Cached CallNode callSort,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
             Object sortMethod = sort.executeObject(frame, list);
-            callSort.execute(sortMethod, arguments, keywords);
+            callSort.execute(frame, sortMethod, arguments, keywords);
             return PNone.NONE;
         }
 
