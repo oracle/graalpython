@@ -14,9 +14,12 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unknown_channel_binding
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unsupported_dtls
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_hostname_checks_common_name
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_default_certs
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_default_certs_env_windows
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_min_max_version
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_num_tickest
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_python_ciphers
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_set_default_verify_paths
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_set_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_sni_callback
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_sni_callback_refcycle
