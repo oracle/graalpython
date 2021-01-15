@@ -12,6 +12,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     private boolean checkHostname;
     private int verifyMode;
     private String[] ciphers;
+    private long options;
 
     public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, SSLContext context) {
         super(cls, instanceShape);
@@ -51,5 +52,13 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     public void setCiphers(String[] ciphers) {
         this.ciphers = ciphers;
+    }
+
+    public long getOptions() {
+        return options;
+    }
+
+    public void setOptions(long options) {
+        this.options = options;
     }
 }

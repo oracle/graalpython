@@ -51,8 +51,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -124,6 +126,26 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         static int getProtocol(PSSLContext self) {
             return self.getVersion().getPythonId();
+        }
+    }
+
+    @Builtin(name = "options", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class OptionsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static long getOptions(PSSLContext self, @SuppressWarnings("unused") PNone none) {
+            return self.getOptions();
+        }
+
+        @Specialization(guards = "!isNoValue(valueObj)", limit = "3")
+        Object setOption(VirtualFrame frame, PSSLContext self, Object valueObj,
+                                @Cached CastToJavaLongExactNode cast,
+                                @CachedLibrary("valueObj") PythonObjectLibrary lib) {
+            long value = cast.execute(lib.asIndexWithFrame(valueObj, frame));
+            // TODO validate the options
+            // TODO use the options
+            self.setOptions(value);
+            return PNone.NONE;
         }
     }
 
