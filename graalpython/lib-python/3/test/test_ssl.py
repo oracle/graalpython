@@ -3644,6 +3644,7 @@ class ThreadedTests(unittest.TestCase):
             s.setblocking(True)
             s.close()
 
+    @support.impl_detail("socket timeout", graalvm=False)
     def test_handshake_timeout(self):
         # Issue #5103: SSL handshake must respect the socket timeout
         server = socket.socket(socket.AF_INET)
