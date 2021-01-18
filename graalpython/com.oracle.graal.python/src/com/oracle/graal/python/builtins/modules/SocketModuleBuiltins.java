@@ -96,6 +96,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
+import sun.net.util.IPAddressUtil;
+
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
     // address families
@@ -787,29 +789,26 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         PBytes doConvert(@SuppressWarnings("unused") VirtualFrame frame, Object addrFamily, String addr,
                         @Cached CastToJavaIntExactNode castToJavaIntNode) {
-            return factory().createBytes(aton(castToJavaIntNode.execute(addrFamily), addr));
+            return factory().createBytes(pton(castToJavaIntNode.execute(addrFamily), addr));
         }
 
         @TruffleBoundary
-        private byte[] aton(int addrFamily, String s) {
-            try {
-                if (addrFamily != AF_INET && addrFamily != AF_INET6) {
+        private byte[] pton(int addrFamily, String s) {
+            byte[] bytes;
+            switch (addrFamily) {
+                case AF_INET:
+                    bytes = IPAddressUtil.textToNumericFormatV4(s);
+                    break;
+                case AF_INET6:
+                    bytes = IPAddressUtil.textToNumericFormatV6(s);
+                    break;
+                default:
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, addrFamily);
-                }
-
-                byte[] bytes = InetAddress.getByName(s).getAddress();
-
-                // we also need to check the size otherwise one could parse an IPv4 address even if
-                // he specified AF_INET6 (and vice versa)
-                int ip4Len = Inet4Address.getLoopbackAddress().getAddress().length;
-                int ip6Len = Inet6Address.getLoopbackAddress().getAddress().length;
-                if (addrFamily == AF_INET && bytes.length == ip4Len || addrFamily == AF_INET6 && bytes.length == ip6Len) {
-                    return bytes;
-                }
-            } catch (UnknownHostException e) {
-                // fall through
             }
-            throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_IP_STRING_PASSED_TO, "inet_pton");
+            if (bytes == null) {
+                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_IP_STRING_PASSED_TO, "inet_pton");
+            }
+            return bytes;
         }
 
         @Fallback
