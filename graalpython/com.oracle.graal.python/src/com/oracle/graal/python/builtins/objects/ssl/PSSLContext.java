@@ -5,6 +5,7 @@ import javax.net.ssl.SSLContext;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
+import javax.crypto.spec.DHParameterSpec;
 
 public final class PSSLContext extends PythonBuiltinObject {
     private final SSLProtocolVersion version;
@@ -14,6 +15,8 @@ public final class PSSLContext extends PythonBuiltinObject {
     private String[] ciphers;
     private long options;
     private boolean setDefaultVerifyPaths = false;
+
+    private DHParameterSpec dhParameters;
 
     // number of TLS v1.3 session tickets
     // TODO can this be set in java?
@@ -83,6 +86,14 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     void setNumTickets(int numTickets) {
         this.numTickets = numTickets;
+    }
+
+    void setDHParameters(DHParameterSpec dh) {
+        this.dhParameters = dh;
+    }
+
+    public DHParameterSpec getDHParameters() {
+        return dhParameters;
     }
 
 }

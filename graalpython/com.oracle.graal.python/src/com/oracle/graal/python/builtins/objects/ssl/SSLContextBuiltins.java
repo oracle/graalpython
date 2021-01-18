@@ -4,32 +4,12 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.security.KeyFactory;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.List;
 
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.xml.bind.DatatypeConverter;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -38,9 +18,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -65,6 +47,28 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
+import javax.crypto.spec.DHParameterSpec;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.xml.bind.DatatypeConverter;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -73,6 +77,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
     private static final String BEGIN_CERTIFICATE = "BEGIN CERTIFICATE";
     private static final String END_PRIVATE_KEY = "END PRIVATE KEY";
     private static final String BEGIN_PRIVATE_KEY = "BEGIN PRIVATE KEY";
+    private static final String BEGIN_DH_PARAMETERS = "BEGIN DH PARAMETERS";
+    private static final String END_DH_PARAMETERS = "END DH PARAMETERS";
+
+    private static final String DH_PARAMETERS_BEGIN = "DH Parameters:";
+    private static final String DH_PARAMETERS_GENERATOR = "generator:";
+    private static final String DH_PARAMETERS_PRIME = "prime:";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -471,4 +481,142 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return SSLContextBuiltinsClinicProviders.WrapSocketNodeClinicProviderGen.INSTANCE;
         }
     }
+
+    @Builtin(name = "load_dh_params", minNumOfPositionalArgs = 2, parameterNames = {"$self", "filepath"})
+    @GenerateNodeFactory
+    abstract static class LoadDhParamsNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PNone load(VirtualFrame frame, PSSLContext self, String filepath) {
+            File file = new File(filepath);
+            if (!file.exists()) {
+                throw raiseOSError(frame, OSErrorEnum.ENOENT);
+            }
+            DHParameterSpec dh = null;
+            try {
+                dh = getDHParameters(file);
+                // TODO: now what?
+                // KeyFactory kf = KeyFactory.getInstance("DH");
+                // BigInteger pk = new
+                // BigInteger(DatatypeConverter.parseBase64Binary(private.toString()));
+                // DHPrivateKeySpec dhPrivateSpec = new DHPrivateKeySpec(pk, dh.getP(), dh.getG());
+                // return kf.generatePrivate(dhPrivateSpec);
+                if (dh != null) {
+                    self.setDHParameters(dh);
+                }
+            } catch (Exception ex) {
+                // TODO
+                ex.printStackTrace();
+                throw raise(ValueError, ex.getMessage());
+            }
+            if (dh == null) {
+                // TODO return exact err msgs?
+                // TODO could be different err than 'no start line'
+                throw raise(SSLError, ErrorMessages.SSL_PEM_NO_START_LINE);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "3")
+        PNone load(VirtualFrame frame, PSSLContext self, PBytes filepath,
+                        @CachedLibrary("filepath") PythonObjectLibrary lib) {
+            load(frame, self, lib.asPath(filepath));
+
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "1")
+        PNone load(VirtualFrame frame, PSSLContext self, PythonObject filepath,
+                        @CachedLibrary("filepath") PythonObjectLibrary lib) {
+            load(frame, self, lib.asPath(filepath));
+
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isString(filepath)", "!isBytes(filepath)", "!isPythonObject(filepath)"})
+        Object wrap(PSSLContext self, Object filepath) {
+            throw raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, filepath);
+        }
+    }
+
+    @TruffleBoundary
+    private static DHParameterSpec getDHParameters(File file) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        try (BufferedReader r = new BufferedReader(new FileReader(file))) {
+            // TODO: test me!
+            String line;
+
+            String bitString = null;
+            while ((line = r.readLine()) != null) {
+                if (line.contains(DH_PARAMETERS_BEGIN)) {
+                    bitString = line.trim();
+                    bitString = bitString.substring(DH_PARAMETERS_BEGIN.length());
+                    int idx = bitString.indexOf('(');
+                    if (idx > -1) {
+                        bitString = bitString.substring(idx + 1).trim();
+                        idx = bitString.indexOf("bit)");
+                        if (idx > -1) {
+                            bitString = bitString.substring(0, idx).trim();
+                        } else {
+                            return null;
+                        }
+                    } else {
+                        return null;
+                    }
+                    break;
+                }
+            }
+
+            while ((line = r.readLine()) != null) {
+                if (line.contains(DH_PARAMETERS_PRIME)) {
+                    break;
+                }
+            }
+            if (line == null) {
+                return null;
+            }
+
+            String primeString = null;
+            String genString = null;
+            StringBuilder sb = new StringBuilder();
+            while ((line = r.readLine()) != null) {
+                line = line.trim();
+                if (line.contains(DH_PARAMETERS_GENERATOR)) {
+                    genString = line.trim();
+                    genString = genString.substring(DH_PARAMETERS_GENERATOR.length());
+                    int idx = genString.indexOf('(');
+                    if (idx > -1) {
+                        genString = genString.substring(0, idx).trim();
+                    }
+                    primeString = sb.toString().replace(":", "");
+                    break;
+                }
+                sb.append(line);
+            }
+            if (line == null) {
+                return null;
+            }
+
+            while ((line = r.readLine()) != null) {
+                if (line.contains(BEGIN_DH_PARAMETERS)) {
+                    break;
+                }
+            }
+            if (line == null) {
+                return null;
+            }
+
+            sb = new StringBuilder();
+            while ((line = r.readLine()) != null) {
+                if (line.contains(END_DH_PARAMETERS)) {
+                    break;
+                }
+                sb.append(line);
+            }
+            BigInteger prime = new BigInteger(primeString, 16);
+            BigInteger generator = new BigInteger(genString);
+
+            // initialize the parameter spec
+            return new DHParameterSpec(prime, generator, Integer.valueOf(bitString));
+        }
+    }
+
 }
