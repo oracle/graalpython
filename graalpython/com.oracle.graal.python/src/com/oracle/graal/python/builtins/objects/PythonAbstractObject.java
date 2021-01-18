@@ -898,7 +898,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             try {
                 Object getAttrFunc = lookup.execute(receiver, __GETATTRIBUTE__);
                 try {
-                    return callNode.execute(getAttrFunc, receiver, name);
+                    return callNode.execute(frame, getAttrFunc, receiver, name);
                 } catch (PException pe) {
                     pe.expect(AttributeError, isAttrErrorProfile1);
                     getAttrFunc = lookup.execute(receiver, __GETATTR__);

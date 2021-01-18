@@ -74,10 +74,6 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
         return executeInternal(frame, cls);
     }
 
-    public final PTuple execute(Object cls) {
-        return executeInternal(null, cls);
-    }
-
     @Specialization(guards = "!isUncached()")
     PTuple getBasesCached(VirtualFrame frame, Object cls,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode,
