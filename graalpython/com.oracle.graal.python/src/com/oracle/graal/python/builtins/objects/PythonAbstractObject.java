@@ -1405,7 +1405,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @TruffleBoundary
     private static LocalTime createLocalTime(int hour, int min, int sec, int micro) {
-        return LocalTime.of(hour, min, sec, micro);
+        return LocalTime.of(hour, min, sec, micro * 1000);
     }
 
     @TruffleBoundary

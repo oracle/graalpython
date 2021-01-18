@@ -115,7 +115,7 @@ public class TimeDateTest extends PythonTests {
                         "dt.time.fromisoformat('04:23:01.000384')";
         Value value = getValue(source, ZoneId.of("America/Los_Angeles"));
         checkValueDateTimeType(value, false, true, false, false);
-        checkTime(value, 4, 23, 1, 384);
+        checkTime(value, 4, 23, 1, 384000);
         try {
             value.asDate();
             assertFalse("From datetime.time can not be obtained date", true);
@@ -162,7 +162,7 @@ public class TimeDateTest extends PythonTests {
         Value value = getValue(source, ZoneId.of("America/Los_Angeles"));
         checkValueDateTimeType(value, true, true, true, true);
         checkDate(value, 2011, 11, 4);
-        checkTime(value, 0, 5, 23, 283000);
+        checkTime(value, 0, 5, 23, 283000000);
         assertEquals(ZoneId.of("UTC+4"), value.asTimeZone());
     }
 
