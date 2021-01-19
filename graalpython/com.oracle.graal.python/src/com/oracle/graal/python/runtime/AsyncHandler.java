@@ -52,8 +52,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -141,12 +139,14 @@ public class AsyncHandler {
         }
     });
 
+    private static final byte HAS_SCHEDULED_ACTION = 1;
+    private static final byte SHOULD_RELEASE_GIL = 2;
+
+    private volatile byte scheduledActionsFlags = 0;
+
     private final WeakReference<PythonContext> context;
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
-    private volatile boolean hasScheduledAction = false;
-    private volatile boolean shouldReleaseGil = false;
     private ThreadLocal<Boolean> recursionGuard = new ThreadLocal<>();
-    private final Lock executingScheduledActions = new ReentrantLock();
     private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
     private static final int GIL_RELEASE_DELAY = 10;
 
@@ -161,15 +161,8 @@ public class AsyncHandler {
         public void run() {
             AsyncAction asyncAction = actionSupplier.get();
             if (asyncAction != null) {
-                // If there's thread executing scheduled actions right now,
-                // we wait until adding the next work item
-                executingScheduledActions.lock();
-                try {
-                    scheduledActions.add(asyncAction);
-                    hasScheduledAction = true;
-                } finally {
-                    executingScheduledActions.unlock();
-                }
+                scheduledActions.add(asyncAction);
+                scheduledActionsFlags |= HAS_SCHEDULED_ACTION;
             }
         }
     }
@@ -239,21 +232,25 @@ public class AsyncHandler {
     void activateGIL() {
         CompilerAsserts.neverPartOfCompilation();
         executorService.scheduleWithFixedDelay(() -> {
-            shouldReleaseGil = true;
+            scheduledActionsFlags |= SHOULD_RELEASE_GIL;
         }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
     }
 
     void triggerAsyncActions(VirtualFrame frame) {
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, shouldReleaseGil)) {
-            doReleaseGIL();
-        }
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, hasScheduledAction)) {
-            CompilerDirectives.transferToInterpreter();
-            IndirectCallContext.enter(frame, context.get(), null);
-            try {
-                processAsyncActions();
-            } finally {
-                IndirectCallContext.exit(frame, context.get(), null);
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, scheduledActionsFlags != 0)) {
+            if ((scheduledActionsFlags | SHOULD_RELEASE_GIL) != 0) {
+                scheduledActionsFlags &= ~SHOULD_RELEASE_GIL;
+                doReleaseGIL();
+            }
+            if ((scheduledActionsFlags | HAS_SCHEDULED_ACTION) != 0) {
+                scheduledActionsFlags &= ~HAS_SCHEDULED_ACTION;
+                CompilerDirectives.transferToInterpreter();
+                IndirectCallContext.enter(frame, context.get(), null);
+                try {
+                    processAsyncActions();
+                } finally {
+                    IndirectCallContext.exit(frame, context.get(), null);
+                }
             }
         }
     }
@@ -299,12 +296,6 @@ public class AsyncHandler {
             AsyncAction action;
             while ((action = actions.poll()) != null) {
                 action.execute(ctx);
-            }
-            executingScheduledActions.lock();
-            try {
-                hasScheduledAction = !actions.isEmpty();
-            } finally {
-                executingScheduledActions.unlock();
             }
         } finally {
             recursionGuard.set(false);
