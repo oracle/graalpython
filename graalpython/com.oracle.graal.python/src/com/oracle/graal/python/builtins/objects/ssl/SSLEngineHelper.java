@@ -56,12 +56,10 @@ public class SSLEngineHelper {
         MemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
         MemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
         if (!writing && applicationInboundBIO.getPending() > 0) {
-            // Try to flush leftover data from previous read
+            // Flush leftover data from previous read
             putAsMuchAsPossible(targetBuffer, applicationInboundBIO);
-            if (!targetBuffer.hasRemaining()) {
-                // We read enough from the buffer, no need to do IO
-                return;
-            }
+            // OpenSSL's SSL_read returns only the pending data
+            return;
         }
         SSLEngine engine = socket.getEngine();
         ByteChannel javaSocket = null;
@@ -78,17 +76,11 @@ public class SSLEngineHelper {
         boolean hanshakeComplete = socket.isHandshakeComplete();
         int netBufferSize = engine.getSession().getPacketBufferSize();
         boolean currentlyWriting = writing;
-        boolean needToObtainMoreInput = false;
         try {
             // Flush output that didn't get written in the last call (for non-blocking)
             emitOutput(node, networkOutboundBIO, javaSocket);
             // TODO check engine.isInboundDone/engine.isOutboundDone
-            while (!hanshakeComplete ||
-                            (writing ? appInput.hasRemaining() : targetBuffer.hasRemaining())) {
-                if (needToObtainMoreInput) {
-                    obtainMoreInput(node, networkInboundBIO, javaSocket, netBufferSize);
-                    needToObtainMoreInput = false;
-                }
+            transmissionLoop: while (true) {
                 SSLEngineResult result;
                 if (currentlyWriting) {
                     networkOutboundBIO.ensureWriteCapacity(netBufferSize);
@@ -119,7 +111,11 @@ public class SSLEngineHelper {
                 }
                 switch (result.getStatus()) {
                     case CLOSED:
-                        throw node.raise(SSLZeroReturnError, ErrorMessages.SSL_SESSION_CLOSED);
+                        if (writing) {
+                            throw node.raise(SSLZeroReturnError, ErrorMessages.SSL_SESSION_CLOSED);
+                        } else {
+                            break transmissionLoop;
+                        }
                     case BUFFER_OVERFLOW:
                         assert !currentlyWriting;
                         // We are trying to read a packet whose content doesn't fit into the
@@ -127,10 +123,10 @@ public class SSLEngineHelper {
                         // temporary buffer, then copy as much as we can into the target buffer
                         // and save the rest for the next read call
                         writeDirectlyToTarget = false;
-                        break;
+                        continue transmissionLoop;
                     case BUFFER_UNDERFLOW:
-                        needToObtainMoreInput = true;
-                        break;
+                        obtainMoreInput(node, networkInboundBIO, javaSocket, netBufferSize);
+                        continue transmissionLoop;
                     case OK:
                         emitOutput(node, networkOutboundBIO, javaSocket);
                         switch (result.getHandshakeStatus()) {
@@ -140,30 +136,34 @@ public class SSLEngineHelper {
                                 while ((task = engine.getDelegatedTask()) != null) {
                                     task.run();
                                 }
-                                break;
+                                continue transmissionLoop;
                             case NEED_WRAP:
                                 hanshakeComplete = false;
                                 currentlyWriting = true;
-                                break;
+                                continue transmissionLoop;
                             case NEED_UNWRAP:
                                 hanshakeComplete = false;
                                 currentlyWriting = false;
-                                break;
+                                continue transmissionLoop;
                             case FINISHED:
                                 hanshakeComplete = true;
                                 currentlyWriting = writing;
-                                break;
+                                continue transmissionLoop;
                             case NOT_HANDSHAKING:
-                                break;
-                            default:
-                                throw CompilerDirectives.shouldNotReachHere("unexpected hanshake status");
+                                assert hanshakeComplete;
+                                // Read operation needs to return after a single packet of
+                                // application data has been read.
+                                // Write operation needs to continue until the buffer is empty
+                                if (writing && appInput.hasRemaining()) {
+                                    continue transmissionLoop;
+                                } else {
+                                    break transmissionLoop;
+                                }
                         }
-                        break;
-                    default:
-                        throw CompilerDirectives.shouldNotReachHere("unexpected SSL status");
+                        throw CompilerDirectives.shouldNotReachHere("unhandled SSL handshake status");
                 }
+                throw CompilerDirectives.shouldNotReachHere("unhandled SSL status");
             }
-            targetBuffer.flip();
         } catch (IOException e) {
             // TODO better error handling, distinguish SSL errors and socket errors
             throw node.raise(SSLError, e);

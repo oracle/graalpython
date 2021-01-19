@@ -82,6 +82,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             int length = Math.min(len, lenNode.execute(storage));
             ByteBuffer output = ByteBuffer.allocate(length);
             SSLEngineHelper.read(this, self, output);
+            output.flip();
             for (int i = 0; i < output.limit(); i++) {
                 setItemScalarNode.execute(storage, i, output.get(i));
             }
