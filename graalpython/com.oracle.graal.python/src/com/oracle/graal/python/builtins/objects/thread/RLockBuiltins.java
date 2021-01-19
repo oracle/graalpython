@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
+import com.oracle.graal.python.runtime.ReleaseGilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -82,14 +83,15 @@ public class RLockBuiltins extends PythonBuiltins {
     abstract static class AcquireRestoreRLockNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object acquireRestore(PRLock self, PTuple state,
+                        @Cached ReleaseGilNode gil,
                         @Cached CastToJavaUnsignedLongNode castLong,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
             if (!self.acquireNonBlocking()) {
-                getContext().releaseGil();
+                gil.release();
                 try {
                     self.acquireBlocking();
                 } finally {
-                    getContext().acquireGil();
+                    gil.acquire();
                 }
             }
             // ignore owner, we use the Java lock and cannot set it

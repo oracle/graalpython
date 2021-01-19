@@ -68,6 +68,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableE
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.ReleaseGilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -110,9 +111,10 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
-                        @Cached BranchProfile notSelectableBranch) {
+                        @Cached BranchProfile notSelectableBranch,
+                        @Cached ReleaseGilNode gil) {
             return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, posixLib, rlistLibrary, wlistLibrary, xlistLibrary,
-                            callGetItemNode, constructListNode, pyTimeFromObjectNode, itemLib, notSelectableBranch);
+                            callGetItemNode, constructListNode, pyTimeFromObjectNode, itemLib, notSelectableBranch, gil);
         }
 
         @Specialization(replaces = "doWithoutTimeout", limit = "3")
@@ -125,7 +127,8 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
-                        @Cached BranchProfile notSelectableBranch) {
+                        @Cached BranchProfile notSelectableBranch,
+                        @Cached ReleaseGilNode gil) {
 
             ObjAndFDList readFDs = seq2set(frame, rlist, rlistLibrary, itemLib, callGetItemNode, constructListNode);
             ObjAndFDList writeFDs = seq2set(frame, wlist, wlistLibrary, itemLib, callGetItemNode, constructListNode);
@@ -141,11 +144,11 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
             SelectResult result;
             try {
-                getContext().releaseGil();
+                gil.release();
                 try {
                     result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
                 } finally {
-                    getContext().acquireGil();
+                    gil.acquire();
                 }
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);

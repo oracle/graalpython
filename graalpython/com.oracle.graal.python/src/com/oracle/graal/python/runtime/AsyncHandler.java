@@ -256,14 +256,15 @@ public class AsyncHandler {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     private final void doReleaseGIL() {
         PythonContext ctx = context.get();
         if (ctx == null) {
             return;
         }
-        ctx.releaseGil();
-        Thread.yield();
-        ctx.acquireGil();
+        try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
+            Thread.yield();
+        }
     }
 
     /**

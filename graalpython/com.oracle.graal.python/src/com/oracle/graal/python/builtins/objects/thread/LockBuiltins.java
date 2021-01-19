@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.ReleaseGilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -113,7 +114,8 @@ public class LockBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout) {
+        boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
+                        @Cached ReleaseGilNode gil) {
             // args setup
             boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeBoolean(frame, blocking);
             double timeoutSeconds = UNSET_TIMEOUT;
@@ -137,7 +139,7 @@ public class LockBuiltins extends PythonBuiltins {
             if (isBlockingProfile.profile(!isBlocking)) {
                 return self.acquireNonBlocking();
             } else {
-                getContext().releaseGil();
+                gil.release();
                 try {
                     if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
                         return acquireBlocking(self);
@@ -145,7 +147,7 @@ public class LockBuiltins extends PythonBuiltins {
                         return self.acquireTimeout(timeoutSeconds);
                     }
                 } finally {
-                    getContext().acquireGil();
+                    gil.acquire();
                 }
             }
         }

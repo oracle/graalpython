@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.ReleaseGilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -192,24 +193,23 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                 Object[] arguments = getArgsNode.executeWith(frame, args);
                 PKeyword[] keywords = getKwArgsNode.execute(kwargs);
 
-                // n.b.: It is important to pass 'null' frame here because each thread has it's own
-                // stack and if we would pass the current frame, this would be connected as a caller
-                // which is incorrect. However, the thread-local 'topframeref' is initialized with
-                // EMPTY which will be picked up.
-                context.acquireGil();
+                ReleaseGilNode.getUncached().acquire();
                 try {
+                    // n.b.: It is important to pass 'null' frame here because each thread has it's own
+                    // stack and if we would pass the current frame, this would be connected as a caller
+                    // which is incorrect. However, the thread-local 'topframeref' is initialized with
+                    // EMPTY which will be picked up.
                     callNode.execute(null, callable, arguments, keywords);
                 } catch (PException e) {
                     WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), "in thread started by", callable);
                 } finally {
-                    context.releaseGil();
+                    ReleaseGilNode.getUncached().release();
                 }
             }, env.getContext(), context.getThreadGroup());
 
             PThread pThread = factory().createPythonThread(cls, thread);
-            // if we're the first thread, acquire the newly created GIL now
             pThread.start();
-            context.acquireGil();
+            ReleaseGilNode.forceAquire();
             return pThread.getId();
         }
     }

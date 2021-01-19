@@ -654,8 +654,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeMultiThreading(PythonContext context) {
-        singleThreadedAssumption.invalidate();
-        context.initializeMultiThreading();
+        if (singleThreadedAssumption.isValid()) {
+            singleThreadedAssumption.invalidate();
+            context.initializeMultiThreading();
+        }
     }
 
     @Override

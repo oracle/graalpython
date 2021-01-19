@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.ReleaseGilNode;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -119,7 +120,7 @@ public class TopLevelExceptionHandler extends RootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        getContext().acquireGil();
+        ReleaseGilNode.getUncached().acquire();
         try {
             if (exception != null) {
                 throw handlePythonException(exception.getEscapedException());
@@ -140,7 +141,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 }
             }
         } finally {
-            getContext().releaseGil();
+            ReleaseGilNode.getUncached().release();
         }
     }
 

@@ -246,11 +246,10 @@ public final class PythonContext {
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private GraalHPyContext hPyContext;
-    private final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
-    private ReentrantLock globalInterpreterLock;
+    private ReentrantLock globalInterpreterLock = new ReentrantLock();
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
@@ -453,6 +452,7 @@ public final class PythonContext {
         core.postInitialize();
         if (!ImageInfo.inImageBuildtimeCode()) {
             importSiteIfForced();
+            initializeMultiThreading();
         }
     }
 
@@ -461,6 +461,7 @@ public final class PythonContext {
         setupRuntimeInformation(true);
         core.postInitialize();
         importSiteIfForced();
+        initializeMultiThreading();
     }
 
     private void importSiteIfForced() {
@@ -852,7 +853,7 @@ public final class PythonContext {
         }
         LOGGER.fine("successfully shut down all threads");
 
-        if (!singleThreaded.isValid()) {
+        if (!language.singleThreadedAssumption.isValid()) {
             // collect list of threads to join in synchronized block
             LinkedList<WeakReference<Thread>> threadList = new LinkedList<>();
             synchronized (this) {
@@ -954,27 +955,23 @@ public final class PythonContext {
         return null;
     }
 
-    public void acquireGil() {
-        if (!singleThreaded.isValid()) {
-            privateAcquireGil();
-        }
-    }
-
+    /**
+     * Should not be called directly.
+     * @see ReleaseGilNode
+     */
     @TruffleBoundary
-    private void privateAcquireGil() {
+    void acquireGil() {
         if (!globalInterpreterLock.isHeldByCurrentThread()) {
             globalInterpreterLock.lock();
         }
     }
 
-    public void releaseGil() {
-        if (!singleThreaded.isValid()) {
-            privateReleaseGil();
-        }
-    }
-
+    /**
+     * Should not be called directly.
+     * @see ReleaseGilNode
+     */
     @TruffleBoundary
-    private void privateReleaseGil() {
+    void releaseGil() {
         if (globalInterpreterLock.isHeldByCurrentThread()) {
             globalInterpreterLock.unlock();
         }
@@ -1058,7 +1055,7 @@ public final class PythonContext {
 
     public Thread[] getThreads() {
         CompilerAsserts.neverPartOfCompilation();
-        if (singleThreaded.isValid()) {
+        if (language.singleThreadedAssumption.isValid()) {
             return new Thread[]{Thread.currentThread()};
         } else {
             Set<Thread> threads = new HashSet<>();
@@ -1075,7 +1072,7 @@ public final class PythonContext {
     }
 
     private PythonThreadState getThreadState() {
-        if (singleThreaded.isValid()) {
+        if (language.singleThreadedAssumption.isValid()) {
             return singleThreadState;
         }
         return getThreadStateMultiThreaded();
@@ -1094,7 +1091,7 @@ public final class PythonContext {
     }
 
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
-        if (singleThreaded.isValid()) {
+        if (language.singleThreadedAssumption.isValid()) {
             action.accept(singleThreadState);
         } else {
             synchronized (this) {
@@ -1116,8 +1113,9 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void initializeMultiThreading() {
-        globalInterpreterLock = new ReentrantLock();
-        singleThreaded.invalidate();
+        if (language.singleThreadedAssumption.isValid()) {
+            return;
+        }
         threadState = new ThreadLocal<>();
 
         handler.activateGIL();
@@ -1135,7 +1133,7 @@ public final class PythonContext {
 
     public synchronized void attachThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
-        if (singleThreaded.isValid()) {
+        if (language.singleThreadedAssumption.isValid()) {
             assert threadStateMapping == null;
 
             // n.b.: Several threads may be attached to the context but we may still be in the
@@ -1152,7 +1150,7 @@ public final class PythonContext {
         CompilerAsserts.neverPartOfCompilation();
         long threadId = thread.getId();
         // check if there is a live sentinel lock
-        if (singleThreaded.isValid()) {
+        if (language.singleThreadedAssumption.isValid()) {
             assert threadStateMapping == null;
             singleThreadState.removeOwner(thread);
             // only release sentinel lock if all owners are gone

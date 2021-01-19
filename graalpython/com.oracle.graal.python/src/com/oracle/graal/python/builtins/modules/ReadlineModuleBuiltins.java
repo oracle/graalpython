@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.ReleaseGilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -246,7 +247,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         PNone setCompleter(PythonModule self, String path,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
-            try {
+            try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
                 BufferedReader reader = getContext().getEnv().getPublicTruffleFile(path).newBufferedReader();
                 String line;
                 while ((line = reader.readLine()) != null) {

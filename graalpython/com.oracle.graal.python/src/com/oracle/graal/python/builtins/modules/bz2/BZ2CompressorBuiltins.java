@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.NFIBz2Support;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.ReleaseGilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -100,15 +101,21 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
-                        @Cached ConditionProfile errProfile) {
-            NFIBz2Support bz2Support = ctxt.getNFIBz2Support();
-            Object bzst = bz2Support.createStream(createStream);
-            int err = bz2Support.compressInit(bzst, compresslevel, compressInit);
-            if (errProfile.profile(err != BZ_OK)) {
-                errorHandling(err, getRaiseNode());
+                        @Cached ConditionProfile errProfile,
+                        @Cached ReleaseGilNode gil) {
+            gil.release();
+            try {
+                NFIBz2Support bz2Support = ctxt.getNFIBz2Support();
+                Object bzst = bz2Support.createStream(createStream);
+                int err = bz2Support.compressInit(bzst, compresslevel, compressInit);
+                if (errProfile.profile(err != BZ_OK)) {
+                    errorHandling(err, getRaiseNode());
+                }
+                self.init(bzst, bz2Support);
+                return PNone.NONE;
+            } finally {
+                gil.acquire();
             }
-            self.init(bzst, bz2Support);
-            return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
@@ -128,11 +135,9 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
-            synchronized (self) {
-                byte[] bytes = toBytes.execute(data.getSequenceStorage());
-                int len = lenNode.execute(data.getSequenceStorage());
-                return factory().createBytes(compress.compress(self, ctxt, bytes, len));
-            }
+            byte[] bytes = toBytes.execute(data.getSequenceStorage());
+            int len = lenNode.execute(data.getSequenceStorage());
+            return factory().createBytes(compress.compress(self, ctxt, bytes, len));
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
@@ -140,11 +145,9 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
                         @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
-            synchronized (self) {
-                byte[] bytes = toBytes.execute(data);
-                int len = bytes.length;
-                return factory().createBytes(compress.compress(self, ctxt, bytes, len));
-            }
+            byte[] bytes = toBytes.execute(data);
+            int len = bytes.length;
+            return factory().createBytes(compress.compress(self, ctxt, bytes, len));
         }
 
         @SuppressWarnings("unused")
@@ -162,10 +165,8 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
         PBytes doit(BZ2Object.BZ2Compressor self,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached Bz2Nodes.Bz2NativeCompress compress) {
-            synchronized (self) {
-                self.setFlushed();
-                return factory().createBytes(compress.flush(self, ctxt));
-            }
+            self.setFlushed();
+            return factory().createBytes(compress.flush(self, ctxt));
         }
 
         @SuppressWarnings("unused")
