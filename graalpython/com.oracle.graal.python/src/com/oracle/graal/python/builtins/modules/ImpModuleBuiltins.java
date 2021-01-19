@@ -475,7 +475,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private PBaseException wrapJavaException(Throwable e) {
-            PBaseException excObject = factory().createBaseException(SystemError, e.getMessage(), PythonUtils.EMPTY_OBJECT_ARRAY);
+            String message = e.getMessage();
+            PBaseException excObject = factory().createBaseException(SystemError, message != null ? message : e.toString(), PythonUtils.EMPTY_OBJECT_ARRAY);
             return ExceptionHandlingStatementNode.wrapJavaException(e, this, excObject).getEscapedException();
         }
 
