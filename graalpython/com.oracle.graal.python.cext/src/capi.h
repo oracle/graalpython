@@ -264,6 +264,16 @@ void* native_pointer_to_java(void* obj) {
     return obj;
 }
 
+MUST_INLINE
+void* function_pointer_to_java(void* obj) {
+    if (points_to_handle_space(obj)) {
+        return resolve_handle_cached(cache, (uint64_t)obj);
+    } else if (!polyglot_is_value(obj)) {
+    	return resolve_function(obj);
+    }
+    return obj;
+}
+
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
