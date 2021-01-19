@@ -90,6 +90,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
@@ -240,7 +241,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode toStringNode,
                         @Cached ToRegexSourceNode toRegexSourceNode,
                         @Cached CallNode callFallbackCompilerNode,
-                        @CachedLibrary(limit = "1") InteropLibrary exceptionLib,
+                        @CachedLibrary(limit = "2") InteropLibrary exceptionLib,
                         @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             try {
@@ -262,13 +263,16 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError, InteropLibrary exceptionLib) {
+        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError, InteropLibrary lib) {
             try {
-                if (exceptionLib.isException(e)) {
+                if (lib.isException(e)) {
                     potentialSyntaxError.enter();
-                    if (exceptionLib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
+                    if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
                         syntaxError.enter();
-                        throw raise(ValueError, "%s", e);
+                        Object reason = lib.asString(lib.getExceptionMessage(e));
+                        SourceSection sourceSection = lib.getSourceLocation(e);
+                        int position = sourceSection.getCharIndex();
+                        throw raise(ValueError, reason, position);
                     }
                 }
             } catch (UnsupportedMessageException e1) {
