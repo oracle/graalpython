@@ -161,6 +161,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     LsprofProfiler("Profiler", "_lsprof"),
     PStruct("Struct", "_struct"),
     PStructUnpackIterator("unpack_iterator", "_struct"),
+    PPickler("Pickler", "_pickle"),
+    PUnpickler("Unpickler", "_pickle"),
+    PPickleBuffer("PickleBuffer", "_pickle"),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
