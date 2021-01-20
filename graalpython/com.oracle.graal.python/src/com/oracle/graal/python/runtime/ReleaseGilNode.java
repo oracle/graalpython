@@ -49,9 +49,9 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.nodes.Node;
 
-public abstract class ReleaseGilNode extends Node implements AutoCloseable {
+public abstract class ReleaseGilNode extends Node {
 
-    private static final class CachedReleaseGilNode extends ReleaseGilNode {
+    private static final class Cached extends ReleaseGilNode {
         @CompilationFinal ContextReference<PythonContext> contextRef;
         @CompilationFinal LanguageReference<PythonLanguage> languageRef;
 
@@ -92,13 +92,16 @@ public abstract class ReleaseGilNode extends Node implements AutoCloseable {
         }
     }
 
-    private static final class UncachedReleaseGilNode extends ReleaseGilNode {
+    public static final class Uncached extends ReleaseGilNode implements AutoCloseable {
+        private Uncached() {
+        }
+
         @Override
         public boolean isAdoptable() {
             return false;
         }
 
-        private static final UncachedReleaseGilNode INSTANCE = new UncachedReleaseGilNode();
+        private static final Uncached INSTANCE = new Uncached();
 
         @Override
         @TruffleBoundary
@@ -110,11 +113,15 @@ public abstract class ReleaseGilNode extends Node implements AutoCloseable {
 
         @Override
         @TruffleBoundary
-        public ReleaseGilNode release() {
+        public Uncached release() {
             if (!PythonLanguage.getCurrent().singleThreadedAssumption.isValid()) {
                 PythonLanguage.getContext().releaseGil();
             }
             return this;
+        }
+
+        public final void close() {
+            acquire();
         }
     }
 
@@ -122,22 +129,12 @@ public abstract class ReleaseGilNode extends Node implements AutoCloseable {
 
     public abstract ReleaseGilNode release();
 
-    // (tfel): I would like to make this always usable as AutoCloseable, but Truffle isn't able to
-    // see that the receiver of the "close()" call after the try-with-resource is the same
-    // compilation final node that was used to open the gil, and then the compilation final context
-    // and language references aren't treated as final anymore and we get bad calls in there. So we
-    // only allow it for the uncached case.
-    public final void close() {
-        assert this instanceof UncachedReleaseGilNode : "the cached ReleaseGilNode cannot be used in a try-with-resource";
-        acquire();
-    }
-
     public static ReleaseGilNode create() {
-        return new CachedReleaseGilNode();
+        return new Cached();
     }
 
-    public static ReleaseGilNode getUncached() {
-        return UncachedReleaseGilNode.INSTANCE;
+    public static Uncached getUncached() {
+        return Uncached.INSTANCE;
     }
 
     /**

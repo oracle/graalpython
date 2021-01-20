@@ -126,7 +126,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @SuppressWarnings("try")
         Object accept(PSocket socket) {
-            try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
+            try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
                 SocketChannel acceptSocket = SocketUtils.accept(this, socket);
                 if (acceptSocket == null) {
                     throw raiseOSError(null, OSErrorEnum.EWOULDBLOCK);
@@ -318,7 +318,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @SuppressWarnings("try")
         Object listen(PSocket socket, int backlog) {
-            try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
+            try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
                 InetAddress host = InetAddress.getByName(socket.serverHost);
                 InetSocketAddress socketAddress = new InetSocketAddress(host, socket.serverPort);
 

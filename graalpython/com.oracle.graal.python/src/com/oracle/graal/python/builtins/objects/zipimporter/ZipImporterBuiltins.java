@@ -205,7 +205,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @SuppressWarnings("try")
         private void initZipImporter(PZipImporter self, String path) {
-            try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
+            try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
                 if (path == null || path.isEmpty()) {
                     throw raise(PythonErrorType.ZipImportError, ErrorMessages.IS_EMPTY, "archive path");
                 }
@@ -531,7 +531,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             ZipInputStream zis = null;
             TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(archive);
             try (InputStream in = tfile.newInputStream(StandardOpenOption.READ);
-                            ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
+                            ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
                 in.skip(streamPosition); // we can fast skip bytes, because there is cached position
                                          // of the zip entry
                 zis = new ZipInputStream(in);

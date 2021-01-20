@@ -260,7 +260,7 @@ public class AsyncHandler {
         if (ctx == null) {
             return;
         }
-        try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
+        try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
             Thread.yield();
         }
     }

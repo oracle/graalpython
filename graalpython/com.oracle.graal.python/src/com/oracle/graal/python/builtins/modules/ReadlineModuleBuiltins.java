@@ -248,7 +248,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
         PNone setCompleter(PythonModule self, String path,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);
-            try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
+            try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
                 BufferedReader reader = getContext().getEnv().getPublicTruffleFile(path).newBufferedReader();
                 String line;
                 while ((line = reader.readLine()) != null) {
