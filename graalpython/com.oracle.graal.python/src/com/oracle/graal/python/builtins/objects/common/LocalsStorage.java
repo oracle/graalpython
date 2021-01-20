@@ -72,7 +72,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(HashingStorageLibrary.class)
-public class LocalsStorage extends HashingStorage {
+public final class LocalsStorage extends HashingStorage {
     /* This won't be the real (materialized) frame but a clone of it. */
     protected final MaterializedFrame frame;
     private int len = -1;
