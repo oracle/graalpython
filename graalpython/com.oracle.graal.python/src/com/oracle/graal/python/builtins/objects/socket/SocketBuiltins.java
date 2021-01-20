@@ -60,6 +60,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -82,8 +83,10 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -590,9 +593,10 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "setblocking", minNumOfPositionalArgs = 2)
+    @Builtin(name = "setblocking", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "blocking"})
+    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean)
     @GenerateNodeFactory
-    public abstract static class SetBlockingNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetBlockingNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         PNone doBoolean(PSocket socket, boolean blocking) {
             try {
@@ -614,6 +618,11 @@ public class SocketBuiltins extends PythonBuiltins {
             if (socket.getServerSocket() != null) {
                 socket.getServerSocket().configureBlocking(socket.isBlocking());
             }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.SetBlockingNodeClinicProviderGen.INSTANCE;
         }
     }
 
