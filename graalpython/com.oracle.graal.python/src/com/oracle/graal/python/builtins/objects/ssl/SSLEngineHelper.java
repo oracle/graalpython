@@ -1,10 +1,5 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLWantReadError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLWantWriteError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLZeroReturnError;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
@@ -15,26 +10,26 @@ import javax.net.ssl.SSLException;
 
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 
 public class SSLEngineHelper {
 
-    public static void write(PNodeWithRaise node, PSSLSocket socket, ByteBuffer input) {
+    public static void write(Node node, PSSLSocket socket, ByteBuffer input) {
         loop(node, socket, input, ByteBuffer.allocate(0), true);
     }
 
-    public static void read(PNodeWithRaise node, PSSLSocket socket, ByteBuffer target) {
+    public static void read(Node node, PSSLSocket socket, ByteBuffer target) {
         loop(node, socket, ByteBuffer.allocate(0), target, false);
     }
 
-    public static void handshake(PNodeWithRaise node, PSSLSocket socket) {
+    public static void handshake(Node node, PSSLSocket socket) {
         try {
             socket.getEngine().beginHandshake();
         } catch (SSLException e) {
             // TODO better error handling
-            throw node.raise(SSLError, e);
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
         }
         loop(node, socket, ByteBuffer.allocate(0), ByteBuffer.allocate(0), true);
     }
@@ -50,7 +45,7 @@ public class SSLEngineHelper {
     }
 
     @TruffleBoundary
-    private static void loop(PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, boolean writing) {
+    private static void loop(Node node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, boolean writing) {
         // TODO maybe we need some checks for closed connection etc here?
         MemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
         MemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
@@ -112,7 +107,7 @@ public class SSLEngineHelper {
                 switch (result.getStatus()) {
                     case CLOSED:
                         if (writing) {
-                            throw node.raise(SSLZeroReturnError, ErrorMessages.SSL_SESSION_CLOSED);
+                            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
                         } else {
                             break transmissionLoop;
                         }
@@ -166,7 +161,7 @@ public class SSLEngineHelper {
             }
         } catch (IOException e) {
             // TODO better error handling, distinguish SSL errors and socket errors
-            throw node.raise(SSLError, e);
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
         } finally {
             socket.setHandshakeComplete(hanshakeComplete);
         }
@@ -175,10 +170,10 @@ public class SSLEngineHelper {
         // TODO handle OOM
     }
 
-    private static void obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, ByteChannel javaSocket, int netBufferSize) throws IOException {
+    private static void obtainMoreInput(Node node, MemoryBIO networkInboundBIO, ByteChannel javaSocket, int netBufferSize) throws IOException {
         if (javaSocket == null) {
             // MemoryBIO input
-            throw node.raise(SSLWantReadError, ErrorMessages.SSL_WANT_READ);
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
         }
         // Network input
         networkInboundBIO.ensureWriteCapacity(netBufferSize);
@@ -188,18 +183,18 @@ public class SSLEngineHelper {
             int readBytes = javaSocket.read(writeBuffer);
             // TODO if (readBytes < 0)
             if (readBytes == 0) {
-                throw node.raise(SSLWantReadError, ErrorMessages.SSL_WANT_READ);
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
             }
         } finally {
             networkInboundBIO.applyWrite(writeBuffer);
         }
     }
 
-    private static void emitOutput(PNodeWithRaise node, MemoryBIO networkOutboundBIO, ByteChannel javaSocket) throws IOException {
+    private static void emitOutput(Node node, MemoryBIO networkOutboundBIO, ByteChannel javaSocket) throws IOException {
         if (networkOutboundBIO.getPending() > 0) {
             if (javaSocket == null) {
                 // MemoryBIO outut
-                throw node.raise(SSLWantWriteError, ErrorMessages.SSL_WANT_WRITE);
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
             }
             // Network output
             ByteBuffer readBuffer = networkOutboundBIO.getBufferForReading();
@@ -207,7 +202,7 @@ public class SSLEngineHelper {
                 // TODO direct use of socket
                 int writtenBytes = javaSocket.write(readBuffer);
                 if (writtenBytes == 0) {
-                    throw node.raise(SSLWantWriteError, ErrorMessages.SSL_WANT_WRITE);
+                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
                 }
             } finally {
                 networkOutboundBIO.applyRead(readBuffer);

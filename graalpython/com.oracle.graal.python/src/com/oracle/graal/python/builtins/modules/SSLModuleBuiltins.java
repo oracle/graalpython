@@ -10,6 +10,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.builtins.objects.ssl.SSLProtocolVersion;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -112,6 +113,16 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("PROTOCOL_TLSv1", SSLProtocolVersion.TLS1.getPythonId());
         module.setAttribute("PROTOCOL_TLSv1_1", SSLProtocolVersion.TLS1_1.getPythonId());
         module.setAttribute("PROTOCOL_TLSv1_2", SSLProtocolVersion.TLS1_2.getPythonId());
+
+        module.setAttribute("SSL_ERROR_SSL", SSLErrorCode.ERROR_SSL.getErrno());
+        module.setAttribute("SSL_ERROR_WANT_READ", SSLErrorCode.ERROR_WANT_READ.getErrno());
+        module.setAttribute("SSL_ERROR_WANT_WRITE", SSLErrorCode.ERROR_WANT_WRITE.getErrno());
+        module.setAttribute("SSL_ERROR_WANT_X509_LOOKUP", SSLErrorCode.ERROR_WANT_X509_LOOKUP.getErrno());
+        module.setAttribute("SSL_ERROR_SYSCALL", SSLErrorCode.ERROR_SYSCALL.getErrno());
+        module.setAttribute("SSL_ERROR_ZERO_RETURN", SSLErrorCode.ERROR_ZERO_RETURN.getErrno());
+        module.setAttribute("SSL_ERROR_WANT_CONNECT", SSLErrorCode.ERROR_WANT_CONNECT.getErrno());
+        module.setAttribute("SSL_ERROR_EOF", SSLErrorCode.ERROR_EOF.getErrno());
+        module.setAttribute("SSL_ERROR_INVALID_ERROR_CODE", 10);
 
         module.setAttribute("OP_ALL", OP_ALL);
         module.setAttribute("OP_NO_SSLv2", SSL_OP_NO_SSLv2);
