@@ -3,6 +3,10 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 21.1.0
+
+* Support multi-threading with a global interpreter lock by default.
+
 ## Version 21.0.0
 
 * Implement name mangling for private attributes
