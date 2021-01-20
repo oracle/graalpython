@@ -747,12 +747,12 @@ public abstract class PythonObjectFactory extends Node {
         return createByteArray(cls, array, array.length);
     }
 
-    public PByteArray createByteArray(byte[] array, int lenght) {
-        return createByteArray(new ByteSequenceStorage(array, lenght));
+    public PByteArray createByteArray(byte[] array, int length) {
+        return createByteArray(new ByteSequenceStorage(array, length));
     }
 
-    public PByteArray createByteArray(Object cls, byte[] array, int lenght) {
-        return createByteArray(cls, new ByteSequenceStorage(array, lenght));
+    public PByteArray createByteArray(Object cls, byte[] array, int length) {
+        return createByteArray(cls, new ByteSequenceStorage(array, length));
     }
 
     public PByteArray createByteArray(SequenceStorage storage) {

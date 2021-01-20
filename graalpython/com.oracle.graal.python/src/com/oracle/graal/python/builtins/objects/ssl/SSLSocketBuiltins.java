@@ -112,10 +112,10 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
             try {
                 byte[] bytes = bufferLib.getBufferBytes(buffer);
-                int lenght = bufferLib.getBufferLength(buffer);
-                ByteBuffer input = ByteBuffer.wrap(bytes, 0, lenght);
+                int length = bufferLib.getBufferLength(buffer);
+                ByteBuffer input = ByteBuffer.wrap(bytes, 0, length);
                 SSLEngineHelper.write(this, self, input);
-                return lenght;
+                return length;
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
