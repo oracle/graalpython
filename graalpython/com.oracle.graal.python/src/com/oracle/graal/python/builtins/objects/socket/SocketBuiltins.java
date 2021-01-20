@@ -228,18 +228,22 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetPeerNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object get(PSocket socket) {
+        Object get(VirtualFrame frame, PSocket socket) {
             if (socket.getSocket() == null) {
-                throw raise(OSError, ErrorMessages.ERROR57_SOCKET_CANNOT_BE_CONNECTED);
+                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
             }
 
             try {
-                InetSocketAddress addr = (InetSocketAddress) socket.getSocket().getRemoteAddress();
-                return factory().createTuple(new Object[]{addr.getAddress().getHostAddress(), addr.getPort()});
+                return factory().createTuple(doGet(socket));
             } catch (IOException e) {
-                throw raise(OSError);
+                throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
+        }
+
+        @TruffleBoundary
+        private static Object[] doGet(PSocket socket) throws IOException {
+            InetSocketAddress addr = (InetSocketAddress) socket.getSocket().getRemoteAddress();
+            return new Object[]{addr.getAddress().getHostAddress(), addr.getPort()};
         }
     }
 
