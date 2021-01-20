@@ -11,6 +11,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_refcycle
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_server_side
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_str_for_enums
+*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_tls_unique_channel_binding
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unknown_channel_binding
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unsupported_dtls
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test__create_stdlib_context
@@ -31,6 +32,7 @@
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_verify_flags
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_verify_mode_protocol
 *graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_get_server_certificate_ipv6
+*graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_subclass
 *graalpython.lib-python.3.test.test_ssl.SSLObjectTests.test_private_init
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_bio_handshake
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_bio_read_write_data
@@ -63,6 +65,7 @@
 *graalpython.lib-python.3.test.test_ssl.TestSSLDebug.test_keylog_filename
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_PROTOCOL_TLS
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_alpn_protocols
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_asyncore_server
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_check_hostname
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_check_hostname_idn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_compression
@@ -70,9 +73,11 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_crl_check
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_default_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_dh_params
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_do_handshake_enotconn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_echo
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_getpeercert
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_getpeercert_enotconn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_handshake_timeout
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_min_max_version_mismatch
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_min_max_version_sslv3
@@ -94,6 +99,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_selected_alpn_protocol_if_server_uses_alpn
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_selected_npn_protocol
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sendfile
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_server_accept
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_session
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_session_handling
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_shared_ciphers
