@@ -50,6 +50,13 @@ public class SSLModuleBuiltins extends PythonBuiltins {
 
     private static final int OP_ALL = SSL_OP_ALL & ~SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
 
+    private static final int SSL_OP_NO_SSLv2 = 0;
+    private static final int SSL_OP_NO_SSLv3 = 33554432;
+    private static final int SSL_OP_NO_TLSv1 = 67108864;
+    private static final int SSL_OP_NO_TLSv1_1 = 268435456;
+    private static final int SSL_OP_NO_TLSv1_2 = 134217728;
+    private static final int SSL_OP_NO_TLSv1_3 = 536870912;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLModuleBuiltinsFactory.getFactories();
@@ -102,6 +109,12 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("PROTOCOL_TLSv1_2", SSLProtocolVersion.TLS1_2.getPythonId());
 
         module.setAttribute("OP_ALL", OP_ALL);
+        module.setAttribute("OP_NO_SSLv2", SSL_OP_NO_SSLv2);
+        module.setAttribute("OP_NO_SSLv3", SSL_OP_NO_SSLv3);
+        module.setAttribute("OP_NO_TLSv1", SSL_OP_NO_TLSv1);
+        module.setAttribute("OP_NO_TLSv1_1", SSL_OP_NO_TLSv1_1);
+        module.setAttribute("OP_NO_TLSv1_2", SSL_OP_NO_TLSv1_2);
+        module.setAttribute("OP_NO_TLSv1_3", SSL_OP_NO_TLSv1_3);
     }
 
     @Builtin(name = "txt2obj", minNumOfPositionalArgs = 1, parameterNames = {"txt", "name"})
