@@ -25,12 +25,14 @@ public final class PSSLContext extends PythonBuiltinObject {
     // TODO '2' is openssl default, but should we return it even though it might not be right?
     private int numTickets = 2;
 
-    public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, int verifyFlags, SSLContext context) {
+    public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, int verifyFlags, boolean chekHostname, int verifyMode, SSLContext context) {
         super(cls, instanceShape);
         assert version != null;
         this.version = version;
         this.context = context;
         this.verifyFlags = verifyFlags;
+        this.checkHostname = chekHostname;
+        this.verifyMode = verifyMode;
     }
 
     public SSLProtocolVersion getVersion() {

@@ -101,7 +101,16 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
             }
             try {
-                return factory().createSSLContext(type, version, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, createSSLContext(version));
+                boolean checkHostname;
+                int verifyMode;
+                if (version == SSLProtocolVersion.TLS_CLIENT) {
+                    checkHostname = true;
+                    verifyMode = SSLModuleBuiltins.SSL_CERT_REQUIRED;
+                } else {
+                    checkHostname = false;
+                    verifyMode = SSLModuleBuiltins.SSL_CERT_NONE;
+                }
+                return factory().createSSLContext(type, version, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, createSSLContext(version));
             } catch (NoSuchAlgorithmException e) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e.getMessage());
             } catch (KeyManagementException e) {
