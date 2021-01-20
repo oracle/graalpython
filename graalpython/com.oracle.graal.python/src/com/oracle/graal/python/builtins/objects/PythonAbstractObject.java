@@ -1427,7 +1427,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         public abstract int execute(Object receiver, String fieldName);
 
         @Specialization
-        int access(Object object, String fieldName,
+        static int access(Object object, String fieldName,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary dataModelLibrary,
@@ -1438,7 +1438,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached IsImmutable isImmutable,
                         @Cached KeyForItemAccess itemKey,
                         @Cached KeyForAttributeAccess attrKey,
-                        @Cached GetMroNode getMroNode) {
+                        @Cached GetMroNode getMroNode,
+                        @Cached PInteropSubscriptNode getItemNode) {
 
             String itemFieldName = itemKey.execute(fieldName);
             if (itemFieldName != null) {
@@ -1496,10 +1497,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
                 }
-            } else if (!isImmutable.execute(object) || isAbstractMapping(object, dataModelLibrary)) {
-                // If the member does not exist yet, it is insertable if this object is mutable,
-                // i.e., it's not a builtin object or it is a mapping.
-                info |= INSERTABLE;
+            } else {
+                if (dataModelLibrary.isSequence(object) && isItemReadable(object, fieldName, getItemNode)) {
+                    info |= READABLE;
+                }
+                if (!isImmutable.execute(object) || isAbstractMapping(object, dataModelLibrary)) {
+                    // If the member does not exist yet, it is insertable if this object is mutable,
+                    // i.e., it's not a builtin object or it is a mapping.
+                    info |= INSERTABLE;
+                }
             }
 
             if ((info & READ_SIDE_EFFECTS) == 0 && (info & INVOCABLE) == 0) {
@@ -1513,12 +1519,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             return info;
         }
 
-        public static PKeyInfoNode create() {
-            return PythonAbstractObjectFactory.PKeyInfoNodeGen.create();
-        }
-
-        public static PKeyInfoNode getUncached() {
-            return PythonAbstractObjectFactory.PKeyInfoNodeGen.getUncached();
+        private static boolean isItemReadable(Object object, String key, PInteropSubscriptNode getItemNode) {
+            try {
+                return getItemNode.execute(object, key) != PNone.NO_VALUE;
+            } catch (PException e) {
+                return false;
+            }
         }
     }
 
@@ -1554,46 +1560,40 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @GenerateUncached
     public abstract static class KeyForAttributeAccess extends Node {
 
-        public abstract String execute(String object);
+        public abstract String execute(String key);
 
-        @Specialization
-        String doIt(String object,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(object.length() > 1 && object.charAt(0) == '@')) {
-                return object.substring(1);
-            }
+        @Specialization(guards = "isAttributeAccess(key)")
+        static String doAttributeAccess(String key) {
+            return key.substring(1);
+        }
+
+        @Specialization(guards = "!isAttributeAccess(key)")
+        static String doOther(@SuppressWarnings("unused") String key) {
             return null;
         }
 
-        public static KeyForAttributeAccess create() {
-            return PythonAbstractObjectFactory.KeyForAttributeAccessNodeGen.create();
-        }
-
-        public static KeyForAttributeAccess getUncached() {
-            return PythonAbstractObjectFactory.KeyForAttributeAccessNodeGen.getUncached();
+        static boolean isAttributeAccess(String key) {
+            return key.length() > 1 && key.charAt(0) == '@';
         }
     }
 
     @GenerateUncached
     public abstract static class KeyForItemAccess extends Node {
 
-        public abstract String execute(String object);
+        public abstract String execute(String key);
 
-        @Specialization
-        String doIt(String object,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(object.length() > 1 && object.charAt(0) == '[')) {
-                return object.substring(1);
-            }
+        @Specialization(guards = "isItemAccess(key)")
+        static String doItemAccess(String key) {
+            return key.substring(1);
+        }
+
+        @Specialization(guards = "!isItemAccess(key)")
+        static String doOther(@SuppressWarnings("unused") String key) {
             return null;
         }
 
-        public static KeyForItemAccess create() {
-            return PythonAbstractObjectFactory.KeyForItemAccessNodeGen.create();
-        }
-
-        public static KeyForItemAccess getUncached() {
-            return PythonAbstractObjectFactory.KeyForItemAccessNodeGen.getUncached();
+        static boolean isItemAccess(String key) {
+            return key.length() > 1 && key.charAt(0) == '[';
         }
     }
 
