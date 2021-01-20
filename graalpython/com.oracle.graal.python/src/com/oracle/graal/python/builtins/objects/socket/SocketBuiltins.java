@@ -124,6 +124,7 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class AcceptNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
+        @SuppressWarnings("try")
         Object accept(PSocket socket) {
             try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
                 SocketChannel acceptSocket = SocketUtils.accept(this, socket);
@@ -315,6 +316,7 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class ListenNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
+        @SuppressWarnings("try")
         Object listen(PSocket socket, int backlog) {
             try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
                 InetAddress host = InetAddress.getByName(socket.serverHost);

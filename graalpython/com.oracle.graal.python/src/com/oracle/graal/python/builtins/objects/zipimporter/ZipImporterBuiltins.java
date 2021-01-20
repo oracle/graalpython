@@ -202,7 +202,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         /** Size of the input stream buffer. */
         public static final int BUFFER_SIZE = 512 * 1024;
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
+        @SuppressWarnings("try")
         private void initZipImporter(PZipImporter self, String path) {
             try (ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
                 if (path == null || path.isEmpty()) {
@@ -288,7 +289,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                                                     entry.getCrc(),
                                                     // store the entry position for faster reading content
                                                     lastZipEntryPos = zipEntryPos
-                                                });
+                                });
                                 filesDict.setItem(entry.getName(), tuple);
                                 // count local file header from the last zipentry
                                 lastZipLocFileHeaderSize = 30 + entry.getName().length();
@@ -502,6 +503,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
+        @SuppressWarnings("try")
         public PBytes doit(PZipImporter self, String pathname) {
             if (self.getPrefix() == null) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
@@ -529,7 +531,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             ZipInputStream zis = null;
             TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(archive);
             try (InputStream in = tfile.newInputStream(StandardOpenOption.READ);
-                 ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
+                            ReleaseGilNode gil = ReleaseGilNode.getUncached().release()) {
                 in.skip(streamPosition); // we can fast skip bytes, because there is cached position
                                          // of the zip entry
                 zis = new ZipInputStream(in);

@@ -143,6 +143,7 @@ public abstract class ReleaseGilNode extends Node implements AutoCloseable {
     /**
      * This method should only be called when we go from single to multi-threaded for the first
      * time.
+     *
      * @see com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins
      */
     @TruffleBoundary

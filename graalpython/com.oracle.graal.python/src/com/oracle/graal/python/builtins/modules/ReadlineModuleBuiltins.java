@@ -244,6 +244,7 @@ public class ReadlineModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
+        @SuppressWarnings("try")
         PNone setCompleter(PythonModule self, String path,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             LocalData data = (LocalData) readNode.execute(self, DATA);

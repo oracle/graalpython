@@ -195,10 +195,10 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
 
                 ReleaseGilNode.getUncached().acquire();
                 try {
-                    // n.b.: It is important to pass 'null' frame here because each thread has it's own
-                    // stack and if we would pass the current frame, this would be connected as a caller
-                    // which is incorrect. However, the thread-local 'topframeref' is initialized with
-                    // EMPTY which will be picked up.
+                    // n.b.: It is important to pass 'null' frame here because each thread has it's
+                    // ownstack and if we would pass the current frame, this would be connected as
+                    // a caller which is incorrect. However, the thread-local 'topframeref' is
+                    // initialized with EMPTY which will be picked up.
                     callNode.execute(null, callable, arguments, keywords);
                 } catch (PException e) {
                     WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), "in thread started by", callable);

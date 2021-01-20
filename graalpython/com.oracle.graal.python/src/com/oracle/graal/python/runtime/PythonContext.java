@@ -957,6 +957,7 @@ public final class PythonContext {
 
     /**
      * Should not be called directly.
+     *
      * @see ReleaseGilNode
      */
     @TruffleBoundary
@@ -968,6 +969,7 @@ public final class PythonContext {
 
     /**
      * Should not be called directly.
+     *
      * @see ReleaseGilNode
      */
     @TruffleBoundary

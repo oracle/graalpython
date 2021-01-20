@@ -520,8 +520,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     try {
                         Buffer result = posixLib.read(getPosixSupport(), fd, length);
                         if (result.length > Integer.MAX_VALUE) {
-                            // sanity check that it is safe to cast result.length to int, to be removed
-                            // once we support large arrays
+                            // sanity check that it is safe to cast result.length to int, to be
+                            // removed once we support large arrays
                             throw CompilerDirectives.shouldNotReachHere("Posix read() returned more bytes than requested");
                         }
                         return factory().createBytes(result.data, 0, (int) result.length);
