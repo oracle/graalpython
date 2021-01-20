@@ -143,8 +143,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)", limit = "3")
         static Object setCheckHostname(PSSLContext self, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
-            self.setCheckHostname(lib.isTrue(value));
-            // TODO check_hostname = True sets verify_mode = CERT_REQUIRED
+            boolean checkHostname = lib.isTrue(value);
+            if (checkHostname && self.getVerifyMode() == SSLModuleBuiltins.SSL_CERT_NONE) {
+                self.setVerifyMode(SSLModuleBuiltins.SSL_CERT_REQUIRED);
+            }
+            self.setCheckHostname(checkHostname);
             return PNone.NONE;
         }
     }
