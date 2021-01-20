@@ -67,16 +67,11 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywor
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethKeywordsNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethNoargsNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethONode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -90,6 +85,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyLegacyGetSetDescriptorGetterRoot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyLegacyGetSetDescriptorSetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
@@ -445,13 +442,13 @@ public class GraalHPyNodes {
         @TruffleBoundary
         private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name) {
             if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, MethNoargsNode.METH_NOARGS_CONVERTER);
+                return new MethNoargsRoot(language, name, PExternalFunctionWrapper.NOARGS);
             } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, MethONode.METH_O_CONVERTER);
+                return new MethORoot(language, name, PExternalFunctionWrapper.O);
             } else if (CExtContext.isMethKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, MethKeywordsNode.METH_KEYWORDS_CONVERTER);
+                return new MethKeywordsRoot(language, name, PExternalFunctionWrapper.KEYWORDS);
             } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, MethVarargsNode.METH_VARARGS_CONVERTER);
+                return new MethVarargsRoot(language, name, PExternalFunctionWrapper.VARARGS);
             }
             throw new IllegalStateException("illegal method flags");
         }
@@ -534,12 +531,12 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            PBuiltinFunction getterObject = HPyGetSetDescriptorGetterRootNode.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
+            PBuiltinFunction getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
             Object setterObject;
             if (readOnly) {
                 setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), getNameNode.execute(owner), getSetDescrName);
             } else {
-                setterObject = HPyGetSetDescriptorSetterRootNode.createLegacyFunction(lang, owner, getSetDescrName, setterFunPtr, closurePtr);
+                setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(lang, owner, getSetDescrName, setterFunPtr, closurePtr);
             }
 
             GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, getSetDescrName, owner, !readOnly);
@@ -1023,7 +1020,7 @@ public class GraalHPyNodes {
                          * TODO(fa): Properly determine if 'pfuncPtr' is a native function pointer
                          * and thus if we need to do result and argument conversion.
                          */
-                        RootCallTarget callTarget = slot.getSignature().getOrCreateCallTarget(lang, attributeKey, true);
+                        RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(slot.getSignature(), lang, attributeKey, true);
                         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(pfuncPtr);
                         PBuiltinFunction method = factory.createBuiltinFunction(attributeKey, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, callTarget);
                         writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
@@ -1683,38 +1680,6 @@ public class GraalHPyNodes {
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
             ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
             ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext, isAllocatedProfile);
-        }
-    }
-
-    /**
-     * Argument converter for calling a native legacy get/set descriptor getter function. The native
-     * signature is: {@code PyObject* getter(struct _HPyObject_head_s *self, void* closure)} whereas
-     * {@code struct _HPyObject_head_s} is size-compatible to {@code PyObject}.
-     */
-    public abstract static class HPyLegacyGetSetGetterToSulongNode extends ConvertArgsToSulongNode {
-
-        @Specialization
-        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached HPyGetNativeSpacePointerNode readNativeSpaceNode) {
-            dest[destOffset] = readNativeSpaceNode.execute(args[argsOffset]);
-            dest[destOffset + 1] = args[argsOffset + 1];
-        }
-    }
-
-    /**
-     * Argument converter for calling a native legacy get/set descriptor setter function. The native
-     * signature is:
-     * {@code int setter(struct _HPyObject_head_s *self, PyObject *value, void* closure)}.
-     */
-    public abstract static class HPyLegacyGetSetSetterToSulongNode extends ConvertArgsToSulongNode {
-
-        @Specialization
-        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached HPyGetNativeSpacePointerNode getNativeSpacePointerNode,
-                        @Cached ToBorrowedRefNode toSulongNode) {
-            dest[destOffset] = getNativeSpacePointerNode.execute(args[argsOffset]);
-            dest[destOffset + 1] = toSulongNode.execute(args[argsOffset + 1]);
-            dest[destOffset + 2] = args[argsOffset + 2];
         }
     }
 

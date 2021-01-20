@@ -1859,8 +1859,8 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Converts the 1st argument as required for {@code allocfunc}, {@code getattrfunc}, and
-     * {@code ssizeargfunc}.
+     * Converts the 1st argument as required for {@code allocfunc}, {@code getattrfunc},
+     * {@code ssizeargfunc}, and {@code getter}.
      */
     public abstract static class BinaryFirstToSulongNode extends ConvertArgsToSulongNode {
 
@@ -1909,7 +1909,8 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Converts the 1st (self/class) and the 2rd argument as required for {@code richcmpfunc}.
+     * Converts the 1st (self/class) and the 2rd argument as required for {@code richcmpfunc} and
+     * {@code setter}.
      */
     public abstract static class TernaryFirstSecondToSulongNode extends ConvertArgsToSulongNode {
 

@@ -396,18 +396,18 @@ void add_getset(PyTypeObject* cls, char* name, getter getter_fun, setter setter_
                     closure);
 }
 
-static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* result_conversion, void* meth, int flags, void* signature, char* doc) {
-	void *resolved_meth = function_pointer_to_java(meth);
-    polyglot_invoke(PY_TRUFFLE_CEXT,
-                   "AddFunction",
-                   cls,
-                   native_to_java(type_dict),
-                   polyglot_from_string(name, SRC_CS),
-                   native_pointer_to_java(result_conversion != NULL ? pytruffle_decorate_function(resolved_meth, result_conversion) : resolved_meth),
-                   (signature != NULL ? signature : get_method_flags_wrapper(flags)),
-                   doc,
-                   (flags) > 0 && ((flags) & METH_CLASS) != 0,
-                   (flags) > 0 && ((flags) & METH_STATIC) != 0);
+static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* result_conversion, void* meth, int flags, int signature, char* doc) {
+	    void *resolved_meth = function_pointer_to_java(meth);
+        polyglot_invoke(PY_TRUFFLE_CEXT,
+                       "AddFunction",
+                       cls,
+                       native_to_java(type_dict),
+                       polyglot_from_string(name, SRC_CS),
+                       native_pointer_to_java(result_conversion != NULL ? pytruffle_decorate_function(resolved_meth, result_conversion) : resolved_meth),
+                       (signature != 0 ? signature : get_method_flags_wrapper(flags)),
+                       doc,
+                       (flags) > 0 && ((flags) & METH_CLASS) != 0,
+                       (flags) > 0 && ((flags) & METH_STATIC) != 0);
 }
 
 #define ADD_MEMBER(__javacls__, __tpdict__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__)     \

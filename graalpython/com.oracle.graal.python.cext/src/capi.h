@@ -295,31 +295,31 @@ void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
-#define JWRAPPER_DIRECT                      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_DIRECT"))
-#define JWRAPPER_FASTCALL                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_FASTCALL"))
-#define JWRAPPER_FASTCALL_WITH_KEYWORDS      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_FASTCALL_WITH_KEYWORDS"))
-#define JWRAPPER_KEYWORDS                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_KEYWORDS"))
-#define JWRAPPER_VARARGS                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_VARARGS"))
-#define JWRAPPER_NOARGS                      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NOARGS"))
-#define JWRAPPER_O                           (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_O"))
-#define JWRAPPER_UNSUPPORTED                 (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED"))
-#define JWRAPPER_ALLOC                       (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_ALLOC"))
+#define JWRAPPER_DIRECT                      1
+#define JWRAPPER_FASTCALL                    2
+#define JWRAPPER_FASTCALL_WITH_KEYWORDS      3
+#define JWRAPPER_KEYWORDS                    4
+#define JWRAPPER_VARARGS                     5
+#define JWRAPPER_NOARGS                      6
+#define JWRAPPER_O                           7
+#define JWRAPPER_UNSUPPORTED                 8
+#define JWRAPPER_ALLOC                       9
 #define JWRAPPER_SSIZE_ARG                   JWRAPPER_ALLOC
-#define JWRAPPER_GETATTR                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GETATTR"))
-#define JWRAPPER_SETATTR                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SETATTR"))
-#define JWRAPPER_RICHCMP                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_RICHCMP"))
-#define JWRAPPER_SSIZE_OBJ_ARG               (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SSIZE_OBJ_ARG"))
-#define JWRAPPER_REVERSE                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE"))
-#define JWRAPPER_POW                         (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_POW"))
-#define JWRAPPER_REVERSE_POW                 (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE_POW"))
-#define JWRAPPER_LT                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LT"))
-#define JWRAPPER_LE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LE"))
-#define JWRAPPER_EQ                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_EQ"))
-#define JWRAPPER_NE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NE"))
-#define JWRAPPER_GT                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GT"))
-#define JWRAPPER_GE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GE"))
-#define JWRAPPER_ITERNEXT                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_ITERNEXT"))
-#define JWRAPPER_INQUIRY                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_INQUIRY"))
+#define JWRAPPER_GETATTR                     10
+#define JWRAPPER_SETATTR                     11
+#define JWRAPPER_RICHCMP                     12
+#define JWRAPPER_SSIZE_OBJ_ARG               13
+#define JWRAPPER_REVERSE                     14
+#define JWRAPPER_POW                         15
+#define JWRAPPER_REVERSE_POW                 16
+#define JWRAPPER_LT                          17
+#define JWRAPPER_LE                          18
+#define JWRAPPER_EQ                          19
+#define JWRAPPER_NE                          20
+#define JWRAPPER_GT                          21
+#define JWRAPPER_GE                          22
+#define JWRAPPER_ITERNEXT                    23
+#define JWRAPPER_INQUIRY                     24
 
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                                  \
