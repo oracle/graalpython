@@ -37,6 +37,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -100,7 +101,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
             }
             try {
-                return factory().createSSLContext(type, version, createSSLContext(version));
+                return factory().createSSLContext(type, version, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, createSSLContext(version));
             } catch (NoSuchAlgorithmException e) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e.getMessage());
             } catch (KeyManagementException e) {
@@ -139,6 +140,27 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "verify_flags", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class VerifyFlagsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static long getVerifyFlags(PSSLContext self, @SuppressWarnings("unused") PNone none) {
+            return self.getVerifyFlags();
+        }
+
+        @Specialization(guards = "!isNoValue(flags)", limit = "3")
+        Object setVerifyFlags(VirtualFrame frame, PSSLContext self, Object flags,
+                        @CachedLibrary("flags") PythonObjectLibrary lib,
+                        @Cached CastToJavaLongExactNode castToLong) {
+            try {
+                self.setVerifyFlags((int) castToLong.execute(lib.asIndexWithFrame(flags, frame)));
+            } catch (CannotCastException cannotCastException) {
+                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "", "int", flags);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "protocol", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ProtocolNode extends PythonUnaryBuiltinNode {
@@ -158,8 +180,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(valueObj)", limit = "3")
         Object setOption(VirtualFrame frame, PSSLContext self, Object valueObj,
-                                @Cached CastToJavaLongExactNode cast,
-                                @CachedLibrary("valueObj") PythonObjectLibrary lib) {
+                        @Cached CastToJavaLongExactNode cast,
+                        @CachedLibrary("valueObj") PythonObjectLibrary lib) {
             long value = cast.execute(lib.asIndexWithFrame(valueObj, frame));
             // TODO validate the options
             // TODO use the options
@@ -176,10 +198,16 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getVerifyMode();
         }
 
-        @Specialization(guards = "canBeInteger(value)", limit = "3")
-        Object set(PSSLContext self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            int mode = lib.asSize(value);
+        @Specialization(guards = "!isNoValue(value)", limit = "3")
+        Object set(VirtualFrame frame, PSSLContext self, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached CastToJavaLongExactNode castToLong) {
+            int mode;
+            try {
+                mode = (int) castToLong.execute(lib.asIndexWithFrame(value, frame));
+            } catch (CannotCastException cannotCastException) {
+                throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
+            }
             if (mode == SSLModuleBuiltins.SSL_CERT_NONE && self.getCheckHostname()) {
                 throw raise(ValueError, ErrorMessages.CANNOT_SET_VERIFY_MODE_TO_CERT_NONE);
             }
@@ -192,12 +220,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 default:
                     throw raise(ValueError, ErrorMessages.INVALID_VALUE_FOR_VERIFY_MODE);
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!canBeInteger(value)")
-        Object set(PSSLContext self, Object value) {
-            throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
         }
     }
 
@@ -219,7 +241,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @Builtin(name = "set_ciphers", minNumOfPositionalArgs = 2, parameterNames = {"$self", "cipherlist"})
     @ArgumentClinic(name = "cipherlist", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    abstract static class SetCiphersNode extends PythonClinicBuiltinNode {        
+    abstract static class SetCiphersNode extends PythonClinicBuiltinNode {
         @Specialization
         Object getCiphers(PSSLContext self, String cipherlist) {
             String[] ciphers = cipherlist.split(":");
@@ -227,13 +249,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
             // self.getContext().getSupportedSSLParameters().setCipherSuites(ciphers);
             return PNone.NONE;
         }
-	
-	@Override
+
+        @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SSLContextBuiltinsClinicProviders.SetCiphersNodeClinicProviderGen.INSTANCE;
         }
     }
-    
+
     @Builtin(name = "num_tickets", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -243,10 +265,16 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getNumTickets();
         }
 
-        @Specialization(guards = "canBeInteger(value)", limit = "1")
-        Object set(PSSLContext self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            int num = lib.asSize(value);
+        @Specialization(guards = "!isNoValue(value)", limit = "1")
+        Object set(VirtualFrame frame, PSSLContext self, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached CastToJavaLongExactNode castToLong) {
+            int num;
+            try {
+                num = (int) castToLong.execute(lib.asIndexWithFrame(value, frame));
+            } catch (CannotCastException cannotCastException) {
+                throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
+            }
             if (num < 0) {
                 throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "value");
             }
@@ -255,12 +283,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
             self.setNumTickets(num);
             return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!canBeInteger(value)")
-        Object set(PSSLContext self, Object value) {
-            throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
         }
     }
 

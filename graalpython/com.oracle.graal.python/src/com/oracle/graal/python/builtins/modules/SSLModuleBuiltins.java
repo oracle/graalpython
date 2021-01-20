@@ -57,6 +57,11 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     private static final int SSL_OP_NO_TLSv1_2 = 134217728;
     private static final int SSL_OP_NO_TLSv1_3 = 536870912;
 
+    private static final int X509_V_FLAG_CRL_CHECK = 0x4;
+    private static final int X509_V_FLAG_CRL_CHECK_ALL = 0x8;
+    private static final int X509_V_FLAG_X509_STRICT = 0x20;
+    public static final int X509_V_FLAG_TRUSTED_FIRST = 0x8000;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLModuleBuiltinsFactory.getFactories();
@@ -115,6 +120,12 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("OP_NO_TLSv1_1", SSL_OP_NO_TLSv1_1);
         module.setAttribute("OP_NO_TLSv1_2", SSL_OP_NO_TLSv1_2);
         module.setAttribute("OP_NO_TLSv1_3", SSL_OP_NO_TLSv1_3);
+
+        module.setAttribute("VERIFY_DEFAULT", 0);
+        module.setAttribute("VERIFY_CRL_CHECK_LEAF", X509_V_FLAG_CRL_CHECK);
+        module.setAttribute("VERIFY_CRL_CHECK_CHAIN", X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+        module.setAttribute("VERIFY_X509_STRICT", X509_V_FLAG_X509_STRICT);
+        module.setAttribute("VERIFY_X509_TRUSTED_FIRST", X509_V_FLAG_TRUSTED_FIRST);
     }
 
     @Builtin(name = "txt2obj", minNumOfPositionalArgs = 1, parameterNames = {"txt", "name"})

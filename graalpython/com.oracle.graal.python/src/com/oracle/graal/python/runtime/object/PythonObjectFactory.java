@@ -1013,8 +1013,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
     }
 
-    public PSSLContext createSSLContext(Object clazz, SSLProtocolVersion version, SSLContext context) {
-        return trace(new PSSLContext(clazz, getShape(clazz), version, context));
+    public PSSLContext createSSLContext(Object clazz, SSLProtocolVersion version, int verifyFlags, SSLContext context) {
+        return trace(new PSSLContext(clazz, getShape(clazz), version, verifyFlags, context));
     }
 
     public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, PSocket socket, SSLEngine engine) {

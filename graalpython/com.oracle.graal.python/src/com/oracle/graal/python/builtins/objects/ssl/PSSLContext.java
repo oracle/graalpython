@@ -17,17 +17,20 @@ public final class PSSLContext extends PythonBuiltinObject {
     private boolean setDefaultVerifyPaths = false;
 
     private DHParameterSpec dhParameters;
+    // TODO: this is part of X509_VERIFY_PARAM, maybe replicate the whole structure
+    private int verifyFlags;
 
     // number of TLS v1.3 session tickets
     // TODO can this be set in java?
     // TODO '2' is openssl default, but should we return it even though it might not be right?
     private int numTickets = 2;
 
-    public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, SSLContext context) {
+    public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, int verifyFlags, SSLContext context) {
         super(cls, instanceShape);
         assert version != null;
         this.version = version;
         this.context = context;
+        this.verifyFlags = verifyFlags;
     }
 
     public SSLProtocolVersion getVersion() {
@@ -92,8 +95,16 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.dhParameters = dh;
     }
 
-    public DHParameterSpec getDHParameters() {
+    DHParameterSpec getDHParameters() {
         return dhParameters;
+    }
+
+    int getVerifyFlags() {
+        return verifyFlags;
+    }
+
+    void setVerifyFlags(int flags) {
+        this.verifyFlags = flags;
     }
 
 }
