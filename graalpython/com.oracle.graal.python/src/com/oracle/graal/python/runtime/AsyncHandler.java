@@ -61,7 +61,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -236,22 +235,21 @@ public class AsyncHandler {
         }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions(VirtualFrame frame) {
+    void triggerAsyncActions(@SuppressWarnings("unused") VirtualFrame frame) {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, scheduledActionsFlags != 0)) {
-            if ((scheduledActionsFlags | SHOULD_RELEASE_GIL) != 0) {
-                scheduledActionsFlags &= ~SHOULD_RELEASE_GIL;
-                doReleaseGIL();
-            }
-            if ((scheduledActionsFlags | HAS_SCHEDULED_ACTION) != 0) {
-                scheduledActionsFlags &= ~HAS_SCHEDULED_ACTION;
-                CompilerDirectives.transferToInterpreter();
-                IndirectCallContext.enter(frame, context.get(), null);
-                try {
-                    processAsyncActions();
-                } finally {
-                    IndirectCallContext.exit(frame, context.get(), null);
-                }
-            }
+            triggerAsyncActionsBoundary();
+        }
+    }
+
+    @TruffleBoundary
+    private void triggerAsyncActionsBoundary() {
+        if ((scheduledActionsFlags & SHOULD_RELEASE_GIL) != 0) {
+            scheduledActionsFlags &= ~SHOULD_RELEASE_GIL;
+            doReleaseGIL();
+        }
+        if ((scheduledActionsFlags & HAS_SCHEDULED_ACTION) != 0) {
+            scheduledActionsFlags &= ~HAS_SCHEDULED_ACTION;
+            processAsyncActions();
         }
     }
 
@@ -283,6 +281,7 @@ public class AsyncHandler {
      *
      * We use a recursion guard to ensure that we don't recursively process during processing.
      */
+    @TruffleBoundary
     private void processAsyncActions() {
         PythonContext ctx = context.get();
         if (ctx == null) {
