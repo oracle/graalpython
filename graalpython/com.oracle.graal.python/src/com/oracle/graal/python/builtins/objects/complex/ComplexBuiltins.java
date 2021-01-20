@@ -501,7 +501,6 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    @ReportPolymorphism
     abstract static class PowerNode extends PythonTernaryBuiltinNode {
 
         static boolean isSmallPositive(long l) {

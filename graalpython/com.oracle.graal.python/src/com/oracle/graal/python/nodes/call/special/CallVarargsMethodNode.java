@@ -53,13 +53,13 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
-@ReportPolymorphism
 public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
 
     public abstract Object execute(Frame frame, Object callable, Object[] arguments, PKeyword[] keywords);
@@ -136,6 +136,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     }
 
     @Specialization(replaces = {"callVarargsDirect", "callVarargs", "callSelfMethodSingleContext", "callSelfMethod", "callUnary", "callBinary", "callTernary", "callQuaternary"})
+    @Megamorphic
     Object call(VirtualFrame frame, Object func, Object[] arguments, PKeyword[] keywords,
                     @Cached CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {

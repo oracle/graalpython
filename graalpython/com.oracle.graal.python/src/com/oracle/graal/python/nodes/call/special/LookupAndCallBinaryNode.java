@@ -84,8 +84,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 // The (int, double) and (double, int) specializations are needed to avoid int->long conversion.
 // Although it would produce correct results, the special handling of long to double comparison
 // is slower than converting int->double, which is always correct.
-@ReportPolymorphism
 @ImportStatic(PythonOptions.class)
+@ReportPolymorphism
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {

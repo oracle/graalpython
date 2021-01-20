@@ -331,7 +331,6 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    @ReportPolymorphism
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ToSulongNode extends CExtToNativeNode {
 
@@ -565,7 +564,6 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
-    @ReportPolymorphism
     public abstract static class ToNewRefNode extends CExtToNativeNode {
 
         public final Object executeInt(int i) {

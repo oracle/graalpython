@@ -64,7 +64,6 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
-@ReportPolymorphism
 public abstract class PRaiseNode extends Node {
 
     public abstract PException execute(Node raisingNode, Object type, Object cause, Object format, Object[] arguments);

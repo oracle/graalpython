@@ -91,6 +91,7 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -136,7 +137,6 @@ public abstract class CExtParseArgumentsNode {
     static final char FORMAT_PAR_OPEN = '(';
 
     @GenerateUncached
-    @ReportPolymorphism
     @ImportStatic(PGuards.class)
     public abstract static class ParseTupleAndKeywordsNode extends Node {
 
@@ -162,6 +162,7 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(guards = "isDictOrNull(kwds)", replaces = "doSpecial")
+        @Megamorphic
         int doGeneric(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, CExtContext nativeContext,
                         @Cached ConvertArgNode convertArgNode,
                         @Cached HashingCollectionNodes.LenNode kwdsLenNode,

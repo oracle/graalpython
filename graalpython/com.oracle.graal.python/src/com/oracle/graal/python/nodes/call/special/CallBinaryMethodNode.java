@@ -51,6 +51,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -58,7 +59,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
-@ReportPolymorphism
 public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     public static CallBinaryMethodNode create() {
         return CallBinaryMethodNodeGen.create();
@@ -455,6 +455,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     "callIntSingleReverse", "callIntReverse", "callBoolIntSingleReverse", "callBoolIntReverse", "callLongSingleReverse", "callLongReverse", "callBoolLongSingleReverse",
                     "callBoolLongReverse", "callDoubleSingleReverse", "callDoubleReverse", "callBoolDoubleSingleReverse", "callBoolDoubleReverse", "callObjectSingleContextReverse",
                     "callObjectReverse", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
+    @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2,
                     @Cached CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {

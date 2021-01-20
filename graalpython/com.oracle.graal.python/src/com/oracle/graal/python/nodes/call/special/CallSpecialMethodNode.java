@@ -73,7 +73,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
-@ReportPolymorphism
 @NodeField(name = "maxSizeExceeded", type = boolean.class)
 abstract class CallSpecialMethodNode extends Node {
 
