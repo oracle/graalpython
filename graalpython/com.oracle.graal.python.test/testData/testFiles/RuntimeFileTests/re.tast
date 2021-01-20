@@ -1508,7 +1508,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             StringLiteralNode SourceSection: [11900,11902]`''`
       WriteNameNodeGen SourceSection: [11990,12001]`_cache = {}`
         Identifier: _cache
-        DictLiteralNodeGen SourceSection: [11999,12001]`{}`
+        EmptyDictLiteralNode SourceSection: [11999,12001]`{}`
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [12015,12030]`_MAXCACHE = 512`
         Identifier: _MAXCACHE

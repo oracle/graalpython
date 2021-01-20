@@ -4152,7 +4152,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       Identifier: comps
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [18,comps,Illegal]
-                      DictLiteralNodeGen SourceSection: [14180,14182]`{}`
+                      EmptyDictLiteralNode SourceSection: [14180,14182]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14187,14211]`mapping = bytearray(...`
                       Identifier: mapping
