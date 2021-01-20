@@ -4,12 +4,34 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.KeyFactory;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
+import javax.crypto.spec.DHParameterSpec;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.xml.bind.DatatypeConverter;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -26,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -48,36 +69,14 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
-import javax.crypto.spec.DHParameterSpec;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.xml.bind.DatatypeConverter;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
 
-    private static final String END_CERTIFICATE = "END CERTIFICATE";
-    private static final String BEGIN_CERTIFICATE = "BEGIN CERTIFICATE";
-    private static final String END_PRIVATE_KEY = "END PRIVATE KEY";
-    private static final String BEGIN_PRIVATE_KEY = "BEGIN PRIVATE KEY";
+    private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
+    private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
+    private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
+    private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
     private static final String BEGIN_DH_PARAMETERS = "BEGIN DH PARAMETERS";
     private static final String END_DH_PARAMETERS = "END DH PARAMETERS";
 
@@ -191,7 +190,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(valueObj)", limit = "3")
-        Object setOption(VirtualFrame frame, PSSLContext self, Object valueObj,
+        static Object setOption(VirtualFrame frame, PSSLContext self, Object valueObj,
                         @Cached CastToJavaLongExactNode cast,
                         @CachedLibrary("valueObj") PythonObjectLibrary lib) {
             long value = cast.execute(lib.asIndexWithFrame(valueObj, frame));
@@ -255,7 +254,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetCiphersNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object getCiphers(PSSLContext self, String cipherlist) {
+        static Object getCiphers(PSSLContext self, String cipherlist) {
             String[] ciphers = cipherlist.split(":");
             // TODO: the openssl format comming from python isn't what jdk expects to be set
             // self.getContext().getSupportedSSLParameters().setCipherSuites(ciphers);
@@ -302,7 +301,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetDefaultVerifyPathsNode extends PythonBuiltinNode {
         @Specialization
-        Object set(PSSLContext self) {
+        static Object set(PSSLContext self) {
             self.setDefaultVerifyPaths();
             return PNone.NONE;
         }
@@ -312,18 +311,15 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"isNoValue(cafile)", "isNoValue(capath)", "isNoValue(cadata)"})
-        Object load(PSSLContext self, PNone cafile, PNone capath, PNone cadata) {
-            throw raise(TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
-        }
-
-        @Specialization(guards = "isSomeValue(cafile, capath, cadata)", limit = "3")
+        @Specialization
         Object load(PSSLContext self, Object cafile, Object capath, Object cadata,
-                        @CachedLibrary("cafile") PythonObjectLibrary fileLib,
-                        @CachedLibrary("capath") PythonObjectLibrary pathLib) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary fileLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary pathLib) {
+            if (cafile instanceof PNone && capath instanceof PNone && cadata instanceof PNone) {
+                throw raise(TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
+            }
             File file = null;
-            if (cafile != PNone.NO_VALUE) {
+            if (!(cafile instanceof PNone)) {
                 // TODO TruffleFile
                 file = new File(fileLib.asPath(cafile));
                 if (!file.exists()) {
@@ -332,7 +328,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
 
             File path = null;
-            if (capath != PNone.NO_VALUE) {
+            if (!(capath instanceof PNone)) {
                 // TODO TruffleFile
                 path = new File(pathLib.asPath(capath));
                 if (!path.exists()) {
@@ -340,16 +336,16 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 }
             }
 
-            if (cadata != PNone.NO_VALUE) {
+            if (!(cadata instanceof PNone)) {
                 // TODO handle cadata
             }
 
-            if (file != null || path != null) {
-                // TODO handle capath
+            // TODO handle capath
+            if (file != null) {
                 // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
                 try {
-                    X509Certificate[] cert = getCertificates(file);
-                    if (cert == null) {
+                    X509Certificate[] certificates = getCertificates(file);
+                    if (certificates.length == 0) {
                         // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
                         // (_ssl.c:3991)"
                         throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
@@ -362,15 +358,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     self.getContext().init(km, null, null);
                 } catch (Exception ex) {
                     // TODO
-                    throw raise(ValueError, ex.getMessage());
+                    throw raise(SSLError, ex);
                 }
             }
 
             return PNone.NONE;
-        }
-
-        protected boolean isSomeValue(Object cafile, Object capath, Object cadata) {
-            return !PGuards.isNoValue(cafile) || !PGuards.isNoValue(capath) || !PGuards.isNoValue(cadata);
         }
     }
 
@@ -392,8 +384,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
             try {
                 // TODO: preliminary implementation - import and convert PEM format to java keystore
-                X509Certificate[] cert = getCertificates(certPem);
-                if (cert == null) {
+                X509Certificate[] certificates = getCertificates(certPem);
+                if (certificates.length == 0) {
                     // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
                     // (_ssl.c:3991)"
                     throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
@@ -406,7 +398,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     // (_ssl.c:3991)"
                     throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no private key found in keyfile/certfile");
                 }
-                keystore.setKeyEntry(pkPem.getName(), pk, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, cert);
+                keystore.setKeyEntry(pkPem.getName(), pk, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, certificates);
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
                 kmf.init(keystore, password.toCharArray());
@@ -416,7 +408,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, ex.getMessage());
             } catch (IOException ex) {
                 // TODO
-                throw raise(ValueError, ex.getMessage());
+                throw raise(SSLError, ex.getMessage());
             }
             return PNone.NONE;
         }
@@ -427,33 +419,39 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary
     private static X509Certificate[] getCertificates(File pem) throws IOException, CertificateException {
+        Base64.Decoder decoder = Base64.getDecoder();
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        List<X509Certificate> res = new ArrayList<>();
         try (BufferedReader r = new BufferedReader(new FileReader(pem))) {
+            boolean sawBegin = false;
+            StringBuilder sb = new StringBuilder(2000);
             String line;
             while ((line = r.readLine()) != null) {
-                if (line.contains(BEGIN_CERTIFICATE)) {
-                    break;
+                if (sawBegin) {
+                    if (line.contains(END_CERTIFICATE)) {
+                        sawBegin = false;
+                        byte[] der;
+                        try {
+                            der = decoder.decode(sb.toString());
+                        } catch (IllegalArgumentException e) {
+                            throw new IOException("invalid base64");
+                        }
+                        res.add((X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der)));
+                    } else {
+                        sb.append(line);
+                    }
+                } else if (line.contains(BEGIN_CERTIFICATE)) {
+                    sawBegin = true;
+                    sb.setLength(0);
                 }
             }
-            if (line == null) {
-                return null;
+            if (sawBegin) {
+                throw new IOException("bad end line");
             }
-            StringBuilder sb = new StringBuilder();
-            List<X509Certificate> res = new ArrayList<>();
-            while ((line = r.readLine()) != null) {
-                if (line.contains(END_CERTIFICATE)) {
-                    String hexString = sb.toString();
-                    CertificateFactory factory = CertificateFactory.getInstance("X.509");
-                    X509Certificate cert = (X509Certificate) factory.generateCertificate(new ByteArrayInputStream(DatatypeConverter.parseBase64Binary(hexString)));
-                    res.add(cert);
-                    sb = new StringBuilder();
-                } else {
-                    sb.append(line);
-                }
-
-            }
-            return res.toArray(new X509Certificate[res.size()]);
         }
+        return res.toArray(new X509Certificate[res.size()]);
     }
 
     private static PrivateKey getPrivateKey(File pkPem) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
@@ -477,7 +475,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             byte[] bytes = DatatypeConverter.parseBase64Binary(sb.toString());
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
             final KeyFactory factory = KeyFactory.getInstance("RSA");
-            return (RSAPrivateKey) factory.generatePrivate(spec);
+            return factory.generatePrivate(spec);
         }
     }
 
@@ -573,7 +571,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static DHParameterSpec getDHParameters(File file) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+    private static DHParameterSpec getDHParameters(File file) throws IOException {
         try (BufferedReader r = new BufferedReader(new FileReader(file))) {
             // TODO: test me!
             String line;
@@ -649,7 +647,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             BigInteger generator = new BigInteger(genString);
 
             // initialize the parameter spec
-            return new DHParameterSpec(prime, generator, Integer.valueOf(bitString));
+            return new DHParameterSpec(prime, generator, Integer.parseInt(bitString));
         }
     }
 
