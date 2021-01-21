@@ -135,9 +135,26 @@ CODESIZE = 4
 MAGIC = 20171005
 MAXREPEAT = 4294967295
 MAXGROUPS = 2147483647
-FLAG_NAMES = ["re.TEMPLATE", "re.IGNORECASE", "re.LOCALE", "re.MULTILINE",
-              "re.DOTALL", "re.UNICODE", "re.VERBOSE", "re.DEBUG",
-              "re.ASCII"]
+FLAG_TEMPLATE = 1
+FLAG_IGNORECASE = 2
+FLAG_LOCALE = 4
+FLAG_MULTILINE = 8
+FLAG_DOTALL = 16
+FLAG_UNICODE = 32
+FLAG_VERBOSE = 64
+FLAG_DEBUG = 128
+FLAG_ASCII = 256
+FLAG_NAMES = [
+    (FLAG_TEMPLATE, "re.TEMPLATE"),
+    (FLAG_IGNORECASE, "re.IGNORECASE"),
+    (FLAG_LOCALE, "re.LOCALE"),
+    (FLAG_MULTILINE, "re.MULTILINE"),
+    (FLAG_DOTALL, "re.DOTALL"),
+    (FLAG_UNICODE, "re.UNICODE"),
+    (FLAG_VERBOSE, "re.VERBOSE"),
+    (FLAG_DEBUG, "re.DEBUG"),
+    (FLAG_ASCII, "re.ASCII"),
+]
 
 
 class SRE_Match():
@@ -269,13 +286,15 @@ class SRE_Pattern():
                 raise
         return self.__compiled_regexes[(pattern, flags)]
 
-
     def __repr__(self):
         flags = self.flags
         flag_items = []
-        for i,name in enumerate(FLAG_NAMES):
-            if flags & (1 << i):
-                flags -= (1 << i)
+        if not self.__binary:
+            if (flags & (FLAG_LOCALE | FLAG_UNICODE | FLAG_ASCII)) == FLAG_UNICODE:
+                flags &= ~FLAG_UNICODE
+        for code, name in FLAG_NAMES:
+            if flags & code:
+                flags -= code
                 flag_items.append(name)
         if flags != 0:
             flag_items.append("0x%x" % flags)

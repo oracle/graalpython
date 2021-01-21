@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_multiple_flags
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_quotes
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_single_flag
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_unicode_flag
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_unknown_flags
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_without_flags
 *graalpython.lib-python.3.test.test_re.ReTests.test_anyall
