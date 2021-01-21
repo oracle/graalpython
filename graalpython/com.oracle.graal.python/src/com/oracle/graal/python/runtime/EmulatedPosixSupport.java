@@ -90,6 +90,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -580,7 +581,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             PSocket socket = getSocket(fd);
             if (socket != null) {
-                SocketBuiltins.SetBlockingNode.setBlocking(socket, blocking);
+                SocketUtils.setBlocking(socket, blocking);
                 return;
             }
             Channel fileChannel = getFileChannel(fd, channelClassProfile);

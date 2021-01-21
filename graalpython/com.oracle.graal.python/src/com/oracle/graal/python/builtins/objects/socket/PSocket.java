@@ -153,6 +153,10 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         return timeout;
     }
 
+    public long getTimeoutInMilliseconds() {
+        return (long) Math.ceil(timeout * 1000.0);
+    }
+
     public void setTimeout(double timeout) {
         this.timeout = timeout;
     }
@@ -191,6 +195,9 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     public void setBlocking(boolean blocking) {
         this.blocking = blocking;
+        if (blocking) {
+            this.timeout = 0.0;
+        }
     }
 
     @TruffleBoundary
