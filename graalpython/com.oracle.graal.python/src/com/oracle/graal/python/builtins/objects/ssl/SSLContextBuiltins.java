@@ -69,6 +69,29 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import javax.crypto.spec.DHParameterSpec;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.xml.bind.DatatypeConverter;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -344,14 +367,21 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (file != null) {
                 // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
                 try {
-                    X509Certificate[] certificates = getCertificates(file);
-                    if (certificates.length == 0) {
+                    X509Certificate[] certs = getCertificates(file);
+                    if (certs.length == 0) {
                         // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
                         // (_ssl.c:3991)"
                         throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
                     }
+                    // TODO cache keystore?
                     KeyStore keystore = KeyStore.getInstance("JKS");
                     keystore.load(null);
+
+                    for (X509Certificate cert : certs) {
+                        // TODO what to use for alias
+                        String alias = file != null ? file.getAbsolutePath() : path.getAbsolutePath() + ":" + cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
+                        keystore.setCertificateEntry(alias, cert);
+                    }
                     KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
                     kmf.init(keystore, PythonUtils.EMPTY_CHAR_ARRAY);
                     KeyManager[] km = kmf.getKeyManagers();
