@@ -166,7 +166,7 @@ class SRE_Match():
     def groups(self, default=None):
         lst = []
         for arg in range(1, self.compiled_regex.groupCount):
-            lst.append(self.__group__(arg))
+            lst.append(self.__group__(arg, default))
         return tuple(lst)
 
     def __groupidx__(self, idx):
@@ -175,11 +175,11 @@ class SRE_Match():
         else:
             return idx
 
-    def __group__(self, idx):
+    def __group__(self, idx, default=None):
         idxarg = self.__groupidx__(idx)
         start = self.result.getStart(idxarg)
         if start < 0:
-            return None
+            return default
         else:
             return self.input_str[start:self.result.getEnd(idxarg)]
 
