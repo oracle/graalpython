@@ -159,13 +159,15 @@ public abstract class CExtCommonNodes {
         }
 
         protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, String name) {
+            if (!NativeCAPISymbol.isValid(name)) {
+                // Be very strict and only allow to import symbols that are known to
+                // NativeCAPISymbols. This is to avoid cache polymorphism (otherwise we risk to
+                // trigger shape transitions).
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Trying to import unregistered C API function: %s", name);
+            }
             Object capiLibrary = nativeContext.getLLVMLibrary();
-            return importCAPISymbol(raiseNode, InteropLibrary.getFactory().getUncached(capiLibrary), capiLibrary, name);
-        }
-
-        private static Object importCAPISymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
             try {
-                return library.readMember(capiLibrary, name);
+                return InteropLibrary.getUncached().readMember(capiLibrary, name);
             } catch (UnknownIdentifierException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
             } catch (UnsupportedMessageException e) {
