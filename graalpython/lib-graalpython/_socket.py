@@ -128,6 +128,7 @@ def setdefaulttimeout(timeout):
 try:
     _sock = socket()
     SocketType = type(_sock)
+    _sock.close()
     del _sock
 except:
     pass

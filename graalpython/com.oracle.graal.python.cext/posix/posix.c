@@ -59,6 +59,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 
@@ -83,6 +84,7 @@ int32_t get_inheritable(int32_t fd) {
     return !(flags & FD_CLOEXEC);
 }
 
+// note: this is also called between fork() and exec()
 int32_t set_inheritable(int32_t fd, int32_t inheritable) {
     int res = fcntl(fd, F_GETFD);
     if (res >= 0) {
@@ -418,6 +420,46 @@ int32_t call_fchmod(int32_t fd, int32_t mode) {
 
 int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
     return readlinkat(dirFd, path, buf, size);
+}
+
+int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) {
+    return waitpid(pid, status, options);
+}
+
+int32_t call_wcoredump(int32_t status) {
+    return WCOREDUMP(status) ? 1 : 0;
+}
+
+int32_t call_wifcontinued(int32_t status) {
+    return WIFCONTINUED(status) ? 1 : 0;
+}
+
+int32_t call_wifstopped(int32_t status) {
+    return WIFSTOPPED(status) ? 1 : 0;
+}
+
+int32_t call_wifsignaled(int32_t status) {
+    return WIFSIGNALED(status) ? 1 : 0;
+}
+
+int32_t call_wifexited(int32_t status) {
+    return WIFEXITED(status) ? 1 : 0;
+}
+
+int32_t call_wexitstatus(int32_t status) {
+    return WEXITSTATUS(status);
+}
+
+int32_t call_wtermsig(int32_t status) {
+    return WTERMSIG(status);
+}
+
+int32_t call_wstopsig(int32_t status) {
+    return WSTOPSIG(status);
+}
+
+int32_t call_kill(int64_t pid, int32_t signal) {
+    return kill(pid, signal);
 }
 
 int32_t get_errno() {

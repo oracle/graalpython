@@ -286,7 +286,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         if (arg.startsWith("--llvm.") ||
                                         arg.startsWith("--python.CoreHome") ||
                                         arg.startsWith("--python.StdLibHome") ||
-                                        arg.startsWith("--python.CAPI")) {
+                                        arg.startsWith("--python.CAPI") ||
+                                        arg.startsWith("--PosixModuleBackend")) {
                             addRelaunchArg(arg);
                         }
                         // possibly a polyglot argument

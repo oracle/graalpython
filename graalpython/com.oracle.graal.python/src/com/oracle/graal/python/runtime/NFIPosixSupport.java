@@ -134,7 +134,18 @@ public final class NFIPosixSupport extends PosixSupport {
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
         set_blocking("(sint32, sint32):sint32"),
-        get_terminal_size("(sint32, [sint32]):sint32");
+        get_terminal_size("(sint32, [sint32]):sint32"),
+        call_kill("(sint64, sint32):sint32"),
+        call_waitpid("(sint64, [sint32], sint32):sint64"),
+        call_wcoredump("(sint32):sint32"),
+        call_wifcontinued("(sint32):sint32"),
+        call_wifstopped("(sint32):sint32"),
+        call_wifsignaled("(sint32):sint32"),
+        call_wifexited("(sint32):sint32"),
+        call_wexitstatus("(sint32):sint32"),
+        call_wtermsig("(sint32):sint32"),
+        call_wstopsig("(sint32):sint32"),
+        fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32");
 
         private final String signature;
 
@@ -797,6 +808,191 @@ public final class NFIPosixSupport extends PosixSupport {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return buffer.withLength(n);
+    }
+
+    @ExportMessage
+    public void kill(long pid, int signal,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_kill, pid, signal);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public long[] waitpid(long pid, int options,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int[] status = new int[1];
+        long res = invokeNode.callLong(this, PosixNativeFunction.call_waitpid, pid, wrap(status), options);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return new long[]{res, status[0]};
+    }
+
+    @ExportMessage
+    public boolean wcoredump(int status,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_wcoredump, status) != 0;
+    }
+
+    @ExportMessage
+    public boolean wifcontinued(int status,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_wifcontinued, status) != 0;
+    }
+
+    @ExportMessage
+    public boolean wifstopped(int status,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_wifstopped, status) != 0;
+    }
+
+    @ExportMessage
+    public boolean wifsignaled(int status,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_wifsignaled, status) != 0;
+    }
+
+    @ExportMessage
+    public boolean wifexited(int status,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_wifexited, status) != 0;
+    }
+
+    @ExportMessage
+    public int wexitstatus(int status,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_wexitstatus, status);
+    }
+
+    @ExportMessage
+    public int wtermsig(int status,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_wtermsig, status);
+    }
+
+    @ExportMessage
+    public int wstopsig(int status,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_wstopsig, status);
+    }
+
+    @ExportMessage
+    public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+
+        // The following strings and string arrays need to be present in the native function:
+        // - char** of executable names ('\0'-terminated strings with an extra NULL at the end)
+        // - char** of arguments names ('\0'-terminated strings with an extra NULL at the end)
+        // - an optional char** of env variables ('\0'-terminated strings with an extra NULL at the
+        // end), must distinguish between NULL (child inherits env) and an empty array (child gets
+        // empty env)
+        // - an optional char* cwd ('\0'-terminated string or NULL)
+        // We do this by concatenating all strings (including their terminating '\0' characters)
+        // into one large byte buffer (which becomes 'char *') and pass an additional array of
+        // offsets to mark where the individual strings begin. To prevent memory allocation
+        // in C (and related free()), we reuse this array of integer offsets as an array of
+        // C-strings (char **). For this reason, the array of offsets is allocated as long[].
+        // In the offsets array we mark the places where NULL should be with a special value -1.
+        // All that is left is to let the native function know where in the offsets array the
+        // individual string arrays begin:
+        // - executable names are always at index 0
+        // - argsPos is the index in the offsets array pointing to the first argument
+        // - envPos is either -1 or an index in the offsets array pointing to the first env string
+        // - cwdPos is either -1 or an index in the offsets array pointing to the cwd string
+
+        // First we calculate the lengths of the offsets array and the string buffer (dataLen)
+        int offsetsLen = executables.length + 1;
+        long dataLen = getLengthOfCStrings(executables);
+
+        int argsPos = offsetsLen;
+        offsetsLen += args.length + 1;
+        dataLen += getLengthOfCStrings(args);
+
+        int envPos;
+        if (env != null) {
+            envPos = offsetsLen;
+            offsetsLen += env.length + 1;
+            dataLen += getLengthOfCStrings(env);
+        } else {
+            envPos = -1;
+        }
+
+        int cwdPos;
+        if (cwd != null) {
+            cwdPos = offsetsLen;
+            offsetsLen += 1;
+            dataLen += ((Buffer) cwd).length + 1;
+        } else {
+            cwdPos = -1;
+        }
+
+        if (dataLen >= Integer.MAX_VALUE) {
+            // TODO throw UnsupportedPosixFeatureException? Or pretend that one of the posix errors
+            // happened? ENOMEM, E2BIG, EMSGSIZE
+        }
+
+        byte[] data = new byte[(int) dataLen];
+        long[] offsets = new long[offsetsLen];
+        long offset = 0;
+
+        offset = encodeCStringArray(data, offset, offsets, 0, executables);
+        offset = encodeCStringArray(data, offset, offsets, argsPos, args);
+        if (env != null) {
+            offset = encodeCStringArray(data, offset, offsets, envPos, env);
+        }
+        if (cwd != null) {
+            Buffer buf = (Buffer) cwd;
+            int strLen = (int) buf.length;
+            PythonUtils.arraycopy(buf.data, 0, data, (int) offset, strLen);
+            offsets[cwdPos] = offset;
+            offset += strLen + 1;
+        }
+        assert offset == dataLen;
+
+        // TODO would it make sense to put all the int arguments into one int array?
+        int res = invokeNode.callInt(this, PosixNativeFunction.fork_exec,
+                        wrap(data), wrap(offsets), offsets.length, argsPos, envPos, cwdPos,
+                        stdinReadFd, stdinWriteFd,
+                        stdoutReadFd, stdoutWriteFd,
+                        stderrReadFd, stderrWriteFd,
+                        errPipeReadFd, errPipeWriteFd,
+                        closeFds ? 1 : 0,
+                        restoreSignals ? 1 : 0,
+                        callSetsid ? 1 : 0,
+                        wrap(fdsToKeep), fdsToKeep.length);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return res;
+    }
+
+    private long getLengthOfCStrings(Object[] src) {
+        long len = 0;
+        for (Object o : src) {
+            len += ((Buffer) o).length + 1;
+        }
+        return len;
+    }
+
+    /**
+     * Copies null-terminated strings to a buffer {@code data} starting at position {@code offset},
+     * and stores the offset of each string to the {@code offsets} array starting at index
+     * {@code startPos}.
+     */
+    private long encodeCStringArray(byte[] data, long offset, long[] offsets, int startPos, Object[] src) {
+        for (int i = 0; i < src.length; ++i) {
+            Buffer buf = (Buffer) src[i];
+            int strLen = (int) buf.length;
+            PythonUtils.arraycopy(buf.data, 0, data, (int) offset, strLen);
+            offsets[startPos + i] = offset;
+            offset += strLen + 1;       // +1 for the terminating \0 character
+        }
+        offsets[startPos + src.length] = -1;        // this will become NULL in C (the char* array
+        // needs to be terminated by a NULL)
+        return offset;
     }
 
     // ------------------

@@ -222,6 +222,29 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Object readlinkat(Object receiver, int dirFd, Object path) throws PosixException;
 
+    public abstract void kill(Object receiver, long pid, int signal) throws PosixException;
+
+    public abstract long[] waitpid(Object receiver, long pid, int options) throws PosixException;
+
+    public abstract boolean wcoredump(Object receiver, int status);
+
+    public abstract boolean wifcontinued(Object receiver, int status);
+
+    public abstract boolean wifstopped(Object receiver, int status);
+
+    public abstract boolean wifsignaled(Object receiver, int status);
+
+    public abstract boolean wifexited(Object receiver, int status);
+
+    public abstract int wexitstatus(Object receiver, int status);
+
+    public abstract int wtermsig(Object receiver, int status);
+
+    public abstract int wstopsig(Object receiver, int status);
+
+    public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
+                    int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException;
+
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary
