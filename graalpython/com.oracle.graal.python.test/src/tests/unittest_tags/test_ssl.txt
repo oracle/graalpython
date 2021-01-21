@@ -11,6 +11,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_refcycle
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_server_side
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_str_for_enums
+*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_timeout
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_tls_unique_channel_binding
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unknown_channel_binding
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unsupported_dtls

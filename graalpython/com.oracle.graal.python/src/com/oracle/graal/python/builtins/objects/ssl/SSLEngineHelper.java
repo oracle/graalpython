@@ -2,29 +2,30 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
+import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.nodes.Node;
 
 public class SSLEngineHelper {
 
-    public static void write(Node node, PSSLSocket socket, ByteBuffer input) {
+    public static void write(PNodeWithRaise node, PSSLSocket socket, ByteBuffer input) {
         loop(node, socket, input, ByteBuffer.allocate(0), true);
     }
 
-    public static void read(Node node, PSSLSocket socket, ByteBuffer target) {
+    public static void read(PNodeWithRaise node, PSSLSocket socket, ByteBuffer target) {
         loop(node, socket, ByteBuffer.allocate(0), target, false);
     }
 
-    public static void handshake(Node node, PSSLSocket socket) {
+    public static void handshake(PNodeWithRaise node, PSSLSocket socket) {
         try {
             socket.getEngine().beginHandshake();
         } catch (SSLException e) {
@@ -45,7 +46,7 @@ public class SSLEngineHelper {
     }
 
     @TruffleBoundary
-    private static void loop(Node node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, boolean writing) {
+    private static void loop(PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, boolean writing) {
         // TODO maybe we need some checks for closed connection etc here?
         MemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
         MemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
@@ -57,13 +58,12 @@ public class SSLEngineHelper {
             return;
         }
         SSLEngine engine = socket.getEngine();
-        ByteChannel javaSocket = null;
         PSocket pSocket = socket.getSocket();
+        TimeoutHelper timeoutHelper = null;
         if (pSocket != null) {
-            if (pSocket.getSocket() != null) {
-                javaSocket = pSocket.getSocket();
-            } else {
-                // TODO what now? It could be ServerSocket
+            long timeoutMillis = pSocket.getTimeoutInMilliseconds();
+            if (timeoutMillis > 0) {
+                timeoutHelper = new TimeoutHelper(timeoutMillis);
             }
         }
         // Whether we can write directly to targetBuffer
@@ -73,7 +73,7 @@ public class SSLEngineHelper {
         boolean currentlyWriting = writing;
         try {
             // Flush output that didn't get written in the last call (for non-blocking)
-            emitOutput(node, networkOutboundBIO, javaSocket);
+            emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
             // TODO check engine.isInboundDone/engine.isOutboundDone
             transmissionLoop: while (true) {
                 SSLEngineResult result;
@@ -120,10 +120,10 @@ public class SSLEngineHelper {
                         writeDirectlyToTarget = false;
                         continue transmissionLoop;
                     case BUFFER_UNDERFLOW:
-                        obtainMoreInput(node, networkInboundBIO, javaSocket, netBufferSize);
+                        obtainMoreInput(node, networkInboundBIO, pSocket, netBufferSize, timeoutHelper);
                         continue transmissionLoop;
                     case OK:
-                        emitOutput(node, networkOutboundBIO, javaSocket);
+                        emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
                         switch (result.getHandshakeStatus()) {
                             case NEED_TASK:
                                 hanshakeComplete = false;
@@ -170,8 +170,8 @@ public class SSLEngineHelper {
         // TODO handle OOM
     }
 
-    private static void obtainMoreInput(Node node, MemoryBIO networkInboundBIO, ByteChannel javaSocket, int netBufferSize) throws IOException {
-        if (javaSocket == null) {
+    private static void obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, PSocket socket, int netBufferSize, TimeoutHelper timeoutHelper) throws IOException {
+        if (socket == null) {
             // MemoryBIO input
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
         }
@@ -179,8 +179,7 @@ public class SSLEngineHelper {
         networkInboundBIO.ensureWriteCapacity(netBufferSize);
         ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
         try {
-            // TODO direct use of socket
-            int readBytes = javaSocket.read(writeBuffer);
+            int readBytes = SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
             // TODO if (readBytes < 0)
             if (readBytes == 0) {
                 throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
@@ -190,17 +189,16 @@ public class SSLEngineHelper {
         }
     }
 
-    private static void emitOutput(Node node, MemoryBIO networkOutboundBIO, ByteChannel javaSocket) throws IOException {
+    private static void emitOutput(PNodeWithRaise node, MemoryBIO networkOutboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
         if (networkOutboundBIO.getPending() > 0) {
-            if (javaSocket == null) {
+            if (socket == null) {
                 // MemoryBIO outut
                 throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
             }
             // Network output
             ByteBuffer readBuffer = networkOutboundBIO.getBufferForReading();
             try {
-                // TODO direct use of socket
-                int writtenBytes = javaSocket.write(readBuffer);
+                int writtenBytes = SocketUtils.send(node, socket, readBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
                 if (writtenBytes == 0) {
                     throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
                 }
