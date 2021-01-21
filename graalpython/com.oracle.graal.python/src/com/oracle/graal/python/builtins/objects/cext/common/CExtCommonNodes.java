@@ -150,7 +150,7 @@ public abstract class CExtCommonNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, name, PNone.NO_VALUE);
             if (nativeSymbol == PNone.NO_VALUE) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
+                CompilerDirectives.transferToInterpreter();
                 nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, name);
                 dynamicObjectLib.put(symbolCache, name, nativeSymbol);
                 dynamicObjectLib.updateShape(symbolCache);
