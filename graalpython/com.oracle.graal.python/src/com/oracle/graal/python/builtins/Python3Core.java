@@ -102,6 +102,8 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
+import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
@@ -418,6 +420,7 @@ public final class Python3Core implements PythonCore {
                         new ZLibModuleBuiltins(),
                         new ZlibCompressBuiltins(),
                         new ZlibDecompressBuiltins(),
+                        new IOBaseBuiltins(),
                         new BufferedReaderBuiltins(),
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),

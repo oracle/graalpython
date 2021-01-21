@@ -252,6 +252,9 @@ public abstract class ErrorMessages {
     public static final String FD_IS_GREATER_THAN_MAXIMUM = "fd is greater than maximum";
     public static final String FD_IS_LESS_THAN_MINIMUM = "fd is less than minimum";
     public static final String FILE_NOT_OPENED_FOR_READING = "file not opened for reading";
+    public static final String FILE_OR_STREAM_IS_NOT_READABLE = "File or stream is not readable.";
+    public static final String FILE_OR_STREAM_IS_NOT_SEEKABLE = "File or stream is not seekable.";
+    public static final String FILE_OR_STREAM_IS_NOT_WRITABLE = "File or stream is not writable.";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";

@@ -427,10 +427,12 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PythonClass createPythonClass(Object metaclass, String name, PythonAbstractClass[] bases) {
+        // TODO unset the HAS_SLOTS_BUT_NO_DICT_FLAG flag
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, bases));
     }
 
     public PythonClass createPythonClass(Object metaclass, String name, boolean invokeMro, PythonAbstractClass[] bases) {
+        // TODO unset the HAS_SLOTS_BUT_NO_DICT_FLAG flag
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
     }
 
