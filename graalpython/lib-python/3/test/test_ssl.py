@@ -4674,6 +4674,8 @@ class TestSSLDebug(unittest.TestCase):
             self.assertEqual(ctx.keylog_filename, support.TESTFN)
 
     def test_msg_callback(self):
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("not supported private debugging interface")
         client_context, server_context, hostname = testing_context()
 
         def msg_cb(conn, direction, version, content_type, msg_type, data):
@@ -4686,6 +4688,8 @@ class TestSSLDebug(unittest.TestCase):
             client_context._msg_callback = object()
 
     def test_msg_callback_tls12(self):
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("not supported private debugging interface")
         client_context, server_context, hostname = testing_context()
         client_context.options |= ssl.OP_NO_TLSv1_3
 
