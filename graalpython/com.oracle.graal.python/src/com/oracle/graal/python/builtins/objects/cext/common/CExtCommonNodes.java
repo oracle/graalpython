@@ -153,7 +153,6 @@ public abstract class CExtCommonNodes {
                 CompilerDirectives.transferToInterpreter();
                 nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, name);
                 dynamicObjectLib.put(symbolCache, name, nativeSymbol);
-                dynamicObjectLib.updateShape(symbolCache);
             }
             return nativeSymbol;
         }

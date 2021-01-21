@@ -47,6 +47,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
@@ -77,7 +78,7 @@ public abstract class CExtContext {
     private final ConversionNodeSupplier supplier;
 
     /** A cache for C symbols. */
-    @CompilationFinal private DynamicObject symbolCache;
+    private DynamicObject symbolCache;
 
     public CExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
         this.context = context;
@@ -130,14 +131,13 @@ public abstract class CExtContext {
 
     public final DynamicObject getSymbolCache() {
         if (symbolCache == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             symbolCache = initializeSymbolCache();
         }
         return symbolCache;
     }
 
+    @TruffleBoundary
     private Store initializeSymbolCache() {
-        CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = getContext().getLanguage();
         Shape symbolCacheShape = language.getCApiSymbolCacheShape();
         // We will always get an empty shape from the language and we do always add same key-value
