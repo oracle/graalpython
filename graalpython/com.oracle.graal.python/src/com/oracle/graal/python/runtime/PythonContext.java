@@ -47,6 +47,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -110,12 +111,7 @@ public final class PythonContext {
     private volatile boolean finalizing;
 
     private static final class PythonThreadState {
-
-        /*
-         * A thread state may be owned by multiple threads if we know that these threads won't run
-         * concurrently.
-         */
-        final List<WeakReference<Thread>> owners;
+        WeakReference<Thread> owner;
 
         /*
          * The reference to the last top frame on the Python stack during interop calls. Initially,
@@ -135,39 +131,26 @@ public final class PythonContext {
         HashSet<Object> reprObjectSet;
 
         PythonThreadState() {
-            owners = new LinkedList<>();
         }
 
         PythonThreadState(Thread owner) {
-            this();
-            addOwner(owner);
-        }
-
-        void addOwner(Thread owner) {
-            owners.add(new WeakReference<>(owner));
-        }
-
-        void removeOwner(Thread thread) {
-            owners.removeIf(item -> item.get() == thread);
+            this.owner = new WeakReference<>(owner);
         }
 
         boolean isOwner(Thread thread) {
-            for (WeakReference<Thread> owner : owners) {
-                if (owner.get() == thread) {
-                    return true;
-                }
-            }
-            return false;
+            return owner.get() == thread;
         }
 
-        boolean hasOwners() {
-            // first, remove all gone weak references
-            owners.removeIf(item -> item.get() == null);
-            return !owners.isEmpty();
+        void setOwner(Thread thread) {
+            owner = new WeakReference<>(thread);
         }
 
-        List<WeakReference<Thread>> getOwners() {
-            return owners;
+        void clearOwner() {
+            owner = null;
+        }
+
+        WeakReference<Thread> getOwner() {
+            return owner;
         }
 
         @TruffleBoundary
@@ -230,10 +213,10 @@ public final class PythonContext {
     private final PythonThreadState singleThreadState = new PythonThreadState();
 
     /* for fast access to the PythonThreadState object by the owning thread */
-    private ThreadLocal<PythonThreadState> threadState;
+    private ThreadLocal<PythonThreadState> threadState = new ThreadLocal<>();
 
     /* map of thread IDs to indices for array 'threadStates' */
-    private Map<Long, PythonThreadState> threadStateMapping;
+    private Map<Thread, PythonThreadState> threadStateMapping = new WeakHashMap<>();
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -452,7 +435,6 @@ public final class PythonContext {
         core.postInitialize();
         if (!ImageInfo.inImageBuildtimeCode()) {
             importSiteIfForced();
-            initializeMultiThreading();
         }
     }
 
@@ -461,7 +443,6 @@ public final class PythonContext {
         setupRuntimeInformation(true);
         core.postInitialize();
         importSiteIfForced();
-        initializeMultiThreading();
     }
 
     private void importSiteIfForced() {
@@ -853,34 +834,34 @@ public final class PythonContext {
         }
         LOGGER.fine("successfully shut down all threads");
 
-        if (!language.singleThreadedAssumption.isValid()) {
-            // collect list of threads to join in synchronized block
-            LinkedList<WeakReference<Thread>> threadList = new LinkedList<>();
-            synchronized (this) {
-                for (PythonThreadState ts : threadStateMapping.values()) {
-                    // do not join the initial thread; this could cause a dead lock
-                    if (ts != singleThreadState) {
-                        threadList.addAll(ts.getOwners());
-                    }
+        // collect list of threads to join in synchronized block
+        LinkedList<WeakReference<Thread>> threadList = new LinkedList<>();
+        synchronized (this) {
+            for (PythonThreadState ts : threadStateMapping.values()) {
+                // do not join the initial thread; this could cause a dead lock
+                if (ts != singleThreadState) {
+                    threadList.add(ts.getOwner());
                 }
             }
+        }
 
-            // join threads outside the synchronized block otherwise we could run into a dead lock
-            releaseGil();
-            try {
-                for (WeakReference<Thread> threadRef : threadList) {
-                    Thread thread = threadRef.get();
-                    if (thread != null) {
-                        LOGGER.finest("joining thread " + thread);
-                        thread.interrupt();
-                        thread.join();
-                    }
+        // join threads outside the synchronized block otherwise we could run into a dead lock
+        releaseGil();
+        try {
+            for (WeakReference<Thread> threadRef : threadList) {
+                Thread thread = threadRef.get();
+                if (thread != null) {
+                    LOGGER.finest("joining thread " + thread);
+                    // the threads remaining here are daemon threads, all others were shut down via
+                    // the threading module above. So we just interrupt them.
+                    thread.interrupt();
+                    thread.join();
                 }
-            } catch (InterruptedException e) {
-                LOGGER.finest("got interrupt while joining threads");
-            } finally {
-                acquireGil();
             }
+        } catch (InterruptedException e) {
+            LOGGER.finest("got interrupt while joining threads");
+        } finally {
+            acquireGil();
         }
     }
 
@@ -1057,20 +1038,14 @@ public final class PythonContext {
 
     public Thread[] getThreads() {
         CompilerAsserts.neverPartOfCompilation();
-        if (language.singleThreadedAssumption.isValid()) {
-            return new Thread[]{Thread.currentThread()};
-        } else {
-            Set<Thread> threads = new HashSet<>();
-            for (PythonThreadState ts : threadStateMapping.values()) {
-                for (WeakReference<Thread> thRef : ts.getOwners()) {
-                    Thread th = thRef.get();
-                    if (th != null) {
-                        threads.add(th);
-                    }
-                }
+        Set<Thread> threads = new HashSet<>();
+        for (PythonThreadState ts : threadStateMapping.values()) {
+            Thread th = ts.getOwner().get();
+            if (th != null) {
+                threads.add(th);
             }
-            return threads.toArray(new Thread[0]);
         }
+        return threads.toArray(new Thread[0]);
     }
 
     private PythonThreadState getThreadState() {
@@ -1106,7 +1081,7 @@ public final class PythonContext {
 
     @TruffleBoundary
     private synchronized PythonThreadState getThreadStateFullLookup() {
-        return threadStateMapping.get(Thread.currentThread().getId());
+        return threadStateMapping.get(Thread.currentThread());
     }
 
     public void setSentinelLockWeakref(WeakReference<PLock> sentinelLock) {
@@ -1115,59 +1090,28 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void initializeMultiThreading() {
-        if (language.singleThreadedAssumption.isValid()) {
-            return;
-        }
-        threadState = new ThreadLocal<>();
-
         handler.activateGIL();
-
-        synchronized (this) {
-            threadStateMapping = new HashMap<>();
-            for (WeakReference<Thread> ownerRef : singleThreadState.getOwners()) {
-                Thread owner = ownerRef.get();
-                if (owner != null) {
-                    threadStateMapping.put(owner.getId(), singleThreadState);
-                }
-            }
-        }
     }
 
     public synchronized void attachThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
         if (language.singleThreadedAssumption.isValid()) {
-            assert threadStateMapping == null;
-
-            // n.b.: Several threads may be attached to the context but we may still be in the
-            // 'singleThreaded' mode because the threads won't run concurrently. For this case, we
-            // map each attached thread to index 0.
-            singleThreadState.addOwner(thread);
+            singleThreadState.setOwner(thread);
+            threadStateMapping.put(thread, singleThreadState);
         } else {
-            assert threadStateMapping != null;
-            threadStateMapping.put(thread.getId(), new PythonThreadState(thread));
+            threadStateMapping.put(thread, new PythonThreadState(thread));
         }
     }
 
     public synchronized void disposeThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
-        long threadId = thread.getId();
         // check if there is a live sentinel lock
-        if (language.singleThreadedAssumption.isValid()) {
-            assert threadStateMapping == null;
-            singleThreadState.removeOwner(thread);
-            // only release sentinel lock if all owners are gone
-            if (!singleThreadState.hasOwners()) {
-                releaseSentinelLock(singleThreadState.sentinelLock);
-            }
-        } else {
-            PythonThreadState ts = threadStateMapping.get(threadId);
-            assert ts != null : "thread was not attached to this context";
-            ts.removeOwner(thread);
-            threadStateMapping.remove(threadId);
-            if (!ts.hasOwners()) {
-                releaseSentinelLock(ts.sentinelLock);
-            }
-        }
+        PythonThreadState ts = threadStateMapping.get(thread);
+        assert ts != null : "thread was not attached to this context";
+        assert ts.isOwner(thread) : "thread state owner was changed before this thread was disposed!";
+        ts.clearOwner();
+        threadStateMapping.remove(thread);
+        releaseSentinelLock(ts.sentinelLock);
     }
 
     private static void releaseSentinelLock(WeakReference<PLock> sentinelLockWeakref) {
