@@ -151,14 +151,19 @@ public final class PString extends PSequence {
                         "isNativeString(self.getCharSequence())", "!isMaterialized(self.getCharSequence())",
                         "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, replaces = "nativeString", limit = "1")
-        static int nativeStringMat(@SuppressWarnings("unused") PString self, @SuppressWarnings("unused") ThreadState state,
+        static int nativeStringMat(PString self, @SuppressWarnings("unused") ThreadState state,
                         @Bind("getNativeCharSequence(self)") NativeCharSequence nativeCharSequence,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
-                        @CachedLibrary("nativeCharSequence") InteropLibrary lib,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
-            return nativeCharSequence.length(lib, castToJavaIntNode);
+                        @CachedLibrary("nativeCharSequence.getPtr()") InteropLibrary lib,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
+                        @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode) {
+            if (lib.hasArrayElements(nativeCharSequence.getPtr())) {
+                return nativeCharSequence.length(lib, castToJavaIntNode);
+            } else {
+                return materializeNode.execute(self).length();
+            }
         }
 
         @Specialization(replaces = {"string", "lazyString", "nativeString", "nativeStringMat"})
@@ -381,7 +386,7 @@ public final class PString extends PSequence {
     static class IsSame {
         @Specialization
         static boolean ss(PString receiver, PString other,
-                        @Cached StringMaterializeNode materializeNode,
+                        @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode,
                         @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
             if (isInternedStringNode.execute(receiver) && isInternedStringNode.execute(other)) {
                 return materializeNode.execute(receiver).equals(materializeNode.execute(other));

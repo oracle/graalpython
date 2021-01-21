@@ -943,7 +943,7 @@ def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, issta
     owner = to_java_type(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
-        func = _PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, to_java(doc))
+        func = _PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, charptr_to_java(doc))
         object.__setattr__(owner, name, func)
     else:
         func = CreateFunction(name, cfunc, wrapper, owner)
@@ -952,7 +952,7 @@ def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, issta
         elif isstatic:
             func = cstaticmethod(func)
         PyTruffle_SetAttr(func, "__name__", name)
-        PyTruffle_SetAttr(func, "__doc__", to_java(doc))
+        PyTruffle_SetAttr(func, "__doc__", charptr_to_java(doc))
         type_dict = to_java(tpDict)
         if name == "__init__":
             def __init__(self, *args, **kwargs):
@@ -964,7 +964,7 @@ def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, issta
 
 
 def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
-    return _PyCFunction_NewEx(name, cfunc, wrapper, to_java(self), to_java(module), to_java(doc))
+    return _PyCFunction_NewEx(name, cfunc, wrapper, to_java(self), to_java(module), charptr_to_java(doc))
 
 
 def _PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
@@ -1018,7 +1018,10 @@ def PyInstanceMethod_New(func):
 def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    pclass = to_java_type(primary)
+    
+    # TODO(fa): currently unsued but the descriptor should actually check if 
+    #  self has the expected type
+    # pclass = to_java_type(primary)
     getter = ReadMemberFunctions[memberType]
     offset_converted = to_long(int(offset))
     def member_getter(self):
@@ -1031,9 +1034,9 @@ def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
             setter(to_sulong(self), offset_converted, to_sulong(value))
         member_fset = member_setter
     # nb: do not use member.setter/getter because they create copies of the property
-    member = property(fget=member_fget, fset=member_fset, doc=doc)
+    member = property(fget=member_fget, fset=member_fset, doc=charptr_to_java(doc))
     type_dict = to_java(tpDict)
-    type_dict[name] = member
+    type_dict[to_java(name)] = member
 
 
 getset_descriptor = type(type(AddMember).__code__)
@@ -1066,7 +1069,7 @@ def AddGetSet(primary, name, getter, setter, doc, closure):
         fset = lambda self, value: GetSet_SetNotWritable(self, value, name)
 
     getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
-    PyTruffle_SetAttr(getset, "__doc__", to_java(doc))
+    PyTruffle_SetAttr(getset, "__doc__", charptr_to_java(doc))
     PyTruffle_SetAttr(pclass, name, getset)
 
 

@@ -1512,7 +1512,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "!isCArrayWrapper(charPtr)")
-        PString doPointer(Object charPtr,
+        static PString doPointer(Object charPtr,
                         @Cached PythonObjectFactory factory) {
             return factory.createString(new NativeCharSequence(charPtr, 1, false));
         }

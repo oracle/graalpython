@@ -134,6 +134,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.WrapCharPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
@@ -339,6 +340,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static Object run(Object object,
                         @Cached VoidPtrToJavaNode voidPtrtoJavaNode) {
             return voidPtrtoJavaNode.execute(object);
+        }
+    }
+
+    /**
+     * Called from Python code to convert a C character pointer into a Python string where decoding
+     * is done lazily. If the provided pointer denotes a {@code NULL} pointer, this will be
+     * converted to {@code None}.
+     */
+    @Builtin(name = "charptr_to_java", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CharPtrToJavaObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "2")
+        static Object run(Object object,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @CachedLibrary("object") InteropLibrary interopLibrary) {
+            if (!interopLibrary.isNull(object)) {
+                return fromCharPointerNode.execute(object);
+            }
+            return PNone.NONE;
         }
     }
 
