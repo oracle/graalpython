@@ -134,7 +134,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.WrapCharPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
