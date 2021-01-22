@@ -88,6 +88,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -341,10 +342,10 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags) {
-            ByteBuffer readBytes = ByteBuffer.allocate(bufsize);
+            ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
             try {
                 int length = SocketUtils.recv(this, socket, readBytes);
-                return factory().createBytes(readBytes.array(), length);
+                return factory().createBytes(PythonUtils.getBufferArray(readBytes), length);
             } catch (NotYetConnectedException e) {
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
             } catch (IOException e) {
@@ -385,7 +386,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached("create(__SETITEM__)") LookupAndCallTernaryNode setItem) {
             int bufferLen = lib.asSizeWithState(callLen.executeObject(frame, buffer), PArguments.getThreadState(frame));
             byte[] targetBuffer = new byte[bufferLen];
-            ByteBuffer byteBuffer = wrap(targetBuffer);
+            ByteBuffer byteBuffer = PythonUtils.wrapByteBuffer(targetBuffer);
             int length;
             try {
                 length = SocketUtils.recv(this, socket, byteBuffer);
@@ -422,7 +423,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 }
             } else {
                 byte[] targetBuffer = new byte[bufferLen];
-                ByteBuffer byteBuffer = wrap(targetBuffer);
+                ByteBuffer byteBuffer = PythonUtils.wrapByteBuffer(targetBuffer);
                 int length;
                 try {
                     length = SocketUtils.recv(this, socket, byteBuffer);
@@ -437,11 +438,6 @@ public class SocketBuiltins extends PythonBuiltins {
                 }
                 return length;
             }
-        }
-
-        @TruffleBoundary
-        private static ByteBuffer wrap(byte[] data) {
-            return ByteBuffer.wrap(data);
         }
     }
 
@@ -482,7 +478,7 @@ public class SocketBuiltins extends PythonBuiltins {
             }
 
             int written;
-            ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(bytes.getSequenceStorage()));
+            ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
             try {
                 written = SocketUtils.send(this, socket, buffer);
             } catch (IOException e) {
@@ -504,7 +500,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes,
                         @Cached ConditionProfile hasTimeoutProfile) {
             // TODO: do not ignore flags
-            ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(bytes.getSequenceStorage()));
+            ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
             long timeoutMillis = socket.getTimeoutInMilliseconds();
             TimeoutHelper timeoutHelper = null;
             if (hasTimeoutProfile.profile(timeoutMillis > 0)) {
