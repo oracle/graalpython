@@ -179,17 +179,25 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "start_new_thread", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PThread)
     @GenerateNodeFactory
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
+        private static final class ThreadSignaler {
+        }
+
         @Specialization
+        @SuppressWarnings("try")
         long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
+            ThreadSignaler signal = new ThreadSignaler();
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
             Thread thread = env.createThread(() -> {
+                synchronized (signal) {
+                    signal.notify();
+                }
                 Object[] arguments = getArgsNode.executeWith(frame, args);
                 PKeyword[] keywords = getKwArgsNode.execute(kwargs);
 
@@ -208,8 +216,18 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             }, env.getContext(), context.getThreadGroup());
 
             PThread pThread = factory().createPythonThread(cls, thread);
-            pThread.start();
-            ReleaseGilNode.forceAquire();
+            // If we weren't multi-threaded before, we need to acquire the gil before
+            // continuing. For the gil to be active, however, we need to wait until the language's
+            // single threaded assumption is invalidated, which only happens after the other thread
+            // has actually started running.
+            synchronized (signal) {
+                pThread.start();
+                try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
+                    signal.wait();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
             return pThread.getId();
         }
     }

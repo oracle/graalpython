@@ -136,15 +136,4 @@ public abstract class ReleaseGilNode extends Node {
     public static Uncached getUncached() {
         return Uncached.INSTANCE;
     }
-
-    /**
-     * This method should only be called when we go from single to multi-threaded for the first
-     * time.
-     *
-     * @see com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins
-     */
-    @TruffleBoundary
-    public static final void forceAquire() {
-        PythonLanguage.getContext().acquireGil();
-    }
 }
