@@ -75,6 +75,7 @@ import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import javax.crypto.spec.DHParameterSpec;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -314,12 +315,63 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "cert_store_stats", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CertStoreStatsNode extends PythonBuiltinNode {
+        @Specialization
+        Object set(PSSLContext self) {
+            try {
+                KeyStore keystore = self.getKeyStore();
+                Enumeration<String> aliases = keystore.aliases();
+                int x509 = 0, crl = 0, ca = 0;
+                while (aliases.hasMoreElements()) {
+                    Certificate cert = keystore.getCertificate(aliases.nextElement());
+                    if (cert instanceof X509Certificate) {
+                        X509Certificate x509Cert = (X509Certificate) cert;
+                        boolean[] keyUsage = ((X509Certificate) cert).getKeyUsage();
+                        if (keyUsage != null) {
+                            if (keyUsage.length > 6 && keyUsage[6]) {
+                                crl++;
+                            } else {
+                                x509++;
+                                if (keyUsage.length > 5 && keyUsage[5]) {
+                                    ca++;
+                                }
+                            }
+                            continue;
+                        }
+                        // key usage might not be filled
+                        // TODO crl++ is there some way to determine if on Certificate
+                        // Revocation List
+                        x509++;
+                        if (x509Cert.getBasicConstraints() != -1 || isSelfSigned(x509Cert)) {
+                            ca++;
+                        }
+                    }
+                }
+                return factory().createDict(new PKeyword[]{new PKeyword("x509", x509), new PKeyword("crl", crl), new PKeyword("x509_ca", ca)});
+            } catch (Exception ex) {
+                // TODO
+                throw raise(ValueError, "cert_store_stats " + ex.getMessage());
+            }
+        }
+
+        private static boolean isSelfSigned(X509Certificate x509Cert) {
+            try {
+                x509Cert.verify(x509Cert.getPublicKey());
+            } catch (Exception e) {
+                return false;
+            }
+            return true;
+        }
+    }
+
     @Builtin(name = "load_verify_locations", minNumOfPositionalArgs = 1, parameterNames = {"$self", "cafile", "capath", "cadata"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
         @Specialization
-        Object load(PSSLContext self, Object cafile, Object capath, Object cadata,
+        Object load(VirtualFrame frame, PSSLContext self, Object cafile, Object capath, Object cadata,
                         @CachedLibrary(limit = "2") PythonObjectLibrary fileLib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary pathLib,
                         @Cached CastToJavaStringNode castToString,
@@ -329,9 +381,9 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
             TruffleFile file = null;
             if (!(cafile instanceof PNone)) {
-                file = toTruffleFile(fileLib, cafile);
+                file = toTruffleFile(frame, fileLib, cafile);
             } else if (!(capath instanceof PNone)) {
-                file = toTruffleFile(pathLib, capath);
+                file = toTruffleFile(frame, pathLib, capath);
             }
 
             try {
@@ -376,8 +428,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private TruffleFile toTruffleFile(PythonObjectLibrary lib, Object fileObject) throws PException {
-            TruffleFile file = getContext().getEnv().getPublicTruffleFile(lib.asPath(fileObject));
+        private TruffleFile toTruffleFile(VirtualFrame frame, PythonObjectLibrary lib, Object fileObject) throws PException {
+            TruffleFile file;
+            try {
+                file = getContext().getEnv().getPublicTruffleFile(lib.asPath(fileObject));
+            } catch (Exception e) {
+                throw raiseOSError(frame, e);
+            }
             if (!file.exists()) {
                 throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
             }

@@ -11,8 +11,8 @@ public enum SSLErrorCode {
     ERROR_ZERO_RETURN(6, PythonBuiltinClassType.SSLZeroReturnError),
     ERROR_WANT_CONNECT(7, PythonBuiltinClassType.SSLError),
     ERROR_EOF(8, PythonBuiltinClassType.SSLEOFError),
-    ERROR_NO_START_LINE(108, PythonBuiltinClassType.SSLNoStartLine),
-    ERROR_NOT_ENOUGH_DATA(142, PythonBuiltinClassType.SSLNotEnoughData);
+    ERROR_NO_START_LINE(108, PythonBuiltinClassType.SSLError),
+    ERROR_NOT_ENOUGH_DATA(142, PythonBuiltinClassType.SSLError);
 
     private final int errno;
     private final PythonBuiltinClassType type;
