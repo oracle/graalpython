@@ -68,6 +68,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.ReleaseGilNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
@@ -183,7 +184,6 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @SuppressWarnings("try")
         long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
@@ -195,9 +195,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
             Thread thread = env.createThread(() -> {
-                synchronized (signal) {
-                    signal.notify();
-                }
+                notifyThreadStarted(signal);
                 Object[] arguments = getArgsNode.executeWith(frame, args);
                 PKeyword[] keywords = getKwArgsNode.execute(kwargs);
 
@@ -220,6 +218,14 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             // continuing. For the gil to be active, however, we need to wait until the language's
             // single threaded assumption is invalidated, which only happens after the other thread
             // has actually started running.
+            waitForThreadStarted(signal, pThread);
+            return pThread.getId();
+        }
+
+        @SuppressWarnings("try")
+        @SuppressFBWarnings(value = {"WA_NOT_IN_LOOP", "UW_UNCOND_WAIT"}, justification = "Wait for thread started, but accept it failing to.")
+        @TruffleBoundary
+        private static void waitForThreadStarted(ThreadSignaler signal, PThread pThread) {
             synchronized (signal) {
                 pThread.start();
                 try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
@@ -228,7 +234,14 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                     Thread.currentThread().interrupt();
                 }
             }
-            return pThread.getId();
+        }
+
+        @SuppressFBWarnings(value = "NN_NAKED_NOTIFY", justification = "Notifies on thread starting, not a specific state change.")
+        @TruffleBoundary
+        private static void notifyThreadStarted(ThreadSignaler signal) {
+            synchronized (signal) {
+                signal.notify();
+            }
         }
     }
 
