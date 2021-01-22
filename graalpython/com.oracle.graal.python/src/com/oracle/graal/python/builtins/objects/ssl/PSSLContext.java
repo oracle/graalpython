@@ -5,6 +5,11 @@ import javax.net.ssl.SSLContext;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import javax.crypto.spec.DHParameterSpec;
 
 public final class PSSLContext extends PythonBuiltinObject {
@@ -25,6 +30,8 @@ public final class PSSLContext extends PythonBuiltinObject {
     // TODO '2' is openssl default, but should we return it even though it might not be right?
     private int numTickets = 2;
 
+    private KeyStore keystore;
+
     public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, int verifyFlags, boolean chekHostname, int verifyMode, SSLContext context) {
         super(cls, instanceShape);
         assert version != null;
@@ -33,6 +40,14 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.verifyFlags = verifyFlags;
         this.checkHostname = chekHostname;
         this.verifyMode = verifyMode;
+    }
+
+    public KeyStore getKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+        if (keystore == null) {
+            keystore = KeyStore.getInstance("JKS");
+            keystore.load(null);
+        }
+        return keystore;
     }
 
     public SSLProtocolVersion getVersion() {
@@ -75,7 +90,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     public void setOptions(long options) {
         this.options = options;
     }
-    
+
     void setDefaultVerifyPaths() {
         this.setDefaultVerifyPaths = true;
     }

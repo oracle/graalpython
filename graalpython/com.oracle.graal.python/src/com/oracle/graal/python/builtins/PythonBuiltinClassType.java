@@ -220,6 +220,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SSLEOFError("SSLEOFError", "_ssl"),
     SSLCertVerificationError("SSLCertVerificationError", "_ssl"),
     SSLNoStartLine("SSLNoStartLine", "_ssl"),
+    SSLNotEnoughData("SSLNotEnoughData", "_ssl"),
 
     // todo: all OS errors
 
@@ -400,6 +401,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SSLCertVerificationError.base = SSLError;
         SSLEOFError.base = SSLError;
         SSLNoStartLine.base = SSLError;
+        SSLNotEnoughData.base = SSLError;
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;

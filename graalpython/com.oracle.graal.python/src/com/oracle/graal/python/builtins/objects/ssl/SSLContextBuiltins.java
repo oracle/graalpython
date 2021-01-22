@@ -20,6 +20,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -39,8 +41,11 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -54,12 +59,14 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -67,6 +74,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Collection;
 import javax.crypto.spec.DHParameterSpec;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -75,12 +83,10 @@ import javax.xml.bind.DatatypeConverter;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
 
-    private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
     private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
+    private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
     private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
     private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
-    private static final String BEGIN_DH_PARAMETERS = "BEGIN DH PARAMETERS";
-    private static final String END_DH_PARAMETERS = "END DH PARAMETERS";
 
     private static final String BEGIN_DH_PARAMETERS = "-----BEGIN DH PARAMETERS-----";
     private static final String END_DH_PARAMETERS = "-----END DH PARAMETERS-----";
@@ -315,62 +321,104 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         Object load(PSSLContext self, Object cafile, Object capath, Object cadata,
                         @CachedLibrary(limit = "2") PythonObjectLibrary fileLib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary pathLib) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary pathLib,
+                        @Cached CastToJavaStringNode castToString,
+                        @Cached ToByteArrayNode toBytes) {
             if (cafile instanceof PNone && capath instanceof PNone && cadata instanceof PNone) {
                 throw raise(TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
             }
-            File file = null;
+            TruffleFile file = null;
             if (!(cafile instanceof PNone)) {
-                // TODO TruffleFile
-                file = new File(fileLib.asPath(cafile));
-                if (!file.exists()) {
-                    throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
+                file = toTruffleFile(fileLib, cafile);
+            } else if (!(capath instanceof PNone)) {
+                file = toTruffleFile(pathLib, capath);
+            }
+
+            try {
+                KeyStore keystore = self.getKeyStore();
+                if (!(cadata instanceof PNone)) {
+                    try {
+                        fromString(castToString.execute(cadata), keystore);
+                    } catch (CannotCastException cannotCastException) {
+                        if (cadata instanceof PBytesLike) {
+                            fromBytesLike(toBytes, cadata, keystore);
+                        } else {
+                            throw raise(TypeError, ErrorMessages.S_SHOULD_BE_ASCII_OR_BYTELIKE, "cadata");
+                        }
+                    }
                 }
-            }
 
-            File path = null;
-            if (!(capath instanceof PNone)) {
-                // TODO TruffleFile
-                path = new File(pathLib.asPath(capath));
-                if (!path.exists()) {
-                    throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "capath");
-                }
-            }
-
-            if (!(cadata instanceof PNone)) {
-                // TODO handle cadata
-            }
-
-            // TODO handle capath
-            if (file != null) {
-                // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
-                try {
-                    X509Certificate[] certs = getCertificates(file);
+                if (file != null) {
+                    // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
+                    X509Certificate[] certs;
+                    try (BufferedReader r = file.newBufferedReader()) {
+                        certs = getCertificates(this, r);
+                    }
                     if (certs.length == 0) {
                         // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
                         // (_ssl.c:3991)"
                         throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
                     }
-                    // TODO cache keystore?
-                    KeyStore keystore = KeyStore.getInstance("JKS");
-                    keystore.load(null);
-
                     for (X509Certificate cert : certs) {
                         // TODO what to use for alias
-                        String alias = file != null ? file.getAbsolutePath() : path.getAbsolutePath() + ":" + cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
+                        String alias = file.getAbsoluteFile().getPath() + ":" + cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
                         keystore.setCertificateEntry(alias, cert);
                     }
-                    KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-                    kmf.init(keystore, PythonUtils.EMPTY_CHAR_ARRAY);
-                    KeyManager[] km = kmf.getKeyManagers();
-                    self.getContext().init(km, null, null);
-                } catch (Exception ex) {
-                    // TODO
-                    throw raise(SSLError, ex);
                 }
+                // TODO:
+                // KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+                // kmf.init(keystore, PythonUtils.EMPTY_CHAR_ARRAY);
+                // KeyManager[] km = kmf.getKeyManagers();
+            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException ex) {
+                // TODO
+                throw raise(ValueError, ex.getMessage());
             }
-
             return PNone.NONE;
+        }
+
+        private TruffleFile toTruffleFile(PythonObjectLibrary lib, Object fileObject) throws PException {
+            TruffleFile file = getContext().getEnv().getPublicTruffleFile(lib.asPath(fileObject));
+            if (!file.exists()) {
+                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
+            }
+            return file;
+        }
+
+        private void fromString(String dataString, KeyStore keystore) throws IOException, CertificateException, KeyStoreException {
+            if (dataString.isEmpty()) {
+                throw raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
+            }
+            X509Certificate[] certs;
+            try (BufferedReader r = new BufferedReader(new StringReader(dataString))) {
+                certs = getCertificates(this, r);
+            }
+            for (X509Certificate cert : certs) {
+                // TODO what to use for alias
+                String alias = cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
+                keystore.setCertificateEntry(alias, cert);
+            }
+        }
+
+        private void fromBytesLike(ToByteArrayNode toBytes, Object cadata, KeyStore keystore) throws KeyStoreException {
+            byte[] bytes = toBytes.execute(((PBytesLike) cadata).getSequenceStorage());
+            try {
+                Collection<? extends Certificate> col = CertificateFactory.getInstance("X.509").generateCertificates(new ByteArrayInputStream(bytes));
+                for (Certificate cert : col) {
+                    X509Certificate x509Cert = (X509Certificate) cert;
+                    String alias = x509Cert.getIssuerX500Principal().getName() + ":" + x509Cert.getSerialNumber();
+                    keystore.setCertificateEntry(alias, x509Cert);
+                }
+            } catch (CertificateException ex) {
+                String msg = ex.getMessage();
+                if (msg != null) {
+                    if (msg.contains("No certificate data found")) {
+                        throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_NOT_ENOUGH_DATA, ErrorMessages.NOT_ENOUGH_DATA);
+                    }
+                } else {
+                    msg = "error while reading cadata";
+                }
+                throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, msg);
+            }
         }
     }
 
@@ -392,8 +440,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
             try {
                 // TODO: preliminary implementation - import and convert PEM format to java keystore
-                X509Certificate[] certificates = getCertificates(certPem);
-                if (certificates.length == 0) {
+                X509Certificate[] certs;
+                try (BufferedReader r = new BufferedReader(new FileReader(certPem))) {
+                    certs = getCertificates(this, r);
+                }
+                if (certs.length == 0) {
                     // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib
                     // (_ssl.c:3991)"
                     throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no certificate found in certfile");
@@ -406,7 +457,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     // (_ssl.c:3991)"
                     throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no private key found in keyfile/certfile");
                 }
-                keystore.setKeyEntry(pkPem.getName(), pk, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, certificates);
+                keystore.setKeyEntry(pkPem.getName(), pk, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, certs);
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
                 kmf.init(keystore, password.toCharArray());
@@ -428,36 +479,39 @@ public class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static X509Certificate[] getCertificates(File pem) throws IOException, CertificateException {
+    private static X509Certificate[] getCertificates(Node node, BufferedReader r) throws IOException, CertificateException {
         Base64.Decoder decoder = Base64.getDecoder();
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
         List<X509Certificate> res = new ArrayList<>();
-        try (BufferedReader r = new BufferedReader(new FileReader(pem))) {
-            boolean sawBegin = false;
-            StringBuilder sb = new StringBuilder(2000);
-            String line;
-            while ((line = r.readLine()) != null) {
-                if (sawBegin) {
-                    if (line.contains(END_CERTIFICATE)) {
-                        sawBegin = false;
-                        byte[] der;
-                        try {
-                            der = decoder.decode(sb.toString());
-                        } catch (IllegalArgumentException e) {
-                            throw new IOException("invalid base64");
-                        }
-                        res.add((X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der)));
-                    } else {
-                        sb.append(line);
-                    }
-                } else if (line.contains(BEGIN_CERTIFICATE)) {
-                    sawBegin = true;
-                    sb.setLength(0);
-                }
-            }
+        boolean sawBegin = false;
+        StringBuilder sb = new StringBuilder(2000);
+        String line;
+        while ((line = r.readLine()) != null) {
             if (sawBegin) {
-                throw new IOException("bad end line");
+                if (line.contains(END_CERTIFICATE)) {
+                    sawBegin = false;
+                    byte[] der;
+                    try {
+                        der = decoder.decode(sb.toString());
+                    } catch (IllegalArgumentException e) {
+                        // TODO test me
+                        throw new IOException("invalid base64");
+                    }
+                    res.add((X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der)));
+                } else {
+                    sb.append(line);
+                }
+            } else if (line.contains(BEGIN_CERTIFICATE)) {
+                sawBegin = true;
+                sb.setLength(0);
             }
+        }
+        if (!sawBegin && res.isEmpty()) {
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
+        }
+        if (sawBegin) {
+            // TODO wrong errcode
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
         }
         return res.toArray(new X509Certificate[res.size()]);
     }

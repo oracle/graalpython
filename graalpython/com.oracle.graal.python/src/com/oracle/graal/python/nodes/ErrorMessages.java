@@ -524,6 +524,7 @@ public abstract class ErrorMessages {
     public static final String S_EMBEDDED_NULL_CHARACTER_IN_S = "%sembedded null character in %s";
     public static final String S_S_SHOULD_BE_S_NOT_P = "%s%s should be %s, not %p";
     public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
+    public static final String S_SHOULD_BE_ASCII_OR_BYTELIKE = "%s should be an ASCII string or a bytes-like object";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
     public static final String SEMAPHORE_NAME_TAKEN = "Semaphore name taken: '%s'";
@@ -675,6 +676,8 @@ public abstract class ErrorMessages {
     public static final String SSL_PEM_NO_START_LINE = "[PEM: NO_START_LINE] no start line";
     public static final String CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED = "cafile, capath and cadata cannot be all omitted";
     public static final String SSL_CTX_NOT_SERVER_CONTEXT = "SSLContext is not a server context.";
+    public static final String EMPTY_CERTIFICATE_DATA = "Empty certificate data";
+    public static final String NOT_ENOUGH_DATA = "not enough data";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
