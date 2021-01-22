@@ -10,7 +10,8 @@ public enum SSLErrorCode {
     ERROR_SYSCALL(5, PythonBuiltinClassType.SSLSyscallError),
     ERROR_ZERO_RETURN(6, PythonBuiltinClassType.SSLZeroReturnError),
     ERROR_WANT_CONNECT(7, PythonBuiltinClassType.SSLError),
-    ERROR_EOF(8, PythonBuiltinClassType.SSLEOFError);
+    ERROR_EOF(8, PythonBuiltinClassType.SSLEOFError),
+    ERROR_NO_START_LINE(108, PythonBuiltinClassType.SSLNoStartLine);
 
     private final int errno;
     private final PythonBuiltinClassType type;
