@@ -926,7 +926,7 @@ public abstract class CExtParseArgumentsNode {
 
         private static void getbuffer(CExtContext nativeContext, PCallCExtFunction callGetBufferRwNode, PRaiseNativeNode raiseNode, Object sulongArg, Object pybufferPtr, boolean readOnly)
                         throws ParseArgumentsException {
-            String funName = readOnly ? FUN_GET_BUFFER_R : FUN_GET_BUFFER_RW;
+            String funName = readOnly ? FUN_GET_BUFFER_R.getName() : FUN_GET_BUFFER_RW.getName();
             Object rc = callGetBufferRwNode.call(nativeContext, funName, sulongArg, pybufferPtr);
             if (!(rc instanceof Number)) {
                 throw raise(raiseNode, SystemError, ErrorMessages.RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S, funName, rc.getClass());

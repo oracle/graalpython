@@ -1572,7 +1572,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // Called without landing node
-    @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 11)
+    @Builtin(name = "PyTruffle_MemoryViewFromBuffer", minNumOfPositionalArgs = 11)
     @GenerateNodeFactory
     abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
 

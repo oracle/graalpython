@@ -40,141 +40,143 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import java.lang.reflect.Field;
-
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
-@SuppressWarnings("unused")
-public abstract class NativeCAPISymbols {
+public enum NativeCAPISymbols {
 
     /* Sulong intrinsics */
 
-    public static final String FUN_POINTS_TO_HANDLE_SPACE = "_graalvm_llvm_points_to_handle_space";
-    public static final String FUN_DEREF_HANDLE = "_graalvm_llvm_create_deref_handle";
-    public static final String FUN_RESOLVE_HANDLE = "_graalvm_llvm_resolve_handle";
-    public static final String FUN_POLYGLOT_FROM_TYPED = "polyglot_from_typed";
+    FUN_POINTS_TO_HANDLE_SPACE("_graalvm_llvm_points_to_handle_space"),
+    FUN_DEREF_HANDLE("_graalvm_llvm_create_deref_handle"),
+    FUN_RESOLVE_HANDLE("_graalvm_llvm_resolve_handle"),
+    FUN_POLYGLOT_FROM_TYPED("polyglot_from_typed"),
 
     /* Python C API functions */
 
-    public static final String FUN_NATIVE_LONG_TO_JAVA = "native_long_to_java";
-    public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
-    public static final String FUN_NATIVE_HANDLE_FOR_ARRAY = "NativeHandle_ForArray";
-    public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
-    public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
-    public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
-    public static final String FUN_PY_TRUFFLE_ASCII_TO_STRING = "PyTruffle_AsciiToString";
-    public static final String FUN_PY_FLOAT_AS_DOUBLE = "truffle_read_ob_fval";
-    public static final String FUN_GET_OB_TYPE = "get_ob_type";
-    public static final String FUN_GET_OB_REFCNT = "get_ob_refcnt";
-    public static final String FUN_GET_TP_DICT = "get_tp_dict";
-    public static final String FUN_GET_TP_BASE = "get_tp_base";
-    public static final String FUN_GET_TP_BASES = "get_tp_bases";
-    public static final String FUN_GET_TP_NAME = "get_tp_name";
-    public static final String FUN_GET_TP_MRO = "get_tp_mro";
-    public static final String FUN_GET_TP_ALLOC = "get_tp_alloc";
-    public static final String FUN_GET_TP_DEALLOC = "get_tp_dealloc";
-    public static final String FUN_GET_TP_FREE = "get_tp_free";
-    public static final String FUN_GET_TP_FLAGS = "get_tp_flags";
-    public static final String FUN_GET_TP_SUBCLASSES = "get_tp_subclasses";
-    public static final String FUN_GET_TP_DICTOFFSET = "get_tp_dictoffset";
-    public static final String FUN_GET_TP_BASICSIZE = "get_tp_basicsize";
-    public static final String FUN_GET_TP_ITEMSIZE = "get_tp_itemsize";
-    public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
-    public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";
-    public static final String FUN_PTR_COMPARE = "truffle_ptr_compare";
-    public static final String FUN_PTR_ADD = "truffle_ptr_add";
-    public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE = "PyTruffle_ByteArrayToNative";
-    public static final String FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE = "PyTruffle_IntArrayToNative";
-    public static final String FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE = "PyTruffle_LongArrayToNative";
-    public static final String FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE = "PyTruffle_DoubleArrayToNative";
-    public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE = "PyTruffle_ObjectArrayToNative";
-    public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC = "PyTruffle_ByteArrayRealloc";
-    public static final String FUN_PY_TRUFFLE_INT_ARRAY_REALLOC = "PyTruffle_IntArrayRealloc";
-    public static final String FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC = "PyTruffle_LongArrayRealloc";
-    public static final String FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC = "PyTruffle_DoubleArrayRealloc";
-    public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC = "PyTruffle_ObjectArrayRealloc";
-    public static final String FUN_PY_OBJECT_GENERIC_GET_DICT = "_PyObject_GenericGetDict";
-    public static final String FUN_PY_OBJECT_NEW = "PyTruffle_Object_New";
-    public static final String FUN_GET_THREAD_STATE_TYPE_ID = "get_thread_state_typeid";
-    public static final String FUN_GET_PY_BUFFER_TYPEID = "get_Py_buffer_typeid";
-    public static final String FUN_ADD_NATIVE_SLOTS = "PyTruffle_Type_AddSlots";
-    public static final String FUN_PY_TRUFFLE_TUPLE_SET_ITEM = "PyTruffle_Tuple_SetItem";
-    public static final String FUN_PY_TRUFFLE_TUPLE_GET_ITEM = "PyTruffle_Tuple_GetItem";
-    public static final String FUN_PY_TRUFFLE_OBJECT_SIZE = "PyTruffle_Object_Size";
-    public static final String FUN_PY_TYPE_READY = "PyType_Ready";
-    public static final String FUN_GET_NEWFUNC_TYPE_ID = "get_newfunc_typeid";
-    public static final String FUN_GET_BUFFER_R = "get_buffer_r";
-    public static final String FUN_GET_BUFFER_RW = "get_buffer_rw";
-    public static final String FUN_NATIVE_UNICODE_AS_STRING = "native_unicode_as_string";
-    public static final String FUN_PY_UNICODE_GET_LENGTH = "PyUnicode_GetLength";
-    public static final String FUN_GET_UINT32_ARRAY_TYPE_ID = "get_uint32_array_typeid";
-    public static final String FUN_PY_TRUFFLE_FREE = "PyTruffle_Free";
-    public static final String FUN_INCREF = "Py_IncRef";
-    public static final String FUN_DECREF = "Py_DecRef";
-    public static final String FUN_ADDREF = "PyTruffle_ADDREF";
-    public static final String FUN_SUBREF = "PyTruffle_SUBREF";
-    public static final String FUN_GET_LONG_BITS_PER_DIGIT = "get_long_bits_in_digit";
-    public static final String FUN_BULK_SUBREF = "PyTruffle_bulk_SUBREF";
-    public static final String FUN_TRUFFLE_ADD_SUBOFFSET = "truffle_add_suboffset";
-    public static final String FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER = "PyTruffle_MemoryViewFromBuffer";
-    public static final String FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT = "PyTruffle_MemoryViewFromObject";
-    public static final String FUN_PY_TRUFFLE_RELEASE_BUFFER = "PyTruffle_ReleaseBuffer";
-    private static final String FUN_GET_INT8_T_TYPEID = "get_int8_t_typeid";
-    private static final String FUN_GET_INT16_T_TYPEID = "get_int16_t_typeid";
-    private static final String FUN_GET_INT32_T_TYPEID = "get_int32_t_typeid";
-    private static final String FUN_GET_INT64_T_TYPEID = "get_int64_t_typeid";
-    private static final String FUN_GET_UINT8_T_TYPEID = "get_uint8_t_typeid";
-    private static final String FUN_GET_UINT16_T_TYPEID = "get_uint16_t_typeid";
-    private static final String FUN_GET_UINT32_T_TYPEID = "get_uint32_t_typeid";
-    private static final String FUN_GET_UINT64_T_TYPEID = "get_uint64_t_typeid";
-    private static final String FUN_GET_PY_COMPLEX_TYPEID = "get_Py_complex_typeid";
-    private static final String FUN_GET_FLOAT_T_TYPEID = "get_float_t_typeid";
-    private static final String FUN_GET_DOUBLE_T_TYPEID = "get_double_t_typeid";
-    private static final String FUN_GET_PY_SSIZE_T_TYPEID = "get_Py_ssize_t_typeid";
-    private static final String FUN_GET_PYOBJECT_PTR_T_TYPEID = "get_PyObject_ptr_t_typeid";
-    private static final String FUN_GET_PYOBJECT_PTR_PTR_T_TYPEID = "get_PyObject_ptr_ptr_t_typeid";
-    private static final String FUN_GET_CHAR_PTR_T_TYPEID = "get_char_ptr_t_typeid";
-    private static final String FUN_GET_INT8_PTR_T_TYPEID = "get_int8_ptr_t_typeid";
-    private static final String FUN_GET_INT16_PTR_T_TYPEID = "get_int16_ptr_t_typeid";
-    private static final String FUN_GET_INT32_PTR_T_TYPEID = "get_int32_ptr_t_typeid";
-    private static final String FUN_GET_INT64_PTR_T_TYPEID = "get_int64_ptr_t_typeid";
-    private static final String FUN_GET_UINT8_PTR_T_TYPEID = "get_uint8_ptr_t_typeid";
-    private static final String FUN_GET_UINT16_PTR_T_TYPEID = "get_uint16_ptr_t_typeid";
-    private static final String FUN_GET_UINT32_PTR_T_TYPEID = "get_uint32_ptr_t_typeid";
-    private static final String FUN_GET_UINT64_PTR_T_TYPEID = "get_uint64_ptr_t_typeid";
-    private static final String FUN_GET_PY_COMPLEX_PTR_T_TYPEID = "get_Py_complex_ptr_t_typeid";
-    private static final String FUN_GET_FLOAT_PTR_T_TYPEID = "get_float_ptr_t_typeid";
-    private static final String FUN_GET_DOUBLE_PTR_T_TYPEID = "get_double_ptr_t_typeid";
-    private static final String FUN_GET_PY_SSIZE_PTR_T_TYPEID = "get_Py_ssize_ptr_t_typeid";
+    FUN_NATIVE_LONG_TO_JAVA("native_long_to_java"),
+    FUN_PY_TRUFFLE_STRING_TO_CSTR("PyTruffle_StringToCstr"),
+    FUN_NATIVE_HANDLE_FOR_ARRAY("NativeHandle_ForArray"),
+    FUN_PY_NONE_HANDLE("PyNoneHandle"),
+    FUN_WHCAR_SIZE("PyTruffle_Wchar_Size"),
+    FUN_PY_TRUFFLE_CSTR_TO_STRING("PyTruffle_CstrToString"),
+    FUN_PY_TRUFFLE_ASCII_TO_STRING("PyTruffle_AsciiToString"),
+    FUN_PY_FLOAT_AS_DOUBLE("truffle_read_ob_fval"),
+    FUN_GET_OB_TYPE("get_ob_type"),
+    FUN_GET_OB_REFCNT("get_ob_refcnt"),
+    FUN_GET_TP_DICT("get_tp_dict"),
+    FUN_GET_TP_BASE("get_tp_base"),
+    FUN_GET_TP_BASES("get_tp_bases"),
+    FUN_GET_TP_NAME("get_tp_name"),
+    FUN_GET_TP_MRO("get_tp_mro"),
+    FUN_GET_TP_ALLOC("get_tp_alloc"),
+    FUN_GET_TP_DEALLOC("get_tp_dealloc"),
+    FUN_GET_TP_FREE("get_tp_free"),
+    FUN_GET_TP_FLAGS("get_tp_flags"),
+    FUN_GET_TP_SUBCLASSES("get_tp_subclasses"),
+    FUN_GET_TP_DICTOFFSET("get_tp_dictoffset"),
+    FUN_GET_TP_BASICSIZE("get_tp_basicsize"),
+    FUN_GET_TP_ITEMSIZE("get_tp_itemsize"),
+    FUN_GET_BYTE_ARRAY_TYPE_ID("get_byte_array_typeid"),
+    FUN_GET_PTR_ARRAY_TYPE_ID("get_ptr_array_typeid"),
+    FUN_PTR_COMPARE("truffle_ptr_compare"),
+    FUN_PTR_ADD("truffle_ptr_add"),
+    FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE("PyTruffle_ByteArrayToNative"),
+    FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE("PyTruffle_IntArrayToNative"),
+    FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE("PyTruffle_LongArrayToNative"),
+    FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE("PyTruffle_DoubleArrayToNative"),
+    FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE("PyTruffle_ObjectArrayToNative"),
+    FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC("PyTruffle_ByteArrayRealloc"),
+    FUN_PY_TRUFFLE_INT_ARRAY_REALLOC("PyTruffle_IntArrayRealloc"),
+    FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC("PyTruffle_LongArrayRealloc"),
+    FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC("PyTruffle_DoubleArrayRealloc"),
+    FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC("PyTruffle_ObjectArrayRealloc"),
+    FUN_PY_OBJECT_GENERIC_GET_DICT("_PyObject_GenericGetDict"),
+    FUN_PY_OBJECT_NEW("PyTruffle_Object_New"),
+    FUN_GET_THREAD_STATE_TYPE_ID("get_thread_state_typeid"),
+    FUN_GET_PY_BUFFER_TYPEID("get_Py_buffer_typeid"),
+    FUN_ADD_NATIVE_SLOTS("PyTruffle_Type_AddSlots"),
+    FUN_PY_TRUFFLE_TUPLE_SET_ITEM("PyTruffle_Tuple_SetItem"),
+    FUN_PY_TRUFFLE_TUPLE_GET_ITEM("PyTruffle_Tuple_GetItem"),
+    FUN_PY_TRUFFLE_OBJECT_SIZE("PyTruffle_Object_Size"),
+    FUN_PY_TYPE_READY("PyType_Ready"),
+    FUN_GET_NEWFUNC_TYPE_ID("get_newfunc_typeid"),
+    FUN_GET_BUFFER_R("get_buffer_r"),
+    FUN_GET_BUFFER_RW("get_buffer_rw"),
+    FUN_NATIVE_UNICODE_AS_STRING("native_unicode_as_string"),
+    FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength"),
+    FUN_GET_UINT32_ARRAY_TYPE_ID("get_uint32_array_typeid"),
+    FUN_PY_TRUFFLE_FREE("PyTruffle_Free"),
+    FUN_INCREF("Py_IncRef"),
+    FUN_DECREF("Py_DecRef"),
+    FUN_ADDREF("PyTruffle_ADDREF"),
+    FUN_SUBREF("PyTruffle_SUBREF"),
+    FUN_GET_LONG_BITS_PER_DIGIT("get_long_bits_in_digit"),
+    FUN_BULK_SUBREF("PyTruffle_bulk_SUBREF"),
+    FUN_TRUFFLE_ADD_SUBOFFSET("truffle_add_suboffset"),
+    FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER("PyTruffle_MemoryViewFromBuffer"),
+    FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT("PyTruffle_MemoryViewFromObject"),
+    FUN_PY_TRUFFLE_RELEASE_BUFFER("PyTruffle_ReleaseBuffer"),
+    FUN_GET_INT8_T_TYPEID("get_int8_t_typeid"),
+    FUN_GET_INT16_T_TYPEID("get_int16_t_typeid"),
+    FUN_GET_INT32_T_TYPEID("get_int32_t_typeid"),
+    FUN_GET_INT64_T_TYPEID("get_int64_t_typeid"),
+    FUN_GET_UINT8_T_TYPEID("get_uint8_t_typeid"),
+    FUN_GET_UINT16_T_TYPEID("get_uint16_t_typeid"),
+    FUN_GET_UINT32_T_TYPEID("get_uint32_t_typeid"),
+    FUN_GET_UINT64_T_TYPEID("get_uint64_t_typeid"),
+    FUN_GET_PY_COMPLEX_TYPEID("get_Py_complex_typeid"),
+    FUN_GET_FLOAT_T_TYPEID("get_float_t_typeid"),
+    FUN_GET_DOUBLE_T_TYPEID("get_double_t_typeid"),
+    FUN_GET_PY_SSIZE_T_TYPEID("get_Py_ssize_t_typeid"),
+    FUN_GET_PYOBJECT_PTR_T_TYPEID("get_PyObject_ptr_t_typeid"),
+    FUN_GET_PYOBJECT_PTR_PTR_T_TYPEID("get_PyObject_ptr_ptr_t_typeid"),
+    FUN_GET_CHAR_PTR_T_TYPEID("get_char_ptr_t_typeid"),
+    FUN_GET_INT8_PTR_T_TYPEID("get_int8_ptr_t_typeid"),
+    FUN_GET_INT16_PTR_T_TYPEID("get_int16_ptr_t_typeid"),
+    FUN_GET_INT32_PTR_T_TYPEID("get_int32_ptr_t_typeid"),
+    FUN_GET_INT64_PTR_T_TYPEID("get_int64_ptr_t_typeid"),
+    FUN_GET_UINT8_PTR_T_TYPEID("get_uint8_ptr_t_typeid"),
+    FUN_GET_UINT16_PTR_T_TYPEID("get_uint16_ptr_t_typeid"),
+    FUN_GET_UINT32_PTR_T_TYPEID("get_uint32_ptr_t_typeid"),
+    FUN_GET_UINT64_PTR_T_TYPEID("get_uint64_ptr_t_typeid"),
+    FUN_GET_PY_COMPLEX_PTR_T_TYPEID("get_Py_complex_ptr_t_typeid"),
+    FUN_GET_FLOAT_PTR_T_TYPEID("get_float_ptr_t_typeid"),
+    FUN_GET_DOUBLE_PTR_T_TYPEID("get_double_ptr_t_typeid"),
+    FUN_GET_PY_SSIZE_PTR_T_TYPEID("get_Py_ssize_ptr_t_typeid");
 
-    @CompilationFinal(dimensions = 1) private static final String[] values;
+    private final String name;
+
+    @CompilationFinal(dimensions = 1) private static final String[] names;
+
     static {
-        Field[] declaredFields = NativeCAPISymbols.class.getDeclaredFields();
-        values = new String[declaredFields.length - 1]; // omit the values field
-        for (int i = 0; i < declaredFields.length; i++) {
-            Field s = declaredFields[i];
-            if (s.getType() == String.class) {
-                try {
-                    values[i] = (String) s.get(NativeCAPISymbols.class);
-                } catch (IllegalArgumentException | IllegalAccessException e) {
-                }
-            }
+        NativeCAPISymbols[] symbols = values();
+        names = new String[symbols.length];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = symbols[i].name;
         }
+    }
+
+    NativeCAPISymbols(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     public static boolean isValid(String name) {
-        for (int i = 0; i < values.length; i++) {
-            if (values[i].equals(name)) {
+        for (int i = 0; i < names.length; i++) {
+            if (names[i].equals(name)) {
                 return true;
             }
         }
         return false;
     }
 
-    public static String[] getValues() {
-        return values;
+    public static String[] getNames() {
+        return names;
     }
 }

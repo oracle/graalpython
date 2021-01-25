@@ -3492,7 +3492,7 @@ public abstract class SequenceStorageNodes {
         }
 
         private static NativeSequenceStorage reallocNativeSequenceStorage(NativeSequenceStorage s, int requestedCapacity, InteropLibrary lib, PCallCapiFunction callCapiFunction, PRaiseNode raiseNode,
-                        String function) {
+                        NativeCAPISymbols function) {
             if (requestedCapacity > s.getCapacity()) {
                 int newCapacity;
                 try {

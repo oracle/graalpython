@@ -185,6 +185,10 @@ public abstract class CExtNodes {
 
         public abstract Object execute(String name);
 
+        public final Object execute(NativeCAPISymbols symbol) {
+            return execute(symbol.getName());
+        }
+
         @Specialization
         static Object doGeneric(String name,
                         @CachedContext(PythonLanguage.class) PythonContext context,
@@ -2490,6 +2494,10 @@ public abstract class CExtNodes {
 
         public final Object call(String name, Object... args) {
             return execute(name, args);
+        }
+
+        public final Object call(NativeCAPISymbols symbol, Object... args) {
+            return execute(symbol.getName(), args);
         }
 
         public abstract Object execute(String name, Object[] args);

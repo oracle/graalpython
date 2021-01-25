@@ -3478,7 +3478,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object state = foreignCallContext.enter(frame, getContext(), this);
             try {
                 Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
-                checkFunctionResultNode.execute(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, result);
+                checkFunctionResultNode.execute(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
                 return (PMemoryView) asPythonObjectNode.execute(result);
             } finally {
                 foreignCallContext.exit(frame, getContext(), state);

@@ -285,7 +285,7 @@ public final class CApiContext extends CExtContext {
 
     @Override
     protected String[] getKnownCacheSymbols() {
-        return NativeCAPISymbols.getValues();
+        return NativeCAPISymbols.getNames();
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
