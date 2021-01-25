@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_BUFFER_R;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_BUFFER_RW;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_R;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_RW;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
@@ -1062,7 +1062,7 @@ public abstract class CExtParseArgumentsNode {
                 Object kwdnamePtr = kwdnamesLib.readArrayElement(kwdnames, state.v.argnum);
                 // TODO(fa) check if this is the NULL pointer since the kwdnames are always
                 // NULL-terminated
-                Object kwdname = callCStringToString.call(state.nativeContext, NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, kwdnamePtr);
+                Object kwdname = callCStringToString.call(state.nativeContext, NativeCAPISymbol.FUN_PY_TRUFFLE_CSTR_TO_STRING, kwdnamePtr);
                 if (kwdname instanceof String) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)

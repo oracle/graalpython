@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -181,7 +181,7 @@ public abstract class CExtCommonNodes {
             return execute(nativeContext, name, args);
         }
 
-        public final Object call(CExtContext nativeContext, NativeCAPISymbols symbol, Object... args) {
+        public final Object call(CExtContext nativeContext, NativeCAPISymbol symbol, Object... args) {
             return execute(nativeContext, symbol.getName(), args);
         }
 

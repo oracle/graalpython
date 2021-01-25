@@ -44,7 +44,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
-public enum NativeCAPISymbols {
+public enum NativeCAPISymbol {
 
     /* Sulong intrinsics */
 
@@ -151,14 +151,14 @@ public enum NativeCAPISymbols {
     @CompilationFinal(dimensions = 1) private static final String[] names;
 
     static {
-        NativeCAPISymbols[] symbols = values();
+        NativeCAPISymbol[] symbols = values();
         names = new String[symbols.length];
         for (int i = 0; i < names.length; i++) {
             names[i] = symbols[i].name;
         }
     }
 
-    NativeCAPISymbols(String name) {
+    NativeCAPISymbol(String name) {
         this.name = name;
     }
 

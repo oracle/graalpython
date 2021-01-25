@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_OB_TYPE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_POLYGLOT_FROM_TYPED;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PTR_ADD;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PTR_COMPARE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_WHCAR_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_FLOAT_AS_DOUBLE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_WHCAR_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -185,7 +185,7 @@ public abstract class CExtNodes {
 
         public abstract Object execute(String name);
 
-        public final Object execute(NativeCAPISymbols symbol) {
+        public final Object execute(NativeCAPISymbol symbol) {
             return execute(symbol.getName());
         }
 
@@ -2496,7 +2496,7 @@ public abstract class CExtNodes {
             return execute(name, args);
         }
 
-        public final Object call(NativeCAPISymbols symbol, Object... args) {
+        public final Object call(NativeCAPISymbol symbol, Object... args) {
             return execute(symbol.getName(), args);
         }
 
@@ -2724,7 +2724,7 @@ public abstract class CExtNodes {
         @TruffleBoundary
         static String getterFuncName(NativeMember memberName) {
             String name = "get_" + memberName.getMemberName();
-            assert NativeCAPISymbols.isValid(name) : "invalid native member getter function " + name;
+            assert NativeCAPISymbol.isValid(name) : "invalid native member getter function " + name;
             return name;
         }
 
@@ -2955,7 +2955,7 @@ public abstract class CExtNodes {
             if (!lib.isNull(object) && cApiContext != null) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
                 cApiContext.checkAccess(object, lib);
-                callAddRefCntNode.call(NativeCAPISymbols.FUN_ADDREF, object, value);
+                callAddRefCntNode.call(NativeCAPISymbol.FUN_ADDREF, object, value);
             }
             return object;
         }
@@ -2996,7 +2996,7 @@ public abstract class CExtNodes {
             CApiContext cApiContext = context.getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
                 cApiContext.checkAccess(object, lib);
-                long newRefcnt = (long) callAddRefCntNode.call(NativeCAPISymbols.FUN_SUBREF, object, value);
+                long newRefcnt = (long) callAddRefCntNode.call(NativeCAPISymbol.FUN_SUBREF, object, value);
                 if (context.getOption(PythonOptions.TraceNativeMemory) && newRefcnt < 0) {
                     LOGGER.severe(() -> "object has negative ref count: " + CApiContext.asHex(object));
                 }
@@ -3087,7 +3087,7 @@ public abstract class CExtNodes {
                     return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberName()));
                 }
                 if (haveCApiContext) {
-                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
+                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbol.FUN_GET_OB_REFCNT, ptrObject));
                 }
             }
             return 0;
@@ -3100,7 +3100,7 @@ public abstract class CExtNodes {
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) {
             if (!lib.isNull(ptrObject) && cApiContext != null) {
                 cApiContext.checkAccess(ptrObject, lib);
-                return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
+                return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbol.FUN_GET_OB_REFCNT, ptrObject));
             }
             return 0;
         }
@@ -3166,8 +3166,8 @@ public abstract class CExtNodes {
         static Object resolveGeneric(Object pointerObject,
                         @Cached PCallCapiFunction callTruffleCannotBeHandleNode,
                         @Cached PCallCapiFunction callTruffleManagedFromHandleNode) {
-            if (((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbols.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
-                return callTruffleManagedFromHandleNode.call(NativeCAPISymbols.FUN_RESOLVE_HANDLE, pointerObject);
+            if (((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbol.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
+                return callTruffleManagedFromHandleNode.call(NativeCAPISymbol.FUN_RESOLVE_HANDLE, pointerObject);
             }
             // In this case, it cannot be a handle so we can just return the pointer object. It
             // could, of course, still be a native pointer.
@@ -3176,8 +3176,8 @@ public abstract class CExtNodes {
 
         static PythonNativeWrapper resolveHandleUncached(Object pointerObject) {
             CompilerAsserts.neverPartOfCompilation();
-            if (((boolean) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
-                Object resolved = PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_RESOLVE_HANDLE, pointerObject);
+            if (((boolean) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
+                Object resolved = PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_RESOLVE_HANDLE, pointerObject);
                 if (resolved instanceof PythonNativeWrapper) {
                     return (PythonNativeWrapper) resolved;
                 }

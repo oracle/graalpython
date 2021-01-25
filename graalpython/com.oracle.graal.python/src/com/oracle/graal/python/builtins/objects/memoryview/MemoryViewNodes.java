@@ -47,7 +47,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -421,7 +421,7 @@ public class MemoryViewNodes {
             if (getHasSuboffsetsProfile().profile(suboffsets != null) && suboffsets[dim] >= 0) {
                 // The length may be out of bounds, but sulong shouldn't care if we don't
                 // access the out-of-bound part
-                ptr.ptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr.ptr, ptr.offset, suboffsets[dim], self.getLength());
+                ptr.ptr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr.ptr, ptr.offset, suboffsets[dim], self.getLength());
                 ptr.offset = 0;
             }
         }
@@ -582,7 +582,7 @@ public class MemoryViewNodes {
                 Object xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = callCapiFunction.call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xptr = callCapiFunction.call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -616,7 +616,7 @@ public class MemoryViewNodes {
                 Object xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = callCapiFunction.call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xptr = callCapiFunction.call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {

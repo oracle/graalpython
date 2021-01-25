@@ -197,7 +197,7 @@ public final class CApiContext extends CExtContext {
     public int getPyLongBitsInDigit() {
         if (pyLongBitsInDigit < 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            pyLongBitsInDigit = (int) CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_GET_LONG_BITS_PER_DIGIT);
+            pyLongBitsInDigit = (int) CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_GET_LONG_BITS_PER_DIGIT);
         }
         return pyLongBitsInDigit;
     }
@@ -285,7 +285,7 @@ public final class CApiContext extends CExtContext {
 
     @Override
     protected String[] getKnownCacheSymbols() {
-        return NativeCAPISymbols.getNames();
+        return NativeCAPISymbol.getNames();
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
@@ -394,7 +394,7 @@ public final class CApiContext extends CExtContext {
                     middleTime = System.currentTimeMillis();
                 }
 
-                callBulkSubref.call(NativeCAPISymbols.FUN_BULK_SUBREF, new PointerArrayWrapper(nativeObjectReferences), new RefCountArrayWrapper(nativeObjectReferences), (long) n);
+                callBulkSubref.call(NativeCAPISymbol.FUN_BULK_SUBREF, new PointerArrayWrapper(nativeObjectReferences), new RefCountArrayWrapper(nativeObjectReferences), (long) n);
 
                 if (loggable) {
                     final long countDuration = middleTime - startTime;

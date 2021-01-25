@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_UINT32_ARRAY_TYPE_ID;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_UINT32_ARRAY_TYPE_ID;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
@@ -192,7 +192,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode) {
         invalidateNode.execute();
         if (!lib.isNative(this)) {
-            Object ptr = callToNativeNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, this, getArraySize(lib, obSizeNode));
+            Object ptr = callToNativeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, this, getArraySize(lib, obSizeNode));
             setNativePointer(ptr);
         }
     }

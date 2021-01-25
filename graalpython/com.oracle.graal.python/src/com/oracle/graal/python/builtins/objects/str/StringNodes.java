@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -150,11 +150,11 @@ public abstract class StringNodes {
             // cast guaranteed by the guard
             String materialized;
             if (nativeCharSequence.isAsciiOnly()) {
-                materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_ASCII_TO_STRING, nativeCharSequence.getPtr());
+                materialized = (String) callCStringToStringNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_ASCII_TO_STRING, nativeCharSequence.getPtr());
             } else {
                 switch (nativeCharSequence.getElementSize()) {
                     case 1:
-                        materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
+                        materialized = (String) callCStringToStringNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
                         break;
                     case 2:
                     case 4:
@@ -219,7 +219,7 @@ public abstract class StringNodes {
                         @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PString)) {
                 // read the native data
-                Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
+                Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
                 assert result instanceof Number;
                 return intValue((Number) result);
             }

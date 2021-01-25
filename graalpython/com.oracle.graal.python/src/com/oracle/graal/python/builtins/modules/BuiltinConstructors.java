@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;

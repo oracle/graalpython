@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 import java.lang.reflect.Field;
@@ -132,7 +132,7 @@ public abstract class GraalHPyNativeSymbols {
             Field s = declaredFields[i];
             if (s.getType() == String.class) {
                 try {
-                    VALUES[i] = (String) s.get(NativeCAPISymbols.class);
+                    VALUES[i] = (String) s.get(NativeCAPISymbol.class);
                 } catch (IllegalArgumentException | IllegalAccessException e) {
                 }
             }
