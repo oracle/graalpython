@@ -1026,37 +1026,41 @@ public abstract class TypeNodes {
                         @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
                         @CachedLibrary(limit = "6") PythonObjectLibrary objectLibrary,
                         @Cached GetInternalObjectArrayNode getArrayNode,
-                        @Cached ConditionProfile dephtPropfile,
-                        @Cached BranchProfile isBaseProfile) {
-            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode, dephtPropfile, isBaseProfile, 0);
+                        @Cached BranchProfile typeIsNotBase,
+                        @Cached BranchProfile hasBase,
+                        @Cached BranchProfile hasNoBase) {
+            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode, typeIsNotBase, hasBase, hasNoBase, 0);
         }
 
         @TruffleBoundary
         protected Object solidBaseTB(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, GetInternalObjectArrayNode getArrayNode, int depth) {
             return solidBase(type, getBaseClassNode, context, LookupSpecialMethodNode.Dynamic.getUncached(), CallBinaryMethodNode.getUncached(), GetDictStorageNode.getUncached(),
-                            HashingStorageLibrary.getUncached(), PythonObjectLibrary.getUncached(), getArrayNode, ConditionProfile.getUncached(), BranchProfile.getUncached(), depth);
+                            HashingStorageLibrary.getUncached(), PythonObjectLibrary.getUncached(), getArrayNode, BranchProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
+                            depth);
         }
 
         protected Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, LookupSpecialMethodNode.Dynamic lookupGetAttribute,
                         CallBinaryMethodNode callGetAttr, GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary,
-                        PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode, ConditionProfile dephtPropfile, BranchProfile isBaseProfile, int depth) {
+                        PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode, BranchProfile typeIsNotBase, BranchProfile hasBase, BranchProfile hasNoBase, int depth) {
             CompilerAsserts.partialEvaluationConstant(depth);
             Object base = getBaseClassNode.execute(type);
             if (base != null) {
-                if (dephtPropfile.profile(depth > 3)) {
+                hasBase.enter();
+                if (depth > 3) {
                     base = solidBaseTB(base, getBaseClassNode, context, getArrayNode, depth);
                 } else {
-                    base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode, dephtPropfile, isBaseProfile,
-                                    depth + 1);
+                    base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode, typeIsNotBase, hasBase,
+                                    hasNoBase, depth + 1);
                 }
             } else {
+                hasNoBase.enter();
                 base = context.getCore().lookupType(PythonBuiltinClassType.PythonObject);
             }
 
             if (type == base) {
                 return type;
             }
-            isBaseProfile.enter();
+            typeIsNotBase.enter();
 
             Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getDictStorageNode, objectLibrary, storageLibrary);
             Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getDictStorageNode, objectLibrary, storageLibrary);
