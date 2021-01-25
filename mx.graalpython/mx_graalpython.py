@@ -475,7 +475,7 @@ def python_gvm(args=None, **kwargs):
 
 def python_svm(args=None, **kwargs):
     "Build and run the native graalpython image"
-    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="true", NATIVE_IMAGES="graalpython", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher((args or []) + ["svm"], **kwargs)
 
 
