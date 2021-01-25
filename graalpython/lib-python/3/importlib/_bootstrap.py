@@ -984,24 +984,27 @@ _NEEDS_LOADING = object()
 
 
 def _find_and_load(name, import_):
+    """Find and load the module."""
     # (tfel) Truffle change: CPython actually tests if name is in sys.modules
     # *before* ever calling this function (see the "optimization" in import.c
-    # PyImport_ImportModuleLevelObject). Afaict,tThis "optimization" is the only
+    # PyImport_ImportModuleLevelObject). Afaict, this "optimization" is the only
     # thing that avoids a deadlock situation tested for in
-    # test_threaded_import.py#test_circular_imports. Honestly, I also think that
-    # while this deadlock doesn't occur the scenario still is a problem even on
-    # CPython. If two parallel threads process circular imports, one of them
-    # will accept an incomplete module object (see comment in this file's
-    # _lock_unlock_module) - but the fromlist is processed immediately
-    # afterwards! So the thread may still error since it's not able to complete
-    # the import on an incomplete module ...
-    """Find and load the module."""
+    # test_threaded_import.py#test_circular_imports.
     module = sys.modules.get(name, _NEEDS_LOADING)
-    if module is _NEEDS_LOADING:
-        with _ModuleLockManager(name):
-            module = sys.modules.get(name, _NEEDS_LOADING)
-            if module is _NEEDS_LOADING:
-                return _find_and_load_unlocked(name, import_)
+    if module is not _NEEDS_LOADING and module is not None:
+        # (tfel): the C code now calls import_ensure_initialized - this reads
+        # the __spec__._initializing field and only calls _lock_unlock_module if
+        # that is true. Note that it uses _PyModuleSpec_IsInitializing to read
+        # __spec__._initializing, which ignores any error while reading either
+        # __spec__ or _initializing.
+        if getattr(getattr(module, "__spec__", None), "_initializing", None):
+            _lock_unlock_module(name)
+        return module
+
+    with _ModuleLockManager(name):
+        module = sys.modules.get(name, _NEEDS_LOADING)
+        if module is _NEEDS_LOADING:
+            return _find_and_load_unlocked(name, import_)
 
     if module is None:
         message = ('import of {} halted; '
