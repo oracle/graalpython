@@ -113,9 +113,14 @@ public final class PException extends AbstractTruffleException {
         Throwable wrapped = null;
         if (withJavaStacktrace) {
             // Create a carrier for the java stacktrace as PException cannot have one
-            wrapped = new RuntimeException();
+            wrapped = createStacktraceCarrier();
         }
         return fromObject(actual, node, wrapped);
+    }
+
+    @TruffleBoundary
+    private static RuntimeException createStacktraceCarrier() {
+        return new RuntimeException();
     }
 
     public static PException fromObject(PBaseException actual, Node node, Throwable wrapped) {
@@ -137,7 +142,7 @@ public final class PException extends AbstractTruffleException {
         Throwable wrapped = null;
         if (withJavaStacktrace) {
             // Create a carrier for the java stacktrace as PException cannot have one
-            wrapped = new RuntimeException();
+            wrapped = createStacktraceCarrier();
         }
         PException pException = new PException(pythonException, traceback, wrapped);
         pythonException.setException(pException);
