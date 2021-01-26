@@ -47,7 +47,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -152,15 +151,16 @@ public final class PString extends PSequence {
                         "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, replaces = "nativeString", limit = "1")
         static int nativeStringMat(PString self, @SuppressWarnings("unused") ThreadState state,
-                        @Bind("getNativeCharSequence(self)") NativeCharSequence nativeCharSequence,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
-                        @CachedLibrary("nativeCharSequence.getPtr()") InteropLibrary lib,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode) {
-            if (lib.hasArrayElements(nativeCharSequence.getPtr())) {
-                return nativeCharSequence.length(lib, castToJavaIntNode);
+            // this cast is guaranteed by cast 'isNativeString(self.getCharSequence())'
+            NativeCharSequence value = (NativeCharSequence) self.value;
+            if (lib.hasArrayElements(value.getPtr())) {
+                return value.length(lib, castToJavaIntNode);
             } else {
                 return materializeNode.execute(self).length();
             }
@@ -179,10 +179,6 @@ public final class PString extends PSequence {
                         @Exclusive @Cached BranchProfile overflow) {
             // call the generic implementation in the superclass
             return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow);
-        }
-
-        static NativeCharSequence getNativeCharSequence(PString self) {
-            return (NativeCharSequence) self.value;
         }
     }
 
