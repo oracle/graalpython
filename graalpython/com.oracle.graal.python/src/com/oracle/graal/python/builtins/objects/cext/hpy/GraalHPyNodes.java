@@ -153,9 +153,9 @@ public class GraalHPyNodes {
 
         @Specialization
         static Object doIt(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args,
-                           @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                           @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                           @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
+                        @Cached PRaiseNode raiseNode) {
             try {
                 return interopLibrary.execute(importCExtSymbolNode.execute(context, name), args);
             } catch (UnsupportedTypeException | ArityException e) {

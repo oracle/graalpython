@@ -182,7 +182,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
         }
         return null;
     }
-    
+
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     public static boolean isValid(String name) {
         return getByName(name) != null;
