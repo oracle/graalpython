@@ -112,7 +112,7 @@ public class SocketUtils {
                 startNano = System.nanoTime();
                 return initialTimeoutMillis;
             } else {
-                long remainingMillis = initialTimeoutMillis - (System.nanoTime() - startNano) / 1000;
+                long remainingMillis = initialTimeoutMillis - (System.nanoTime() - startNano) / 1000000;
                 if (remainingMillis <= 0) {
                     throw node.raise(SocketTimeout, ErrorMessages.TIMED_OUT);
                 }
