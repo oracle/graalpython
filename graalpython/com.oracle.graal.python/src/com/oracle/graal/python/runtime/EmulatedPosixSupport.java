@@ -90,7 +90,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -99,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
+import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
@@ -428,7 +428,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         try (Selector selector = Selector.open()) {
             for (SelectableChannel channel : readChannels) {
                 channel.configureBlocking(false);
-                channel.register(selector, SelectionKey.OP_READ);
+                channel.register(selector, (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT) & channel.validOps());
             }
 
             for (SelectableChannel channel : writeChannels) {
@@ -439,7 +439,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             for (SelectableChannel channel : errChannels) {
                 // TODO(fa): not sure if these ops are representing "exceptional condition pending"
                 channel.configureBlocking(false);
-                channel.register(selector, SelectionKey.OP_ACCEPT | SelectionKey.OP_CONNECT);
+                channel.register(selector, SelectionKey.OP_CONNECT);
             }
 
             // IMPORTANT: The meaning of the timeout value is slightly different: 'timeout == 0.0'
@@ -522,10 +522,20 @@ public final class EmulatedPosixSupport extends PosixResources {
             if (ch == null) {
                 throw posixException(OSErrorEnum.EBADF);
             }
-            if (!(ch instanceof SelectableChannel)) {
+            if (ch instanceof SelectableChannel) {
+                channels[i] = (SelectableChannel) ch;
+            } else if (ch instanceof PSocket) {
+                PSocket socket = (PSocket) ch;
+                if (socket.getSocket() != null) {
+                    channels[i] = socket.getSocket();
+                } else if (socket.getServerSocket() != null) {
+                    channels[i] = socket.getServerSocket();
+                } else {
+                    throw posixException(OSErrorEnum.EBADF);
+                }
+            } else {
                 throw ChannelNotSelectableException.INSTANCE;
             }
-            channels[i] = (SelectableChannel) ch;
         }
         return channels;
     }
