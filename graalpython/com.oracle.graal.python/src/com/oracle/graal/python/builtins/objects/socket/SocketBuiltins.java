@@ -124,9 +124,9 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object accept(PSocket socket) {
             try {
-                SocketChannel acceptSocket = socket.getServerSocket().accept();
+                SocketChannel acceptSocket = SocketUtils.accept(this, socket);
                 if (acceptSocket == null) {
-                    throw raise(OSError);
+                    throw raiseOSError(null, OSErrorEnum.EWOULDBLOCK);
                 }
                 SocketAddress addr = acceptSocket.getLocalAddress();
                 if (!acceptSocket.socket().isBound() || addr == null) {

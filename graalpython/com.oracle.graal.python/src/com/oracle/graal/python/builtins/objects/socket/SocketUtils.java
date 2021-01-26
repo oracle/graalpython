@@ -44,8 +44,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketTime
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -87,7 +89,18 @@ public class SocketUtils {
         return nativeSocket.write(source);
     }
 
-    private static void handleTimeout(PNodeWithRaise node, SocketChannel nativeSocket, int op, long timeoutMilliseconds) throws IOException {
+    public static SocketChannel accept(PNodeWithRaise node, PSocket socket) throws IOException {
+        return accept(node, socket, socket.getTimeoutInMilliseconds());
+    }
+
+    @TruffleBoundary
+    public static SocketChannel accept(PNodeWithRaise node, PSocket socket, long timeoutMillisedonds) throws IOException {
+        ServerSocketChannel nativeSocket = socket.getServerSocket();
+        handleTimeout(node, nativeSocket, SelectionKey.OP_ACCEPT, timeoutMillisedonds);
+        return nativeSocket.accept();
+    }
+
+    private static void handleTimeout(PNodeWithRaise node, SelectableChannel nativeSocket, int op, long timeoutMilliseconds) throws IOException {
         if (!nativeSocket.isBlocking() && timeoutMilliseconds > 0) {
             try (Selector selector = Selector.open()) {
                 SelectionKey key = nativeSocket.register(selector, op);
