@@ -25,7 +25,9 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CACHED__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
@@ -38,8 +40,10 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.HiddenAttributes;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -54,10 +58,24 @@ import com.oracle.truffle.api.object.Shape;
 @ImportStatic(HiddenAttributes.class)
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PythonModule extends PythonObject {
+
+    @CompilationFinal(dimensions = 1) static final String[] INITIAL_MODULE_ATTRS = new String[]{__NAME__, __DOC__, __PACKAGE__, __LOADER__, __SPEC__, __CACHED__, __FILE__};
+
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
+        setAttribute(__NAME__, PNone.NO_VALUE);
+        setAttribute(__DOC__, PNone.NO_VALUE);
+        setAttribute(__PACKAGE__, PNone.NO_VALUE);
+        setAttribute(__LOADER__, PNone.NO_VALUE);
+        setAttribute(__SPEC__, PNone.NO_VALUE);
+        setAttribute(__CACHED__, PNone.NO_VALUE);
+        setAttribute(__FILE__, PNone.NO_VALUE);
     }
 
+    /**
+     * This constructor is just used to created built-in modules such that we can avoid the call to
+     * {code __init__}.
+     */
     private PythonModule(PythonLanguage lang, String moduleName) {
         super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.getInstanceShape(lang));
         setAttribute(__NAME__, moduleName);
@@ -65,6 +83,8 @@ public final class PythonModule extends PythonObject {
         setAttribute(__PACKAGE__, PNone.NONE);
         setAttribute(__LOADER__, PNone.NONE);
         setAttribute(__SPEC__, PNone.NONE);
+        setAttribute(__CACHED__, PNone.NO_VALUE);
+        setAttribute(__FILE__, PNone.NO_VALUE);
     }
 
     /**
@@ -83,7 +103,8 @@ public final class PythonModule extends PythonObject {
 
     @Override
     public String toString() {
-        return "<module '" + this.getAttribute(__NAME__) + "'>";
+        Object attribute = this.getAttribute(__NAME__);
+        return "<module '" + (PGuards.isNoValue(attribute) ? "?" : attribute) + "'>";
     }
 
     @ExportMessage
