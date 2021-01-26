@@ -124,7 +124,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 public class GraalHPyMemberAccessNodes {
 
-    static String getReadAccessorName(int type) {
+    static GraalHPyNativeSymbols getReadAccessorName(int type) {
         switch (type) {
             case HPY_MEMBER_SHORT:
                 return GraalHPyNativeSymbols.GRAAL_HPY_READ_S;
@@ -198,7 +198,7 @@ public class GraalHPyMemberAccessNodes {
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
 
-    static String getWriteAccessorName(int type) {
+    static GraalHPyNativeSymbols getWriteAccessorName(int type) {
         switch (type) {
             case HPY_MEMBER_SHORT:
                 return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_S;
@@ -327,12 +327,12 @@ public class GraalHPyMemberAccessNodes {
         @Child private ReadAttributeFromObjectNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
-        private final String accessor;
+        private final GraalHPyNativeSymbols accessor;
 
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected HPyReadMemberNode(String accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
+        protected HPyReadMemberNode(GraalHPyNativeSymbols accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
             this.accessor = accessor;
             this.offset = offset;
             this.asPythonObjectNode = asPythonObjectNode;
@@ -375,7 +375,7 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
-            String accessor = getReadAccessorName(type);
+            GraalHPyNativeSymbols accessor = getReadAccessorName(type);
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
             RootNode rootNode = new BuiltinFunctionRootNode(language, builtin,
                             new HPyMemberNodeFactory<>(HPyReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true);
@@ -392,12 +392,12 @@ public class GraalHPyMemberAccessNodes {
         @Child private ReadAttributeFromObjectNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
-        private final String accessor;
+        private final GraalHPyNativeSymbols accessor;
 
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected HPyWriteMemberNode(String accessor, int offset, CExtToNativeNode toNativeNode) {
+        protected HPyWriteMemberNode(GraalHPyNativeSymbols accessor, int offset, CExtToNativeNode toNativeNode) {
             this.accessor = accessor;
             this.offset = offset;
             this.toNativeNode = toNativeNode;
@@ -452,7 +452,7 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
-            String accessor = getWriteAccessorName(type);
+            GraalHPyNativeSymbols accessor = getWriteAccessorName(type);
             CExtToNativeNode toNativeNode = getWriteConverterNode(type);
             RootNode rootNode = new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(accessor, offset, toNativeNode)), true);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));

@@ -40,11 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
-public enum NativeCAPISymbol {
+public enum NativeCAPISymbol implements NativeCExtSymbol {
 
     /* Sulong intrinsics */
 
@@ -167,6 +168,7 @@ public enum NativeCAPISymbol {
         this.name = name;
     }
 
+    @Override
     public String getName() {
         return name;
     }

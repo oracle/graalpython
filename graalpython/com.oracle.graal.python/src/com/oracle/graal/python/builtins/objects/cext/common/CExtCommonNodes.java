@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -113,12 +112,12 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class ImportCExtSymbolNode extends PNodeWithContext {
 
-        public abstract Object execute(CExtContext nativeContext, NativeCAPISymbol name);
+        public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol);
 
         @Specialization(guards = "cachedSymbol == symbol", limit = "1", assumptions = "singleContextAssumption()")
         @SuppressWarnings("unused")
-        static Object doSymbolCached(CExtContext nativeContext, NativeCAPISymbol symbol,
-                        @Cached("symbol") NativeCAPISymbol cachedSymbol,
+        static Object doSymbolCached(CExtContext nativeContext, NativeCExtSymbol symbol,
+                        @Cached("symbol") NativeCExtSymbol cachedSymbol,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object llvmSymbol) {
             return llvmSymbol;
@@ -129,7 +128,7 @@ public abstract class CExtCommonNodes {
                         assumptions = "singleContextAssumption()", //
                         replaces = "doSymbolCached")
         @SuppressWarnings("unused")
-        static Object doWithSymbolCacheSingleContext(CExtContext nativeContext, NativeCAPISymbol symbol,
+        static Object doWithSymbolCacheSingleContext(CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
                         @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
                         @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib,
@@ -139,7 +138,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
-        static Object doWithSymbolCache(CExtContext nativeContext, NativeCAPISymbol symbol,
+        static Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
                         @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
@@ -152,14 +151,15 @@ public abstract class CExtCommonNodes {
             return nativeSymbol;
         }
 
-        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, NativeCAPISymbol symbol) {
-            Object capiLibrary = nativeContext.getLLVMLibrary();
+        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, NativeCExtSymbol symbol) {
+            Object llvmLibrary = nativeContext.getLLVMLibrary();
+            String name = symbol.getName();
             try {
-                return InteropLibrary.getUncached().readMember(capiLibrary, symbol.getName());
+                return InteropLibrary.getUncached().readMember(llvmLibrary, name);
             } catch (UnknownIdentifierException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getName());
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, capiLibrary);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
             }
         }
     }
@@ -167,14 +167,14 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class PCallCExtFunction extends PNodeWithContext {
 
-        public final Object call(CExtContext nativeContext, NativeCAPISymbol symbol, Object... args) {
+        public final Object call(CExtContext nativeContext, NativeCExtSymbol symbol, Object... args) {
             return execute(nativeContext, symbol, args);
         }
 
-        public abstract Object execute(CExtContext nativeContext, NativeCAPISymbol symbol, Object[] args);
+        public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol, Object[] args);
 
         @Specialization
-        static Object doIt(CExtContext nativeContext, NativeCAPISymbol symbol, Object[] args,
+        static Object doIt(CExtContext nativeContext, NativeCExtSymbol symbol, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @Cached PRaiseNode raiseNode) {

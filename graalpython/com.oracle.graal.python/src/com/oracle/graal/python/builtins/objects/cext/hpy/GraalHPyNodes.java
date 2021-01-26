@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -138,77 +139,28 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class GraalHPyNodes {
-
-    @GenerateUncached
-    abstract static class ImportHPySymbolNode extends PNodeWithContext {
-
-        public abstract Object execute(GraalHPyContext context, String name);
-
-        @Specialization(guards = "cachedName == name", limit = "1", assumptions = "singleContextAssumption()")
-        static Object doReceiverCachedIdentity(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String name,
-                        @Cached("name") @SuppressWarnings("unused") String cachedName,
-                        @Cached("importHPySymbolUncached(context, name)") Object sym) {
-            return sym;
-        }
-
-        @Specialization(guards = "cachedName.equals(name)", limit = "1", assumptions = "singleContextAssumption()", replaces = "doReceiverCachedIdentity")
-        static Object doReceiverCached(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String name,
-                        @Cached("name") @SuppressWarnings("unused") String cachedName,
-                        @Cached("importHPySymbolUncached(context, name)") Object sym) {
-            return sym;
-        }
-
-        @Specialization(replaces = {"doReceiverCached", "doReceiverCachedIdentity"})
-        static Object doGeneric(GraalHPyContext context, String name,
-                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
-                        @Cached PRaiseNode raiseNode) {
-            return importHPySymbol(raiseNode, interopLib, context.getLLVMLibrary(), name);
-        }
-
-        protected static Object importHPySymbolUncached(GraalHPyContext context, String name) {
-            Object hpyLibrary = context.getLLVMLibrary();
-            InteropLibrary uncached = InteropLibrary.getFactory().getUncached(hpyLibrary);
-            return importHPySymbol(PRaiseNode.getUncached(), uncached, hpyLibrary, name);
-        }
-
-        private static Object importHPySymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
-            try {
-                return library.readMember(capiLibrary, name);
-            } catch (UnknownIdentifierException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "invalid C API function: %s", name);
-            } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "corrupted C API library object: %s", capiLibrary);
-            }
-        }
-
-    }
-
     @GenerateUncached
     public abstract static class PCallHPyFunction extends PNodeWithContext {
 
-        public final Object call(GraalHPyContext context, String name, Object... args) {
+        public final Object call(GraalHPyContext context, GraalHPyNativeSymbols name, Object... args) {
             return execute(context, name, args);
         }
 
-        abstract Object execute(GraalHPyContext context, String name, Object[] args);
+        abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbols name, Object[] args);
 
         @Specialization
-        Object doIt(GraalHPyContext context, String name, Object[] args,
+        static Object doIt(GraalHPyContext context, GraalHPyNativeSymbols name, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportHPySymbolNode importCAPISymbolNode,
-                        @Cached BranchProfile profile,
+                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return interopLibrary.execute(importCAPISymbolNode.execute(context, name), args);
+                return interopLibrary.execute(importCExtSymbolNode.execute(context, name), args);
             } catch (UnsupportedTypeException | ArityException e) {
-                profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
-                profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "HPy C API symbol %s is not callable", name);
             }
         }
