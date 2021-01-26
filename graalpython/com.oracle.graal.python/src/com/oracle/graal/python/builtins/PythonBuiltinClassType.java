@@ -162,6 +162,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStruct("Struct", "_struct"),
     PStructUnpackIterator("unpack_iterator", "_struct"),
     Pickler("Pickler", "_pickle"),
+    PicklerMemoProxy("PicklerMemoProxy", "_pickle"),
     Unpickler("Unpickler", "_pickle"),
     PickleBuffer("PickleBuffer", "_pickle"),
 
