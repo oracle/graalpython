@@ -342,6 +342,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Called from Python code to convert a C character pointer into a Python string where decoding
+     * is done lazily. If the provided pointer denotes a {@code NULL} pointer, this will be
+     * converted to {@code None}.
+     */
+    @Builtin(name = "charptr_to_java", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CharPtrToJavaObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "2")
+        static Object run(Object object,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @CachedLibrary("object") InteropLibrary interopLibrary) {
+            if (!interopLibrary.isNull(object)) {
+                return fromCharPointerNode.execute(object);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "to_java_type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ToJavaClassNode extends ToJavaObjectNode {
