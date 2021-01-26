@@ -10,6 +10,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.ssl.ALPNHelper;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.builtins.objects.ssl.SSLProtocolVersion;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -88,7 +89,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("HAS_SNI", false);
         module.setAttribute("HAS_ECDH", false);
         module.setAttribute("HAS_NPN", false);
-        module.setAttribute("HAS_ALPN", false);
+        module.setAttribute("HAS_ALPN", ALPNHelper.hasAlpn());
         module.setAttribute("HAS_SSLv2", false);
         module.setAttribute("HAS_SSLv3", false);
         module.setAttribute("HAS_TLSv1", false);

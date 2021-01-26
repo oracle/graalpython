@@ -1,16 +1,17 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
-import javax.net.ssl.SSLContext;
-
-import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.Shape;
 import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+
 import javax.crypto.spec.DHParameterSpec;
+import javax.net.ssl.SSLContext;
+
+import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PSSLContext extends PythonBuiltinObject {
     private final SSLProtocolVersion version;
@@ -29,6 +30,8 @@ public final class PSSLContext extends PythonBuiltinObject {
     // TODO can this be set in java?
     // TODO '2' is openssl default, but should we return it even though it might not be right?
     private int numTickets = 2;
+
+    private String[] alpnProtocols;
 
     private KeyStore keystore;
 
@@ -124,4 +127,11 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.verifyFlags = flags;
     }
 
+    public String[] getAlpnProtocols() {
+        return alpnProtocols;
+    }
+
+    public void setAlpnProtocols(String[] alpnProtocols) {
+        this.alpnProtocols = alpnProtocols;
+    }
 }

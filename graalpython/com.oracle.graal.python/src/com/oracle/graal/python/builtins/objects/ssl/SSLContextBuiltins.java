@@ -1,16 +1,45 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.security.AlgorithmParameters;
+import java.security.KeyFactory;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.InvalidParameterSpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.List;
 
+import javax.crypto.spec.DHParameterSpec;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.xml.bind.DatatypeConverter;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -44,42 +73,19 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.StringReader;
-import java.security.AlgorithmParameters;
-import java.security.KeyFactory;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.InvalidParameterSpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import javax.crypto.spec.DHParameterSpec;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.xml.bind.DatatypeConverter;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -621,9 +627,14 @@ public class SSLContextBuiltins extends PythonBuiltins {
         private static SSLEngine createSSLEngine(PSSLContext context, boolean clientMode) {
             SSLEngine engine = context.getContext().createSSLEngine();
             engine.setUseClientMode(clientMode);
+            SSLParameters parameters = new SSLParameters();
             if (context.getCiphers() != null) {
-                engine.setEnabledCipherSuites(context.getCiphers());
+                parameters.setCipherSuites(context.getCiphers());
             }
+            if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
+                ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());
+            }
+            engine.setSSLParameters(parameters);
             return engine;
         }
 
@@ -706,4 +717,43 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_set_alpn_protocols", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class SetAlpnProtocols extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "lib.isBuffer(buffer)", limit = "2")
+        Object setFromBuffer(PSSLContext self, Object buffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary lib) {
+            if (!ALPNHelper.hasAlpn()) {
+                throw raise(NotImplementedError, "The ALPN extension requires JDK 8u252 or later");
+            }
+            try {
+                byte[] bytes = lib.getBufferBytes(buffer);
+                self.setAlpnProtocols(parseProtocols(bytes));
+                return PNone.NONE;
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object error(Object self, Object arg) {
+            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, arg);
+        }
+
+        @TruffleBoundary
+        private static String[] parseProtocols(byte[] bytes) {
+            List<String> protocols = new ArrayList<>();
+            int i = 0;
+            while (i < bytes.length) {
+                int len = bytes[i];
+                if (i + len + 1 < bytes.length) {
+                    protocols.add(new String(bytes, i + 1, len, StandardCharsets.US_ASCII));
+                }
+                i += len + 1;
+            }
+            return protocols.toArray(new String[0]);
+        }
+    }
 }

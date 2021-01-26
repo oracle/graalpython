@@ -342,4 +342,17 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             return null;
         }
     }
+
+    @Builtin(name = "selected_alpn_protocol", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SelectedAlpnProtocol extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object get(PSSLSocket socket) {
+            String protocol = null;
+            if (ALPNHelper.hasAlpn()) {
+                protocol = ALPNHelper.getApplicationProtocol(socket.getEngine());
+            }
+            return protocol != null ? protocol : PNone.NONE;
+        }
+    }
 }
