@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
@@ -274,7 +275,8 @@ public final class Python3Core implements PythonCore {
                         "marshal",
                         "_struct",
                         "bool",
-                        "_lzma"));
+                        "_lzma",
+                        "_posixshmem"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -405,6 +407,7 @@ public final class Python3Core implements PythonCore {
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
                         new BinasciiModuleBuiltins(),
+                        new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
