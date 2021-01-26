@@ -106,7 +106,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtCommonNodes {
@@ -114,61 +113,51 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class ImportCExtSymbolNode extends PNodeWithContext {
 
-        public abstract Object execute(CExtContext nativeContext, String name);
+        public abstract Object execute(CExtContext nativeContext, NativeCAPISymbol name);
 
-        // n.b. if 'singleContextAssumption' is valid, we may also cache the native context
-        @Specialization(guards = {"nativeContext == cachedNativeContext", "cachedName == name"}, //
-                        limit = "1", //
-                        assumptions = "singleContextAssumption()")
+        @Specialization(guards = "cachedSymbol == symbol", limit = "1", assumptions = "singleContextAssumption()")
         @SuppressWarnings("unused")
-        static Object doReceiverCachedIdentity(CExtContext nativeContext, String name,
-                        @Cached("nativeContext") CExtContext cachedNativeContext,
-                        @Cached("name") String cachedName,
+        static Object doSymbolCached(CExtContext nativeContext, NativeCAPISymbol symbol,
+                        @Cached("symbol") NativeCAPISymbol cachedSymbol,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, name)") Object sym) {
-            return sym;
+                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object llvmSymbol) {
+            return llvmSymbol;
         }
 
         // n.b. if 'singleContextAssumption' is valid, we may also cache the native context
-        @Specialization(guards = {"nativeContext == cachedNativeContext", "cachedName.equals(name)"}, //
-                        limit = "1", //
+        @Specialization(guards = "nativeContext == cachedNativeContext", limit = "1", //
                         assumptions = "singleContextAssumption()", //
-                        replaces = "doReceiverCachedIdentity")
+                        replaces = "doSymbolCached")
         @SuppressWarnings("unused")
-        static Object doReceiverCached(CExtContext nativeContext, String name,
+        static Object doWithSymbolCacheSingleContext(CExtContext nativeContext, NativeCAPISymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
-                        @Cached("name") String cachedName,
+                        @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
+                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, name)") Object sym) {
-            return sym;
+                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object sym) {
+            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib, raiseNode);
         }
 
-        @Specialization(replaces = {"doReceiverCachedIdentity", "doReceiverCached"}, limit = "1")
-        static Object doWithSymbolCache(CExtContext nativeContext, String name,
+        @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
+        static Object doWithSymbolCache(CExtContext nativeContext, NativeCAPISymbol symbol,
                         @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
                         @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, name, PNone.NO_VALUE);
+            Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, symbol, PNone.NO_VALUE);
             if (nativeSymbol == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreter();
-                nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, name);
-                dynamicObjectLib.put(symbolCache, name, nativeSymbol);
+                nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, symbol);
+                dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
             }
             return nativeSymbol;
         }
 
-        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, String name) {
-            if (!NativeCAPISymbol.isValid(name)) {
-                // Be very strict and only allow to import symbols that are known to
-                // NativeCAPISymbols. This is to avoid cache polymorphism (otherwise we risk to
-                // trigger shape transitions).
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Trying to import unregistered C API function: %s", name);
-            }
+        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, NativeCAPISymbol symbol) {
             Object capiLibrary = nativeContext.getLLVMLibrary();
             try {
-                return InteropLibrary.getUncached().readMember(capiLibrary, name);
+                return InteropLibrary.getUncached().readMember(capiLibrary, symbol.getName());
             } catch (UnknownIdentifierException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, symbol.getName());
             } catch (UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, capiLibrary);
             }
@@ -178,30 +167,23 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class PCallCExtFunction extends PNodeWithContext {
 
-        public final Object call(CExtContext nativeContext, String name, Object... args) {
-            return execute(nativeContext, name, args);
-        }
-
         public final Object call(CExtContext nativeContext, NativeCAPISymbol symbol, Object... args) {
-            return execute(nativeContext, symbol.getName(), args);
+            return execute(nativeContext, symbol, args);
         }
 
-        public abstract Object execute(CExtContext nativeContext, String name, Object[] args);
+        public abstract Object execute(CExtContext nativeContext, NativeCAPISymbol symbol, Object[] args);
 
         @Specialization
-        static Object doIt(CExtContext nativeContext, String name, Object[] args,
+        static Object doIt(CExtContext nativeContext, NativeCAPISymbol symbol, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @Cached BranchProfile profile,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return interopLibrary.execute(importCExtSymbolNode.execute(nativeContext, name), args);
+                return interopLibrary.execute(importCExtSymbolNode.execute(nativeContext, symbol), args);
             } catch (UnsupportedTypeException | ArityException e) {
-                profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
-                profile.enter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, name);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, symbol.getName());
             }
         }
     }

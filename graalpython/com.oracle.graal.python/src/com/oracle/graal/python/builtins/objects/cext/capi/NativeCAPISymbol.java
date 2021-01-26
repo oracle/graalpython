@@ -161,15 +161,7 @@ public enum NativeCAPISymbol {
 
     private final String name;
 
-    @CompilationFinal(dimensions = 1) private static final String[] names;
-
-    static {
-        NativeCAPISymbol[] symbols = values();
-        names = new String[symbols.length];
-        for (int i = 0; i < names.length; i++) {
-            names[i] = symbols[i].name;
-        }
-    }
+    @CompilationFinal(dimensions = 1) private static final NativeCAPISymbol[] VALUES = values();
 
     NativeCAPISymbol(String name) {
         this.name = name;
@@ -180,16 +172,21 @@ public enum NativeCAPISymbol {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    public static boolean isValid(String name) {
-        for (int i = 0; i < names.length; i++) {
-            if (names[i].equals(name)) {
-                return true;
+    public static NativeCAPISymbol getByName(String name) {
+        for (int i = 0; i < VALUES.length; i++) {
+            if (VALUES[i].name.equals(name)) {
+                return VALUES[i];
             }
         }
-        return false;
+        return null;
+    }
+    
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    public static boolean isValid(String name) {
+        return getByName(name) != null;
     }
 
-    public static String[] getNames() {
-        return names;
+    public static NativeCAPISymbol[] getValues() {
+        return VALUES;
     }
 }

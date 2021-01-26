@@ -183,14 +183,10 @@ public abstract class CExtNodes {
     @GenerateUncached
     abstract static class ImportCAPISymbolNode extends PNodeWithContext {
 
-        public abstract Object execute(String name);
-
-        public final Object execute(NativeCAPISymbol symbol) {
-            return execute(symbol.getName());
-        }
+        public abstract Object execute(NativeCAPISymbol symbol);
 
         @Specialization
-        static Object doGeneric(String name,
+        static Object doGeneric(NativeCAPISymbol name,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode) {
             return importCExtSymbolNode.execute(context.getCApiContext(), name);
@@ -211,23 +207,27 @@ public abstract class CExtNodes {
          * typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
          */
         protected String getTypenamePrefix() {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException();
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         protected abstract Object execute(Object object, Object arg);
 
-        protected String getFunctionName() {
-            return getTypenamePrefix() + "_subtype_new";
+        protected NativeCAPISymbol getFunctionName() {
+            CompilerAsserts.neverPartOfCompilation();
+            String subtypeNewFunctionName = getTypenamePrefix() + "_subtype_new";
+            if (!NativeCAPISymbol.isValid(subtypeNewFunctionName)) {
+                throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + subtypeNewFunctionName);
+            }
+            return NativeCAPISymbol.getByName(subtypeNewFunctionName);
         }
 
         @Specialization(guards = "isNativeClass(object)")
         protected Object callNativeConstructor(Object object, Object arg,
-                        @Exclusive @Cached("getFunctionName()") String functionName,
-                        @Exclusive @Cached ToSulongNode toSulongNode,
-                        @Exclusive @Cached ToJavaNode toJavaNode,
+                        @Cached("getFunctionName()") NativeCAPISymbol functionName,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached ToJavaNode toJavaNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             try {
                 Object result = interopLibrary.execute(importCAPISymbolNode.execute(functionName), toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
@@ -2492,30 +2492,23 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PCallCapiFunction extends Node {
 
-        public final Object call(String name, Object... args) {
-            return execute(name, args);
-        }
-
         public final Object call(NativeCAPISymbol symbol, Object... args) {
-            return execute(symbol.getName(), args);
+            return execute(symbol, args);
         }
 
-        public abstract Object execute(String name, Object[] args);
+        public abstract Object execute(NativeCAPISymbol name, Object[] args);
 
         @Specialization
-        static Object doIt(String name, Object[] args,
+        static Object doIt(NativeCAPISymbol name, Object[] args,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached BranchProfile profile,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return interopLibrary.execute(importCExtSymbolNode.execute(context.getCApiContext(), name), args);
             } catch (UnsupportedTypeException | ArityException e) {
-                profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
-                profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, name);
             }
         }
@@ -2689,7 +2682,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = {"doCachedObj", "getByMember", "getByMemberAttachType"})
         static Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMember memberName,
                         @SuppressWarnings("unused") @Cached("memberName") NativeMember cachedMemberName,
-                        @Cached("getterFuncName(memberName)") String getterName,
+                        @Cached("getterFuncName(memberName)") NativeCAPISymbol getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") ToJavaBaseNode toJavaNode,
                         @Shared("callMemberGetterNode") @Cached PCallCapiFunction callMemberGetterNode) {
@@ -2717,15 +2710,14 @@ public abstract class CExtNodes {
         }
 
         static Object doSlowPath(Object obj, NativeMember memberName) {
-            String getterFuncName = getterFuncName(memberName);
-            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
+            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName(memberName), ToSulongNode.getUncached().execute(obj)));
         }
 
         @TruffleBoundary
-        static String getterFuncName(NativeMember memberName) {
+        static NativeCAPISymbol getterFuncName(NativeMember memberName) {
             String name = "get_" + memberName.getMemberName();
             assert NativeCAPISymbol.isValid(name) : "invalid native member getter function " + name;
-            return name;
+            return NativeCAPISymbol.getByName(name);
         }
 
         static ToJavaBaseNode createForMember(NativeMember member) {
@@ -3265,8 +3257,8 @@ public abstract class CExtNodes {
             // TODO(fa): get rid of lazy initialization for better sharing
             if (llvmTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                String getterFunctionName = LLVMType.getGetterFunctionName(llvmType);
-                llvmTypeID = (TruffleObject) PCallCapiFunction.getUncached().call(getterFunctionName);
+                NativeCAPISymbol getterFunctionSymbol = LLVMType.getGetterFunctionName(llvmType);
+                llvmTypeID = (TruffleObject) PCallCapiFunction.getUncached().call(getterFunctionSymbol);
                 cApiContext.setLLVMTypeID(cachedType, llvmTypeID);
             }
             return llvmTypeID;

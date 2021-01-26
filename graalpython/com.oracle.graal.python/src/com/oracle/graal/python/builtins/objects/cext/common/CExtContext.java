@@ -40,24 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class CExtContext {
 
     public static final CExtContext LAZY_CONTEXT = new CExtContext(null, null, null) {
         @Override
-        protected String[] getKnownCacheSymbols() {
-            return PythonUtils.EMPTY_STRING_ARRAY;
+        protected Store initializeSymbolCache() {
+            return null;
         }
     };
 
@@ -136,18 +128,6 @@ public abstract class CExtContext {
         return symbolCache;
     }
 
-    @TruffleBoundary
-    private Store initializeSymbolCache() {
-        PythonLanguage language = getContext().getLanguage();
-        Shape symbolCacheShape = language.getCApiSymbolCacheShape();
-        // We will always get an empty shape from the language and we do always add same key-value
-        // pairs (in the same order). So, in the end, each context should get the same shape.
-        Store s = new Store(symbolCacheShape);
-        for (String sym : getKnownCacheSymbols()) {
-            DynamicObjectLibrary.getUncached().put(s, sym, PNone.NO_VALUE);
-        }
-        return s;
-    }
+    protected abstract Store initializeSymbolCache();
 
-    protected abstract String[] getKnownCacheSymbols();
 }
