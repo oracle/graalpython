@@ -412,6 +412,19 @@ public final class EmulatedPosixSupport extends PosixResources {
         SelectableChannel[] writeChannels = getSelectableChannels(writefds);
         SelectableChannel[] errChannels = getSelectableChannels(errorfds);
 
+        boolean[] wasBlocking = new boolean[readChannels.length + writeChannels.length + errChannels.length];
+        int i = 0;
+
+        for (SelectableChannel channel : readChannels) {
+            wasBlocking[i++] = channel.isBlocking();
+        }
+        for (SelectableChannel channel : writeChannels) {
+            wasBlocking[i++] = channel.isBlocking();
+        }
+        for (SelectableChannel channel : errChannels) {
+            wasBlocking[i++] = channel.isBlocking();
+        }
+
         try (Selector selector = Selector.open()) {
             for (SelectableChannel channel : readChannels) {
                 channel.configureBlocking(false);
@@ -458,6 +471,27 @@ public final class EmulatedPosixSupport extends PosixResources {
             return new SelectResult(resReadfds, resWritefds, resErrfds);
         } catch (IOException e) {
             throw posixException(OSErrorEnum.fromException(e));
+        } finally {
+            i = 0;
+            try {
+                for (SelectableChannel channel : readChannels) {
+                    if (wasBlocking[i++]) {
+                        channel.configureBlocking(true);
+                    }
+                }
+                for (SelectableChannel channel : writeChannels) {
+                    if (wasBlocking[i++]) {
+                        channel.configureBlocking(true);
+                    }
+                }
+                for (SelectableChannel channel : errChannels) {
+                    if (wasBlocking[i++]) {
+                        channel.configureBlocking(true);
+                    }
+                }
+            } catch (IOException e) {
+                // We didn't manage to restore the blocking status, ignore
+            }
         }
     }
 
