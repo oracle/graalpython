@@ -25,16 +25,16 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -71,7 +71,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
@@ -1672,7 +1672,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    @ImportStatic(NativeCAPISymbols.class)
+    @ImportStatic(NativeCAPISymbol.class)
     @GenerateUncached
     public abstract static class StorageToNativeNode extends Node {
 
@@ -3492,7 +3492,7 @@ public abstract class SequenceStorageNodes {
         }
 
         private static NativeSequenceStorage reallocNativeSequenceStorage(NativeSequenceStorage s, int requestedCapacity, InteropLibrary lib, PCallCapiFunction callCapiFunction, PRaiseNode raiseNode,
-                        String function) {
+                        NativeCAPISymbol function) {
             if (requestedCapacity > s.getCapacity()) {
                 int newCapacity;
                 try {

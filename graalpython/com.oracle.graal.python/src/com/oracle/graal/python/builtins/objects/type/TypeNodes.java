@@ -85,7 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMembe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
@@ -346,7 +346,7 @@ public abstract class TypeNodes {
                 CompilerDirectives.transferToInterpreter();
 
                 // call 'PyType_Ready' on the type
-                int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TYPE_READY, ToSulongNode.getUncached().execute(obj));
+                int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, ToSulongNode.getUncached().execute(obj));
                 if (res < 0) {
                     throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, GetNameNode.getUncached().execute(obj));
                 }

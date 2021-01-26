@@ -141,7 +141,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Trans
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.HandleCache;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
@@ -480,7 +480,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached PCallCapiFunction callSetItem) {
             // TODO(fa): This path should be avoided since this is called from native code to do a
             // native operation.
-            callSetItem.call(NativeCAPISymbols.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, tuple, position, element);
+            callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, tuple, position, element);
             return 0;
         }
 
@@ -1591,7 +1591,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // Called without landing node
-    @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 11)
+    @Builtin(name = "PyTruffle_MemoryViewFromBuffer", minNumOfPositionalArgs = 11)
     @GenerateNodeFactory
     abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
 
