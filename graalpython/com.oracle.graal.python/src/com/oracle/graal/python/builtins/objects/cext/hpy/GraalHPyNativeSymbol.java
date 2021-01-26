@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public enum GraalHPyNativeSymbols implements NativeCExtSymbol {
+public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_GET_M_NAME("graal_hpy_get_m_name"),
     GRAAL_HPY_GET_M_DOC("graal_hpy_get_m_doc"),
     GRAAL_HPY_GET_ML_NAME("graal_hpy_get_ml_name"),
@@ -125,7 +125,7 @@ public enum GraalHPyNativeSymbols implements NativeCExtSymbol {
 
     private final String name;
 
-    GraalHPyNativeSymbols(String name) {
+    GraalHPyNativeSymbol(String name) {
         this.name = name;
     }
 
@@ -134,14 +134,14 @@ public enum GraalHPyNativeSymbols implements NativeCExtSymbol {
         return name;
     }
 
-    @CompilationFinal(dimensions = 1) private static final GraalHPyNativeSymbols[] VALUES = values();
+    @CompilationFinal(dimensions = 1) private static final GraalHPyNativeSymbol[] VALUES = values();
 
-    public static GraalHPyNativeSymbols[] getValues() {
+    public static GraalHPyNativeSymbol[] getValues() {
         return VALUES;
     }
 
     @ExplodeLoop
-    public static GraalHPyNativeSymbols getByName(String name) {
+    public static GraalHPyNativeSymbol getByName(String name) {
         for (int i = 0; i < VALUES.length; i++) {
             if (VALUES[i].name.equals(name)) {
                 return VALUES[i];

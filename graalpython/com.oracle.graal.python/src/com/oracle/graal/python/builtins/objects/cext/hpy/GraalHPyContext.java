@@ -54,7 +54,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_CONTEXT_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
 
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
@@ -437,7 +437,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                     middleTime = System.currentTimeMillis();
                 }
 
-                callBulkFree.call(context, GraalHPyNativeSymbols.GRAAL_HPY_BULK_FREE, new NativeSpaceArrayWrapper(handleReferences), (long) n);
+                callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, new NativeSpaceArrayWrapper(handleReferences), (long) n);
 
                 if (loggable) {
                     final long countDuration = middleTime - startTime;
@@ -946,7 +946,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         // We will always get an empty shape from the language and we do always add same key-value
         // pairs (in the same order). So, in the end, each context should get the same shape.
         Store s = new Store(symbolCacheShape);
-        for (GraalHPyNativeSymbols sym : GraalHPyNativeSymbols.getValues()) {
+        for (GraalHPyNativeSymbol sym : GraalHPyNativeSymbol.getValues()) {
             DynamicObjectLibrary.getUncached().put(s, sym, PNone.NO_VALUE);
         }
         return s;
