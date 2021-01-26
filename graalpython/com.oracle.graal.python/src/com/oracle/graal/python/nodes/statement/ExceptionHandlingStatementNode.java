@@ -192,7 +192,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
-        PException pe = PException.fromObject(pythonException, node, false, e);
+        PException pe = PException.fromObject(pythonException, node, e);
         pe.setHideLocation(true);
         // Host exceptions have their stacktrace already filled in, call this to set
         // the cutoff point to the catch site
