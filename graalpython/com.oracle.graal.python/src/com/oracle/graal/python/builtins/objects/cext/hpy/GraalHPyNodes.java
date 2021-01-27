@@ -634,8 +634,7 @@ public class GraalHPyNodes {
                 }
 
                 int type = valueLib.asInt(callHelperNode.call(context, GRAAL_HPY_MEMBER_GET_TYPE, memberDef));
-                boolean isReadyOnlyType = GraalHPyMemberAccessNodes.isReadOnlyType(type);
-                boolean readOnly = isReadyOnlyType || valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
+                boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
 
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
@@ -647,8 +646,6 @@ public class GraalHPyNodes {
                     // Members are, of course, not deletable; this built-in function will throw a
                     // TypeError.
                     deleterObject = HPyDeleteMemberNode.createBuiltinFunction(language, name);
-                } else if (isReadyOnlyType) {
-                    setterObject = deleterObject = HPyReadOnlyMemberNode.createBuiltinFunction(language, name);
                 }
 
                 // read class 'property' from 'builtins/property.py'

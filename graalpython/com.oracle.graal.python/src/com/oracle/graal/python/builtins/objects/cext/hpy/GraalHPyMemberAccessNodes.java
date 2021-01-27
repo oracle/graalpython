@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins.GetRefNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyBadMemberDescrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyDeleteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadOnlyMemberNodeGen;
@@ -95,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyBadMemberDescrNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -428,7 +428,7 @@ public class GraalHPyMemberAccessNodes {
         }
     }
 
-    @Builtin(minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
+    @Builtin(minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"})
     protected abstract static class HPyReadOnlyMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin builtin = HPyReadOnlyMemberNode.class.getAnnotation(Builtin.class);
 
@@ -539,6 +539,9 @@ public class GraalHPyMemberAccessNodes {
             String accessor = getWriteAccessorName(type);
             CExtToNativeNode toNativeNode = getWriteConverterNode(type);
             if (accessor == null || toNativeNode == null) {
+                if (isReadOnlyType(type)) {
+                    return HPyReadOnlyMemberNode.createBuiltinFunction(language, propertyName);
+                }
                 return HPyBadMemberDescrNode.createBuiltinFunction(language, propertyName);
             }
             RootNode rootNode = new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(accessor, offset, toNativeNode)), true);
