@@ -116,6 +116,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1249,6 +1250,25 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
             return encoded[0];
+        }
+    }
+
+    /**
+     * Converts a Python Boolean into a C Boolean {@code char} (see also:
+     * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
+     */
+    @GenerateUncached
+    public abstract static class HPyAsNativeBooleanNode extends CExtToNativeNode {
+
+        @Specialization
+        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return (byte) PInt.intValue(castToJavaBooleanNode.execute(value));
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+            }
         }
     }
 

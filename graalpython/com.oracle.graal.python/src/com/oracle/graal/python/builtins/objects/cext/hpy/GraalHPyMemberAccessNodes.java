@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNod
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeBooleanNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativePrimitiveNodeGen;
@@ -251,10 +252,11 @@ public class GraalHPyMemberAccessNodes {
         switch (type) {
             case HPY_MEMBER_CHAR:
                 return HPyAsNativeCharNodeGen.create();
+            case HPY_MEMBER_BOOL:
+                return HPyAsNativeBooleanNodeGen.create();
             case HPY_MEMBER_SHORT:
             case HPY_MEMBER_INT:
             case HPY_MEMBER_BYTE:
-            case HPY_MEMBER_BOOL:
                 // TODO(fa): use appropriate native type sizes
                 return HPyAsNativePrimitiveNodeGen.create(Integer.BYTES, true);
             case HPY_MEMBER_LONG:
