@@ -340,4 +340,14 @@ public final class PythonUtils {
     public static byte[] getBufferArray(ByteBuffer buffer) {
         return buffer.array();
     }
+
+    @TruffleBoundary
+    public static int getBufferPosition(ByteBuffer buffer) {
+        return buffer.position();
+    }
+
+    @TruffleBoundary
+    public static boolean bufferHasRemaining(ByteBuffer buffer) {
+        return buffer.hasRemaining();
+    }
 }

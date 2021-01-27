@@ -506,7 +506,7 @@ public class SocketBuiltins extends PythonBuiltins {
             if (hasTimeoutProfile.profile(timeoutMillis > 0)) {
                 timeoutHelper = new TimeoutHelper(timeoutMillis);
             }
-            while (buffer.hasRemaining()) {
+            while (PythonUtils.bufferHasRemaining(buffer)) {
                 if (timeoutHelper != null) {
                     timeoutMillis = timeoutHelper.checkAndGetRemainingTimeout(this);
                 }
@@ -520,7 +520,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raiseOSError(frame, OSErrorEnum.EWOULDBLOCK);
                 }
             }
-            return buffer.position();
+            return PythonUtils.getBufferPosition(buffer);
         }
     }
 
