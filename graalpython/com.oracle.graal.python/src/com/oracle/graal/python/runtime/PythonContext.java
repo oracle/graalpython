@@ -1046,7 +1046,7 @@ public final class PythonContext {
     public Thread[] getThreads() {
         CompilerAsserts.neverPartOfCompilation();
         if (singleThreaded.isValid()) {
-            return new Thread[] { Thread.currentThread() };
+            return new Thread[]{Thread.currentThread()};
         } else {
             Set<Thread> threads = new HashSet<>();
             for (PythonThreadState ts : threadStateMapping.values()) {
