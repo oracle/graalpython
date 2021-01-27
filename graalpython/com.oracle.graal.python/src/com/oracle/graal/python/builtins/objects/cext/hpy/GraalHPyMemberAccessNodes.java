@@ -428,12 +428,13 @@ public class GraalHPyMemberAccessNodes {
         }
     }
 
-    @Builtin(minNumOfPositionalArgs = 1, parameterNames = "$self")
-    protected abstract static class HPyReadOnlyMemberNode extends PythonUnaryBuiltinNode {
+    @Builtin(minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
+    protected abstract static class HPyReadOnlyMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin builtin = HPyReadOnlyMemberNode.class.getAnnotation(Builtin.class);
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object self,
+        @SuppressWarnings("unused")
+        static Object doGeneric(Object self, Object value,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.READONLY_ATTRIBUTE);
         }
