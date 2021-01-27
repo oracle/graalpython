@@ -58,11 +58,9 @@ import java.nio.charset.CodingErrorAction;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -204,22 +202,22 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class EncodeNativeStringNode extends PNodeWithContext {
 
-        public abstract PBytes execute(Charset charset, Object unicodeObject, String errors);
+        public abstract byte[] execute(Charset charset, Object unicodeObject, String errors);
 
         @Specialization
-        static PBytes doJavaString(Charset charset, String unicodeObject, String errors,
+        static byte[] doJavaString(Charset charset, String unicodeObject, String errors,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, raiseNode);
-                return factory.createBytes(BytesBuiltins.doEncode(charset, unicodeObject, action));
+                return BytesBuiltins.doEncode(charset, unicodeObject, action);
             } catch (CharacterCodingException e) {
                 throw raiseNode.raise(UnicodeEncodeError, "%m", e);
             }
         }
 
         @Specialization
-        static PBytes doGeneric(Charset charset, Object unicodeObject, String errors,
+        static byte[] doGeneric(Charset charset, Object unicodeObject, String errors,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
@@ -230,7 +228,6 @@ public abstract class CExtCommonNodes {
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
             }
-
         }
     }
 

@@ -62,6 +62,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
@@ -817,6 +818,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode resultAsHandleNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached PythonObjectFactory factory,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -825,8 +827,8 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object unicodeObject = asPythonObjectNode.execute(context, arguments[1]);
             try {
-                Object result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, "strict");
-                return resultAsHandleNode.execute(context, result);
+                byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, CodecsModuleBuiltins.STRICT);
+                return resultAsHandleNode.execute(context, factory.createBytes(result));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
                 return context.getNullHandle();

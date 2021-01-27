@@ -1267,7 +1267,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doUnicode(VirtualFrame frame, PString s, String errors, Object error_marker,
                         @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode) {
             try {
-                return encodeNativeStringNode.execute(charset, s, errors);
+                return factory().createBytes(encodeNativeStringNode.execute(charset, s, errors));
             } catch (PException e) {
                 transformToNative(frame, e);
                 return error_marker;
