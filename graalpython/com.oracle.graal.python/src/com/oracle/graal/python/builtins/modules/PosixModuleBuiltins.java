@@ -1666,7 +1666,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean wcoredump(VirtualFrame frame, int status,
+        boolean wcoredump(int status,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.wcoredump(getPosixSupport(), status);
         }
@@ -1682,7 +1682,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean wifcontinued(VirtualFrame frame, int status,
+        boolean wifcontinued(int status,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.wifcontinued(getPosixSupport(), status);
         }
@@ -1698,7 +1698,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean wifstopped(VirtualFrame frame, int status,
+        boolean wifstopped(int status,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.wifstopped(getPosixSupport(), status);
         }
@@ -1714,7 +1714,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean wifsignaled(VirtualFrame frame, int status,
+        boolean wifsignaled(int status,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.wifsignaled(getPosixSupport(), status);
         }
@@ -1730,7 +1730,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean wifexited(VirtualFrame frame, int status,
+        boolean wifexited(int status,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.wifexited(getPosixSupport(), status);
         }
@@ -1746,7 +1746,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int wexitstatus(VirtualFrame frame, int status,
+        int wexitstatus(int status,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.wexitstatus(getPosixSupport(), status);
         }
@@ -1762,7 +1762,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int wtermsig(VirtualFrame frame, int status,
+        int wtermsig(int status,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.wtermsig(getPosixSupport(), status);
         }
@@ -1778,7 +1778,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int wstopsig(VirtualFrame frame, int status,
+        int wstopsig(int status,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.wstopsig(getPosixSupport(), status);
         }

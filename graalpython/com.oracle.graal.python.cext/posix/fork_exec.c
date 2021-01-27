@@ -423,6 +423,7 @@ int32_t fork_exec(
             int32_t *fdsToKeep, int64_t fdsToKeepLen
             ) {
 
+    // We reuse the memory allocated for offsets to avoid the need to allocate and reliably free another array
     char **strings = (char **) offsets;
     for (int32_t i = 0; i < offsetsLen; ++i) {
         strings[i] = offsets[i] == -1 ? NULL : data + offsets[i];

@@ -617,7 +617,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_SIZE_WAS = "unsupported %s size; was: %d";
     public static final String UNSUPPORTED_STR_TYPE = "unsupported string type: %s";
     public static final String UNSUPPORTED_TARGET_SIZE = "Unsupported target size: %d";
-    public static final String UNSUPPORTED_USE_OF_SYS_EXECUTABLE = "unsupported use of sys.executable";
+    public static final String UNSUPPORTED_USE_OF_SYS_EXECUTABLE = "internal error: unsupported use of sys.executable";
     public static final String VALUE_EXPECTED = "%s value expected";
     public static final String VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = "value too large to fit into index-sized integer";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";

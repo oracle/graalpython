@@ -1391,7 +1391,9 @@ public final class EmulatedPosixSupport extends PosixResources {
                 throw new UnsupportedPosixFeatureException("Only 0 or WNOHANG are supported for waitpid");
             }
         } catch (IndexOutOfBoundsException e) {
-            if (pid <= 0) {
+            if (pid < -1) {
+                throw new UnsupportedPosixFeatureException("Process groups are not supported.");
+            } else if (pid <= 0) {
                 throw posixException(OSErrorEnum.ECHILD);
             } else {
                 throw posixException(OSErrorEnum.ESRCH);
@@ -1405,41 +1407,49 @@ public final class EmulatedPosixSupport extends PosixResources {
     // do they really make sense for the emulated backend? Is the handling of exist status correct?
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean wcoredump(int status) {
         return false;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean wifcontinued(int status) {
         return false;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean wifstopped(int status) {
         return false;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean wifsignaled(int status) {
         return status > 128;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean wifexited(int status) {
         return !wifsignaled(status);
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public int wexitstatus(int status) {
         return status & 127;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public int wtermsig(int status) {
         return status - 128;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public int wstopsig(int status) {
         return 0;
     }
@@ -1473,7 +1483,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                 if (strings.length == 2) {
                     envMap.put(strings[0], strings[1]);
                 } else {
-                    // TODO report a compatibility warning?
+                    throw new UnsupportedPosixFeatureException("Only key=value environment variables are supported");
                 }
             }
         }

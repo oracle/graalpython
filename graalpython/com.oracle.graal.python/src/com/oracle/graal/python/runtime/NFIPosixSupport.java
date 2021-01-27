@@ -930,8 +930,7 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         if (dataLen >= Integer.MAX_VALUE) {
-            // TODO throw UnsupportedPosixFeatureException? Or pretend that one of the posix errors
-            // happened? ENOMEM, E2BIG, EMSGSIZE
+            throw newPosixException(invokeNode, OSErrorEnum.E2BIG.getNumber());
         }
 
         byte[] data = new byte[(int) dataLen];
@@ -952,7 +951,6 @@ public final class NFIPosixSupport extends PosixSupport {
         }
         assert offset == dataLen;
 
-        // TODO would it make sense to put all the int arguments into one int array?
         int res = invokeNode.callInt(this, PosixNativeFunction.fork_exec,
                         wrap(data), wrap(offsets), offsets.length, argsPos, envPos, cwdPos,
                         stdinReadFd, stdinWriteFd,
@@ -969,7 +967,7 @@ public final class NFIPosixSupport extends PosixSupport {
         return res;
     }
 
-    private long getLengthOfCStrings(Object[] src) {
+    private static long getLengthOfCStrings(Object[] src) {
         long len = 0;
         for (Object o : src) {
             len += ((Buffer) o).length + 1;
@@ -982,7 +980,8 @@ public final class NFIPosixSupport extends PosixSupport {
      * and stores the offset of each string to the {@code offsets} array starting at index
      * {@code startPos}.
      */
-    private long encodeCStringArray(byte[] data, long offset, long[] offsets, int startPos, Object[] src) {
+    private static long encodeCStringArray(byte[] data, long startOffset, long[] offsets, int startPos, Object[] src) {
+        long offset = startOffset;
         for (int i = 0; i < src.length; ++i) {
             Buffer buf = (Buffer) src[i];
             int strLen = (int) buf.length;
