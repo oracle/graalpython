@@ -705,11 +705,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Shape shape = builtinTypeInstanceShapes[ordinal];
         if (shape == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            Shape.DerivedBuilder shapeBuilder = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, type, 0);
-            if (!type.isBuiltinWithDict()) {
-                shapeBuilder.shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG);
-            }
-            shape = shapeBuilder.build();
+            shape = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, type, 0).build();
             builtinTypeInstanceShapes[ordinal] = shape;
         }
         return shape;
