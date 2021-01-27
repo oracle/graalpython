@@ -532,14 +532,24 @@ class TestCase(object):
             self.type = exc_type
             self.value = exc
             self.tb = traceback
-            import re
             if not exc_type:
                 assert False, "expected '%r' to be raised" % self.exc_type
-            elif self.exc_type in exc_type.mro():
-                self.exception = exc
+            else:
+                if isinstance(self.exc_type, tuple):
+                    for _exc_type in self.exc_type:
+                        if self._match_exc(_exc_type, exc_type, exc):
+                            return True
+                elif self._match_exc(self.exc_type, exc_type, exc):
+                    return True
+            
+        def _match_exc(self, expected_exc_type, actual_exc_type, actual_exc):
+            import re
+            if expected_exc_type in actual_exc_type.mro():
+                self.exception = actual_exc
                 if self.exc_regex:
-                    assert re.search(self.exc_regex, str(exc)), "%s does not match %s" % (self.exc_regex, exc)
+                    assert re.search(self.exc_regex, str(actual_exc)), "%s does not match %s" % (self.exc_regex, actual_exc)
                 return True
+
 
     def assertIn(self, expected, in_str, msg=""):
         if not msg:
