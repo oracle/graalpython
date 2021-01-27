@@ -40,18 +40,173 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
+import java.io.PrintWriter;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "faulthandler")
 public class FaulthandlerModuleBuiltins extends PythonBuiltins {
+    private static final HiddenKey STACK_DUMP_REQUESTED = new HiddenKey("stackDumpRequested");
+    private WeakHashMap<Thread, Object> dumpRequestedForThreads = new WeakHashMap<>();
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return FaulthandlerModuleBuiltinsFactory.getFactories();
+    }
+
+    private static void dumpTraceback(Object callable, Object file) {
+        if (!(callable instanceof PNone)) {
+            Object f = file;
+            if (file == PNone.NO_VALUE) {
+                f = PNone.NONE;
+            }
+            try {
+                PythonObjectLibrary.getUncached().callObject(callable, null, PNone.NONE, PNone.NONE, f);
+            } catch (RuntimeException e) {
+                ExceptionUtils.printPythonLikeStackTrace(e);
+            }
+        }
+    }
+
+    private static final class StackDumpAction implements AsyncHandler.AsyncAction {
+        @Override
+        public void execute(PythonContext context) {
+            CompilerDirectives.bailout("This should never be compiled");
+            PythonModule mod = context.getCore().lookupBuiltinModule("faulthandler");
+            Object dumpQueue = DynamicObjectLibrary.getUncached().getOrDefault(mod, STACK_DUMP_REQUESTED, null);
+            if (dumpQueue instanceof WeakHashMap) {
+                WeakHashMap<?, ?> weakDumpQueue = (WeakHashMap<?, ?>) dumpQueue;
+                Object callableAndFile = weakDumpQueue.remove(Thread.currentThread());
+                if (callableAndFile instanceof Object[]) {
+                    Object callable = ((Object[]) callableAndFile)[0];
+                    Object file = ((Object[]) callableAndFile)[1];
+                    dumpTraceback(callable, file);
+                }
+            }
+        }
+
+        private static final StackDumpAction INSTANCE = new StackDumpAction();
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        final PythonContext ctx = core.getContext();
+        PythonModule mod = core.lookupBuiltinModule("faulthandler");
+        mod.setAttribute(STACK_DUMP_REQUESTED, dumpRequestedForThreads);
+        ctx.registerAsyncAction(() -> {
+            if (!dumpRequestedForThreads.isEmpty()) {
+                return StackDumpAction.INSTANCE;
+            } else {
+                return null;
+            }
+        });
+    }
+
+    @Builtin(name = "dump_traceback", minNumOfPositionalArgs = 1, parameterNames = {"$mod", "file", "all_threads"}, declaresExplicitSelf = true)
+    @ArgumentClinic(name = "file", defaultValue = "PNone.NO_VALUE")
+    @ArgumentClinic(name = "all_threads", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class DumpTracebackNode extends PythonClinicBuiltinNode {
+        @Specialization
+        public PNone doit(VirtualFrame frame, PythonModule mod, Object file, boolean allThreads) {
+            Object state = IndirectCallContext.enter(frame, getContext(), this);
+            try {
+                // it's not important for this to be fast at all
+                dump(getContext(), mod, file, allThreads);
+            } finally {
+                IndirectCallContext.exit(frame, getContext(), state);
+            }
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        @SuppressWarnings("unchecked")
+        private static final void dump(PythonContext context, PythonModule mod, Object file, boolean allThreads) {
+            Object printStackFunc;
+            try {
+                Object tracebackModule = AbstractImportNode.importModule("traceback");
+                printStackFunc = PythonObjectLibrary.getUncached().lookupAttribute(tracebackModule, null, "print_stack");
+            } catch (PException e) {
+                return;
+            }
+
+            if (allThreads) {
+                if (PythonOptions.isWithJavaStacktrace(context.getLanguage())) {
+                    PrintWriter err = new PrintWriter(context.getStandardErr());
+                    Thread[] ths = context.getThreads();
+                    for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
+                        boolean found = false;
+                        for (Thread pyTh : ths) {
+                            if (pyTh == e.getKey()) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            continue;
+                        }
+                        err.println();
+                        err.println(e.getKey());
+                        for (StackTraceElement el : e.getValue()) {
+                            err.println(el.toString());
+                        }
+                    }
+                }
+
+                Object dumpQueue = DynamicObjectLibrary.getUncached().getOrDefault(mod, STACK_DUMP_REQUESTED, null);
+                if (dumpQueue instanceof WeakHashMap) {
+                    WeakHashMap<Thread, Object[]> weakDumpQueue = (WeakHashMap<Thread, Object[]>) dumpQueue;
+                    if (weakDumpQueue.isEmpty()) {
+                        for (Thread th : context.getThreads()) {
+                            weakDumpQueue.put(th, new Object[]{printStackFunc, file});
+                        }
+                    }
+                }
+            } else {
+                if (PythonOptions.isWithJavaStacktrace(context.getLanguage())) {
+                    PrintWriter err = new PrintWriter(context.getStandardErr());
+                    err.println();
+                    err.println(Thread.currentThread());
+                    for (StackTraceElement el : Thread.currentThread().getStackTrace()) {
+                        err.println(el.toString());
+                    }
+                }
+                dumpTraceback(printStackFunc, file);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FaulthandlerModuleBuiltinsClinicProviders.DumpTracebackNodeClinicProviderGen.INSTANCE;
+        }
     }
 }
