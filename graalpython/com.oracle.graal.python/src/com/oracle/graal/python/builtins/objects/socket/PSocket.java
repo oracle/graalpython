@@ -109,7 +109,10 @@ public class PSocket extends PythonBuiltinObject implements Channel {
     private SocketChannel socket;
 
     private ServerSocketChannel serverSocket;
-    private boolean blocking = true;
+
+    // TODO this should be true by default, but until we have threads, blocking sockets cause too
+    // many deadlocks in the tests
+    private boolean blocking = false;
 
     private HashMap<Object, Object> options;
 
