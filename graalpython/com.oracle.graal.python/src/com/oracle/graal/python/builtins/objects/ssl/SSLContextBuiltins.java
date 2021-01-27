@@ -91,6 +91,14 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import javax.crypto.interfaces.DHPrivateKey;
+import javax.crypto.interfaces.DHPublicKey;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -638,6 +646,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     // (_ssl.c:3991)"
                     throw raise(SSLError, ErrorMessages.SSL_PEM_LIB_S, "no private key found in keyfile/certfile");
                 }
+		checkPrivateKey(this, pk, certs[0]);
                 keystore.setKeyEntry(pkPem.getName(), pk, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, certs);
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
@@ -651,6 +660,45 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 throw raise(SSLError, ex.getMessage());
             }
             return PNone.NONE;
+        }
+
+        private void checkPrivateKey(Node node, PrivateKey pk, X509Certificate cert) throws PException {
+            if (!pk.getAlgorithm().equals(cert.getPublicKey().getAlgorithm())) {
+                // TODO correct err code
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, ErrorMessages.KEY_TYPE_MISMATCH);
+            }
+            if (pk instanceof RSAPrivateKey) {
+                RSAPrivateKey privKey = (RSAPrivateKey) pk;
+                RSAPublicKey pubKey = (RSAPublicKey) cert.getPublicKey();
+                if (!privKey.getModulus().equals(pubKey.getModulus())) {
+                    // TODO: only modulus?
+                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+                }
+            } else if (pk instanceof ECPrivateKey) {
+                ECPrivateKey privKey = (ECPrivateKey) pk;
+                ECPublicKey pubKey = (ECPublicKey) cert.getPublicKey();
+                if (!privKey.getParams().equals(pubKey.getParams())) {
+                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+                }
+            } else if (pk instanceof DHPrivateKey) {
+                DHPrivateKey privKey = (DHPrivateKey) pk;
+                DHPublicKey pubKey = (DHPublicKey) cert.getPublicKey();
+                if (!privKey.getParams().equals(pubKey.getParams())) {
+                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+                }
+            } else if (pk instanceof DSAPrivateKey) {
+                DSAPrivateKey privKey = (DSAPrivateKey) pk;
+                DSAPublicKey pubKey = (DSAPublicKey) cert.getPublicKey();
+                if (!privKey.getParams().equals(pubKey.getParams())) {
+                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+                }
+            }
+        }
+
+        @Specialization(guards = "!isString(password)")
+        Object load(VirtualFrame frame, PSSLContext self, String certfile, String keyfile, Object password) {
+            // TODO: password callable/callback
+            throw raise(NotImplementedError);
         }
 
         @Override
