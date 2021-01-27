@@ -88,6 +88,7 @@ public abstract class ErrorMessages {
     public static final String BAD_COMPRESSION_LEVEL = "Bad compression level";
     public static final String BAD_FILE_DESCRIPTOR = "bad file descriptor";
     public static final String BAD_MARSHAL_DATA = "bad marshal data";
+    public static final String BAD_MEMBER_DESCR_TYPE_FOR_P = "bad memberdescr type for %p";
     public static final String BAD_OPERAND_FOR = "bad operand type for %s%s: '%p'";
     public static final String BAD_TYPECODE = "bad typecode (must be i, d, b, B, or l)";
     public static final String BASE_OUT_OF_RANGE_FOR_INT = "base is out of range for int()";

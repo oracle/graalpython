@@ -79,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNod
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyWriteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeBooleanNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeDoubleNodeGen;
@@ -96,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyBadMemberDescrNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -219,12 +219,12 @@ public class GraalHPyMemberAccessNodes {
                 return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_F;
             case HPY_MEMBER_DOUBLE:
                 return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_D;
+            case HPY_MEMBER_NONE:
             case HPY_MEMBER_STRING:
             case HPY_MEMBER_STRING_INPLACE:
                 return null;
             case HPY_MEMBER_OBJECT:
             case HPY_MEMBER_OBJECT_EX:
-            case HPY_MEMBER_NONE:
                 return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_HPY;
             case HPY_MEMBER_CHAR:
             case HPY_MEMBER_BYTE:
@@ -279,7 +279,6 @@ public class GraalHPyMemberAccessNodes {
             case HPY_MEMBER_OBJECT:
             case HPY_MEMBER_OBJECT_EX:
             case HPY_MEMBER_NONE:
-                return HPyAsHandleNodeGen.create();
             case HPY_MEMBER_STRING:
             case HPY_MEMBER_STRING_INPLACE:
                 return null;
@@ -448,6 +447,24 @@ public class GraalHPyMemberAccessNodes {
     }
 
     @Builtin(minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
+    protected abstract static class HPyBadMemberDescrNode extends PythonBinaryBuiltinNode {
+        private static final Builtin builtin = HPyBadMemberDescrNode.class.getAnnotation(Builtin.class);
+
+        @Specialization
+        static Object doGeneric(Object self, @SuppressWarnings("unused") Object value,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
+        }
+
+        @TruffleBoundary
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
+            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(builtin, HPyBadMemberDescrNode.class,
+                            builtin -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true)));
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
+        }
+    }
+
+    @Builtin(minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
     protected abstract static class HPyWriteMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin builtin = HPyWriteMemberNode.class.getAnnotation(Builtin.class);
 
@@ -482,8 +499,7 @@ public class GraalHPyMemberAccessNodes {
                 Object nativeValue;
                 if (toNativeNode != null) {
                     // The conversion to a native primitive may call arbitrary user code. So we need
-                    // to
-                    // prepare an indirect call.
+                    // to prepare an indirect call.
                     Object savedState = IndirectCallContext.enter(frame, getContext(), this);
                     try {
                         nativeValue = toNativeNode.execute(hPyContext, value);
@@ -521,6 +537,9 @@ public class GraalHPyMemberAccessNodes {
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
             String accessor = getWriteAccessorName(type);
             CExtToNativeNode toNativeNode = getWriteConverterNode(type);
+            if (accessor == null || toNativeNode == null) {
+                return HPyBadMemberDescrNode.createBuiltinFunction(language, propertyName);
+            }
             RootNode rootNode = new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(accessor, offset, toNativeNode)), true);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
         }
