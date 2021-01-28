@@ -35,13 +35,13 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     private KeyStore keystore;
 
-    public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, int verifyFlags, boolean chekHostname, int verifyMode, SSLContext context) {
+    public PSSLContext(Object cls, Shape instanceShape, SSLProtocolVersion version, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {
         super(cls, instanceShape);
         assert version != null;
         this.version = version;
         this.context = context;
         this.verifyFlags = verifyFlags;
-        this.checkHostname = chekHostname;
+        this.checkHostname = checkHostname;
         this.verifyMode = verifyMode;
     }
 

@@ -86,7 +86,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("CERT_OPTIONAL", SSL_CERT_OPTIONAL);
         module.setAttribute("CERT_REQUIRED", SSL_CERT_REQUIRED);
         // TODO enable
-        module.setAttribute("HAS_SNI", false);
+        module.setAttribute("HAS_SNI", true);
         module.setAttribute("HAS_ECDH", false);
         module.setAttribute("HAS_NPN", false);
         module.setAttribute("HAS_ALPN", ALPNHelper.hasAlpn());

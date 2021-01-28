@@ -30,12 +30,14 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
 import javax.crypto.spec.DHParameterSpec;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
@@ -617,17 +619,24 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         // TODO parameters
         Object wrap(PSSLContext context, PSocket sock, boolean serverSide, String serverHostname, Object owner, Object session) {
-            // TODO hostname
-            // TODO hostname encode as IDNA?
-            // TODO hostname can be null
-            return factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, sock, createSSLEngine(context, !serverSide));
+            return factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, sock, createSSLEngine(context, serverSide, serverHostname));
         }
 
         @TruffleBoundary
-        private static SSLEngine createSSLEngine(PSSLContext context, boolean clientMode) {
+        private SSLEngine createSSLEngine(PSSLContext context, boolean serverMode, String serverHostname) {
             SSLEngine engine = context.getContext().createSSLEngine();
-            engine.setUseClientMode(clientMode);
+            engine.setUseClientMode(!serverMode);
             SSLParameters parameters = new SSLParameters();
+            if (serverHostname != null) {
+                try {
+                    parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
+                } catch (IllegalArgumentException e) {
+                    throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, "Invalid hostname");
+                }
+                if (context.getCheckHostname()) {
+                    parameters.setEndpointIdentificationAlgorithm("HTTPS");
+                }
+            }
             if (context.getCiphers() != null) {
                 parameters.setCipherSuites(context.getCiphers());
             }
