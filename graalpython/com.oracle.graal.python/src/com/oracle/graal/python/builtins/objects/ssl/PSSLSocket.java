@@ -8,21 +8,33 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PSSLSocket extends PythonBuiltinObject {
     private final PSSLContext context;
+    // May be null for SSLSocket backed by MemoryBIO
     private final PSocket socket;
     private final SSLEngine engine;
     private Object owner;
 
-    private final MemoryBIO networkInboundBIO = new MemoryBIO();
-    private final MemoryBIO networkOutboundBIO = new MemoryBIO();
+    private final MemoryBIO networkInboundBIO;
+    private final MemoryBIO networkOutboundBIO;
     private final MemoryBIO applicationInboundBIO = new MemoryBIO();
 
     private boolean handshakeComplete = false;
 
-    public PSSLSocket(Object cls, Shape instanceShape, PSSLContext context, PSocket socket, SSLEngine engine) {
+    public PSSLSocket(Object cls, Shape instanceShape, PSSLContext context, SSLEngine engine, PSocket socket) {
         super(cls, instanceShape);
         this.context = context;
-        this.socket = socket;
         this.engine = engine;
+        this.socket = socket;
+        this.networkInboundBIO = new MemoryBIO();
+        this.networkOutboundBIO = new MemoryBIO();
+    }
+
+    public PSSLSocket(Object cls, Shape instanceShape, PSSLContext context, SSLEngine engine, MemoryBIO networkInboundBIO, MemoryBIO networkOutboundBIO) {
+        super(cls, instanceShape);
+        this.context = context;
+        this.engine = engine;
+        this.socket = null;
+        this.networkInboundBIO = networkInboundBIO;
+        this.networkOutboundBIO = networkOutboundBIO;
     }
 
     public PSSLContext getContext() {

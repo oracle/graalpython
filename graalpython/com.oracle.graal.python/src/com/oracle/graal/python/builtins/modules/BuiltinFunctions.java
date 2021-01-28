@@ -1526,7 +1526,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             try {
                 end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.END_MUST_BE_NONE_OR_STRING, sepIn);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "end", sepIn);
             }
 
             Object file;

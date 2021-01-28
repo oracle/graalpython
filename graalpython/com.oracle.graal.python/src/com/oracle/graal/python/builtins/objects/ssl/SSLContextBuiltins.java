@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -74,7 +75,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -110,6 +110,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class SSLContextNode extends PythonBinaryClinicBuiltinNode {
+
         @Specialization
         PSSLContext createContext(Object type, int protocol) {
             SSLProtocolVersion version = SSLProtocolVersion.fromPythonId(protocol);
@@ -145,6 +146,94 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SSLContextBuiltinsClinicProviders.SSLContextNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @TruffleBoundary
+    // TODO session
+    static SSLEngine createSSLEngine(Node node, PSSLContext context, boolean serverMode, String serverHostname, Object session) {
+        SSLEngine engine = context.getContext().createSSLEngine();
+        engine.setUseClientMode(!serverMode);
+        SSLParameters parameters = new SSLParameters();
+        if (serverHostname != null) {
+            try {
+                parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
+            } catch (IllegalArgumentException e) {
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, "Invalid hostname");
+            }
+            if (context.getCheckHostname()) {
+                parameters.setEndpointIdentificationAlgorithm("HTTPS");
+            }
+        }
+        if (context.getCiphers() != null) {
+            parameters.setCipherSuites(context.getCiphers());
+        }
+        if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
+            ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());
+        }
+        engine.setSSLParameters(parameters);
+        return engine;
+    }
+
+    @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
+    @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
+    @GenerateNodeFactory
+    abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
+        @Specialization
+        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, Object session,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
+            String serverHostname = null;
+            if (!(serverHostnameObj instanceof PNone)) {
+                serverHostname = cast.cast(serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
+            }
+            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname, session);
+            PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, sock);
+            if (!(owner instanceof PNone)) {
+                sslSocket.setOwner(owner);
+            }
+            return sslSocket;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object wrap(Object context, Object sock, Object serverSide, Object serverHostname, Object owner, Object session) {
+            throw raise(TypeError, "invalid _wrap_socket call");
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.WrapSocketNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "_wrap_bio", minNumOfPositionalArgs = 3, parameterNames = {"$self", "incoming", "outgoing", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
+    @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
+    @GenerateNodeFactory
+    abstract static class WrapBIONode extends PythonClinicBuiltinNode {
+        @Specialization
+        Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner, Object session,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
+            String serverHostname = null;
+            if (!(serverHostnameObj instanceof PNone)) {
+                serverHostname = cast.cast(serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
+            }
+            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname, session);
+            PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, incoming.getBio(), outgoing.getBio());
+            if (!(owner instanceof PNone)) {
+                sslSocket.setOwner(owner);
+            }
+            return sslSocket;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object wrap(Object context, Object incoming, Object outgoing, Object serverSide, Object serverHostname, Object owner, Object session) {
+            throw raise(TypeError, "invalid _wrap_bio call");
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.WrapBIONodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -604,59 +693,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
             final KeyFactory factory = KeyFactory.getInstance("RSA");
             return factory.generatePrivate(spec);
-        }
-    }
-
-    @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
-    @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
-    @ArgumentClinic(name = "server_hostname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "null", useDefaultForNone = true)
-    @GenerateNodeFactory
-    abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
-        @Specialization(guards = "serverHostname == null")
-        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, @SuppressWarnings("unused") Object serverHostname, Object owner, Object session) {
-            return wrap(context, sock, serverSide, null, owner, session);
-        }
-
-        @Specialization
-        // TODO session
-        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, String serverHostname, Object owner, Object session) {
-            PythonObjectFactory factory = factory();
-            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname);
-            PSSLSocket sslSocket = factory.createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, sock, engine);
-            if (!(owner instanceof PNone)) {
-                sslSocket.setOwner(owner);
-            }
-            return sslSocket;
-        }
-
-        @TruffleBoundary
-        private static SSLEngine createSSLEngine(Node node, PSSLContext context, boolean serverMode, String serverHostname) {
-            SSLEngine engine = context.getContext().createSSLEngine();
-            engine.setUseClientMode(!serverMode);
-            SSLParameters parameters = new SSLParameters();
-            if (serverHostname != null) {
-                try {
-                    parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
-                } catch (IllegalArgumentException e) {
-                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, "Invalid hostname");
-                }
-                if (context.getCheckHostname()) {
-                    parameters.setEndpointIdentificationAlgorithm("HTTPS");
-                }
-            }
-            if (context.getCiphers() != null) {
-                parameters.setCipherSuites(context.getCiphers());
-            }
-            if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
-                ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());
-            }
-            engine.setSSLParameters(parameters);
-            return engine;
-        }
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return SSLContextBuiltinsClinicProviders.WrapSocketNodeClinicProviderGen.INSTANCE;
         }
     }
 

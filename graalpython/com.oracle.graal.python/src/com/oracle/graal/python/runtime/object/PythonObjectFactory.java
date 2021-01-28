@@ -34,6 +34,7 @@ import java.util.concurrent.Semaphore;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import com.oracle.graal.python.builtins.objects.ssl.MemoryBIO;
 import com.oracle.graal.python.builtins.objects.ssl.PMemoryBIO;
 import org.graalvm.collections.EconomicMap;
 import org.tukaani.xz.FinishableOutputStream;
@@ -1018,8 +1019,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSSLContext(clazz, getShape(clazz), version, verifyFlags, checkHostname, verifyMode, context));
     }
 
-    public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, PSocket socket, SSLEngine engine) {
-        return trace(new PSSLSocket(clazz, getShape(clazz), context, socket, engine));
+    public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, PSocket socket) {
+        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, socket));
+    }
+
+    public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, MemoryBIO inbound, MemoryBIO outbound) {
+        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, inbound, outbound));
     }
 
     public PMemoryBIO createMemoryBIO(Object clazz) {
