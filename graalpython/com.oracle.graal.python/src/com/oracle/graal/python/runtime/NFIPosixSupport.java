@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -903,33 +904,46 @@ public final class NFIPosixSupport extends PosixSupport {
         // - envPos is either -1 or an index in the offsets array pointing to the first env string
         // - cwdPos is either -1 or an index in the offsets array pointing to the cwd string
 
-        // First we calculate the lengths of the offsets array and the string buffer (dataLen)
-        int offsetsLen = executables.length + 1;
-        long dataLen = getLengthOfCStrings(executables);
-
-        int argsPos = offsetsLen;
-        offsetsLen += args.length + 1;
-        dataLen += getLengthOfCStrings(args);
-
+        // First we calculate the lengths of the offsets array and the string buffer (dataLen).
+        int offsetsLen;
+        int argsPos;
         int envPos;
-        if (env != null) {
-            envPos = offsetsLen;
-            offsetsLen += env.length + 1;
-            dataLen += getLengthOfCStrings(env);
-        } else {
-            envPos = -1;
-        }
-
         int cwdPos;
-        if (cwd != null) {
-            cwdPos = offsetsLen;
-            offsetsLen += 1;
-            dataLen += ((Buffer) cwd).length + 1;
-        } else {
-            cwdPos = -1;
+        long dataLen;
+
+        try {
+            offsetsLen = executables.length + 1;
+            dataLen = addLengthsOfCStrings(0, executables);
+
+            argsPos = offsetsLen;
+            offsetsLen += args.length + 1;
+            dataLen = addLengthsOfCStrings(dataLen, args);
+
+            if (env != null) {
+                envPos = offsetsLen;
+                offsetsLen += env.length + 1;
+                dataLen = addLengthsOfCStrings(dataLen, env);
+            } else {
+                envPos = -1;
+            }
+
+            if (cwd != null) {
+                cwdPos = offsetsLen;
+                offsetsLen += 1;
+                // The +1 in the second argument can overflow only if the buffer contains 2^63-1
+                // bytes, which is impossible since we are using Java arrays limited to 2^31-1.
+                dataLen = PythonUtils.addExact(dataLen, ((Buffer) cwd).length + 1L);
+            } else {
+                cwdPos = -1;
+            }
+        } catch (OverflowException e) {
+            throw newPosixException(invokeNode, OSErrorEnum.E2BIG.getNumber());
         }
 
-        if (dataLen >= Integer.MAX_VALUE) {
+        // This also guarantees that offsetsLen did not overflow: we add +1 to dataLen for each
+        // '\0', i.e. dataLen >= "number of strings" and offsetsLen < "number of strings" + 3
+        // (3 accounts for the NULL terminating the executables, args and env arrays).
+        if (dataLen >= Integer.MAX_VALUE - 3) {
             throw newPosixException(invokeNode, OSErrorEnum.E2BIG.getNumber());
         }
 
@@ -947,7 +961,7 @@ public final class NFIPosixSupport extends PosixSupport {
             int strLen = (int) buf.length;
             PythonUtils.arraycopy(buf.data, 0, data, (int) offset, strLen);
             offsets[cwdPos] = offset;
-            offset += strLen + 1;
+            offset += strLen + 1L;
         }
         assert offset == dataLen;
 
@@ -967,12 +981,12 @@ public final class NFIPosixSupport extends PosixSupport {
         return res;
     }
 
-    private static long getLengthOfCStrings(Object[] src) {
-        long len = 0;
+    private static long addLengthsOfCStrings(long prevLen, Object[] src) throws OverflowException {
+        long len = prevLen;
         for (Object o : src) {
-            len += ((Buffer) o).length + 1;
+            len = PythonUtils.addExact(len, ((Buffer) o).length);
         }
-        return len;
+        return PythonUtils.addExact(len, src.length);   // add space for terminating '\0'
     }
 
     /**
@@ -981,6 +995,8 @@ public final class NFIPosixSupport extends PosixSupport {
      * {@code startPos}.
      */
     private static long encodeCStringArray(byte[] data, long startOffset, long[] offsets, int startPos, Object[] src) {
+        // The code that calculates dataLen already checked that there is no overflow and that all
+        // offsets fit into an int.
         long offset = startOffset;
         for (int i = 0; i < src.length; ++i) {
             Buffer buf = (Buffer) src[i];
