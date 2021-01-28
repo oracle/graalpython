@@ -62,6 +62,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
@@ -86,7 +87,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNod
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadOnlyMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterHandleCloseNodeGen;
@@ -110,6 +110,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -128,6 +129,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -862,12 +864,14 @@ public class GraalHPyNodes {
 
         @Specialization
         static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
+                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") InteropLibrary resultLib,
                         @Cached HPyAddLegacyMethodNode legacyMethodNode,
                         @Cached HPyCreateLegacyMemberNode createLegacyMemberNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PythonObjectFactory factory) {
             assert checkLayout(slotDef) : "invalid layout of legacy slot definition";
 
             int slotId;
@@ -918,6 +922,13 @@ public class GraalHPyNodes {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw raiseNode.raise(PythonBuiltinClassType.SystemError, "error when reading legacy method definition for type %s", enclosingType);
                     }
+                    break;
+                case Py_tp_repr:
+                    Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
+                    RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, SpecialMethodNames.__REPR__));
+                    PKeyword[] kwDefaults = {new PKeyword(ExternalFunctionNodes.KW_CALLABLE, pfuncPtr)};
+                    PBuiltinFunction method = factory.createBuiltinFunction(SpecialMethodNames.__REPR__, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, callTarget);
+                    writeAttributeToObjectNode.execute(enclosingType, SpecialMethodNames.__REPR__, method);
                     break;
                 case Py_tp_getset:
                     // intentionally fall-through as long as this is not implemented

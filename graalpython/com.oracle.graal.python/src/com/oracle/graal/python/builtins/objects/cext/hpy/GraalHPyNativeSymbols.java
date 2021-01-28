@@ -81,6 +81,7 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_SLOT_GET_SLOT = "graal_hpy_slot_get_slot";
     public static final String GRAAL_HPY_CALLOC = "graal_hpy_calloc";
     public static final String GRAAL_HPY_LEGACY_SLOT_GET_SLOT = "graal_hpy_legacy_slot_get_slot";
+    public static final String GRAAL_HPY_LEGACY_SLOT_GET_PFUNC = "graal_hpy_legacy_slot_get_pfunc";
     public static final String GRAAL_HPY_LEGACY_SLOT_GET_METHODS = "graal_hpy_legacy_slot_get_methods";
     public static final String GRAAL_HPY_LEGACY_SLOT_GET_MEMBERS = "graal_hpy_legacy_slot_get_members";
     public static final String GRAAL_HPY_LEGACY_SLOT_GET_DESCRS = "graal_hpy_legacy_slot_get_descrs";
