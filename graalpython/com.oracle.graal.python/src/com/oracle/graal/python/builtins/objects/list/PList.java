@@ -25,10 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -43,14 +46,17 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PList extends PSequence {
     private final ListLiteralNode origin;
     private SequenceStorage store;
@@ -244,5 +250,16 @@ public final class PList extends PSequence {
         } finally {
             gil.release(mustRelease);
         }
+    }
+
+    @ExportMessage
+    public static boolean typeCheck(PList receiver, Object type,
+                    @Cached IsSubtypeNode isSubtypeNode,
+                    @Cached ConditionProfile pListProfile,
+                    @CachedLibrary("receiver") PythonObjectLibrary pol) {
+        if (pListProfile.profile(type == PythonBuiltinClassType.PList)) {
+            return true;
+        }
+        return isSubtypeNode.execute(pol.getLazyPythonClass(receiver), type);
     }
 }

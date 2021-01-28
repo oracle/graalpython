@@ -27,19 +27,28 @@ package com.oracle.graal.python.builtins.objects.tuple;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PTuple extends PSequence {
 
     private SequenceStorage store;
@@ -154,5 +163,16 @@ public final class PTuple extends PSequence {
     @SuppressWarnings("unused")
     public static boolean isArrayElementRemovable(PTuple self, long index) {
         return false;
+    }
+
+    @ExportMessage
+    public static boolean typeCheck(PTuple receiver, Object type,
+                    @Cached IsSubtypeNode isSubtypeNode,
+                    @Cached ConditionProfile pTupleProfile,
+                    @CachedLibrary("receiver") PythonObjectLibrary pol) {
+        if (pTupleProfile.profile(type == PythonBuiltinClassType.PTuple)) {
+            return true;
+        }
+        return isSubtypeNode.execute(pol.getLazyPythonClass(receiver), type);
     }
 }
