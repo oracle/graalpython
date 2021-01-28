@@ -68,7 +68,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableE
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -112,7 +112,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
                         @Cached BranchProfile notSelectableBranch,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, posixLib, rlistLibrary, wlistLibrary, xlistLibrary,
                             callGetItemNode, constructListNode, pyTimeFromObjectNode, itemLib, notSelectableBranch, gil);
         }
@@ -128,7 +128,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
                         @Cached BranchProfile notSelectableBranch,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
 
             ObjAndFDList readFDs = seq2set(frame, rlist, rlistLibrary, itemLib, callGetItemNode, constructListNode);
             ObjAndFDList writeFDs = seq2set(frame, wlist, wlistLibrary, itemLib, callGetItemNode, constructListNode);

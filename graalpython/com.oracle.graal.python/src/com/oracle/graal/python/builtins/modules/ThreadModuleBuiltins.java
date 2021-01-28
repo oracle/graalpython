@@ -66,7 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -184,6 +184,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @SuppressWarnings("try")
         long start(VirtualFrame frame, Object cls, Object callable, Object args, Object kwargs,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
@@ -199,8 +200,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                 Object[] arguments = getArgsNode.executeWith(frame, args);
                 PKeyword[] keywords = getKwArgsNode.execute(kwargs);
 
-                ReleaseGilNode.getUncached().acquire();
-                try {
+                try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
                     // n.b.: It is important to pass 'null' frame here because each thread has it's
                     // ownstack and if we would pass the current frame, this would be connected as
                     // a caller which is incorrect. However, the thread-local 'topframeref' is
@@ -208,8 +208,6 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                     callNode.execute(null, callable, arguments, keywords);
                 } catch (PException e) {
                     WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), "in thread started by", callable);
-                } finally {
-                    ReleaseGilNode.getUncached().release();
                 }
             }, env.getContext(), context.getThreadGroup());
 
@@ -228,7 +226,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         private static void waitForThreadStarted(ThreadSignaler signal, PThread pThread) {
             synchronized (signal) {
                 pThread.start();
-                try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
+                try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                     signal.wait();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

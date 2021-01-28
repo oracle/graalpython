@@ -939,7 +939,7 @@ public final class PythonContext {
     /**
      * Should not be called directly.
      *
-     * @see ReleaseGilNode
+     * @see GilNode
      */
     @TruffleBoundary
     void acquireGil() {
@@ -951,7 +951,7 @@ public final class PythonContext {
     /**
      * Should not be called directly.
      *
-     * @see ReleaseGilNode
+     * @see GilNode
      */
     @TruffleBoundary
     void releaseGil() {

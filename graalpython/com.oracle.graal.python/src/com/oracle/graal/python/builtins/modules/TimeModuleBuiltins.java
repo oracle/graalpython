@@ -66,7 +66,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -407,7 +407,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPositive(seconds)")
         Object sleep(VirtualFrame frame, long seconds,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             long deadline = (long) timeSeconds() + seconds;
             gil.release();
             try {
@@ -427,7 +427,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPositive(seconds)")
         Object sleep(VirtualFrame frame, double seconds,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             double deadline = timeSeconds() + seconds;
             gil.release();
             try {
@@ -448,7 +448,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.canBeJavaDouble(secondsObj)")
         Object sleepObj(VirtualFrame frame, Object secondsObj,
                         @Cached ConditionProfile negErr,
-                        @Cached ReleaseGilNode gil,
+                        @Cached GilNode gil,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             double seconds = lib.asJavaDouble(secondsObj);
             if (negErr.profile(seconds < 0)) {

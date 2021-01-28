@@ -86,7 +86,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -126,7 +126,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @SuppressWarnings("try")
         Object accept(PSocket socket) {
-            try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
+            try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 SocketChannel acceptSocket = SocketUtils.accept(this, socket);
                 if (acceptSocket == null) {
                     throw raiseOSError(null, OSErrorEnum.EWOULDBLOCK);
@@ -207,7 +207,7 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class ConnectNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object connect(PSocket socket, PTuple address,
-                        @Cached ReleaseGilNode gil,
+                        @Cached GilNode gil,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] hostAndPort = getObjectArrayNode.execute(address);
             gil.release();
@@ -318,7 +318,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @SuppressWarnings("try")
         Object listen(PSocket socket, int backlog) {
-            try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
+            try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 InetAddress host = InetAddress.getByName(socket.serverHost);
                 InetSocketAddress socketAddress = new InetSocketAddress(host, socket.serverPort);
 
@@ -349,7 +349,7 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             gil.release();
             ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
             try {
@@ -419,7 +419,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
         @Specialization
         Object recvInto(VirtualFrame frame, PSocket socket, PByteArray buffer, Object flags,
-                        @Cached ReleaseGilNode gil,
+                        @Cached GilNode gil,
                         @Cached("createBinaryProfile()") ConditionProfile byteStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItem) {
@@ -488,7 +488,7 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class SendNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object send(VirtualFrame frame, PSocket socket, PBytes bytes, Object flags,
-                        @Cached ReleaseGilNode gil,
+                        @Cached GilNode gil,
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
             // TODO: do not ignore flags
             if (socket.getSocket() == null) {
@@ -522,7 +522,7 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class SendAllNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object sendAll(VirtualFrame frame, PSocket socket, PBytesLike bytes, Object flags,
-                        @Cached ReleaseGilNode gil,
+                        @Cached GilNode gil,
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes,
                         @Cached ConditionProfile hasTimeoutProfile) {
             // TODO: do not ignore flags

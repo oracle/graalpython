@@ -70,7 +70,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -205,7 +205,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @SuppressWarnings("try")
         private void initZipImporter(PZipImporter self, String path) {
-            try (ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
+            try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 if (path == null || path.isEmpty()) {
                     throw raise(PythonErrorType.ZipImportError, ErrorMessages.IS_EMPTY, "archive path");
                 }
@@ -531,7 +531,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             ZipInputStream zis = null;
             TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(archive);
             try (InputStream in = tfile.newInputStream(StandardOpenOption.READ);
-                            ReleaseGilNode.Uncached gil = ReleaseGilNode.getUncached().release()) {
+                            GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 in.skip(streamPosition); // we can fast skip bytes, because there is cached position
                                          // of the zip entry
                 zis = new ZipInputStream(in);

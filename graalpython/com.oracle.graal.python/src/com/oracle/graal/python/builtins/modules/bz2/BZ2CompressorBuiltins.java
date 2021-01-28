@@ -69,7 +69,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.NFIBz2Support;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -102,7 +102,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached ConditionProfile errProfile,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             gil.release();
             try {
                 NFIBz2Support bz2Support = ctxt.getNFIBz2Support();

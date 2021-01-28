@@ -91,7 +91,7 @@ import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -143,7 +143,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class AcquireLock extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object run(@Cached ReleaseGilNode gil) {
+        public Object run(@Cached GilNode gil) {
             gil.release();
             try {
                 getContext().getImportLock().lock();

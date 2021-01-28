@@ -41,7 +41,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -70,7 +70,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
         int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             gil.release();
             try {
                 PythonUtils.forceFullGC();

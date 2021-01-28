@@ -102,7 +102,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -447,7 +447,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached BranchProfile errorProfile,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             int fixedFlags = flags | CLOEXEC;
             auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
             gil.release();
@@ -509,7 +509,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PBytes read(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             if (length < 0) {
                 int error = OSErrorEnum.EINVAL.getNumber();
                 throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
@@ -557,7 +557,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         long write(VirtualFrame frame, int fd, byte[] data,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             gil.release();
             try {
                 while (true) {
@@ -682,7 +682,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple pipe(VirtualFrame frame,
-                        @Cached ReleaseGilNode gil,
+                        @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             int[] pipe;
             gil.release();
@@ -1194,7 +1194,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean isatty(int fd,
-                        @Cached ReleaseGilNode gil,
+                        @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             gil.release();
             try {
@@ -1673,8 +1673,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple waitpid(VirtualFrame frame, long pid, int options,
+                        @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached ReleaseGilNode gil,
                         @Cached BranchProfile errorProfile) {
             gil.release();
             while (true) {
@@ -1880,7 +1880,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         int system(String cmd,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             PythonContext context = getContext();
             if (!context.isExecutableAccessAllowed()) {
                 return -1;

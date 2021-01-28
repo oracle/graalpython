@@ -65,7 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -115,7 +115,7 @@ public class LockBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             // args setup
             boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeBoolean(frame, blocking);
             double timeoutSeconds = UNSET_TIMEOUT;

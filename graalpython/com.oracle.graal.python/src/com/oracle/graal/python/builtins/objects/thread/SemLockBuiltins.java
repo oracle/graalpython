@@ -57,7 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.ReleaseGilNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -150,7 +150,7 @@ public class SemLockBuiltins extends PythonBuiltins {
         @Specialization
         boolean doAcquire(VirtualFrame frame, PSemLock self, Object blocking, Object timeout,
                         @Cached AcquireLockNode acquireLockNode,
-                        @Cached ReleaseGilNode gil) {
+                        @Cached GilNode gil) {
             if (self.getKind() == PSemLock.RECURSIVE_MUTEX && self.isMine()) {
                 self.increaseCount();
                 return true;

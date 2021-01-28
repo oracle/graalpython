@@ -49,9 +49,9 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.nodes.Node;
 
-public abstract class ReleaseGilNode extends Node {
+public abstract class GilNode extends Node {
 
-    private static final class Cached extends ReleaseGilNode {
+    private static final class Cached extends GilNode {
         @CompilationFinal ContextReference<PythonContext> contextRef;
         @CompilationFinal LanguageReference<PythonLanguage> languageRef;
 
@@ -61,7 +61,7 @@ public abstract class ReleaseGilNode extends Node {
         }
 
         @Override
-        public ReleaseGilNode release() {
+        public GilNode release() {
             if (!getLanguage().singleThreadedAssumption.isValid()) {
                 getContext().releaseGil();
             }
@@ -69,10 +69,11 @@ public abstract class ReleaseGilNode extends Node {
         }
 
         @Override
-        public void acquire() {
+        public GilNode acquire() {
             if (!getLanguage().singleThreadedAssumption.isValid()) {
                 getContext().acquireGil();
             }
+            return this;
         }
 
         private final PythonLanguage getLanguage() {
@@ -92,23 +93,19 @@ public abstract class ReleaseGilNode extends Node {
         }
     }
 
-    public static final class Uncached extends ReleaseGilNode implements AutoCloseable {
-        private Uncached() {
-        }
-
+    private abstract static class Uncached extends GilNode implements AutoCloseable {
         @Override
         public boolean isAdoptable() {
             return false;
         }
 
-        private static final Uncached INSTANCE = new Uncached();
-
         @Override
         @TruffleBoundary
-        public void acquire() {
+        public Uncached acquire() {
             if (!PythonLanguage.getCurrent().singleThreadedAssumption.isValid()) {
                 PythonLanguage.getContext().acquireGil();
             }
+            return this;
         }
 
         @Override
@@ -119,21 +116,48 @@ public abstract class ReleaseGilNode extends Node {
             }
             return this;
         }
+    }
+
+    public static final class UncachedRelease extends Uncached {
+        private UncachedRelease() {
+        }
+
+        private static final UncachedRelease INSTANCE = new UncachedRelease();
 
         public final void close() {
             acquire();
         }
     }
 
-    public abstract void acquire();
+    public static final class UncachedAcquire extends Uncached {
+        private UncachedAcquire() {
+        }
 
-    public abstract ReleaseGilNode release();
+        private static final UncachedAcquire INSTANCE = new UncachedAcquire();
 
-    public static ReleaseGilNode create() {
+        public final void close() {
+            release();
+        }
+    }
+
+    public abstract GilNode acquire();
+
+    public abstract GilNode release();
+
+    public static GilNode create() {
         return new Cached();
     }
 
-    public static Uncached getUncached() {
-        return Uncached.INSTANCE;
+    public static UncachedRelease uncachedRelease() {
+        return (UncachedRelease) UncachedRelease.INSTANCE.release();
+    }
+
+    public static UncachedAcquire uncachedAcquire() {
+        return (UncachedAcquire) UncachedAcquire.INSTANCE.acquire();
+    }
+
+    public static GilNode getUncached() {
+        // it doesn't matter which is used for the default uncached case
+        return UncachedRelease.INSTANCE;
     }
 }
