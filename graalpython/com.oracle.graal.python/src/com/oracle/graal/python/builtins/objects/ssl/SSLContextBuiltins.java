@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -617,13 +618,19 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        // TODO parameters
+        // TODO session
         Object wrap(PSSLContext context, PSocket sock, boolean serverSide, String serverHostname, Object owner, Object session) {
-            return factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, sock, createSSLEngine(context, serverSide, serverHostname));
+            PythonObjectFactory factory = factory();
+            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname);
+            PSSLSocket sslSocket = factory.createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, sock, engine);
+            if (!(owner instanceof PNone)) {
+                sslSocket.setOwner(owner);
+            }
+            return sslSocket;
         }
 
         @TruffleBoundary
-        private SSLEngine createSSLEngine(PSSLContext context, boolean serverMode, String serverHostname) {
+        private static SSLEngine createSSLEngine(Node node, PSSLContext context, boolean serverMode, String serverHostname) {
             SSLEngine engine = context.getContext().createSSLEngine();
             engine.setUseClientMode(!serverMode);
             SSLParameters parameters = new SSLParameters();
@@ -631,7 +638,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 try {
                     parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
                 } catch (IllegalArgumentException e) {
-                    throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, "Invalid hostname");
+                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, "Invalid hostname");
                 }
                 if (context.getCheckHostname()) {
                     parameters.setEndpointIdentificationAlgorithm("HTTPS");

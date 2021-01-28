@@ -173,6 +173,21 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "owner", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class OwnerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static Object get(PSSLSocket self, @SuppressWarnings("unused") Object none) {
+            return self.getOwner() != null ? self.getOwner() : PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(obj)")
+        static Object set(PSSLSocket self, Object obj) {
+            self.setOwner(obj);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "getpeercert", minNumOfPositionalArgs = 1, parameterNames = {"$self", "der"})
     @ArgumentClinic(name = "der", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory

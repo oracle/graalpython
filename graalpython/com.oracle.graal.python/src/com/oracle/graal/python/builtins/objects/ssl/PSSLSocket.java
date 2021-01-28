@@ -10,6 +10,7 @@ public final class PSSLSocket extends PythonBuiltinObject {
     private final PSSLContext context;
     private final PSocket socket;
     private final SSLEngine engine;
+    private Object owner;
 
     private final MemoryBIO networkInboundBIO = new MemoryBIO();
     private final MemoryBIO networkOutboundBIO = new MemoryBIO();
@@ -54,5 +55,13 @@ public final class PSSLSocket extends PythonBuiltinObject {
 
     public MemoryBIO getApplicationInboundBIO() {
         return applicationInboundBIO;
+    }
+
+    public Object getOwner() {
+        return owner;
+    }
+
+    public void setOwner(Object owner) {
+        this.owner = owner;
     }
 }
