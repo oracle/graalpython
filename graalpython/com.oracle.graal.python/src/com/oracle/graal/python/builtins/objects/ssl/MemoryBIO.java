@@ -93,16 +93,19 @@ public class MemoryBIO {
     }
 
     /**
-     * Write entire bytearray into this BIO. Must not be called after EOF was written.
+     * Write entire bytearray into this BIO.
      * 
      * @param from Data to be written
      * @param length Lenght of data to be written
      */
     public void write(byte[] from, int length) {
-        assert !isEOF();
         ensureWriteCapacity(length);
         PythonUtils.arraycopy(from, 0, bytes, writePosition, Math.min(length, from.length));
         writePosition += length;
+    }
+
+    public boolean didWriteEOF() {
+        return eofWritten;
     }
 
     /**

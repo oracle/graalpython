@@ -83,7 +83,7 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.isBuffer(buffer)", limit = "3")
         int write(PMemoryBIO self, Object buffer,
                         @CachedLibrary("buffer") PythonObjectLibrary lib) {
-            if (self.getBio().isEOF()) {
+            if (self.getBio().didWriteEOF()) {
                 throw raise(SSLError, "cannot write() after write_eof()");
             }
             try {

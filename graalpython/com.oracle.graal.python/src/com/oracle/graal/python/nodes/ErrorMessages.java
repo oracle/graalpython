@@ -673,6 +673,7 @@ public abstract class ErrorMessages {
     public static final String S_CHANNEL_BINDING_NOT_IMPLEMENTED = "'%s' channel binding type not implemented";
     public static final String SSL_WANT_READ = "The operation did not complete (read)";
     public static final String SSL_WANT_WRITE = "The operation did not complete (write)";
+    public static final String SSL_ERROR_EOF = "EOF occurred in violation of protocol";
     public static final String SSL_PEM_NO_START_LINE = "[PEM: NO_START_LINE] no start line";
     public static final String CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED = "cafile, capath and cadata cannot be all omitted";
     public static final String SSL_CTX_NOT_SERVER_CONTEXT = "SSLContext is not a server context.";

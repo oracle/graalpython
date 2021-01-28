@@ -171,30 +171,32 @@ public class SSLEngineHelper {
     }
 
     private static void obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, PSocket socket, int netBufferSize, TimeoutHelper timeoutHelper) throws IOException {
-        if (socket == null) {
-            // MemoryBIO input
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
-        }
-        // Network input
-        networkInboundBIO.ensureWriteCapacity(netBufferSize);
-        ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
-        try {
-            int readBytes = SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
-            // TODO if (readBytes < 0)
-            if (readBytes == 0) {
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+        if (socket != null) {
+            // Network input
+            networkInboundBIO.ensureWriteCapacity(netBufferSize);
+            ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
+            try {
+                int readBytes = SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
+                if (readBytes > 0) {
+                    return;
+                } else if (readBytes < 0) {
+                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                }
+                // fallthrough to the raise
+            } finally {
+                networkInboundBIO.applyWrite(writeBuffer);
             }
-        } finally {
-            networkInboundBIO.applyWrite(writeBuffer);
+        } else if (networkInboundBIO.didWriteEOF()) {
+            // Note this checks didWriteEOF and not isEOF - the fact that we're here means that we
+            // consumed as much data as possible to form a TLS packet, but that doesn't have to be
+            // all the data in the BIO
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
         }
+        throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
     }
 
     private static void emitOutput(PNodeWithRaise node, MemoryBIO networkOutboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
-        if (networkOutboundBIO.getPending() > 0) {
-            if (socket == null) {
-                // MemoryBIO outut
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
-            }
+        if (socket != null && networkOutboundBIO.getPending() > 0) {
             // Network output
             ByteBuffer readBuffer = networkOutboundBIO.getBufferForReading();
             try {
