@@ -134,18 +134,32 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PClassmethod("classmethod", BuiltinNames.BUILTINS),
     PScandirIterator("ScandirIterator", false, "posix", false),
     PDirEntry("DirEntry", true, "posix", false),
-    PLZMACompressor("LZMACompressor", "_lzma"),
-    PLZMADecompressor("LZMADecompressor", "_lzma"),
     LsprofProfiler("Profiler", "_lsprof"),
     PStruct("Struct", "_struct"),
     PStructUnpackIterator("unpack_iterator", "_struct"),
+
+    // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
     BZ2Decompressor("BZ2Decompressor", "_bz2"),
+
+    // lzma
+    PLZMACompressor("LZMACompressor", "_lzma"),
+    PLZMADecompressor("LZMADecompressor", "_lzma"),
+
+    // zlib
     ZlibCompress("Compress", "zlib"),
     ZlibDecompress("Decompress", "zlib"),
-    // TODO rename to _IOBase and remove its definition from _io.py once readline() and readlines() are implemetned
-    PIOBase("_IO_Base", true, "_io", true, true),
+
+    // io
+    PIOBase("_IOBase", true, "_io", true),
+    PRawIOBase("_RawIOBase", true, "_io", true),
+    PTextIOBase("_TextIOBase", true, "_io", true),
+    PBufferedIOBase("_BufferedIOBase", true, "_io", true),
     PBufferedReader("BufferedReader", "_io"),
+    PBufferedWriter("BufferedWriter", "_io"),
+    PBufferedRWPair("BufferedRWPair", "_io"),
+    PBufferedRandom("BufferedRandom", "_io"),
+
     PStatResult("stat_result", "os", false),
     PTerminalSize("terminal_size", "os", false),
     PUnameResult("uname_result", "posix", false),
@@ -230,6 +244,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     UnicodeEncodeError("UnicodeEncodeError", BuiltinNames.BUILTINS),
     UnicodeTranslateError("UnicodeTranslateError", BuiltinNames.BUILTINS),
     RecursionError("RecursionError", BuiltinNames.BUILTINS),
+
+    IOUnsupportedOperation("UnsupportedOperation", "_io"),
 
     // warnings
     Warning("Warning", BuiltinNames.BUILTINS),
@@ -431,6 +447,18 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PHashInfo.base = PTuple;
         PThreadInfo.base = PTuple;
         PUnraisableHookArgs.base = PTuple;
+
+        // _io.UnsupportedOperation inherits from ValueError and OSError
+        // done currently within IOModuleBuiltins class
+        IOUnsupportedOperation.base = OSError;
+
+        PRawIOBase.base = PIOBase;
+        PTextIOBase.base = PIOBase;
+        PBufferedIOBase.base = PIOBase;
+        PBufferedReader.base = PBufferedIOBase;
+        PBufferedWriter.base = PBufferedIOBase;
+        PBufferedRWPair.base = PBufferedIOBase;
+        PBufferedRandom.base = PBufferedIOBase;
     }
 
     /* InteropLibrary messages */

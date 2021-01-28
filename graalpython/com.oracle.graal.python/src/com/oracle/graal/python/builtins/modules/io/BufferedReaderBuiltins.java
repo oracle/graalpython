@@ -40,15 +40,13 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.append;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.asArray;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.createList;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.safeDowncast;
 import static com.oracle.graal.python.builtins.modules.io.BufferedReaderNodes.ReadNode.bufferedreaderReadFast;
@@ -68,7 +66,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -78,7 +75,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -86,7 +82,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -109,6 +104,34 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
     }
 
     protected static final int DEFAULT_BUFFER_SIZE = IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
+
+    protected static final String DETACH = "detach";
+    protected static final String FLUSH = "flush";
+    protected static final String CLOSE = "close";
+    protected static final String SEEKABLE = "seekable";
+    protected static final String READABLE = "readable";
+    protected static final String FILENO = "fileno";
+    protected static final String ISATTY = "isatty";
+    protected static final String _DEALLOC_WARN = "_dealloc_warn";
+
+    protected static final String READ = "read";
+    protected static final String PEEK = "peek";
+    protected static final String READ1 = "read1";
+    protected static final String READINTO = "readinto";
+    protected static final String READINTO1 = "readinto1";
+    protected static final String READLINE = "readline";
+    protected static final String SEEK = "seek";
+    protected static final String TELL = "tell";
+    protected static final String TRUNCATE = "truncate";
+
+    protected static final String RAW = "raw";
+    protected static final String _FINALIZING = "_finalizing";
+
+    protected static final String CLOSED = "closed";
+    protected static final String NAME = "name";
+    protected static final String MODE = "mode";
+
+    protected static final String WRITABLE = "writable";
 
     // BufferedReader(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$raw", "buffer_size"})
@@ -153,8 +176,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"bufferSize > 0", "!isReadable(frame, raw)"})
         public PNone err(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
-            // TODO: raise(io.UnsupportedOperation, "File or stream is not readable.");
-            throw raise(NotImplementedError);
+            throw raise(IOUnsupportedOperation, "File or stream is not readable.");
         }
 
         @SuppressWarnings("unused")
@@ -169,7 +191,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
             int n = 0;
             Object res = null;
             try {
-                res = callTell.lookupAndCallRegularMethod(raw, frame, "tell");
+                res = callTell.lookupAndCallRegularMethod(raw, frame, TELL);
             } catch (PException e) {
                 // pass through.
                 // (mq) 'tell' is not a reqirement if it is not supported for `raw` input.
@@ -212,13 +234,13 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "detach", minNumOfPositionalArgs = 1)
+    @Builtin(name = DETACH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DetachNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()", limit = "1")
         Object doit(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self") PythonObjectLibrary libSelf) {
-            libSelf.lookupAndCallRegularMethod(self, frame, "flush");
+            libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
             Object raw = self.getRaw();
             self.setRaw(null);
             self.setDetached(true);
@@ -227,17 +249,17 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "flush", minNumOfPositionalArgs = 1)
+    @Builtin(name = FLUSH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()", limit = "1")
         Object doit(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "flush");
+            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, FLUSH);
         }
     }
 
-    @Builtin(name = "close", minNumOfPositionalArgs = 1)
+    @Builtin(name = CLOSE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryWithInitErrorBuiltinNode {
 
@@ -250,16 +272,15 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
             if (profile.profile(isClosedNode.execute(frame, self))) {
                 return PNone.NONE;
             }
-            /*-
-                XXX: (mq) this should only be done during object deallocation.
+            if (self.isFinalizing()) {
                 if (self.getRaw() != null) {
-                    libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "_dealloc_warn", self);
-                }            
-             */
+                    libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, _DEALLOC_WARN, self);
+                }
+            }
 
-            libSelf.lookupAndCallRegularMethod(self, frame, "flush");
+            libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
             // (mq) Note: we might need to check the return of `flush`.
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "close");
+            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, CLOSE);
             if (self.getBuffer() != null) {
                 self.setBuffer(null);
             }
@@ -268,7 +289,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "closed", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryWithInitErrorBuiltinNode {
 
@@ -279,75 +300,75 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "name", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = NAME, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()", limit = "2")
         Object doit(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAttribute(self.getRaw(), frame, "name");
+            return libRaw.lookupAttribute(self.getRaw(), frame, NAME);
         }
     }
 
-    @Builtin(name = "mode", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = MODE, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ModeNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()", limit = "2")
         Object doit(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAttribute(self.getRaw(), frame, "mode");
+            return libRaw.lookupAttribute(self.getRaw(), frame, MODE);
         }
     }
 
-    @Builtin(name = "seekable", minNumOfPositionalArgs = 1)
+    @Builtin(name = SEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SeekableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()", limit = "1")
         Object doit(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "seekable");
+            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, SEEKABLE);
         }
     }
 
-    @Builtin(name = "readable", minNumOfPositionalArgs = 1)
+    @Builtin(name = READABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()", limit = "1")
         Object doit(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "readable");
+            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, READABLE);
         }
     }
 
-    @Builtin(name = "fileno", minNumOfPositionalArgs = 1)
+    @Builtin(name = FILENO, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FileNoNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()", limit = "1")
         Object doit(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "fileno");
+            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, FILENO);
         }
     }
 
-    @Builtin(name = "isatty", minNumOfPositionalArgs = 1)
+    @Builtin(name = ISATTY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsAttyNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()", limit = "1")
         Object doit(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "isatty");
+            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, ISATTY);
         }
     }
 
-    @Builtin(name = "_dealloc_warn", minNumOfPositionalArgs = 2)
+    @Builtin(name = _DEALLOC_WARN, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DeallocWarnNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"self.isOK()", "self.getRaw() != null"}, limit = "1")
         Object doit(VirtualFrame frame, PBuffered self, Object source,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "_dealloc_warn", source);
+            libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, _DEALLOC_WARN, source);
             return PNone.NONE;
         }
 
@@ -363,7 +384,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
      * occurs or until read() would block.
      */
 
-    @Builtin(name = "read", minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
@@ -395,7 +416,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "peek", minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = PEEK, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class PeekNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
@@ -419,7 +440,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "read1", minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = READ1, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class Read1Node extends PythonBinaryWithInitErrorClinicBuiltinNode {
@@ -458,7 +479,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "readinto", minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends PythonBinaryBuiltinNode {
 
@@ -489,7 +510,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "readinto1", minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoNode {
         @Override
@@ -498,7 +519,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "readline", minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
+    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
@@ -519,7 +540,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "seek", minNumOfPositionalArgs = 2, parameterNames = {"$self", "$offset", "whence"})
+    @Builtin(name = SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$offset", "whence"})
     @ArgumentClinic(name = "whence", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedIOUtil.SEEK_SET", useDefaultForNone = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -565,7 +586,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tell", minNumOfPositionalArgs = 1)
+    @Builtin(name = TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
@@ -578,7 +599,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "truncate", minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos"})
+    @Builtin(name = TRUNCATE, minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos"})
     @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class TruncateNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
@@ -597,7 +618,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
             checkIsClosedNode.execute(frame, self);
             flushAndRewindUnlockedNode.execute(frame, self);
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "truncate", pos);
+            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, TRUNCATE, pos);
             /* Reset cached position */
             rawTellNode.execute(frame, self);
             return res;
@@ -606,7 +627,7 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.isOK()", "!self.isWritable()"})
         Object notWritable(VirtualFrame frame, PBuffered self, int pos) {
-            throw raise(NotImplementedError, "truncate");
+            throw raise(NotImplementedError, TRUNCATE);
         }
     }
 
@@ -630,12 +651,12 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         static Object exit(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") Object[] args,
                         @CachedLibrary("self") PythonObjectLibrary libSelf) {
-            libSelf.lookupAndCallRegularMethod(self, frame, "close");
+            libSelf.lookupAndCallRegularMethod(self, frame, CLOSE);
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "writable", minNumOfPositionalArgs = 1)
+    @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WritableNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -644,12 +665,21 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "raw", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = RAW, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class RawNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(PBuffered self) {
             return self.getRaw();
+        }
+    }
+
+    @Builtin(name = _FINALIZING, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class FinalizingNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doit(PBuffered self) {
+            return self.isFinalizing();
         }
     }
 
@@ -676,50 +706,4 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
             return factory().createBytes(line);
         }
     }
-
-    @Builtin(name = "readlines", minNumOfPositionalArgs = 1, parameterNames = {"$self", "hint"})
-    @ArgumentClinic(name = "hint", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
-    @GenerateNodeFactory
-    abstract static class ReadlinesNode extends PythonBinaryClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return BufferedReaderBuiltinsClinicProviders.PeekNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization(guards = "hint <= 0", limit = "1")
-        Object doall(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int hint,
-                        @Cached GetNextNode next,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libLen) {
-            return withHint(frame, self, Integer.MAX_VALUE, next, errorProfile, libSelf, libLen);
-        }
-
-        @Specialization(guards = "hint > 0", limit = "1")
-        Object withHint(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int hint,
-                        @Cached GetNextNode next,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libLen) {
-            int length = 0;
-            Object iterator = libSelf.getIteratorWithFrame(self, frame);
-            ArrayList<Object> list = createList();
-            while (true) {
-                try {
-                    Object line = next.execute(frame, iterator);
-                    append(list, line);
-                    int lineLength = libLen.length(line);
-                    if (lineLength > hint - length) {
-                        break;
-                    }
-                    length += lineLength;
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
-                }
-            }
-            return factory().createList(asArray(list));
-        }
-    }
-
 }

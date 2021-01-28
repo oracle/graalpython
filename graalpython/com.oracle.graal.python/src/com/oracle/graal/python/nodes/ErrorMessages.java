@@ -709,6 +709,9 @@ public abstract class ErrorMessages {
     public static final String IO_CLOSED = "I/O operation on closed file.";
     public static final String MUST_BE_NON_NEG_OR_NEG_1 = "read length must be non-negative or -1";
     public static final String BUF_SIZE_POS = "buffer size must be strictly positive";
+    public static final String S_SHOULD_RETURN_BYTES = "%s should return bytes";
+    public static final String S_RETURNED_TOO_MUCH_DATA = "%s returned too much data: %d bytes requested, %d returned";
+    public static final String S_SHOULD_RETURN_BYTES_NOT_P = " should have returned a bytes object, not '%p'";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT = "cannot pickle '%s' object";

@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_NEED_OBJ;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_LENGTH_1;
@@ -2779,15 +2780,6 @@ public class BytesBuiltins extends PythonBuiltins {
     @CompilerDirectives.TruffleBoundary
     protected static byte[] getStringBytes(Object o) {
         return ((String) o).getBytes();
-    }
-
-    protected static byte[] getBytes(PythonObjectLibrary lib, Object object) {
-        try {
-            return lib.getBufferBytes(object);
-        } catch (UnsupportedMessageException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException(e);
-        }
     }
 
     @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
