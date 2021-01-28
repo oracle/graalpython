@@ -44,9 +44,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
-import com.oracle.graal.python.builtins.objects.ssl.SSLSocketBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -91,6 +88,7 @@ import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
@@ -178,7 +176,10 @@ import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLSocketBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
@@ -412,6 +413,7 @@ public final class Python3Core implements PythonCore {
                         new SSLContextBuiltins(),
                         new SSLErrorBuiltins(),
                         new SSLSocketBuiltins(),
+                        new MemoryBIOBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),
