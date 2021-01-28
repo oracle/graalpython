@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.FspathNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -1978,6 +1977,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "fspath", minNumOfPositionalArgs = 1, parameterNames = {"path"})
     @GenerateNodeFactory
+    // Can be used as an equivalent of PyOS_FSPath()
     public abstract static class FspathNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "isPath(value)")
@@ -2002,11 +2002,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         protected static boolean isPath(Object obj) {
             return PGuards.isString(obj) || obj instanceof PBytes;
-        }
-
-        // Can be used as an equivalent of PyOS_FSPath()
-        public static FspathNode create() {
-            return FspathNodeFactory.create();
         }
     }
 
@@ -2443,23 +2438,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class PidtConversionNode extends ArgumentCastNodeWithRaise {
 
         @Specialization
-        long doInt(int value) {
+        static long doInt(int value) {
             return value;
         }
 
         @Specialization
-        long doLong(long value) {
+        static long doLong(long value) {
             return value;
         }
 
-        @Specialization(guards = "!isInt(value)", limit = "3")
-        long doGeneric(VirtualFrame frame, Object value,
+        @Specialization(guards = "!isInteger(value)", limit = "3")
+        static long doGeneric(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
             return lib.asJavaLongWithState(value, PArguments.getThreadState(frame));
-        }
-
-        protected static boolean isInt(Object value) {
-            return value instanceof Integer || value instanceof Long;
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})

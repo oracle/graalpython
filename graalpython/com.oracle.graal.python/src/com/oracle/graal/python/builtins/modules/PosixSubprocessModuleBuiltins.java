@@ -242,8 +242,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // TODO original code had needsFrame=true - was it only because it used IndirectCallContext, or
-    // do we still need it?
     @Builtin(name = "fork_exec", minNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
                     "fds_to_keep", "cwd", "env", "p2cread", "p2cwrite", "c2pread", "c2pwrite", "errread", "errwrite",
                     "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"})
@@ -288,7 +286,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "errPipeValid(closeFds, errPipeWrite)", limit = "1")
-        int forkExec(VirtualFrame frame, Object[] processArgs, Object executableList, boolean closeFds,
+        int forkExec(VirtualFrame frame, Object[] args, Object executableList, boolean closeFds,
                         PTuple fdsToKeepTuple, Object cwdObj, Object env,
                         int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
                         int stderrRead, int stderrWrite, int errPipeRead, int errPipeWrite,
@@ -301,6 +299,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("executableList") PythonObjectLibrary lib,
                         @Cached ToBytesNode toBytesNode) {
 
+            Object[] processArgs = args;
             int[] fdsToKeep = convertFdSequence(frame, fdsToKeepTuple, lenNode, getItemNode, castToIntNode);
             Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj);
 
