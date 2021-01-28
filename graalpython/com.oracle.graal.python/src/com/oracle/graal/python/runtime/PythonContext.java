@@ -436,6 +436,9 @@ public final class PythonContext {
         core.initialize(this);
         setupRuntimeInformation(false);
         core.postInitialize();
+        if (getLanguage().getEngineOption(PythonOptions.AlwaysAcquireGil)) {
+            getLanguage().singleThreadedAssumption.invalidate();
+        }
         if (!ImageInfo.inImageBuildtimeCode()) {
             importSiteIfForced();
         }
