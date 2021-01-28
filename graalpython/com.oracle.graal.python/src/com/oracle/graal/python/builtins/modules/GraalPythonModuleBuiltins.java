@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -66,6 +67,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
@@ -336,6 +339,28 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             } else {
                 return factory().createCode((RootCallTarget) ct);
             }
+        }
+    }
+
+    @Builtin(name = "read_file", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReadFileNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public PBytes doString(VirtualFrame frame, String filename) {
+            try {
+                TruffleFile file = getContext().getPublicTruffleFileRelaxed(filename, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+                byte[] bytes = file.readAllBytes();
+                return factory().createBytes(bytes);
+            } catch (Exception ex) {
+                ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(ex);
+                throw raiseOSError(frame, errAndMsg.oserror.getNumber(), errAndMsg.message);
+            }
+        }
+
+        @Specialization
+        public Object doGeneric(VirtualFrame frame, Object filename,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            return doString(frame, castToJavaStringNode.execute(filename));
         }
     }
 
