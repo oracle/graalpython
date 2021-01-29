@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -162,7 +163,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     // TODO session
-    static SSLEngine createSSLEngine(Node node, PSSLContext context, boolean serverMode, String serverHostname, Object session) {
+    static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname, Object session) {
         SSLEngine engine = context.getContext().createSSLEngine();
         engine.setUseClientMode(!serverMode);
         List<String> selectedProtocols = new ArrayList<>(SSLModuleBuiltins.supportedProtocols);
@@ -181,7 +182,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             try {
                 parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
             } catch (IllegalArgumentException e) {
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, "Invalid hostname");
+                if (serverHostname.contains("\0")) {
+                    throw node.raise(TypeError, "argument must be encoded string without null bytes");
+                }
+                throw node.raise(ValueError, "invalid hostname");
             }
             if (context.getCheckHostname()) {
                 parameters.setEndpointIdentificationAlgorithm("HTTPS");
