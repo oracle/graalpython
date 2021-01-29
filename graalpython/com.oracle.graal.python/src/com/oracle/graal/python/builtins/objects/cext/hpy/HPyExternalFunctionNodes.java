@@ -47,6 +47,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseArgHandlesNode;
@@ -651,7 +652,7 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    abstract static class HPyCheckFunctionResultNode extends PNodeWithContext {
+    abstract static class HPyCheckFunctionResultNode extends CheckFunctionResultNode {
 
         public abstract Object execute(GraalHPyContext nativeContext, String name, Object value);
 

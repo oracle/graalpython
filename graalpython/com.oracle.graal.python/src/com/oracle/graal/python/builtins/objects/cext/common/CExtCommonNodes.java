@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -681,5 +682,9 @@ public abstract class CExtCommonNodes {
             // is a float object, use the value and do *NOT* call '__float__'.
             return lib.asJavaDouble(value);
         }
+    }
+
+    public abstract static class CheckFunctionResultNode extends PNodeWithContext {
+        public abstract Object execute(PythonContext context, String name, Object result);
     }
 }

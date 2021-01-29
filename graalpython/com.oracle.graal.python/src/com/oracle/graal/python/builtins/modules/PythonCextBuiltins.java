@@ -158,6 +158,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodesFact
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
@@ -888,25 +889,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class CheckFunctionResultNode extends PNodeWithContext {
-        public abstract Object execute(String name, Object result);
-    }
-
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @ImportStatic(PGuards.class)
     abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
         @Specialization(limit = "1")
-        static Object doNativeWrapper(String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
+        static Object doNativeWrapper(PythonContext context, String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
                         @CachedLibrary(value = "result") PythonNativeWrapperLibrary lib,
                         @Cached DefaultCheckFunctionResultNode recursive) {
-            return recursive.execute(name, lib.getDelegate(result));
+            return recursive.execute(context, name, lib.getDelegate(result));
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
-        Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result,
+        Object doPrimitiveWrapper(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeWrapper result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, false, false, language, context, raise, factory);
@@ -914,9 +910,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(result)")
-        Object doNoValue(String name, @SuppressWarnings("unused") PNone result,
+        Object doNoValue(PythonContext context, String name, @SuppressWarnings("unused") PNone result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, true, false, language, context, raise, factory);
@@ -924,9 +919,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(result)")
-        Object doPythonObject(String name, @SuppressWarnings("unused") PythonAbstractObject result,
+        Object doPythonObject(PythonContext context, String name, @SuppressWarnings("unused") PythonAbstractObject result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, false, false, language, context, raise, factory);
@@ -934,9 +928,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result,
+        Object doPythonNativeNull(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeNull result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, true, false, language, context, raise, factory);
@@ -944,9 +937,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int doInteger(String name, int result,
+        int doInteger(PythonContext context, String name, int result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
@@ -956,9 +948,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long doLong(String name, long result,
+        long doLong(PythonContext context, String name, long result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
@@ -974,11 +965,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
          * #doPythonObject
          */
         @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
-        Object doForeign(String name, Object result,
+        Object doForeign(PythonContext context, String name, Object result,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
             checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, language, context, raise, factory);
@@ -1019,12 +1009,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
 
         @Specialization(limit = "3")
-        static Object doGeneric(@SuppressWarnings("unused") String name, Object result,
+        static Object doGeneric(PythonContext context, @SuppressWarnings("unused") String name, Object result,
                         @CachedLibrary("result") InteropLibrary lib,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached PRaiseNode raiseNode) {
             if (lib.isNull(result)) {
-                PythonContext context = contextRef.get();
                 PException currentException = context.getCurrentException();
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == null) {
