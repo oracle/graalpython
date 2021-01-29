@@ -73,7 +73,10 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethONode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -416,7 +419,7 @@ public class GraalHPyNodes {
 
             assert checkLayout(methodDef) : "provided pointer has unexpected structure";
 
-            String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_NAME, methodDef));
+            String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_METHODDEF_GET_ML_NAME, methodDef));
 
             // note: 'ml_doc' may be NULL; in this case, we would store 'None'
             Object methodDoc = PNone.NONE;
@@ -490,6 +493,109 @@ public class GraalHPyNodes {
                 return new MethVarargsRoot(language, name, MethVarargsNode.METH_VARARGS_CONVERTER);
             }
             throw new IllegalStateException("illegal method flags");
+        }
+    }
+
+    /**
+     * Parses a pointer to a {@code PyGetSetDef} struct and creates the corresponding property.
+     * 
+     * <pre>
+     *     typedef struct PyGetSetDef {
+     *         const char *name;
+     *         getter get;
+     *         setter set;
+     *         const char *doc;
+     *         void *closure;
+     * } PyGetSetDef;
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class HPyAddLegacyGetSetDefNode extends PNodeWithContext {
+
+        public abstract GetSetDescriptor execute(GraalHPyContext context, Object owner, Object legacyGetSetDef);
+
+        @Specialization(limit = "1")
+        static GetSetDescriptor doGeneric(GraalHPyContext context, Object owner, Object legacyGetSetDef,
+                        @CachedLanguage PythonLanguage lang,
+                        @Cached GetNameNode getNameNode,
+                        @CachedLibrary("legacyGetSetDef") InteropLibrary interopLibrary,
+                        @CachedLibrary(limit = "2") InteropLibrary resultLib,
+                        @Cached PCallHPyFunction callGetNameNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            assert checkLayout(legacyGetSetDef) : "provided pointer has unexpected structure";
+
+            String getSetDescrName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_GETSETDEF_GET_NAME, legacyGetSetDef));
+
+            // note: 'doc' may be NULL; in this case, we would store 'None'
+            Object getSetDescrDoc = PNone.NONE;
+            try {
+                Object getSetDocPtr = interopLibrary.readMember(legacyGetSetDef, "doc");
+                if (!resultLib.isNull(getSetDocPtr)) {
+                    getSetDescrDoc = fromCharPointerNode.execute(getSetDocPtr);
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                // fall through
+            }
+
+            Object getterFunPtr;
+            Object setterFunPtr;
+            Object closurePtr;
+            boolean readOnly;
+            try {
+                getterFunPtr = interopLibrary.readMember(legacyGetSetDef, "get");
+                // TODO eagerly resolve function ptr
+                // the pointer must either be NULL or a callable function pointer
+                if (!(resultLib.isNull(getterFunPtr) || resultLib.isExecutable(getterFunPtr))) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "get of %s is not callable", getSetDescrName);
+                }
+
+                setterFunPtr = interopLibrary.readMember(legacyGetSetDef, "set");
+                // TODO eagerly resolve function ptr
+                // the pointer must either be NULL or a callable function pointer
+                if (!(resultLib.isNull(setterFunPtr) || resultLib.isExecutable(setterFunPtr))) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "set of %s is not callable", getSetDescrName);
+                }
+                readOnly = resultLib.isNull(setterFunPtr);
+
+                closurePtr = interopLibrary.readMember(legacyGetSetDef, "closure");
+            } catch (UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Invalid struct member '%s'", e.getUnknownIdentifier());
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
+            }
+
+            PBuiltinFunction getterObject = HPyGetSetDescriptorGetterRootNode.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
+            Object setterObject;
+            if (readOnly) {
+                setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), getNameNode.execute(owner), getSetDescrName);
+            } else {
+                setterObject = HPyGetSetDescriptorSetterRootNode.createLegacyFunction(lang, owner, getSetDescrName, setterFunPtr, closurePtr);
+            }
+
+            GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, getSetDescrName, owner, !readOnly);
+            writeDocNode.execute(getSetDescriptor, SpecialAttributeNames.__DOC__, getSetDescrDoc);
+            return getSetDescriptor;
+        }
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object methodDef) {
+            String[] members = new String[]{"name", "get", "set", "doc", "closure"};
+            InteropLibrary lib = InteropLibrary.getUncached(methodDef);
+            for (String member : members) {
+                if (!lib.isMemberReadable(methodDef, member)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
@@ -697,7 +803,7 @@ public class GraalHPyNodes {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToObjectNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
             assert interopLibrary.hasMembers(memberDef);
@@ -727,12 +833,12 @@ public class GraalHPyNodes {
 
                 // signature: self, closure
                 Object getterFunctionPtr = interopLibrary.readMember(memberDef, "getter_impl");
-                PFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context.getContext(), enclosingClassName, name, getterFunctionPtr, closurePtr);
 
                 // signature: self, value, closure
                 Object setterFunctionPtr = interopLibrary.readMember(memberDef, "setter_impl");
                 boolean readOnly = interopLibrary.isNull(setterFunctionPtr);
 
+                PFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context.getContext(), enclosingClassName, name, getterFunctionPtr, closurePtr);
                 Object setterObject;
                 if (readOnly) {
                     setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), enclosingClassName, name);
@@ -741,14 +847,13 @@ public class GraalHPyNodes {
                 }
 
                 GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, name, type, !readOnly);
-                writeAttributeToObjectNode.execute(getSetDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+                writeDocNode.execute(getSetDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
                 return getSetDescriptor;
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot read field 'name' from member definition");
             }
         }
-
     }
 
     /**
@@ -868,6 +973,7 @@ public class GraalHPyNodes {
                         @CachedLibrary(limit = "3") InteropLibrary resultLib,
                         @Cached HPyAddLegacyMethodNode legacyMethodNode,
                         @Cached HPyCreateLegacyMemberNode createLegacyMemberNode,
+                        @Cached HPyAddLegacyGetSetDefNode legacyGetSetNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached PRaiseNode raiseNode,
@@ -931,7 +1037,19 @@ public class GraalHPyNodes {
                     writeAttributeToObjectNode.execute(enclosingType, SpecialMethodNames.__REPR__, method);
                     break;
                 case Py_tp_getset:
-                    // intentionally fall-through as long as this is not implemented
+                    Object getSetDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_DESCRS, slotDef);
+                    try {
+                        int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(getSetDefArrayPtr));
+                        for (int i = 0; i < nLegacyMemberDefs; i++) {
+                            Object legacyMethodDef = resultLib.readArrayElement(getSetDefArrayPtr, i);
+                            GetSetDescriptor getSetDescriptor = legacyGetSetNode.execute(context, enclosingType, legacyMethodDef);
+                            writeAttributeToObjectNode.execute(enclosingType, getSetDescriptor.getName(), getSetDescriptor);
+                        }
+                    } catch (InteropException | OverflowException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "error when reading legacy method definition for type %s", enclosingType);
+                    }
+                    break;
                 default:
                     // TODO(fa): implement support for remaining legacy slot kinds
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1525,6 +1643,50 @@ public class GraalHPyNodes {
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
             ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
             ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext, isAllocatedProfile);
+        }
+    }
+
+    /**
+     * Argument converter for calling a native legacy get/set descriptor getter function. The native
+     * signature is: {@code PyObject* getter(struct _HPyObject_head_s *self, void* closure)} whereas
+     * {@code struct _HPyObject_head_s} is size-compatible to {@code PyObject}.
+     */
+    public abstract static class HPyLegacyGetSetGetterToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ReadAttributeFromObjectNode readNativeSpaceNode) {
+            dest[destOffset] = readNativeSpaceNode.execute(args[argsOffset], GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
+            dest[destOffset + 1] = args[argsOffset + 1];
+        }
+    }
+
+    /**
+     * Argument converter for calling a native legacy get/set descriptor setter function. The native
+     * signature is:
+     * {@code int setter(struct _HPyObject_head_s *self, PyObject *value, void* closure)}.
+     */
+    public abstract static class HPyLegacyGetSetSetterToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ReadAttributeFromObjectNode getNativeSpacePointerNode,
+                        @Cached ToBorrowedRefNode toSulongNode) {
+            dest[destOffset] = getNativeSpacePointerNode.execute(args[argsOffset], GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
+            dest[destOffset + 1] = toSulongNode.execute(args[argsOffset + 1]);
+            dest[destOffset + 2] = args[argsOffset + 2];
+        }
+    }
+
+    /**
+     * The counter part of {@link HPyGetSetSetterToSulongNode}.
+     */
+    public abstract static class HPyLegacyGetSetSetterDecrefNode extends HPyCloseArgHandlesNode {
+
+        @Specialization
+        static void doConvert(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached SubRefCntNode subRefCntNode) {
+            subRefCntNode.dec(dest[destOffset + 1]);
         }
     }
 

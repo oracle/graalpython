@@ -207,6 +207,18 @@ void* graal_hpy_legacy_slot_get_descrs(cpy_PyTypeSlot *slot) {
 	return NULL;
 }
 
+/* getters for legacy cpy_PyMethodDef */
+
+void* graal_hpy_legacy_methoddef_get_ml_name(cpy_PyMethodDef *methodDef) {
+	return polyglot_from_string(methodDef->ml_name, SRC_CS);
+}
+
+/* getters for legacy cpy_PyGetSetDef */
+
+void* graal_hpy_legacy_getsetdef_get_name(cpy_PyGetSetDef *getSetDef) {
+	return polyglot_from_string(getSetDef->name, SRC_CS);
+}
+
 /* getters for HPyDef */
 
 int graal_hpy_def_get_kind(HPyDef *def) {

@@ -67,6 +67,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetterRoot;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetterRoot;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins.GetRefNode;
@@ -87,6 +91,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetGetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyLegacyGetSetGetterToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyLegacyGetSetSetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyPrimitiveAsPythonBooleanNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyPrimitiveAsPythonCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyUnsignedPrimitiveAsPythonObjectNodeGen;
@@ -681,6 +687,7 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PFunction createFunction(PythonContext context, String enclosingClassName, String propertyName, Object target, Object closure) {
+            // TODO(fa): refactor and use built-in functions as in method 'createLegacyFunction'
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             PCell[] pythonClosure = createPythonClosure(target, closure, factory);
 
@@ -689,6 +696,27 @@ public class GraalHPyMemberAccessNodes {
             return factory.createFunction(propertyName, enclosingClassName, code, context.getBuiltins(), pythonClosure);
         }
 
+        @TruffleBoundary
+        public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            RootCallTarget rootCallTarget = GETTER_PROVIDER.getOrCreateCallTarget(lang, propertyName, true);
+            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
+        }
+
+        /*
+         * TODO(fa): It's still unclear how to handle HPy native space pointers when passed to an
+         * 'AsPythonObjectNode'. This can happen when, e.g., the getter returns the 'self' pointer.
+         */
+        private static final PExternalFunctionWrapper GETTER_PROVIDER = new PExternalFunctionWrapper(HPyLegacyGetSetGetterToSulongNodeGen::create) {
+            @Override
+            public RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
+                } else {
+                    return PythonUtils.getOrCreateCallTarget(new GetterRoot(language, name, this));
+                }
+            }
+        };
     }
 
     /**
@@ -698,7 +726,7 @@ public class GraalHPyMemberAccessNodes {
     static final class HPyGetSetDescriptorSetterRootNode extends HPyGetSetDescriptorRootNode {
         static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"$self", "value"}, null);
 
-        HPyGetSetDescriptorSetterRootNode(PythonLanguage language, String name) {
+        private HPyGetSetDescriptorSetterRootNode(PythonLanguage language, String name) {
             super(language, name);
         }
 
@@ -724,12 +752,31 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PFunction createFunction(PythonContext context, String propertyName, Object target, Object closure) {
+            // TODO(fa): refactor and use built-in functions as in method 'createLegacyFunction'
             HPyGetSetDescriptorSetterRootNode rootNode = new HPyGetSetDescriptorSetterRootNode(context.getLanguage(), propertyName);
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             PCell[] pythonClosure = createPythonClosure(target, closure, factory);
             PCode code = factory.createCode(PythonUtils.getOrCreateCallTarget(rootNode));
             return factory.createFunction(propertyName, "", code, context.getBuiltins(), pythonClosure);
         }
+
+        @TruffleBoundary
+        public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            RootCallTarget rootCallTarget = SETTER_PROVIDER.getOrCreateCallTarget(lang, propertyName, true);
+            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
+        }
+
+        private static final PExternalFunctionWrapper SETTER_PROVIDER = new PExternalFunctionWrapper(HPyLegacyGetSetSetterToSulongNodeGen::create) {
+            @Override
+            public RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support in HPy");
+                } else {
+                    return PythonUtils.getOrCreateCallTarget(new SetterRoot(language, name, this));
+                }
+            }
+        };
     }
 
     static final class HPyGetSetDescriptorNotWritableRootNode extends HPyGetSetDescriptorRootNode {
@@ -738,7 +785,7 @@ public class GraalHPyMemberAccessNodes {
         @Child private PythonObjectLibrary lib;
         @Child private GetNameNode getNameNode;
 
-        HPyGetSetDescriptorNotWritableRootNode(PythonLanguage language, String name) {
+        private HPyGetSetDescriptorNotWritableRootNode(PythonLanguage language, String name) {
             super(language, name);
         }
 

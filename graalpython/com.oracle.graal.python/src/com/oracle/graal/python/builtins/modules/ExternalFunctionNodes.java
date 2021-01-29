@@ -45,12 +45,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToBor
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
@@ -93,6 +94,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -115,10 +117,16 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class ExternalFunctionNodes {
 
     private static final String KW_CALLABLE = "$callable";
+    private static final String KW_CLOSURE = "$closure";
     private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
+    private static final String[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new String[]{KW_CALLABLE, KW_CLOSURE};
 
     public static PKeyword[] createKwDefaults(Object callable) {
-        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable)};
+        return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable)};
+    }
+
+    public static PKeyword[] createKwDefaults(Object callable, Object closure) {
+        return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable), new PKeyword(ExternalFunctionNodes.KW_CLOSURE, closure)};
     }
 
     public static final class MethDirectRoot extends PRootNode {
@@ -317,21 +325,28 @@ public abstract class ExternalFunctionNodes {
      */
     abstract static class ReleaseNativeWrapperNode extends Node {
 
-        public abstract void execute(Object pythonObject, PythonNativeWrapper nativeWrapper);
+        public abstract void execute(Object pythonObject);
 
-        @Specialization
-        static void doPythonObjectWithWrapper(PythonObject pythonObject, PythonNativeWrapper nativeWrapper,
+        @Specialization(guards = "hasNativeWrapper(pythonObject)")
+        static void doPythonObjectWithWrapper(PythonObject pythonObject,
                         @Cached TraverseNativeWrapperNode traverseNativeWrapperNode,
                         @Cached SubRefCntNode subRefCntNode) {
 
             // in the cached case, refCntNode acts as a branch profile
+            PythonNativeWrapper nativeWrapper = pythonObject.getNativeWrapper();
             if (subRefCntNode.dec(nativeWrapper) == 0) {
                 traverseNativeWrapperNode.execute(pythonObject);
             }
         }
 
-        static boolean hasNativeWrapper(PythonObject object) {
-            return CApiGuards.isNativeWrapper(object.getNativeWrapper());
+        @Specialization(guards = "!hasNativeWrapper(object)")
+        @SuppressWarnings("unused")
+        static void doObjectWithoutWrapper(Object object) {
+            // just do nothing; this is an implicit profile
+        }
+
+        static boolean hasNativeWrapper(Object object) {
+            return object instanceof PythonObject && CApiGuards.isNativeWrapper(((PythonObject) object).getNativeWrapper());
         }
     }
 
@@ -517,8 +532,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
-            PTuple varargsTuple = (PTuple) cArguments[1];
-            ensureReleaseNativeWrapperNode().execute(varargsTuple, varargsTuple.getNativeWrapper());
+            ensureReleaseNativeWrapperNode().execute(cArguments[1]);
         }
 
         @Override
@@ -562,8 +576,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
-            PTuple varargsTuple = (PTuple) cArguments[1];
-            ensureReleaseNativeWrapperNode().execute(varargsTuple, varargsTuple.getNativeWrapper());
+            ensureReleaseNativeWrapperNode().execute(cArguments[1]);
         }
 
         @Override
@@ -1040,6 +1053,148 @@ public abstract class ExternalFunctionNodes {
         public Signature getSignature() {
             // same signature as a method without arguments (just the self)
             return MethNoargsRoot.SIGNATURE;
+        }
+    }
+
+    abstract static class GetSetRootNode extends MethodDescriptorRoot {
+
+        @Child private ReadIndexedArgumentNode readClosureNode;
+
+        GetSetRootNode(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        GetSetRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+            super(language, name, provider);
+        }
+
+        protected final Object readClosure(VirtualFrame frame) {
+            if (readClosureNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // we insert a hidden argument after the hidden callable arg
+                int hiddenArg = getSignature().getParameterIds().length + 1;
+                readClosureNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
+            }
+            return readClosureNode.execute(frame);
+        }
+
+    }
+
+    /**
+     * Wrapper root node for C function type {@code getter}.
+     */
+    public static final class GetterRoot extends GetSetRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE);
+        private static final PExternalFunctionWrapper GETTER_PROVIDER = new PExternalFunctionWrapper(AllToSulongNode::create) {
+            @Override
+            public RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return null;
+                } else {
+                    return PythonUtils.getOrCreateCallTarget(new GetterRoot(language, name, this));
+                }
+            }
+        };
+
+        @Child private ReleaseNativeWrapperNode releaseSelfNode;
+
+        public GetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+            super(language, name, provider);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            return new Object[]{self, readClosure(frame)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseSelfNode().execute(cArguments[0]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        private ReleaseNativeWrapperNode ensureReleaseSelfNode() {
+            if (releaseSelfNode == null) {
+                releaseSelfNode = insert(ReleaseNativeWrapperNodeGen.create());
+            }
+            return releaseSelfNode;
+        }
+
+        public static RootCallTarget getOrCreateCallTarget(PythonLanguage lang, String name) {
+            return GETTER_PROVIDER.getOrCreateCallTarget(lang, name, true);
+        }
+    }
+
+    /**
+     * Wrapper root node for C function type {@code setter}.
+     */
+    public static final class SetterRoot extends GetSetRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "value"}, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE);
+        private static final PExternalFunctionWrapper SETTER_PROVIDER = new PExternalFunctionWrapper(AllToSulongNode::create) {
+            @Override
+            public RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return null;
+                } else {
+                    return PythonUtils.getOrCreateCallTarget(new SetterRoot(language, name, this));
+                }
+            }
+        };
+
+        @Child private ReadIndexedArgumentNode readArgNode;
+        @Child private ReleaseNativeWrapperNode releaseSelfNode;
+        @Child private ReleaseNativeWrapperNode releaseArgNode;
+
+        public SetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+            super(language, name, provider);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object arg = ensureReadArgNode().execute(frame);
+            return new Object[]{self, arg, readClosure(frame)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseSelfNode().execute(cArguments[0]);
+            ensureReleaseArgNode().execute(cArguments[1]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        private ReadIndexedArgumentNode ensureReadArgNode() {
+            if (readArgNode == null) {
+                readArgNode = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArgNode;
+        }
+
+        private ReleaseNativeWrapperNode ensureReleaseSelfNode() {
+            if (releaseSelfNode == null) {
+                releaseSelfNode = insert(ReleaseNativeWrapperNodeGen.create());
+            }
+            return releaseSelfNode;
+        }
+
+        private ReleaseNativeWrapperNode ensureReleaseArgNode() {
+            if (releaseArgNode == null) {
+                releaseArgNode = insert(ReleaseNativeWrapperNodeGen.create());
+            }
+            return releaseArgNode;
+        }
+
+        public static RootCallTarget getOrCreateCallTarget(PythonLanguage lang, String name) {
+            return SETTER_PROVIDER.getOrCreateCallTarget(lang, name, true);
         }
     }
 
