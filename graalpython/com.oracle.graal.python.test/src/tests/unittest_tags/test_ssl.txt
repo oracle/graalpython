@@ -17,6 +17,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unsupported_dtls
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test__create_stdlib_context
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_check_hostname
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_constructor
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_context_client_server
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_context_custom_class
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_create_default_context
@@ -27,6 +28,7 @@
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_verify_cadata
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_min_max_version
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_num_tickest
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_protocol
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_python_ciphers
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_set_default_verify_paths
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_set_ecdh_curve
