@@ -100,7 +100,7 @@ public final class GraalHPyHandle implements TruffleObject {
     void toNative(
                     @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached("createCountingProfile()") ConditionProfile notNativeProfile) {
+                    @Shared("notNativeProfile") @Cached("createCountingProfile()") ConditionProfile notNativeProfile) {
         if (notNativeProfile.profile(!isPointer(isAllocatedProfile))) {
             id = context.getHPyContext().getHPyHandleForObject(this);
         }

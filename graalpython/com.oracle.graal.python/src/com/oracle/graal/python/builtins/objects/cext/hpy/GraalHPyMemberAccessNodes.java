@@ -60,7 +60,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPY_
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPY_MEMBER_ULONG;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPY_MEMBER_ULONGLONG;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPY_MEMBER_USHORT;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 
 import java.util.List;
 
@@ -83,12 +82,14 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNod
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadOnlyMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyWriteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeBooleanNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetGetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyLegacyGetSetGetterToSulongNodeGen;
@@ -112,7 +113,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -348,7 +348,7 @@ public class GraalHPyMemberAccessNodes {
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CExtAsPythonObjectNode asPythonObjectNode;
         @Child private PForeignToPTypeNode fromForeign;
-        @Child private ReadAttributeFromObjectNode readNativeSpaceNode;
+        @Child private HPyGetNativeSpacePointerNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
         private final String accessor;
@@ -369,7 +369,7 @@ public class GraalHPyMemberAccessNodes {
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self) {
             GraalHPyContext hPyContext = getContext().getHPyContext();
 
-            Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self, OBJECT_HPY_NATIVE_SPACE);
+            Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raise(PythonBuiltinClassType.SystemError, "Attempting to read from offset %d but object '%s' has no associated native space.", offset, self);
@@ -397,10 +397,10 @@ public class GraalHPyMemberAccessNodes {
             return callHPyFunctionNode;
         }
 
-        private ReadAttributeFromObjectNode ensureReadNativeSpaceNode() {
+        private HPyGetNativeSpacePointerNode ensureReadNativeSpaceNode() {
             if (readNativeSpaceNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNativeSpaceNode = insert(ReadAttributeFromObjectNode.create());
+                readNativeSpaceNode = insert(HPyGetNativeSpacePointerNodeGen.create());
             }
             return readNativeSpaceNode;
         }
@@ -477,7 +477,7 @@ public class GraalHPyMemberAccessNodes {
 
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CExtToNativeNode toNativeNode;
-        @Child private ReadAttributeFromObjectNode readNativeSpaceNode;
+        @Child private HPyGetNativeSpacePointerNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
         private final String accessor;
@@ -495,7 +495,7 @@ public class GraalHPyMemberAccessNodes {
         Object doGeneric(VirtualFrame frame, Object self, Object value) {
             GraalHPyContext hPyContext = getContext().getHPyContext();
 
-            Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self, OBJECT_HPY_NATIVE_SPACE);
+            Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raise(PythonBuiltinClassType.SystemError, "Attempting to write to offset %d but object '%s' has no associated native space.", offset, self);
@@ -532,10 +532,10 @@ public class GraalHPyMemberAccessNodes {
             return callHPyFunctionNode;
         }
 
-        private ReadAttributeFromObjectNode ensureReadNativeSpaceNode() {
+        private HPyGetNativeSpacePointerNode ensureReadNativeSpaceNode() {
             if (readNativeSpaceNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNativeSpaceNode = insert(ReadAttributeFromObjectNode.create());
+                readNativeSpaceNode = insert(HPyGetNativeSpacePointerNodeGen.create());
             }
             return readNativeSpaceNode;
         }

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_GETSET;
@@ -124,6 +125,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -138,6 +140,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -150,6 +153,8 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1655,8 +1660,8 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached ReadAttributeFromObjectNode readNativeSpaceNode) {
-            dest[destOffset] = readNativeSpaceNode.execute(args[argsOffset], GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
+                        @Cached HPyGetNativeSpacePointerNode readNativeSpaceNode) {
+            dest[destOffset] = readNativeSpaceNode.execute(args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
         }
     }
@@ -1670,9 +1675,9 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached ReadAttributeFromObjectNode getNativeSpacePointerNode,
+                        @Cached HPyGetNativeSpacePointerNode getNativeSpacePointerNode,
                         @Cached ToBorrowedRefNode toSulongNode) {
-            dest[destOffset] = getNativeSpacePointerNode.execute(args[argsOffset], GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
+            dest[destOffset] = getNativeSpacePointerNode.execute(args[argsOffset]);
             dest[destOffset + 1] = toSulongNode.execute(args[argsOffset + 1]);
             dest[destOffset + 2] = args[argsOffset + 2];
         }
@@ -2008,6 +2013,28 @@ public class GraalHPyNodes {
                 }
             }
             throw OverflowException.INSTANCE;
+        }
+    }
+
+    @ImportStatic(PythonOptions.class)
+    @GenerateUncached
+    public abstract static class HPyGetNativeSpacePointerNode extends Node {
+
+        public abstract Object execute(Object object);
+
+        @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
+        static Object doDynamicObject(DynamicObject object,
+                        @CachedLibrary("object") DynamicObjectLibrary lib) {
+            return lib.getOrDefault(object, OBJECT_HPY_NATIVE_SPACE, PNone.NO_VALUE);
+        }
+
+        @Specialization(replaces = "doDynamicObject")
+        static Object doOther(Object object,
+                        @CachedLibrary(limit = "getVariableArgumentInlineCacheLimit()") DynamicObjectLibrary lib) {
+            if (object instanceof DynamicObject) {
+                return lib.getOrDefault((DynamicObject) object, OBJECT_HPY_NATIVE_SPACE, PNone.NO_VALUE);
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
