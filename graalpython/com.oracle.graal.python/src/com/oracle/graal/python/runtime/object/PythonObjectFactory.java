@@ -124,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -139,6 +140,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.BufferFormat;
@@ -352,6 +354,11 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PTuple createTuple(Object cls, SequenceStorage store) {
         return trace(new PTuple(cls, getShape(cls), store));
+    }
+
+    public final PTuple createStructSeq(Descriptor desc, Object... values) {
+        assert desc.inSequence <= values.length && values.length <= desc.fieldNames.length;
+        return createTuple(desc.type, new ObjectSequenceStorage(values, desc.inSequence));
     }
 
     public final PComplex createComplex(Object cls, double real, double imag) {

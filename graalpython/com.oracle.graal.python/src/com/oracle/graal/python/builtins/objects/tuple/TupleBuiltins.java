@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -182,7 +182,7 @@ public class TupleBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached CastToJavaIntExactNode castToInt) {
-            return castToInt.execute(lib.asJavaLong(callSizeNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self))));
+            return castToInt.execute(lib.asJavaLong(callSizeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self))));
         }
     }
 
@@ -270,7 +270,7 @@ public class TupleBuiltins extends PythonBuiltins {
                         @Cached PCallCapiFunction callSetItem,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
-            return asPythonObjectNode.execute(callSetItem.call(NativeCAPISymbols.FUN_PY_TRUFFLE_TUPLE_GET_ITEM, toSulongNode.execute(tuple), key));
+            return asPythonObjectNode.execute(callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_GET_ITEM, toSulongNode.execute(tuple), key));
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {

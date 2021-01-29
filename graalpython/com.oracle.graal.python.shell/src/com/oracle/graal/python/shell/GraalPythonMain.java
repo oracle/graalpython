@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
 import org.graalvm.nativeimage.ImageInfo;
@@ -55,9 +56,6 @@ import org.graalvm.polyglot.PolyglotException.StackFrame;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
-
-import com.oracle.truffle.llvm.toolchain.launchers.common.Driver;
-import java.util.function.Function;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
@@ -242,10 +240,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         unrecognized.add(arg);
                     }
                     break;
-                case "-llvm-path":
-                    print(new Driver("llvm-ar").getLLVMBinDir().toString());
-                    System.exit(0);
-                    break;
                 case "-u":
                     unbufferedIO = true;
                     break;
@@ -358,13 +352,25 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.out.println(string);
     }
 
-    private String[] getExecutableList() {
+    private static String getLauncherExecName() {
         if (ImageInfo.inImageCode()) {
-            return execListWithRelaunchArgs(ProcessProperties.getExecutableName());
-        } else {
-            if (BASH_LAUNCHER_EXEC_NAME != null) {
-                return execListWithRelaunchArgs(BASH_LAUNCHER_EXEC_NAME);
+            String binPathName = null;
+            if (ProcessProperties.getArgumentVectorBlockSize() > 0) {
+                binPathName = ProcessProperties.getArgumentVectorProgramName();
             }
+            return binPathName != null ? binPathName : ProcessProperties.getExecutableName();
+        }
+        return GraalPythonMain.BASH_LAUNCHER_EXEC_NAME;
+    }
+
+    private String[] getExecutableList() {
+        String launcherExecName = getLauncherExecName();
+        if (launcherExecName != null) {
+            return execListWithRelaunchArgs(launcherExecName);
+        }
+
+        // This should only be reached if this main is directly executed via Java.
+        if (!ImageInfo.inImageCode()) {
             StringBuilder sb = new StringBuilder();
             ArrayList<String> exec_list = new ArrayList<>();
             sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
@@ -392,14 +398,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
             return exec_list.toArray(new String[exec_list.size()]);
         }
+
+        return new String[]{""};
     }
 
     private String getExecutable() {
         if (ImageInfo.inImageBuildtimeCode()) {
             return "";
         } else {
-            if (BASH_LAUNCHER_EXEC_NAME != null) {
-                return BASH_LAUNCHER_EXEC_NAME;
+            String launcherExecName = getLauncherExecName();
+            if (launcherExecName != null) {
+                return launcherExecName;
             }
             String[] executableList = getExecutableList();
             for (int i = 0; i < executableList.length; i++) {

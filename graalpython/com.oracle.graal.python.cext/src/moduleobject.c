@@ -77,9 +77,9 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
                        native_to_java(mod),
 					   NULL,
                        polyglot_from_string((const char*)(def.ml_name), SRC_CS),
-                       native_pointer_to_java(def.ml_meth),
+                       function_pointer_to_java(def.ml_meth),
                        get_method_flags_wrapper(def.ml_flags),
-                       polyglot_from_string((const char*)(def.ml_doc ? def.ml_doc : ""), SRC_CS));
+					   (def.ml_doc ? def.ml_doc : ""));
         def = methods[++idx];
     }
     return 0;

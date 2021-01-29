@@ -27,6 +27,7 @@ package com.oracle.graal.python.test.runtime;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static org.junit.Assert.assertEquals;
@@ -83,10 +84,10 @@ public class PythonModuleTests {
     @Test
     public void pythonModuleTest() {
         PythonModule module = context.getCore().factory().createPythonModule("testModule");
-
         assertEquals("testModule", module.getAttribute(__NAME__).toString());
         assertEquals("None", module.getAttribute(__DOC__).toString());
         assertEquals("None", module.getAttribute(__PACKAGE__).toString());
+        assertEquals("NoValue", module.getAttribute(__FILE__).toString());
     }
 
     @Test

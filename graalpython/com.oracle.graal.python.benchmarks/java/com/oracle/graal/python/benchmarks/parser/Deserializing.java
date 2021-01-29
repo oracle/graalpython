@@ -87,7 +87,7 @@ public class Deserializing extends ParserBenchRunner {
         for (Source source : getSources()) {
             try {
                 PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, parser);
-                PythonParserImpl.CacheItem item = parser.parseWithANTLR(PythonParser.ParserMode.File, core, sstFactory, source, null, null);
+                PythonParserImpl.CacheItem item = parser.parseWithANTLR(PythonParser.ParserMode.File, 0, core, sstFactory, source, null, null);
                 result.add(new Item(source, PythonParserImpl.serialize(item.getAntlrResult(), item.getGlobalScope(), true)));
             } catch (RuntimeException e) {
                 // do nothing

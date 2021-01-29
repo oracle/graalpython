@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_support.TestSupport.test_captured_stdout
 *graalpython.lib-python.3.test.test_support.TestSupport.test_change_cwd
 *graalpython.lib-python.3.test.test_support.TestSupport.test_change_cwd__chdir_warning
+*graalpython.lib-python.3.test.test_support.TestSupport.test_change_cwd__non_existent_dir
 *graalpython.lib-python.3.test.test_support.TestSupport.test_change_cwd__non_existent_dir__quiet_true
 *graalpython.lib-python.3.test.test_support.TestSupport.test_check_syntax_error
 *graalpython.lib-python.3.test.test_support.TestSupport.test_detect_api_mismatch

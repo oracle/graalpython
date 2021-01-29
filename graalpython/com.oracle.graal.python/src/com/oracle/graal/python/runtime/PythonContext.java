@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -54,6 +55,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -81,6 +83,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
@@ -206,12 +209,12 @@ public final class PythonContext {
 
     private final PythonLanguage language;
     private PythonModule mainModule;
-    private final PythonCore core;
+    private final Python3Core core;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final List<AtExitHook> atExitHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
-    private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+    private final IDUtils idUtils = new IDUtils();
 
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
@@ -270,7 +273,7 @@ public final class PythonContext {
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
         this.language = language;
         this.core = core;
         this.env = env;
@@ -295,9 +298,16 @@ public final class PythonContext {
         return pythonThreadStackSize.getAndSet(value);
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public long getNextGlobalId() {
-        return globalId.incrementAndGet();
+    public long getNextObjectId() {
+        return idUtils.getNextObjectId();
+    }
+
+    public long getNextObjectId(Object object) {
+        return idUtils.getNextObjectId(object);
+    }
+
+    public long getNextStringId(String string) {
+        return idUtils.getNextStringId(string);
     }
 
     public <T> T getOption(OptionKey<T> key) {
@@ -1031,6 +1041,24 @@ public final class PythonContext {
     public void popCurrentImport() {
         assert currentImport.get() != null && currentImport.get().peek() != null : "invalid popCurrentImport without push";
         currentImport.get().pop();
+    }
+
+    public Thread[] getThreads() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (singleThreaded.isValid()) {
+            return new Thread[]{Thread.currentThread()};
+        } else {
+            Set<Thread> threads = new HashSet<>();
+            for (PythonThreadState ts : threadStateMapping.values()) {
+                for (WeakReference<Thread> thRef : ts.getOwners()) {
+                    Thread th = thRef.get();
+                    if (th != null) {
+                        threads.add(th);
+                    }
+                }
+            }
+            return threads.toArray(new Thread[0]);
+        }
     }
 
     private PythonThreadState getThreadState() {

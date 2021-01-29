@@ -41,7 +41,6 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.BiConsumer;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
@@ -75,8 +74,8 @@ public abstract class PythonBuiltins {
             } else {
                 declaresExplicitSelf = true;
             }
-            RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(builtin, factory.getNodeClass(),
-                            (b) -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
+            RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(factory.getNodeClass().getName() + builtin.name(),
+                            () -> new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf));
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
@@ -119,18 +118,11 @@ public abstract class PythonBuiltins {
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
             Boolean needsFrame = null;
-            boolean constructsClass = false;
             for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
                 if (needsFrame == null) {
                     needsFrame = builtin.needsFrame();
                 } else if (needsFrame != builtin.needsFrame()) {
                     throw new IllegalStateException(String.format("Implementation error in %s: all @Builtin annotations must agree if the node needs a frame.", factory.getNodeClass().getName()));
-                }
-                if (!constructsClass) {
-                    constructsClass = builtin.constructsClass() != PythonBuiltinClassType.nil;
-                } else {
-                    // we rely on this in WrapTpNew#getOwner
-                    throw new IllegalStateException(String.format("Implementation error in %s: only one @Builtin annotation can declare a class constructor.", factory.getNodeClass().getName()));
                 }
                 func.accept(factory, builtin);
             }

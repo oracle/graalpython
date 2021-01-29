@@ -293,7 +293,7 @@ public class HPyArrayWrappers {
                         @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
             invalidateNode.execute();
             if (!isPointer()) {
-                setNativePointer(callToArrayNode.call(context.getHPyContext(), GraalHPyNativeSymbols.GRAAL_HPY_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
+                setNativePointer(callToArrayNode.call(context.getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
                 setDelegate(null);
             }
         }
@@ -419,7 +419,7 @@ public class HPyArrayWrappers {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallHPyFunction callHPyFunction) {
             if (!isPointer()) {
-                setNativePointer(callHPyFunction.call(context.getHPyContext(), GraalHPyNativeSymbols.GRAAL_HPY_POINTER_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
+                setNativePointer(callHPyFunction.call(context.getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_POINTER_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
                 setDelegate(null);
             }
         }

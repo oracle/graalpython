@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.util;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -92,7 +92,7 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
                     @Cached ToSulongNode toSulongNode) {
         if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PString)) {
             // read the native data
-            Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
+            Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
             assert result instanceof String;
             return (String) result;
         }

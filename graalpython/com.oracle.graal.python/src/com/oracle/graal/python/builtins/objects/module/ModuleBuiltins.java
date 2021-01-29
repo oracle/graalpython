@@ -41,11 +41,14 @@
 package com.oracle.graal.python.builtins.objects.module;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -66,9 +69,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -93,6 +94,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonModule)
@@ -186,37 +189,79 @@ public class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleDictNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"}, limit = "1")
-        Object dict(PythonModule self, @SuppressWarnings("unused") PNone none,
+        Object doManagedCachedShape(PythonModule self, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary("self") DynamicObjectLibrary dynamicObjectLibrary) {
+            PDict dict = lib.getDict(self);
+            if (dict == null) {
+                if (hasInitialProperties(dynamicObjectLibrary, self)) {
+                    return PNone.NONE;
+                }
+                dict = createDict(self, lib);
+            }
+            return dict;
+        }
+
+        @Specialization(guards = "isNoValue(none)", limit = "1", replaces = "doManagedCachedShape")
+        Object doManaged(PythonModule self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             PDict dict = lib.getDict(self);
             if (dict == null) {
-                if (self.getShape().getPropertyCount() == 0) {
+                if (hasInitialPropertiesUncached(self)) {
                     return PNone.NONE;
                 }
-                dict = factory().createDictFixedStorage(self);
-                try {
-                    lib.setDict(self, dict);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
+                dict = createDict(self, lib);
             }
             return dict;
         }
 
         @Specialization(guards = "isNoValue(none)", limit = "1")
-        Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
+        Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             PDict dict = lib.getDict(self);
             if (dict == null) {
-                raise(self, none);
+                doError(self, none);
             }
             return dict;
         }
 
         @Fallback
-        Object raise(Object self, @SuppressWarnings("unused") Object dict) {
+        Object doError(Object self, @SuppressWarnings("unused") Object dict) {
             throw raise(PythonBuiltinClassType.TypeError, "descriptor '__dict__' for 'module' objects doesn't apply to a '%p' object", self);
+        }
+
+        private PDict createDict(PythonModule self, @CachedLibrary("self") PythonObjectLibrary lib) {
+            PDict dict;
+            dict = factory().createDictFixedStorage(self);
+            try {
+                lib.setDict(self, dict);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            return dict;
+        }
+
+        @TruffleBoundary
+        private static boolean hasInitialPropertiesUncached(PythonModule self) {
+            return hasInitialProperties(DynamicObjectLibrary.getUncached(), self);
+        }
+
+        private static boolean hasInitialProperties(DynamicObjectLibrary dynamicObjectLibrary, PythonModule self) {
+            return hasInitialPropertyCount(dynamicObjectLibrary, self) && initialPropertiesChanged(dynamicObjectLibrary, self);
+        }
+
+        private static boolean hasInitialPropertyCount(DynamicObjectLibrary dynamicObjectLibrary, PythonModule self) {
+            return dynamicObjectLibrary.getShape(self).getPropertyCount() == PythonModule.INITIAL_MODULE_ATTRS.length;
+        }
+
+        @ExplodeLoop
+        private static boolean initialPropertiesChanged(DynamicObjectLibrary lib, PythonModule self) {
+            for (int i = 0; i < PythonModule.INITIAL_MODULE_ATTRS.length; i++) {
+                if (lib.getOrDefault(self, PythonModule.INITIAL_MODULE_ATTRS[i], PNone.NO_VALUE) != PNone.NO_VALUE) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 

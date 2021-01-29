@@ -538,7 +538,7 @@ public final class PythonSSTNodeFactory {
                     ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
                     FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     returnTarget,
-                                    scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
+                                    scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY, null);
                     result = functionRoot;
                     break;
                 case File:

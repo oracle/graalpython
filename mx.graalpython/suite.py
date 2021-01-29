@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "4794b8ca7360958cc888536cae21af10a81c64a1",
+                "version": "0b0b2323ae1c42b3ea67f4c9f1a06552d6a45074",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "4794b8ca7360958cc888536cae21af10a81c64a1",
+                "version": "0b0b2323ae1c42b3ea67f4c9f1a06552d6a45074",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "4794b8ca7360958cc888536cae21af10a81c64a1",
+                "version": "0b0b2323ae1c42b3ea67f4c9f1a06552d6a45074",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -219,7 +219,6 @@ suite = {
             "dependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
-                "sulong:SULONG_TOOLCHAIN_LAUNCHERS",
             ],
             "jacoco": "include",
             "javaCompliance": "8+",
@@ -393,9 +392,6 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
-            ],
-            "overlaps" : [
-                "sulong:SULONG_TOOLCHAIN_LAUNCHERS"
             ],
             "description": "GraalPython launcher",
         },

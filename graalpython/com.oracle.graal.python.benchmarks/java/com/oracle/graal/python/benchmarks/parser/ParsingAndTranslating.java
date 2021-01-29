@@ -59,7 +59,7 @@ public class ParsingAndTranslating extends ParserBenchRunner {
         for (int n = 0; n < parsingCycles; n++) {
             for (Source source : getSources()) {
                 try {
-                    bh.consume(parser.parse(PythonParser.ParserMode.File, core, source, null, null));
+                    bh.consume(parser.parse(PythonParser.ParserMode.File, 0, core, source, null, null));
                 } catch (RuntimeException e) {
                     // do nothing
                 }

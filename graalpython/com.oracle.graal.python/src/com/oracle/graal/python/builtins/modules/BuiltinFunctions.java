@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
@@ -40,6 +41,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.DIR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DIVMOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.EVAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.HASH;
 import static com.oracle.graal.python.nodes.BuiltinNames.HEX;
@@ -58,13 +60,17 @@ import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.REPR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
+import static com.oracle.graal.python.nodes.BuiltinNames.SORTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -80,7 +86,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
@@ -93,14 +98,11 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -109,25 +111,19 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
-import static com.oracle.graal.python.nodes.BuiltinNames.SORTED;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -150,7 +146,6 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -174,7 +169,6 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.CharsetMapping;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
@@ -188,10 +182,8 @@ import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -813,7 +805,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             final String codeToCompile = code;
             Supplier<CallTarget> createCode = () -> {
                 Source source = PythonLanguage.newSource(context, codeToCompile, filename, mayBeFromFile);
-                return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null, null));
+                return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
             };
             RootCallTarget ct;
             if (getCore().isInitialized()) {
@@ -1007,170 +999,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IdNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long doObject(Object value,
-                        @Cached IdExpressionNode idNode) {
-            return idNode.executeLong(value);
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class IdExpressionNode extends Node {
-        // borrowed logic from pypy
-        // -1 - (-maxunicode-1): unichar
-        // 0 - 255: char
-        // 256: empty string
-        // 257: empty unicode
-        // 258: empty tuple
-        // 259: empty frozenset
-        private static final long BASE_EMPTY_BYTES = 256;
-        private static final long BASE_EMPTY_UNICODE = 257;
-        private static final long BASE_EMPTY_TUPLE = 258;
-        private static final long BASE_EMPTY_FROZENSET = 259;
-        private static final int IDTAG_INT = 1;
-        private static final int IDTAG_FLOAT = 5;
-        private static final int IDTAG_COMPLEX = 7;
-        private static final int IDTAG_SPECIAL = 11;
-        private static final int IDTAG_SHIFT = 4;
-
-        public abstract long executeLong(Object value);
-
-        @Specialization
-        long doId(boolean value,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
-            return value ? doGeneric(ctx.getCore().getTrue()) : doGeneric(ctx.getCore().getFalse());
-        }
-
-        @Specialization
-        long doId(int integer) {
-            return ((long) integer) << IDTAG_SHIFT | IDTAG_INT;
-        }
-
-        @Specialization
-        long doId(PInt value,
-                        @Cached BranchProfile overflowProfile,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            if (isBuiltin.profileIsAnyBuiltinObject(value)) {
-                try {
-                    return doId(value.intValueExact());
-                } catch (OverflowException e) {
-                    overflowProfile.enter();
-                }
-            }
-            return doGeneric(value);
-        }
-
-        @Specialization
-        long doString(String s) {
-            if (s.length() == 0) {
-                return (BASE_EMPTY_UNICODE << IDTAG_SHIFT) | IDTAG_SPECIAL;
-            } else if (s.length() == 1) {
-                return (~s.codePointAt(0) << IDTAG_SHIFT) | IDTAG_SPECIAL;
-            } else {
-                return strHash(s);
-            }
-        }
-
-        @TruffleBoundary
-        private static int strHash(String s) {
-            return s.hashCode();
-        }
-
-        @Specialization
-        long doPString(PString s,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @Cached CastToJavaStringNode castStr) {
-            if (isBuiltin.profileIsAnyBuiltinObject(s)) {
-                String jS = castStr.execute(s);
-                return doString(jS);
-            } else {
-                return doGeneric(s);
-            }
-        }
-
-        @Specialization
-        long doTuple(@SuppressWarnings("unused") PTuple value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(value) && lenNode.execute(value) == 0) {
-                return (BASE_EMPTY_TUPLE << IDTAG_SHIFT) | IDTAG_SPECIAL;
-            } else {
-                return doGeneric(value);
-            }
-        }
-
-        @Specialization
-        long doBytes(PBytes value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(value) && lenNode.execute(value) == 0) {
-                return (BASE_EMPTY_BYTES << IDTAG_SHIFT) | IDTAG_SPECIAL;
-            } else {
-                return doGeneric(value);
-            }
-        }
-
-        @Specialization
-        long doFrozenSet(PFrozenSet value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @Cached HashingCollectionNodes.LenNode lenNode) {
-            if (isBuiltin.profileIsAnyBuiltinObject(value) && lenNode.execute(value) == 0) {
-                return (BASE_EMPTY_FROZENSET << IDTAG_SHIFT) | IDTAG_SPECIAL;
-            } else {
-                return doGeneric(value);
-            }
-        }
-
-        @Specialization
-        long doDouble(double value) {
-            return Double.doubleToLongBits(value) << IDTAG_SHIFT | IDTAG_FLOAT;
-        }
-
-        @Specialization
-        long doPFloat(PFloat value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            if (isBuiltin.profileIsAnyBuiltinObject(value)) {
-                return doDouble(value.getValue());
-            } else {
-                return doGeneric(value);
-            }
-        }
-
-        @Specialization
-        long doComplex(PComplex value,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            if (isBuiltin.profileIsAnyBuiltinObject(value)) {
-                long imag = Double.hashCode(value.getImag());
-                long real = Double.hashCode(value.getReal());
-                return (((real << 32) | imag) << IDTAG_SHIFT) | IDTAG_COMPLEX;
-            } else {
-                return doGeneric(value);
-            }
-        }
-
-        @Specialization
-        long doPythonBuiltinClass(PythonBuiltinClass value) {
-            return doGeneric(value.getType());
-        }
-
-        /**
-         * PCode objects are special - we sometimes create them on-demand. see
-         * {@link IsExpressionNode.IsNode#doCode}.
-         */
-        @Specialization
-        @TruffleBoundary(allowInlining = true)
-        long doId(PCode obj) {
-            RootCallTarget ct = obj.getRootCallTarget();
-            if (ct != null) {
-                return doGeneric(ct);
-            } else {
-                return doGeneric(obj);
-            }
-        }
-
-        @Fallback
-        @TruffleBoundary(allowInlining = true)
-        long doGeneric(Object obj) {
-            return System.identityHashCode(obj);
+        Object doObject(Object value,
+                        @Cached ObjectNodes.GetIdNode getIdNode) {
+            return getIdNode.execute(value);
         }
     }
 

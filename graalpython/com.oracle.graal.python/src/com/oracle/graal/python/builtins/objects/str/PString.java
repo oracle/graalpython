@@ -51,12 +51,14 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -64,6 +66,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PString extends PSequence {
+    public static final HiddenKey INTERNED = new HiddenKey("_interned");
 
     private CharSequence value;
 
@@ -148,14 +151,19 @@ public final class PString extends PSequence {
                         "isNativeString(self.getCharSequence())", "!isMaterialized(self.getCharSequence())",
                         "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, replaces = "nativeString", limit = "1")
-        static int nativeStringMat(@SuppressWarnings("unused") PString self, @SuppressWarnings("unused") ThreadState state,
+        static int nativeStringMat(PString self, @SuppressWarnings("unused") ThreadState state,
                         @Bind("getNativeCharSequence(self)") NativeCharSequence nativeCharSequence,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
-                        @CachedLibrary("nativeCharSequence") InteropLibrary lib,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
-            return nativeCharSequence.length(lib, castToJavaIntNode);
+                        @CachedLibrary("nativeCharSequence.getPtr()") InteropLibrary lib,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
+                        @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode) {
+            if (lib.hasArrayElements(nativeCharSequence.getPtr())) {
+                return nativeCharSequence.length(lib, castToJavaIntNode);
+            } else {
+                return materializeNode.execute(self).length();
+            }
         }
 
         @Specialization(replaces = {"string", "lazyString", "nativeString", "nativeStringMat"})
@@ -372,5 +380,24 @@ public final class PString extends PSequence {
     @SuppressWarnings("unused")
     static boolean isArrayElementRemovable(PString self, long index) {
         return false;
+    }
+
+    @ExportMessage
+    static class IsSame {
+        @Specialization
+        static boolean ss(PString receiver, PString other,
+                        @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
+            if (isInternedStringNode.execute(receiver) && isInternedStringNode.execute(other)) {
+                return materializeNode.execute(receiver).equals(materializeNode.execute(other));
+            }
+            return receiver == other;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static boolean sO(PString receiver, Object other) {
+            return false;
+        }
     }
 }

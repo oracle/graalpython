@@ -81,7 +81,7 @@ public final class PException extends AbstractTruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
 
     /** A marker object indicating that there is for sure no exception. */
-    public static final PException NO_EXCEPTION = new PException(null, (Node) null);
+    public static final PException NO_EXCEPTION = new PException(null, null);
 
     private String message = null;
     protected final PBaseException pythonException;
@@ -92,32 +92,40 @@ public final class PException extends AbstractTruffleException {
     private LazyTraceback traceback;
     private boolean reified = false;
 
-    public PException(PBaseException actual, Node node) {
+    private PException(PBaseException actual, Node node) {
         super(node);
         this.pythonException = actual;
     }
 
-    public PException(PBaseException actual, Node node, Throwable wrapped) {
+    private PException(PBaseException actual, Node node, Throwable wrapped) {
         super(null, wrapped, UNLIMITED_STACK_TRACE, node);
         this.pythonException = actual;
     }
 
-    public PException(PBaseException actual, LazyTraceback traceback) {
+    private PException(PBaseException actual, LazyTraceback traceback, Throwable wrapped) {
+        super(null, wrapped, UNLIMITED_STACK_TRACE, null);
         this.pythonException = actual;
         this.traceback = traceback;
         reified = true;
     }
 
     public static PException fromObject(PBaseException actual, Node node, boolean withJavaStacktrace) {
-        return fromObject(actual, node, withJavaStacktrace, null);
+        Throwable wrapped = null;
+        if (withJavaStacktrace) {
+            // Create a carrier for the java stacktrace as PException cannot have one
+            wrapped = createStacktraceCarrier();
+        }
+        return fromObject(actual, node, wrapped);
     }
 
-    public static PException fromObject(PBaseException actual, Node node, boolean withJavaStacktrace, Throwable cause) {
-        PException pException = new PException(actual, node, cause);
+    @TruffleBoundary
+    private static RuntimeException createStacktraceCarrier() {
+        return new RuntimeException();
+    }
+
+    public static PException fromObject(PBaseException actual, Node node, Throwable wrapped) {
+        PException pException = new PException(actual, node, wrapped);
         actual.setException(pException);
-        if (withJavaStacktrace) {
-            pException = (PException) pException.forceFillInStackTrace();
-        }
         return pException;
     }
 
@@ -131,11 +139,13 @@ public final class PException extends AbstractTruffleException {
 
     public static PException fromExceptionInfo(PBaseException pythonException, LazyTraceback traceback, boolean withJavaStacktrace) {
         pythonException.ensureReified();
-        PException pException = new PException(pythonException, traceback);
-        pythonException.setException(pException);
+        Throwable wrapped = null;
         if (withJavaStacktrace) {
-            pException = (PException) pException.forceFillInStackTrace();
+            // Create a carrier for the java stacktrace as PException cannot have one
+            wrapped = createStacktraceCarrier();
         }
+        PException pException = new PException(pythonException, traceback, wrapped);
+        pythonException.setException(pException);
         return pException;
     }
 
@@ -158,10 +168,6 @@ public final class PException extends AbstractTruffleException {
             return "NO_EXCEPTION";
         }
         return getMessage();
-    }
-
-    public Throwable forceFillInStackTrace() {
-        return super.fillInStackTrace();
     }
 
     public boolean shouldHideLocation() {

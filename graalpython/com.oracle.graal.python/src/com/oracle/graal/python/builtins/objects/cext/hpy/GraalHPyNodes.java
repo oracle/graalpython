@@ -45,15 +45,15 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_GETSET;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_KIND;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_MEMBER;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_METH;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_SLOT;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_MEMBER_GET_TYPE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_METH_GET_SIGNATURE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_SLOT_GET_SLOT;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_MEMBER;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_METH;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_SLOT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MEMBER_GET_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_METH_GET_SIGNATURE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNod
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -156,77 +157,28 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class GraalHPyNodes {
-
-    @GenerateUncached
-    abstract static class ImportHPySymbolNode extends PNodeWithContext {
-
-        public abstract Object execute(GraalHPyContext context, String name);
-
-        @Specialization(guards = "cachedName == name", limit = "1", assumptions = "singleContextAssumption()")
-        static Object doReceiverCachedIdentity(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String name,
-                        @Cached("name") @SuppressWarnings("unused") String cachedName,
-                        @Cached("importHPySymbolUncached(context, name)") Object sym) {
-            return sym;
-        }
-
-        @Specialization(guards = "cachedName.equals(name)", limit = "1", assumptions = "singleContextAssumption()", replaces = "doReceiverCachedIdentity")
-        static Object doReceiverCached(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String name,
-                        @Cached("name") @SuppressWarnings("unused") String cachedName,
-                        @Cached("importHPySymbolUncached(context, name)") Object sym) {
-            return sym;
-        }
-
-        @Specialization(replaces = {"doReceiverCached", "doReceiverCachedIdentity"})
-        static Object doGeneric(GraalHPyContext context, String name,
-                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
-                        @Cached PRaiseNode raiseNode) {
-            return importHPySymbol(raiseNode, interopLib, context.getLLVMLibrary(), name);
-        }
-
-        protected static Object importHPySymbolUncached(GraalHPyContext context, String name) {
-            Object hpyLibrary = context.getLLVMLibrary();
-            InteropLibrary uncached = InteropLibrary.getFactory().getUncached(hpyLibrary);
-            return importHPySymbol(PRaiseNode.getUncached(), uncached, hpyLibrary, name);
-        }
-
-        private static Object importHPySymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
-            try {
-                return library.readMember(capiLibrary, name);
-            } catch (UnknownIdentifierException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "invalid C API function: %s", name);
-            } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "corrupted C API library object: %s", capiLibrary);
-            }
-        }
-
-    }
-
     @GenerateUncached
     public abstract static class PCallHPyFunction extends PNodeWithContext {
 
-        public final Object call(GraalHPyContext context, String name, Object... args) {
+        public final Object call(GraalHPyContext context, GraalHPyNativeSymbol name, Object... args) {
             return execute(context, name, args);
         }
 
-        abstract Object execute(GraalHPyContext context, String name, Object[] args);
+        abstract Object execute(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args);
 
         @Specialization
-        Object doIt(GraalHPyContext context, String name, Object[] args,
+        static Object doIt(GraalHPyContext context, GraalHPyNativeSymbol name, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportHPySymbolNode importCAPISymbolNode,
-                        @Cached BranchProfile profile,
+                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return interopLibrary.execute(importCAPISymbolNode.execute(context, name), args);
+                return interopLibrary.execute(importCExtSymbolNode.execute(context, name), args);
             } catch (UnsupportedTypeException | ArityException e) {
-                profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
-                profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "HPy C API symbol %s is not callable", name);
             }
         }
@@ -333,7 +285,7 @@ public class GraalHPyNodes {
                         @Cached PRaiseNode raiseNode) {
             assert checkLayout(methodDef);
 
-            String methodName = castToJavaStringNode.execute(callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_NAME, methodDef));
+            String methodName = castToJavaStringNode.execute(callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_GET_ML_NAME, methodDef));
 
             // note: 'ml_doc' may be NULL; in this case, we would store 'None'
             Object methodDoc = PNone.NONE;
@@ -424,7 +376,7 @@ public class GraalHPyNodes {
 
             assert checkLayout(methodDef) : "provided pointer has unexpected structure";
 
-            String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_METHODDEF_GET_ML_NAME, methodDef));
+            String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_METHODDEF_GET_ML_NAME, methodDef));
 
             // note: 'ml_doc' may be NULL; in this case, we would store 'None'
             Object methodDoc = PNone.NONE;
@@ -534,7 +486,7 @@ public class GraalHPyNodes {
 
             assert checkLayout(legacyGetSetDef) : "provided pointer has unexpected structure";
 
-            String getSetDescrName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_GETSETDEF_GET_NAME, legacyGetSetDef));
+            String getSetDescrName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_GETSETDEF_GET_NAME, legacyGetSetDef));
 
             // note: 'doc' may be NULL; in this case, we would store 'None'
             Object getSetDescrDoc = PNone.NONE;
@@ -986,7 +938,7 @@ public class GraalHPyNodes {
             assert checkLayout(slotDef) : "invalid layout of legacy slot definition";
 
             int slotId;
-            Object slotObj = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_SLOT, slotDef);
+            Object slotObj = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_SLOT, slotDef);
             if (resultLib.fitsInInt(slotObj)) {
                 try {
                     slotId = resultLib.asInt(slotObj);
@@ -1007,7 +959,7 @@ public class GraalHPyNodes {
             // treatment for special slots 'Py_tp_members', 'Py_tp_getset', 'Py_tp_methods'
             switch (slot) {
                 case Py_tp_members:
-                    Object memberDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_MEMBERS, slotDef);
+                    Object memberDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_MEMBERS, slotDef);
                     try {
                         int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(memberDefArrayPtr));
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
@@ -1021,7 +973,7 @@ public class GraalHPyNodes {
                     }
                     break;
                 case Py_tp_methods:
-                    Object methodDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_METHODS, slotDef);
+                    Object methodDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_METHODS, slotDef);
                     try {
                         int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(methodDefArrayPtr));
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
@@ -1035,14 +987,14 @@ public class GraalHPyNodes {
                     }
                     break;
                 case Py_tp_repr:
-                    Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
+                    Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
                     RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, SpecialMethodNames.__REPR__));
                     PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(pfuncPtr);
                     PBuiltinFunction method = factory.createBuiltinFunction(SpecialMethodNames.__REPR__, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, callTarget);
                     writeAttributeToObjectNode.execute(enclosingType, SpecialMethodNames.__REPR__, method);
                     break;
                 case Py_tp_getset:
-                    Object getSetDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_DESCRS, slotDef);
+                    Object getSetDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_DESCRS, slotDef);
                     try {
                         int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(getSetDefArrayPtr));
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
@@ -1870,7 +1822,7 @@ public class GraalHPyNodes {
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
 
                 // process defines
-                Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
+                Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
                 // field 'defines' may be 'NULL'
                 if (!ptrLib.isNull(defines)) {
                     if (!ptrLib.hasArrayElements(defines)) {
@@ -1912,7 +1864,7 @@ public class GraalHPyNodes {
                 }
 
                 // process legacy slots; this is of type 'cpy_PyTypeSlot legacy_slots[]'
-                Object legacySlots = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_GET_LEGECY_SLOTS, typeSpec);
+                Object legacySlots = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_LEGECY_SLOTS, typeSpec);
                 if (!ptrLib.isNull(legacySlots)) {
                     int nLegacySlots = PInt.intValueExact(ptrLib.getArraySize(legacySlots));
                     for (int i = 0; i < nLegacySlots; i++) {

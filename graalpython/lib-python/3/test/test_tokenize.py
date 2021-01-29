@@ -1616,12 +1616,16 @@ class TestRoundtrip(TestCase):
         for f in ('buffer', 'builtin', 'fileio', 'inspect', 'os', 'platform', 'sys'):
             testfiles.remove(os.path.join(tempdir, "test_%s.py") % f)
 
-        if not support.is_resource_enabled("cpu"):
-            testfiles = random.sample(testfiles, 10)
-
+        # XXX Truffle change: checking all files takes way too long
+        # if not support.is_resource_enabled("cpu"):
+        #     testfiles = random.sample(testfiles, 10)
+        print("\npicked 10 random files to check, beware possible transient errors!")
+        testfiles = random.sample(testfiles, 10)
         for testfile in testfiles:
-            if support.verbose >= 2:
-                print('tokenize', testfile)
+            # XXX Truffle change: print files if picking them randomly
+            # if support.verbose >= 2:
+            #     print('tokenize', testfile)
+            print('\tchecking', testfile)
             with open(testfile, 'rb') as f:
                 with self.subTest(file=testfile):
                     self.check_roundtrip(f)

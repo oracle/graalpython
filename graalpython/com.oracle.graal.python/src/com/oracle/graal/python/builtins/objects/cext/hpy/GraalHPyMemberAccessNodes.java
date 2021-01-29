@@ -134,47 +134,46 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public class GraalHPyMemberAccessNodes {
 
-    static String getReadAccessorName(int type) {
+    static GraalHPyNativeSymbol getReadAccessorName(int type) {
         switch (type) {
             case HPY_MEMBER_SHORT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_S;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_S;
             case HPY_MEMBER_INT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_I;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_I;
             case HPY_MEMBER_LONG:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_L;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_L;
             case HPY_MEMBER_FLOAT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_F;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_F;
             case HPY_MEMBER_DOUBLE:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_D;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_D;
             case HPY_MEMBER_STRING:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_STRING;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_STRING;
             case HPY_MEMBER_OBJECT:
             case HPY_MEMBER_OBJECT_EX:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_HPY;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY;
             case HPY_MEMBER_CHAR:
             case HPY_MEMBER_BYTE:
             case HPY_MEMBER_BOOL:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_C;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_C;
             case HPY_MEMBER_UBYTE:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_UC;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_UC;
             case HPY_MEMBER_USHORT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_US;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_US;
             case HPY_MEMBER_UINT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_UI;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_UI;
             case HPY_MEMBER_ULONG:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_UL;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_UL;
             case HPY_MEMBER_STRING_INPLACE:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_STRING_IN_PLACE;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_STRING_IN_PLACE;
             case HPY_MEMBER_LONGLONG:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_LL;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_LL;
             case HPY_MEMBER_ULONGLONG:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_ULL;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_ULL;
             case HPY_MEMBER_HPYSSIZET:
-                return GraalHPyNativeSymbols.GRAAL_HPY_READ_HPY_SSIZE_T;
+                return GraalHPyNativeSymbol.GRAAL_HPY_READ_HPY_SSIZE_T;
             case HPY_MEMBER_NONE:
                 return null;
         }
@@ -213,43 +212,43 @@ public class GraalHPyMemberAccessNodes {
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
 
-    static String getWriteAccessorName(int type) {
+    static GraalHPyNativeSymbol getWriteAccessorName(int type) {
         switch (type) {
             case HPY_MEMBER_SHORT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_S;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_S;
             case HPY_MEMBER_INT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_I;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_I;
             case HPY_MEMBER_LONG:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_L;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_L;
             case HPY_MEMBER_FLOAT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_F;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_F;
             case HPY_MEMBER_DOUBLE:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_D;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_D;
             case HPY_MEMBER_NONE:
             case HPY_MEMBER_STRING:
             case HPY_MEMBER_STRING_INPLACE:
                 return null;
             case HPY_MEMBER_OBJECT:
             case HPY_MEMBER_OBJECT_EX:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_HPY;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY;
             case HPY_MEMBER_CHAR:
             case HPY_MEMBER_BYTE:
             case HPY_MEMBER_BOOL:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_C;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_C;
             case HPY_MEMBER_UBYTE:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_UC;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UC;
             case HPY_MEMBER_USHORT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_US;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_US;
             case HPY_MEMBER_UINT:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_UI;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UI;
             case HPY_MEMBER_ULONG:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_UL;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_UL;
             case HPY_MEMBER_LONGLONG:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_LL;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_LL;
             case HPY_MEMBER_ULONGLONG:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_ULL;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_ULL;
             case HPY_MEMBER_HPYSSIZET:
-                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_HPY_SSIZE_T;
+                return GraalHPyNativeSymbol.GRAAL_HPY_WRITE_HPY_SSIZE_T;
         }
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
@@ -341,7 +340,7 @@ public class GraalHPyMemberAccessNodes {
 
     }
 
-    @Builtin(minNumOfPositionalArgs = 1, parameterNames = "$self")
+    @Builtin(name = "hpy_member_read", minNumOfPositionalArgs = 1, parameterNames = "$self")
     protected abstract static class HPyReadMemberNode extends PythonUnaryBuiltinNode {
         private static final Builtin builtin = HPyReadMemberNode.class.getAnnotation(Builtin.class);
 
@@ -351,12 +350,12 @@ public class GraalHPyMemberAccessNodes {
         @Child private HPyGetNativeSpacePointerNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
-        private final String accessor;
+        private final GraalHPyNativeSymbol accessor;
 
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected HPyReadMemberNode(String accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
+        protected HPyReadMemberNode(GraalHPyNativeSymbol accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
             this.accessor = accessor;
             this.offset = offset;
             this.asPythonObjectNode = asPythonObjectNode;
@@ -407,15 +406,19 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
-            String accessor = getReadAccessorName(type);
+            GraalHPyNativeSymbol accessor = getReadAccessorName(type);
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
-            RootNode rootNode = new BuiltinFunctionRootNode(language, builtin,
-                            new HPyMemberNodeFactory<>(HPyReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+            RootCallTarget callTarget = language.getOrComputeBuiltinCallTarget(createBuiltinKey(type, offset),
+                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true));
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, callTarget);
+        }
+
+        private static String createBuiltinKey(int type, int offset) {
+            return GraalHPyMemberAccessNodes.class.getName() + "." + builtin.name() + "(" + type + ", " + offset + ")";
         }
     }
 
-    @Builtin(minNumOfPositionalArgs = 1, parameterNames = "$self")
+    @Builtin(name = "hpy_member_delete", minNumOfPositionalArgs = 1, parameterNames = "$self")
     protected abstract static class HPyDeleteMemberNode extends PythonUnaryBuiltinNode {
         private static final Builtin builtin = HPyDeleteMemberNode.class.getAnnotation(Builtin.class);
 
@@ -428,13 +431,13 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
-            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(builtin, HPyDeleteMemberNode.class,
-                            builtin -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyDeleteMemberNodeGen.create()), true)));
+            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(GraalHPyMemberAccessNodes.class.getName() + "." + builtin.name(),
+                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyDeleteMemberNodeGen.create()), true));
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
 
-    @Builtin(minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"})
+    @Builtin(name = "hpy_member_write_read_only", minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"})
     protected abstract static class HPyReadOnlyMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin builtin = HPyReadOnlyMemberNode.class.getAnnotation(Builtin.class);
 
@@ -447,13 +450,13 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
-            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(builtin, HPyReadOnlyMemberNode.class,
-                            builtin -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create()), true)));
+            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(GraalHPyMemberAccessNodes.class.getName() + "." + builtin.name(),
+                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create()), true));
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
 
-    @Builtin(minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
+    @Builtin(name = "hpy_bad_member_descr", minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
     protected abstract static class HPyBadMemberDescrNode extends PythonBinaryBuiltinNode {
         private static final Builtin builtin = HPyBadMemberDescrNode.class.getAnnotation(Builtin.class);
 
@@ -465,13 +468,13 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
-            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(builtin, HPyBadMemberDescrNode.class,
-                            builtin -> PythonUtils.getOrCreateCallTarget(new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true)));
+            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(GraalHPyMemberAccessNodes.class.getName() + "." + builtin,
+                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true));
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
 
-    @Builtin(minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
+    @Builtin(name = "hpy_write_member", minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
     protected abstract static class HPyWriteMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin builtin = HPyWriteMemberNode.class.getAnnotation(Builtin.class);
 
@@ -480,12 +483,12 @@ public class GraalHPyMemberAccessNodes {
         @Child private HPyGetNativeSpacePointerNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
-        private final String accessor;
+        private final GraalHPyNativeSymbol accessor;
 
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected HPyWriteMemberNode(String accessor, int offset, CExtToNativeNode toNativeNode) {
+        protected HPyWriteMemberNode(GraalHPyNativeSymbol accessor, int offset, CExtToNativeNode toNativeNode) {
             this.accessor = accessor;
             this.offset = offset;
             this.toNativeNode = toNativeNode;
@@ -542,7 +545,7 @@ public class GraalHPyMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
-            String accessor = getWriteAccessorName(type);
+            GraalHPyNativeSymbol accessor = getWriteAccessorName(type);
             CExtToNativeNode toNativeNode = getWriteConverterNode(type);
             if (accessor == null || toNativeNode == null) {
                 if (isReadOnlyType(type)) {
@@ -550,8 +553,14 @@ public class GraalHPyMemberAccessNodes {
                 }
                 return HPyBadMemberDescrNode.createBuiltinFunction(language, propertyName);
             }
-            RootNode rootNode = new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(accessor, offset, toNativeNode)), true);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+            //
+            RootCallTarget callTarget = language.getOrComputeBuiltinCallTarget(createBuiltinKey(type, offset),
+                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(accessor, offset, toNativeNode)), true));
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, callTarget);
+        }
+
+        private static String createBuiltinKey(int type, int offset) {
+            return GraalHPyMemberAccessNodes.class.getName() + "." + builtin.name() + "(" + type + ", " + offset + ")";
         }
     }
 

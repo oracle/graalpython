@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
@@ -101,7 +102,6 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
+import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
@@ -269,15 +270,13 @@ public final class Python3Core implements PythonCore {
                         "_ast",
                         "java",
                         "pyio_patches",
-                        "pwd",
-                        "resource",
                         "_contextvars",
                         "pip_hook",
-                        "_lsprof",
                         "marshal",
                         "_struct",
                         "bool",
-                        "_lzma"));
+                        "_lzma",
+                        "_posixshmem"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -408,6 +407,7 @@ public final class Python3Core implements PythonCore {
                         new MemoryViewBuiltins(),
                         new SuperBuiltins(),
                         new BinasciiModuleBuiltins(),
+                        new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
@@ -732,15 +732,14 @@ public final class Python3Core implements PythonCore {
             errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
         LOGGER.log(Level.SEVERE, errorMessage);
-        PException e = new PException(null, (Node) null);
-        e.setMessage(errorMessage);
+        RuntimeException e = new RuntimeException(errorMessage);
         throw e;
     }
 
     private void loadFile(String s, String prefix) {
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
-            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null, null));
+            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, 0, this, source, null, null));
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         PythonModule mod = lookupBuiltinModule(s);

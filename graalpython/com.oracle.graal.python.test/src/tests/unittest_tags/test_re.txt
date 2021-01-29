@@ -9,6 +9,7 @@
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_unknown_flags
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_without_flags
 *graalpython.lib-python.3.test.test_re.ReTests.test_anyall
+*graalpython.lib-python.3.test.test_re.ReTests.test_backref_group_name_in_exception
 *graalpython.lib-python.3.test.test_re.ReTests.test_basic_re_sub
 *graalpython.lib-python.3.test.test_re.ReTests.test_big_codesize
 *graalpython.lib-python.3.test.test_re.ReTests.test_bigcharset
@@ -35,12 +36,15 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_bytes_str_mixing
 *graalpython.lib-python.3.test.test_re.ReTests.test_case_helpers
 *graalpython.lib-python.3.test.test_re.ReTests.test_category
+*graalpython.lib-python.3.test.test_re.ReTests.test_character_set_errors
 *graalpython.lib-python.3.test.test_re.ReTests.test_compile
 *graalpython.lib-python.3.test.test_re.ReTests.test_constants
 *graalpython.lib-python.3.test.test_re.ReTests.test_debug_flag
 *graalpython.lib-python.3.test.test_re.ReTests.test_dollar_matches_twice
 *graalpython.lib-python.3.test.test_re.ReTests.test_enum
+*graalpython.lib-python.3.test.test_re.ReTests.test_error
 *graalpython.lib-python.3.test.test_re.ReTests.test_flags
+*graalpython.lib-python.3.test.test_re.ReTests.test_group_name_in_exception
 *graalpython.lib-python.3.test.test_re.ReTests.test_groupdict
 *graalpython.lib-python.3.test.test_re.ReTests.test_ignore_case
 *graalpython.lib-python.3.test.test_re.ReTests.test_ignore_case_range
@@ -50,7 +54,10 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_large_subn
 *graalpython.lib-python.3.test.test_re.ReTests.test_lookahead
 *graalpython.lib-python.3.test.test_re.ReTests.test_lookbehind
+*graalpython.lib-python.3.test.test_re.ReTests.test_multiple_repeat
 *graalpython.lib-python.3.test.test_re.ReTests.test_not_literal
+*graalpython.lib-python.3.test.test_re.ReTests.test_nothing_to_repeat
+*graalpython.lib-python.3.test.test_re.ReTests.test_other_escapes
 *graalpython.lib-python.3.test.test_re.ReTests.test_pickling
 *graalpython.lib-python.3.test.test_re.ReTests.test_qualified_re_split
 *graalpython.lib-python.3.test.test_re.ReTests.test_qualified_re_sub
@@ -59,6 +66,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_escape_non_ascii
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_escape_non_ascii_bytes
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_findall
+*graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_exists
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_split
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_subn
 *graalpython.lib-python.3.test.test_re.ReTests.test_repeat_minmax_overflow_maxrepeat
@@ -68,5 +76,6 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_search_star_plus
 *graalpython.lib-python.3.test.test_re.ReTests.test_special_escapes
 *graalpython.lib-python.3.test.test_re.ReTests.test_stack_overflow
+*graalpython.lib-python.3.test.test_re.ReTests.test_symbolic_groups
 *graalpython.lib-python.3.test.test_re.ReTests.test_unlimited_zero_width_repeat
 *graalpython.lib-python.3.test.test_re.ReTests.test_weakref

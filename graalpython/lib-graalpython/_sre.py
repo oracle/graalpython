@@ -264,14 +264,9 @@ class SRE_Pattern():
             try:
                 self.__compiled_regexes[(pattern, flags)] = tregex_compile_internal(pattern, flags, fallback_compiler)
             except ValueError as e:
-                message = str(e)
-                boundary = message.rfind(" at position ")
-                if boundary == -1:
-                    raise error(message, pattern)
-                else:
-                    position = int(message[boundary + len(" at position "):])
-                    message = message[:boundary]
-                    raise error(message, pattern, position)
+                if len(e.args) == 2:
+                    raise error(e.args[0], pattern, e.args[1]) from None
+                raise
         return self.__compiled_regexes[(pattern, flags)]
 
 
@@ -391,7 +386,7 @@ class SRE_Pattern():
                     group_nr = int(c)
                     group_str = group(pattern, match_result, group_nr, string)
                     if group_str is None:
-                        raise error("invalid group reference %s at position %s" % (group_nr, pos))
+                        raise error("invalid group reference %s" % group_nr)
                     result += repl[start:pos] + group_str
                     start = pos + 2
                 elif c == 'g':
@@ -399,7 +394,7 @@ class SRE_Pattern():
                     if group_ref:
                         group_str = group(pattern, match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
                         if group_str is None:
-                            raise error("invalid group reference %s at position %s" % (group_ref, pos))
+                            raise error("invalid group reference %s" % group_ref)
                         result += repl[start:pos] + group_str
                     start = group_ref_end + 1
                 elif c == '\\':

@@ -141,7 +141,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Trans
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.HandleCache;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
@@ -343,6 +343,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Called from Python code to convert a C character pointer into a Python string where decoding
+     * is done lazily. If the provided pointer denotes a {@code NULL} pointer, this will be
+     * converted to {@code None}.
+     */
+    @Builtin(name = "charptr_to_java", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CharPtrToJavaObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "2")
+        static Object run(Object object,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @CachedLibrary("object") InteropLibrary interopLibrary) {
+            if (!interopLibrary.isNull(object)) {
+                return fromCharPointerNode.execute(object);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "to_java_type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ToJavaClassNode extends ToJavaObjectNode {
@@ -462,7 +481,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached PCallCapiFunction callSetItem) {
             // TODO(fa): This path should be avoided since this is called from native code to do a
             // native operation.
-            callSetItem.call(NativeCAPISymbols.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, tuple, position, element);
+            callSetItem.call(NativeCAPISymbol.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, tuple, position, element);
             return 0;
         }
 
@@ -1556,7 +1575,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // Called without landing node
-    @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 11)
+    @Builtin(name = "PyTruffle_MemoryViewFromBuffer", minNumOfPositionalArgs = 11)
     @GenerateNodeFactory
     abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
 
@@ -2648,10 +2667,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @ImportStatic(PythonOptions.class)
     abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"a == cachedA", "b == cachedB"})
+        @Specialization(guards = {"a == cachedA", "b == cachedB"}, assumptions = "singleContextAssumption()")
         static int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
-                        @Cached("a") @SuppressWarnings("unused") PythonNativeWrapper cachedA,
-                        @Cached("b") @SuppressWarnings("unused") PythonNativeWrapper cachedB,
+                        @Cached(value = "a", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedA,
+                        @Cached(value = "b", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedB,
                         @Cached("doSlow(frame, a, b)") int result) {
             return result;
         }

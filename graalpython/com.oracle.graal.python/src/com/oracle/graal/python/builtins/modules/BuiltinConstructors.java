@@ -26,9 +26,9 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
@@ -1786,10 +1786,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 if (profileNewFactory == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    profileNewFactory = ValueProfile.createIdentityProfile();
+                    profileNewFactory = ValueProfile.createClassProfile();
                 }
                 if (profileInitFactory == null) {
-                    profileInitFactory = ValueProfile.createIdentityProfile();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    profileInitFactory = ValueProfile.createClassProfile();
                 }
                 if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
@@ -2552,17 +2553,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return pythonClass;
         }
 
+        @TruffleBoundary
         private void addDictDescrAttribute(PythonAbstractClass[] basesArray, LookupAttributeInMRONode getDictAttrNode, PythonClass pythonClass) {
             if ((!hasPythonClassBases(basesArray) && getDictAttrNode.execute(pythonClass) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
                 BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true);
                 setAttribute(__DICT__, rootNode, pythonClass);
             }
         }
 
+        @TruffleBoundary
         private void addWeakrefDescrAttribute(PythonClass pythonClass) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
             BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true);
             setAttribute(__WEAKREF__, rootNode, pythonClass);
@@ -2918,7 +2919,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule, isPublic = false)
+    @Builtin(name = MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule, isPublic = false, //
+                    doc = "module(name, doc=None)\n" +
+                                    "--\n" +
+                                    "\n" +
+                                    "Create a module object.\n" +
+                                    "\n" +
+                                    "The name must be a string; the optional doc argument can have any type.")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
@@ -3478,7 +3485,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object state = foreignCallContext.enter(frame, context, this);
             try {
                 Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
-                checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, result);
+                checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
                 return (PMemoryView) asPythonObjectNode.execute(result);
             } finally {
                 foreignCallContext.exit(frame, context, state);

@@ -48,9 +48,9 @@ PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
     return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
                                                "PyCFunction_NewEx",
                                                polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
-                                               native_pointer_to_java(ml->ml_meth),
+                                               function_pointer_to_java(ml->ml_meth),
                                                get_method_flags_wrapper(ml->ml_flags),
                                                native_to_java(self),
                                                native_to_java(module),
-                                               ml->ml_doc ? polyglot_from_string(ml->ml_doc, SRC_CS) : native_to_java(Py_None)));
+                                               ml->ml_doc));
 }

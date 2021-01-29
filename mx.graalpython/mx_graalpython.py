@@ -475,7 +475,7 @@ def python_gvm(args=None, **kwargs):
 
 def python_svm(args=None, **kwargs):
     "Build and run the native graalpython image"
-    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="true", NATIVE_IMAGES="graalpython", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher((args or []) + ["svm"], **kwargs)
 
 
@@ -487,11 +487,13 @@ def python_so(args):
 
 def _python_graalvm_launcher(args, extra_dy=None):
     dy = "/vm,/tools"
+    binary = "graalpython"
     if extra_dy:
         dy += "," + extra_dy
     if "sandboxed" in args:
         args.remove("sandboxed")
         dy += ",/sulong-managed,/graalpython-enterprise"
+        binary = "graalpython-managed"
     if "svm" in args:
         args.remove("svm")
         dy += ",/substratevm"
@@ -499,7 +501,7 @@ def _python_graalvm_launcher(args, extra_dy=None):
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
     mx.run_mx(dy + ["graalvm-home"], out=mx.TeeOutputCapture(out))
-    launcher = os.path.join(out.data.strip(), "bin", "graalpython").split("\n")[-1].strip()
+    launcher = os.path.join(out.data.strip(), "bin", binary).split("\n")[-1].strip()
     mx.log(launcher)
     if args:
         mx.run([launcher] + args)
@@ -587,6 +589,13 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
     if aot_compatible:
         exclude += AOT_INCOMPATIBLE_TESTS
 
+    # just to be able to verify, print C ext mode (also works for CPython)
+    mx.run([python_binary,
+            "-c",
+            "import sys; print('C EXT MODE: ' + (__graalpython__.platform_id if sys.implementation.name == 'graalpython' else 'cpython'))"],
+           nonZeroIsFatal=True,
+           env=env)
+
     # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = _list_graalpython_unittests(paths, exclude)
 
@@ -672,7 +681,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+            run_python_unittests(python_gvm(["sandboxed"]))
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
@@ -688,7 +697,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+            run_hpy_unittests(python_gvm(["sandboxed"]))
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
@@ -706,7 +715,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_svm(["sandboxed"]), args=["--llvm.managed"])
+            run_python_unittests(python_svm(["sandboxed"]))
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:

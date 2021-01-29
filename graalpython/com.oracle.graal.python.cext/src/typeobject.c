@@ -373,42 +373,45 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
 }
 
 // TODO support member flags other than READONLY
-UPCALL_ID(AddMember);
 static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
-	UPCALL_CEXT_VOID(_jls_AddMember,
+	polyglot_invoke(PY_TRUFFLE_CEXT,
+			"AddMember",
 			cls,
 		    native_to_java(type_dict),
 		    native_to_java(mname),
 		    mtype,
 		    moffset,
 		    native_to_java(((mflags & READONLY) == 0) ? Py_True : Py_False),
-		    mdoc ? polyglot_from_string(mdoc, SRC_CS) : native_to_java(Py_None)
+		    mdoc
 	);
 }
 
 void add_getset(PyTypeObject* cls, char* name, getter getter_fun, setter setter_fun, char* doc, void* closure) {
+	void *getter_resolved = getter_fun != NULL ? function_pointer_to_java(getter_fun) : to_java(Py_None);
+	void *setter_resolved = setter_fun != NULL ? function_pointer_to_java(setter_fun) : to_java(Py_None);
 	polyglot_invoke(PY_TRUFFLE_CEXT,
                     "AddGetSet",
                     cls,
                     polyglot_from_string(name, SRC_CS),
-                    getter_fun != NULL ? (getter) native_pointer_to_java(getter_fun) : to_java(Py_None),
-                    setter_fun != NULL ? (setter) native_pointer_to_java(setter_fun) : to_java(Py_None),
-                    doc ? polyglot_from_string(doc, SRC_CS) : native_to_java(Py_None),
+                    getter_resolved,
+                    setter_resolved,
+                    doc,
                     /* do not convert the closure, it is handed to the getter and setter as-is */
                     closure);
 }
 
 static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* result_conversion, void* meth, int flags, void* signature, char* doc) {
-        polyglot_invoke(PY_TRUFFLE_CEXT,
-                       "AddFunction",
-                       cls,
-                       native_to_java(type_dict),
-                       polyglot_from_string(name, SRC_CS),
-                       native_pointer_to_java(result_conversion != NULL ? pytruffle_decorate_function(native_pointer_to_java(meth), result_conversion) : native_pointer_to_java(meth)),
-                       (signature != NULL ? signature : get_method_flags_wrapper(flags)),
-                       doc ? polyglot_from_string(doc, SRC_CS) : native_to_java(Py_None),
-                       (flags) > 0 && ((flags) & METH_CLASS) != 0,
-                       (flags) > 0 && ((flags) & METH_STATIC) != 0);
+	void *resolved_meth = function_pointer_to_java(meth);
+    polyglot_invoke(PY_TRUFFLE_CEXT,
+                   "AddFunction",
+                   cls,
+                   native_to_java(type_dict),
+                   polyglot_from_string(name, SRC_CS),
+                   native_pointer_to_java(result_conversion != NULL ? pytruffle_decorate_function(resolved_meth, result_conversion) : resolved_meth),
+                   (signature != NULL ? signature : get_method_flags_wrapper(flags)),
+                   doc,
+                   (flags) > 0 && ((flags) & METH_CLASS) != 0,
+                   (flags) > 0 && ((flags) & METH_STATIC) != 0);
 }
 
 #define ADD_MEMBER(__javacls__, __tpdict__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__)     \

@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
@@ -51,6 +52,8 @@ import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -102,6 +105,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_dup("(sint32):sint32"),
         call_dup2("(sint32, sint32, sint32):sint32"),
         call_pipe2("([sint32]):sint32"),
+        call_select("(sint32, [sint32], sint32, [sint32], sint32, [sint32], sint32, sint64, sint64, [sint8]):sint32"),
         call_lseek("(sint32, sint64, sint32):sint64"),
         call_ftruncate("(sint32, sint64):sint32"),
         call_fsync("(sint32):sint32"),
@@ -392,6 +396,59 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return fds;
+    }
+
+    @ExportMessage
+    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int largestFD = findMax(readfds, -1);
+        largestFD = findMax(writefds, largestFD);
+        largestFD = findMax(errorfds, largestFD);
+        // This will be treated as boolean array (output parameter), each item indicating if given
+        // FD was selected or not
+        byte[] selected = new byte[readfds.length + writefds.length + errorfds.length];
+        int nfds = largestFD == -1 ? 0 : largestFD + 1;
+        long secs = -1, usecs = -1;
+        if (timeout != null) {
+            secs = timeout.getSeconds();
+            usecs = timeout.getMicroseconds();
+        }
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_select, nfds,
+                        wrap(readfds), readfds.length,
+                        wrap(writefds), writefds.length,
+                        wrap(errorfds), errorfds.length,
+                        secs, usecs, wrap(selected));
+        if (result < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return new SelectResult(
+                        selectFillInResult(readfds, selected, 0),
+                        selectFillInResult(writefds, selected, readfds.length),
+                        selectFillInResult(errorfds, selected, readfds.length + writefds.length));
+
+    }
+
+    private static boolean[] selectFillInResult(int[] fds, byte[] selected, int selectedOffset) {
+        boolean[] res = new boolean[fds.length];
+        for (int i = 0; i < fds.length; i++) {
+            res[i] = selected[selectedOffset + i] != 0;
+        }
+        return res;
+    }
+
+    @TruffleBoundary
+    private static int[] arrayCopyOf(int[] res, int resIdx) {
+        return Arrays.copyOf(res, resIdx);
+    }
+
+    private static int findMax(int[] items, int currentMax) {
+        int max = currentMax;
+        for (int item : items) {
+            if (item > max) {
+                max = item;
+            }
+        }
+        return max;
     }
 
     @ExportMessage
@@ -862,6 +919,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private Object wrap(long[] longs) {
         return context.getEnv().asGuestValue(longs);
+    }
+
+    private Object wrap(int[] ints) {
+        return context.getEnv().asGuestValue(ints);
     }
 
     private Object wrap(Buffer buffer) {

@@ -194,6 +194,7 @@ public abstract class ErrorMessages {
     public static final String COMPLEX_ZERO_TO_NEGATIVE_POWER = "0.0 to a negative or complex power";
     public static final String COMPLEX_MODULO = "complex modulo";
     public static final String COMPLEX_RETURNED_NON_COMPLEX = "__complex__ returned non-complex (type %p)";
+    public static final String CONSTRUCTOR_REQUIRES_A_SEQUENCE = "constructor requires a sequence";
     public static final String CONTIGUOUS_BUFFER = "contiguous buffer";
     public static final String CONVERTER_FUNC_FAILED_TO_SET_ERROR = "converter function failed to set an error on failure";
     public static final String CORRUPTED_CAPI_LIB_OBJ = "corrupted C API library object: %s";
@@ -557,6 +558,10 @@ public abstract class ErrorMessages {
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";
     public static final String SUB_VIEWS_NOT_IMPLEMENTED = "sub-views are not implemented";
     public static final String SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE = "super(type, obj): obj must be an instance or subtype of type";
+    public static final String TAKES_A_DICT_AS_SECOND_ARG_IF_ANY = "%s() takes a dict as second arg, if any";
+    public static final String TAKES_A_D_SEQUENCE = "%s() takes a %d-sequence (%d-sequence given)";
+    public static final String TAKES_AN_AT_LEAST_D_SEQUENCE = "%s() takes an at least %d-sequence (%d-sequence given)";
+    public static final String TAKES_AN_AT_MOST_D_SEQUENCE = "%s() takes an at most %d-sequence (%d-sequence given)";
     public static final String TAKES_D_OR_D_ARGS = "%s takes %d or %d arguments";
     public static final String TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = "%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s";
     public static final String TAKES_D_POS_ARG_S_BUT_GIVEN_S = "%s() takes %d positional argument%s but %d %s given%s";

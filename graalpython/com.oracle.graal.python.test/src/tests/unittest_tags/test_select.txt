@@ -1,3 +1,5 @@
+*graalpython.lib-python.3.test.test_select.SelectTestCase.test_errno
 *graalpython.lib-python.3.test.test_select.SelectTestCase.test_error_conditions
 *graalpython.lib-python.3.test.test_select.SelectTestCase.test_returned_list_identity
 *graalpython.lib-python.3.test.test_select.SelectTestCase.test_select
+*graalpython.lib-python.3.test.test_select.SelectTestCase.test_select_mutated

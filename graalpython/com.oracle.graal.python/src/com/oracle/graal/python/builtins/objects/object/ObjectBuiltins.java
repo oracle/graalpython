@@ -83,15 +83,13 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -248,10 +246,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile overridesInit,
                         @Cached("create(__INIT__)") LookupAttributeInMRONode lookupInit,
                         @Cached("createLookupProfile()") ValueProfile profileInit,
-                        @Cached("createIdentityProfile()") ValueProfile profileInitFactory,
+                        @Cached("createClassProfile()") ValueProfile profileInitFactory,
                         @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
                         @Cached("createLookupProfile()") ValueProfile profileNew,
-                        @Cached("createIdentityProfile()") ValueProfile profileNewFactory) {
+                        @Cached("createClassProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = lib.getLazyPythonClass(self);
                 if (overridesNew.profile(overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class))) {
@@ -371,23 +369,19 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @ImportStatic(SpecialAttributeNames.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization
+
+        @Specialization(guards = "isNone(self)")
+        @SuppressWarnings("unused")
+        String reprNone(VirtualFrame frame, PNone self) {
+            return "None";
+        }
+
+        @Specialization(guards = "!isNone(self)")
         String repr(VirtualFrame frame, Object self,
-                        @Cached("create()") GetClassNode getClass,
-                        @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
-                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
-            if (self == PNone.NONE) {
-                return "None";
-            }
-            Object type = getClass.execute(self);
-            Object moduleName = readModuleNode.executeObject(frame, type);
-            Object qualName = readQualNameNode.executeObject(frame, type);
-            if (moduleName != PNone.NO_VALUE && !BuiltinNames.BUILTINS.equals(moduleName)) {
-                return PythonUtils.format("<%s.%s object at 0x%x>", moduleName, qualName, PythonAbstractObject.systemHashCode(self));
-            }
-            return PythonUtils.format("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(self));
+                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode) {
+            String fqcn = getFullyQualifiedClassNameNode.execute(frame, self);
+            return PythonUtils.format("<%s object at 0x%x>", fqcn, PythonAbstractObject.systemHashCode(self));
         }
     }
 

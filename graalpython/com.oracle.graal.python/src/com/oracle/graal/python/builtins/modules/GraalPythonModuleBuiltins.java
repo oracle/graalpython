@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -185,23 +184,6 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute("stdlib_home", stdlibHome);
         mod.setAttribute("capi_home", capiHome);
         mod.setAttribute("platform_id", toolchain.getIdentifier());
-        mod.setAttribute("flags", core.factory().createTuple(new Object[]{
-                        0, // bytes_warning
-                        PInt.intValue(!context.getOption(PythonOptions.PythonOptimizeFlag)), // debug
-                        PInt.intValue(context.getOption(PythonOptions.DontWriteBytecodeFlag)),  // dont_write_bytecode
-                        0, // hash_randomization
-                        PInt.intValue(context.getOption(PythonOptions.IgnoreEnvironmentFlag)), // ignore_environment
-                        PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
-                        PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
-                        PInt.intValue(context.getOption(PythonOptions.IsolateFlag)), // isolated
-                        PInt.intValue(context.getOption(PythonOptions.NoSiteFlag)), // no_site
-                        PInt.intValue(context.getOption(PythonOptions.NoUserSiteFlag)), // no_user_site
-                        PInt.intValue(context.getOption(PythonOptions.PythonOptimizeFlag)), // optimize
-                        PInt.intValue(context.getOption(PythonOptions.QuietFlag)), // quiet
-                        PInt.intValue(context.getOption(PythonOptions.VerboseFlag)), // verbose
-                        false, // dev_mode
-                        0, // utf8_mode
-        }));
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute("executable_list", executableList);
@@ -504,7 +486,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_toolchain_path", minNumOfPositionalArgs = 1)
+    @Builtin(name = "get_toolchain_tool_path", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
@@ -519,6 +501,29 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             return toolPath.toString();
+        }
+    }
+
+    @Builtin(name = "get_toolchain_paths", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class GetToolchainPathsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        protected Object getPaths(String key) {
+            Env env = getContext().getEnv();
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            List<TruffleFile> pathsList = toolchain.getPaths(key);
+            if (pathsList == null) {
+                return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+            }
+            Object[] paths = new Object[pathsList.size()];
+            int i = 0;
+            for (TruffleFile f : pathsList) {
+                paths[i++] = f.toString();
+            }
+            return factory().createTuple(paths);
         }
     }
 

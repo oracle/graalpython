@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.PGuards.cannotBeOverridden;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
@@ -59,6 +58,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -66,14 +66,16 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -137,6 +139,155 @@ public class SysModuleBuiltins extends PythonBuiltins {
     private static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix"};
     private static final String[] BASE_PREFIX_ATTRIBUTES = new String[]{"base_prefix", "base_exec_prefix"};
 
+    static final StructSequence.Descriptor VERSION_INFO_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PVersionInfo,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "sys.version_info\n" +
+                    "\n" +
+                    "Version information as a named tuple.",
+                    // @formatter:on
+                    5,
+                    new String[]{
+                                    "major", "minor", "micro",
+                                    "releaselevel", "serial",
+                    },
+                    new String[]{
+                                    "Major release number", "Minor release number", "Patch release number",
+                                    "'alpha', 'beta', 'candidate', or 'final'", "Serial release number"
+                    },
+                    false);
+
+    static final StructSequence.Descriptor FLAGS_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PFlags,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "sys.flags\n" +
+                    "\n" +
+                    "Flags provided through command line arguments or environment vars.",
+                    // @formatter:on
+                    15,
+                    new String[]{
+                                    "debug", "inspect", "interactive", "optimize", "dont_write_bytecode",
+                                    "no_user_site", "no_site", "ignore_environment", "verbose",
+                                    "bytes_warning", "quiet", "hash_randomization", "isolated",
+                                    "dev_mode", "utf8_mode"
+                    },
+                    new String[]{
+                                    "-d", "-i", "-i", "-O or -OO", "-B",
+                                    "-s", "-S", "-E", "-v",
+                                    "-b", "-q", "-R", "-I",
+                                    "-X dev", "-X utf8"
+                    },
+                    false);
+
+    static final StructSequence.Descriptor FLOAT_INFO_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PFloatInfo,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "sys.float_info\n" +
+                    "\n" +
+                    "A named tuple holding information about the float type. It contains low level\n" +
+                    "information about the precision and internal representation. Please study\n" +
+                    "your system's :file:`float.h` for more information.",
+                    // @formatter:on
+                    11,
+                    new String[]{
+                                    "max",
+                                    "max_exp",
+                                    "max_10_exp",
+                                    "min",
+                                    "min_exp",
+                                    "min_10_exp",
+                                    "dig",
+                                    "mant_dig",
+                                    "epsilon",
+                                    "radix",
+                                    "rounds"
+                    },
+                    new String[]{
+                                    "DBL_MAX -- maximum representable finite float",
+                                    "DBL_MAX_EXP -- maximum int e such that radix**(e-1) is representable",
+                                    "DBL_MAX_10_EXP -- maximum int e such that 10**e is representable",
+                                    "DBL_MIN -- Minimum positive normalized float",
+                                    "DBL_MIN_EXP -- minimum int e such that radix**(e-1) is a normalized float",
+                                    "DBL_MIN_10_EXP -- minimum int e such that 10**e is a normalized",
+                                    "DBL_DIG -- digits",
+                                    "DBL_MANT_DIG -- mantissa digits",
+                                    "DBL_EPSILON -- Difference between 1 and the next representable float",
+                                    "FLT_RADIX -- radix of exponent",
+                                    "FLT_ROUNDS -- rounding mode"
+                    });
+
+    static final StructSequence.Descriptor INT_INFO_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PIntInfo,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "sys.int_info\n" +
+                    "\n" +
+                    "A named tuple that holds information about Python's\n" +
+                    "internal representation of integers.  The attributes are read only.",
+                    // @formatter:on
+                    2,
+                    new String[]{
+                                    "bits_per_digit", "sizeof_digit"
+                    },
+                    new String[]{
+                                    "size of a digit in bits", "size in bytes of the C type used to represent a digit"
+                    });
+
+    static final StructSequence.Descriptor HASH_INFO_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PHashInfo,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "hash_info\n" +
+                    "\n" +
+                    "A named tuple providing parameters used for computing\n" +
+                    "hashes. The attributes are read only.",
+                    // @formatter:on
+                    9,
+                    new String[]{
+                                    "width", "modulus", "inf", "nan", "imag", "algorithm", "hash_bits",
+                                    "seed_bits", "cutoff"
+                    },
+                    new String[]{
+                                    "width of the type used for hashing, in bits",
+                                    "prime number giving the modulus on which the hash function is based",
+                                    "value to be used for hash of a positive infinity",
+                                    "value to be used for hash of a nan",
+                                    "multiplier used for the imaginary part of a complex number",
+                                    "name of the algorithm for hashing of str, bytes and memoryviews",
+                                    "internal output size of hash algorithm",
+                                    "seed size of hash algorithm",
+                                    "small string optimization cutoff"
+                    });
+
+    static final StructSequence.Descriptor THREAD_INFO_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PThreadInfo,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "sys.thread_info\n" +
+                    "\n" +
+                    "A named tuple holding information about the thread implementation.",
+                    // @formatter:on
+                    3,
+                    new String[]{
+                                    "name", "lock", "version"
+                    },
+                    new String[]{
+                                    "name of the thread implementation", "name of the lock implementation",
+                                    "name and version of the thread library"
+                    });
+
+    public static final StructSequence.Descriptor UNRAISABLE_HOOK_ARGS_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PUnraisableHookArgs,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "UnraisableHookArgs\n" +
+                    "\n" +
+                    "Type used to pass arguments to sys.unraisablehook.",
+                    // @formatter:on
+                    5,
+                    new String[]{
+                                    "exc_type", "exc_value", "exc_traceback", "err_msg", "object"
+                    },
+                    new String[]{
+                                    "Exception type", "Exception value", "Exception traceback", "Error message", "Object causing the exception"
+                    });
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SysModuleBuiltinsFactory.getFactories();
@@ -144,6 +295,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(PythonCore core) {
+        StructSequence.initType(core, VERSION_INFO_DESC);
+        StructSequence.initType(core, FLAGS_DESC);
+        StructSequence.initType(core, FLOAT_INFO_DESC);
+        StructSequence.initType(core, INT_INFO_DESC);
+        StructSequence.initType(core, HASH_INFO_DESC);
+        StructSequence.initType(core, THREAD_INFO_DESC);
+        StructSequence.initType(core, UNRAISABLE_HOOK_ARGS_DESC);
+
         builtinConstants.put("abiflags", "");
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
@@ -151,13 +310,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
         builtinConstants.put("maxsize", MAXSIZE);
-        builtinConstants.put("version_info", core.factory().createTuple(new Object[]{PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL, 0}));
+        builtinConstants.put("version_info", core.factory().createStructSeq(VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL, 0));
         builtinConstants.put("api_version", PythonLanguage.API_VERSION);
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
                         "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
         // the default values taken from JPython
-        builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
+        builtinConstants.put("float_info", core.factory().createStructSeq(FLOAT_INFO_DESC,
                         Double.MAX_VALUE,           // DBL_MAX
                         Double.MAX_EXPONENT + 1,    // DBL_MAX_EXP
                         308,                        // DBL_MIN_10_EXP
@@ -169,18 +328,20 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         2.2204460492503131e-16,     // DBL_EPSILON
                         2,                          // FLT_RADIX
                         1                           // FLT_ROUNDS
-        }));
-        builtinConstants.put("hash_info", core.factory().createTuple(new Object[]{
-                        "java",                     // algorithm
-                        0,                          // cutoff
-                        64,                         // hash_bits
-                        HASH_IMAG,                  // imag
-                        HASH_INF,                   // inf
-                        HASH_MODULUS,               // modulus
-                        HASH_NAN,                   // nan
-                        0,                          // seed_bits
+        ));
+        builtinConstants.put("int_info", core.factory().createStructSeq(INT_INFO_DESC, 32, 4));
+        builtinConstants.put("hash_info", core.factory().createStructSeq(HASH_INFO_DESC,
                         64,                         // width
-        }));
+                        HASH_MODULUS,               // modulus
+                        HASH_INF,                   // inf
+                        HASH_NAN,                   // nan
+                        HASH_IMAG,                  // imag
+                        "java",                     // algorithm
+                        64,                         // hash_bits
+                        0,                          // seed_bits
+                        0                           // cutoff
+        ));
+        builtinConstants.put("thread_info", core.factory().createStructSeq(THREAD_INFO_DESC, PNone.NONE, PNone.NONE, PNone.NONE));
         builtinConstants.put("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 
         String os = PythonUtils.getPythonOSName();
@@ -271,6 +432,23 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
+        sys.setAttribute("flags", core.factory().createStructSeq(SysModuleBuiltins.FLAGS_DESC,
+                        PInt.intValue(!context.getOption(PythonOptions.PythonOptimizeFlag)), // debug
+                        PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
+                        PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
+                        PInt.intValue(context.getOption(PythonOptions.PythonOptimizeFlag)), // optimize
+                        PInt.intValue(context.getOption(PythonOptions.DontWriteBytecodeFlag)),  // dont_write_bytecode
+                        PInt.intValue(context.getOption(PythonOptions.NoUserSiteFlag)), // no_user_site
+                        PInt.intValue(context.getOption(PythonOptions.NoSiteFlag)), // no_site
+                        PInt.intValue(context.getOption(PythonOptions.IgnoreEnvironmentFlag)), // ignore_environment
+                        PInt.intValue(context.getOption(PythonOptions.VerboseFlag)), // verbose
+                        0, // bytes_warning
+                        PInt.intValue(context.getOption(PythonOptions.QuietFlag)), // quiet
+                        0, // hash_randomization
+                        PInt.intValue(context.getOption(PythonOptions.IsolateFlag)), // isolated
+                        false, // dev_mode
+                        0 // utf8_mode
+        ));
     }
 
     private static String getScriptPath(Env env, String[] args) {
@@ -389,25 +567,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "intern", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        String doString(String s) {
-            return s.intern();
+        private PString doIntern(Object str, StringNodes.InternStringNode internNode) {
+            final PString interned = internNode.execute(str);
+            if (interned == null) {
+                throw raise(TypeError, ErrorMessages.CANNOT_INTERN_P, str);
+            }
+            return interned;
         }
 
-        @Specialization(limit = "1")
-        String doPString(PString ps,
-                        @CachedLibrary("ps") PythonObjectLibrary lib,
-                        @Cached StringMaterializeNode materializeNode) {
-            if (cannotBeOverridden(lib.getLazyPythonClass(ps))) {
-                return doString(materializeNode.execute(ps));
-            } else {
-                throw raise(TypeError, ErrorMessages.CANNOT_INTERN_P, ps);
-            }
+        @Specialization
+        Object doString(String s,
+                        @Shared("internNode") @Cached StringNodes.InternStringNode internNode) {
+            return doIntern(s, internNode);
+        }
+
+        @Specialization
+        Object doPString(PString s,
+                        @Shared("internNode") @Cached StringNodes.InternStringNode internNode) {
+            return doIntern(s, internNode);
         }
 
         @Fallback
-        String doOthers(Object obj) {
+        Object doOthers(Object obj) {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "intern()", "str", obj);
         }
     }

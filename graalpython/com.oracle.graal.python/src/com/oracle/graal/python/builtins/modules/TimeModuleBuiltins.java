@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -88,6 +89,37 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final long PERF_COUNTER_START = TruffleOptions.AOT ? 0 : System.nanoTime();
     private static final String CTIME_FORMAT = "%s %s %2d %02d:%02d:%02d %d";
 
+    private static final StructSequence.Descriptor STRUCT_TIME_DESC = new StructSequence.Descriptor(
+                    PythonBuiltinClassType.PStructTime,
+                    // @formatter:off The formatter joins these lines making it less readable
+                    "The time value as returned by gmtime(), localtime(), and strptime(), and\n" +
+                    " accepted by asctime(), mktime() and strftime().  May be considered as a\n" +
+                    " sequence of 9 integers.\n\n" +
+                    " Note that several fields' values are not the same as those defined by\n" +
+                    " the C language standard for struct tm.  For example, the value of the\n" +
+                    " field tm_year is the actual year, not year - 1900.  See individual\n" +
+                    " fields' descriptions for details.",
+                    // @formatter:on
+                    9,
+                    new String[]{
+                                    "tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min", "tm_sec",
+                                    "tm_wday", "tm_yday", "tm_isdst", "tm_zone", "tm_gmtoff"
+                    },
+                    new String[]{
+                                    "year, for example, 1993",
+                                    "month of year, range [1, 12]",
+                                    "day of month, range [1, 31]",
+                                    "hours, range [0, 23]",
+                                    "minutes, range [0, 59]",
+                                    // compatibility note: CPython has an extra ')'
+                                    "seconds, range [0, 61]",
+                                    "day of week, range [0, 6], Monday is 0",
+                                    "day of year, range [1, 366]",
+                                    "1 if summer time is in effect, 0 if not, and -1 if unknown",
+                                    "abbreviation of timezone name",
+                                    "offset from UTC in seconds"
+                    });
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TimeModuleBuiltinsFactory.getFactories();
@@ -111,6 +143,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         int rawOffsetSeconds = defaultTimeZone.getRawOffset() / -1000;
         builtinConstants.put("timezone", rawOffsetSeconds);
         builtinConstants.put("altzone", rawOffsetSeconds - 3600);
+        builtinConstants.put("_STRUCT_TM_ITEMS", 11);
+        StructSequence.initType(core, STRUCT_TIME_DESC);
     }
 
     @TruffleBoundary
@@ -222,7 +256,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.gmtime([seconds])
-    @Builtin(name = "__truffle_gmtime_tuple__", minNumOfPositionalArgs = 1)
+    @Builtin(name = "gmtime", maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
@@ -230,12 +264,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PTuple gmtime(VirtualFrame frame, Object seconds,
                         @Cached ToLongTime toLongTime) {
-            return factory().createTuple(getTimeStruct(toLongTime.execute(frame, seconds), false));
+            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(toLongTime.execute(frame, seconds), false));
         }
     }
 
     // time.localtime([seconds])
-    @Builtin(name = "__truffle_localtime_tuple__", maxNumOfPositionalArgs = 1)
+    @Builtin(name = "localtime", maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
@@ -243,7 +277,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PTuple localtime(VirtualFrame frame, Object seconds,
                         @Cached ToLongTime toLongTime) {
-            return factory().createTuple(getTimeStruct(toLongTime.execute(frame, seconds), true));
+            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(toLongTime.execute(frame, seconds), true));
         }
     }
 

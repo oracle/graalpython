@@ -174,15 +174,19 @@ public final class ExceptionUtils {
     @TruffleBoundary
     public static void printJavaStackTrace(PException e) {
         LazyTraceback traceback = e.getTraceback();
+        // Find the exception for the original raise site (not for subsequent reraises)
         while (traceback != null && traceback.getNextChain() != null) {
             traceback = traceback.getNextChain();
         }
         if (traceback != null) {
             PException exception = traceback.getException();
+            // PException itself has Java-level stacktraces always disabled.
+            // In case of PExceptions that wrap real Java exceptions, the cause has the stacktrace
+            // for the original exception.
+            // In case of ordinary PExceptions, when WithJavaStacktrace is > 1, they have a
+            // synthetic cause that carries the stacktrace created at the same place.
             if (exception.getCause() != null && exception.getCause().getStackTrace().length != 0) {
                 exception.getCause().printStackTrace();
-            } else {
-                exception.printStackTrace();
             }
         }
     }

@@ -38,6 +38,8 @@
 # SOFTWARE.
 
 
+import types
+
 def test_lambdas_as_function_default_argument_values():
     globs = {}
     exec("""
@@ -599,3 +601,92 @@ def test_fstring_basic():
     assert f'a}}b' == "a}b"
     assert f'a{{}}' == "a{}"
 
+def test_optimize():
+    codestr = '''
+"""There is module doc"""
+
+assert "assert in module"
+
+class MyClass():
+  """There is class doc"""
+  assert "assert in class"
+  def method1(self):
+    """There is method doc"""
+    assert "assert in method"
+
+def fn():
+  """There is function doc"""
+  assert "assert in function"
+
+def gen():
+  """There is generator doc"""
+  assert "assert in generator"""
+  yield 10
+  yield 20
+'''
+
+    def check(code, optimize):
+        def check_assert(code, value):
+            if optimize < 1:
+                assert value in code.co_consts, "'{}' is not in constants: {} (optimize={})".format(value, code.co_consts, optimize)
+            else:
+                assert value not in code.co_consts, "'{}' is in constants: {} (optimize={})".format(value, code.co_consts, optimize)
+
+        def check_doc(code, doc):
+            if optimize < 2:
+                assert doc in code.co_consts, "'{}' is not in constants: {} (optimize={})".format(doc, code.co_consts, optimize)
+            else:
+                assert doc not in code.co_consts, "'{}' is in constants: {} (optimize={})".format(doc, code.co_consts, optimize)
+
+        check_doc(code, 'There is module doc')
+        check_assert(code, 'assert in module')
+        for code2 in code.co_consts:
+            if type(code2) == types.CodeType:
+                if code2.co_name == 'MyClass':
+                    check_doc(code2, 'There is class doc')
+                    check_assert(code2, 'assert in class')
+                    for code3 in code2.co_consts:
+                        if type(code3) == types.CodeType:
+                            check_doc(code3, 'There is method doc')
+                            check_assert(code3, 'assert in method')
+                if code2.co_name == 'fn':
+                    check_doc(code2, 'There is function doc')
+                    check_assert(code2, 'assert in function')
+                if code2.co_name == 'gen':
+                    check_doc(code2, 'There is generator doc')
+                    check_assert(code2, 'assert in generator')
+    
+    # no optimization, default level
+    code = compile(codestr, "<test>", "exec")
+    check(code, 0)
+    # no optimization, level -1
+    code = compile(codestr, "<test-1>", "exec", optimize=-1)
+    check(code, -1)
+    # no optimization, level 0 
+    code = compile(codestr, "<test0>", "exec", optimize=0)
+    check(code, 0)
+    # optimization, level 1 -> skip asserts
+    code = compile(codestr, "<test1>", "exec", optimize=1)
+    check(code, 1)
+    # optimization, level 2 -> skip asserts and documentations
+    codestr2 = codestr + ' ';
+    code2 = compile(codestr2, "<test2>", "exec", optimize=2)
+    check(code2, 2)
+
+def test_optimize_doc():
+    
+    codestr = '''
+def fn():
+  "Function Documentation"
+'''
+    code = compile(codestr, "<test>", "exec")
+    for const in code.co_consts:
+        if type(const) == types.CodeType:
+            code1 = const
+    code = compile(codestr, "<testOptimize>", "exec", optimize=2)
+    for const in code.co_consts:
+        if type(const) == types.CodeType:
+            code2 = const
+    assert "Function Documentation" in code1.co_consts
+    assert "Function Documentation" not in code2.co_consts
+    assert exec(code1) == exec(code2)

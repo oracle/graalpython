@@ -71,7 +71,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.SepExpectByt
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -137,7 +137,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 context.acquireInteropLock();
             }
             try {
-                CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
+                CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
             } finally {
                 if (shouldLock) {
                     context.releaseInteropLock();
@@ -351,11 +351,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 Object otherXPtr = otherPtr;
                 int otherXOffset = otherOffset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    selfXPtr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, selfPtr, selfOffset, self.getBufferSuboffsets()[dim], self.getLength());
+                    selfXPtr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, selfPtr, selfOffset, self.getBufferSuboffsets()[dim], self.getLength());
                     selfXOffset = 0;
                 }
                 if (other.getBufferSuboffsets() != null && other.getBufferSuboffsets()[dim] >= 0) {
-                    otherXPtr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, otherPtr, otherOffset, other.getBufferSuboffsets()[dim], other.getLength());
+                    otherXPtr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, otherPtr, otherOffset, other.getBufferSuboffsets()[dim], other.getLength());
                     otherXOffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -434,7 +434,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 Object xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xptr = getCallCapiFunction().call(NativeCAPISymbol.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -744,7 +744,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 Object state = foreignCallContext.enter(frame, getContext(), this);
                 ManagedBuffer buffer = self.getManagedBuffer();
                 try {
-                    callRelease.call(NativeCAPISymbols.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
+                    callRelease.call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
                 } finally {
                     foreignCallContext.exit(frame, getContext(), state);
                 }

@@ -25,16 +25,16 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -71,7 +71,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
@@ -1672,7 +1672,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    @ImportStatic(NativeCAPISymbols.class)
+    @ImportStatic(NativeCAPISymbol.class)
     @GenerateUncached
     public abstract static class StorageToNativeNode extends Node {
 
@@ -3492,7 +3492,7 @@ public abstract class SequenceStorageNodes {
         }
 
         private static NativeSequenceStorage reallocNativeSequenceStorage(NativeSequenceStorage s, int requestedCapacity, InteropLibrary lib, PCallCapiFunction callCapiFunction, PRaiseNode raiseNode,
-                        String function) {
+                        NativeCAPISymbol function) {
             if (requestedCapacity > s.getCapacity()) {
                 int newCapacity;
                 try {
@@ -3678,12 +3678,9 @@ public abstract class SequenceStorageNodes {
     public abstract static class DeleteNode extends NormalizingNode {
         @Child private DeleteItemNode deleteItemNode;
         @Child private DeleteSliceNode deleteSliceNode;
-        @Child private PRaiseNode raiseNode;
-        private final String keyTypeErrorMessage;
 
-        public DeleteNode(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
+        public DeleteNode(NormalizeIndexNode normalizeIndexNode) {
             super(normalizeIndexNode);
-            this.keyTypeErrorMessage = keyTypeErrorMessage;
         }
 
         public abstract void execute(VirtualFrame frame, SequenceStorage s, Object indexOrSlice);
@@ -3729,15 +3726,6 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Fallback
-        protected void doInvalidKey(@SuppressWarnings("unused") SequenceStorage storage, Object key) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(TypeError, keyTypeErrorMessage, key);
-        }
-
         private DeleteItemNode getDeleteItemNode() {
             if (deleteItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -3754,28 +3742,12 @@ public abstract class SequenceStorageNodes {
             return deleteSliceNode;
         }
 
-        public static DeleteNode createNotNormalized() {
-            return DeleteNodeGen.create(null, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
-        }
-
         public static DeleteNode create(NormalizeIndexNode normalizeIndexNode) {
-            return DeleteNodeGen.create(normalizeIndexNode, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
+            return DeleteNodeGen.create(normalizeIndexNode);
         }
 
         public static DeleteNode create() {
-            return DeleteNodeGen.create(NormalizeIndexNode.create(), ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES);
-        }
-
-        public static DeleteNode createNotNormalized(String keyTypeErrorMessage) {
-            return DeleteNodeGen.create(null, keyTypeErrorMessage);
-        }
-
-        public static DeleteNode create(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
-            return DeleteNodeGen.create(normalizeIndexNode, keyTypeErrorMessage);
-        }
-
-        public static DeleteNode create(String keyTypeErrorMessage) {
-            return DeleteNodeGen.create(NormalizeIndexNode.create(), keyTypeErrorMessage);
+            return DeleteNodeGen.create(NormalizeIndexNode.create());
         }
     }
 

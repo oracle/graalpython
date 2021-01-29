@@ -68,7 +68,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -218,14 +217,5 @@ public abstract class CallNode extends PNodeWithContext {
             return builtinMethodCallBuiltinDirect(frame, method, arguments, keywords, dispatch, createArgs);
         }
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, callAttrGetterNode.execute(callableObject, SpecialMethodNames.__CALL__));
-    }
-
-    @Override
-    public Node copy() {
-        if (isAdoptable()) {
-            return create();
-        } else {
-            return super.copy();
-        }
     }
 }

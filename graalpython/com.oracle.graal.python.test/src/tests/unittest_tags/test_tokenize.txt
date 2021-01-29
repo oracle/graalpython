@@ -40,6 +40,9 @@
 *graalpython.lib-python.3.test.test_tokenize.TestRoundtrip.test_backslash_continuation
 *graalpython.lib-python.3.test.test_tokenize.TestRoundtrip.test_continuation
 *graalpython.lib-python.3.test.test_tokenize.TestRoundtrip.test_indentation_semantics_retained
+*graalpython.lib-python.3.test.test_tokenize.TestRoundtrip.test_random_files
+*graalpython.lib-python.3.test.test_tokenize.TestRoundtrip.test_roundtrip
+*graalpython.lib-python.3.test.test_tokenize.TestRoundtrip.test_string_concatenation
 *graalpython.lib-python.3.test.test_tokenize.TestTokenize.test_exact_type
 *graalpython.lib-python.3.test.test_tokenize.TestTokenize.test_oneline_defs
 *graalpython.lib-python.3.test.test_tokenize.TestTokenize.test_pathological_trailing_whitespace
@@ -65,6 +68,7 @@
 *graalpython.lib-python.3.test.test_tokenize.TokenizeTest.test_non_ascii_identifiers
 *graalpython.lib-python.3.test.test_tokenize.TokenizeTest.test_selector
 *graalpython.lib-python.3.test.test_tokenize.TokenizeTest.test_shift
+*graalpython.lib-python.3.test.test_tokenize.TokenizeTest.test_string
 *graalpython.lib-python.3.test.test_tokenize.TokenizeTest.test_tabs
 *graalpython.lib-python.3.test.test_tokenize.TokenizeTest.test_unary
 *graalpython.lib-python.3.test.test_tokenize.TokenizeTest.test_underscore_literals
