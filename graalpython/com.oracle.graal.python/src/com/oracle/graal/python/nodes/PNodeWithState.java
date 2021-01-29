@@ -52,12 +52,24 @@ public abstract class PNodeWithState extends PNodeWithContext {
     @Child private PythonObjectFactory objectFactory;
     @Child private PRaiseNode raiseNode;
 
-    protected final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
+    private PRaiseNode ensureRaiseNode() {
         if (raiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             raiseNode = insert(PRaiseNode.create());
         }
-        return raiseNode.raise(type, format, arguments);
+        return raiseNode;
+    }
+
+    protected final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
+        return ensureRaiseNode().raise(type, format, arguments);
+    }
+
+    protected final PException raise(PythonBuiltinClassType type) {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return ensureRaiseNode().raise(type);
     }
 
     protected final PythonObjectFactory factory() {
