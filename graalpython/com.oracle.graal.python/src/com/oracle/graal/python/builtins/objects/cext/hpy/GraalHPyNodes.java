@@ -456,7 +456,7 @@ public class GraalHPyNodes {
             // CPy-style methods
             // TODO(fa) support static and class methods
             PRootNode rootNode = createWrapperRootNode(language, flags, methodName);
-            PKeyword[] kwDefaults = {new PKeyword(ExternalFunctionNodes.KW_CALLABLE, mlMethObj)};
+            PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, PythonUtils.getOrCreateCallTarget(rootNode));
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
@@ -926,7 +926,7 @@ public class GraalHPyNodes {
                 case Py_tp_repr:
                     Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
                     RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, SpecialMethodNames.__REPR__));
-                    PKeyword[] kwDefaults = {new PKeyword(ExternalFunctionNodes.KW_CALLABLE, pfuncPtr)};
+                    PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(pfuncPtr);
                     PBuiltinFunction method = factory.createBuiltinFunction(SpecialMethodNames.__REPR__, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, callTarget);
                     writeAttributeToObjectNode.execute(enclosingType, SpecialMethodNames.__REPR__, method);
                     break;

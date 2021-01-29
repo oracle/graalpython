@@ -512,7 +512,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, false);
             if (wrappedCallTarget != null) {
-                return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(managedCallable), wrappedCallTarget);
+                return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(managedCallable), wrappedCallTarget);
             }
             return managedCallable;
         }
@@ -542,7 +542,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, false);
             if (wrappedCallTarget != null) {
-                return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(managedCallable), wrappedCallTarget);
+                return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(managedCallable), wrappedCallTarget);
             }
 
             // Special case: if the returned 'wrappedCallTarget' is null, this indicates we want to
@@ -556,7 +556,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, true);
-            return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(callable), wrappedCallTarget);
+            return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(callable), wrappedCallTarget);
         }
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -570,7 +570,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, name));
-            return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(callable), callTarget);
+            return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(callable), callTarget);
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -585,10 +585,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         static boolean isDecoratedManagedFunction(Object obj) {
             return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
-        }
-
-        private static PKeyword[] createKwDefaults(Object callable) {
-            return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable)};
         }
 
         public static CreateFunctionNode create() {

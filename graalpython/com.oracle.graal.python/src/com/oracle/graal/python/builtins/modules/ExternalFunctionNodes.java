@@ -114,8 +114,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExternalFunctionNodes {
 
-    public static final String KW_CALLABLE = "$callable";
+    private static final String KW_CALLABLE = "$callable";
     private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
+
+    public static PKeyword[] createKwDefaults(Object callable) {
+        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable)};
+    }
 
     public static final class MethDirectRoot extends PRootNode {
 
