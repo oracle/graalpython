@@ -80,6 +80,7 @@ class TestSlots(HPyTest):
         assert p[21] == 42
         assert len(p) == 1234
 
+    @pytest.mark.xfail
     def test_tp_destroy(self):
         import gc
         mod = self.make_module("""
