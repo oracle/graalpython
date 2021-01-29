@@ -122,7 +122,7 @@ import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
-import com.oracle.graal.python.builtins.objects.ssl.SSLProtocolVersion;
+import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
@@ -1015,8 +1015,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
     }
 
-    public PSSLContext createSSLContext(Object clazz, SSLProtocolVersion version, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {
-        return trace(new PSSLContext(clazz, getShape(clazz), version, verifyFlags, checkHostname, verifyMode, context));
+    public PSSLContext createSSLContext(Object clazz, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {
+        return trace(new PSSLContext(clazz, getShape(clazz), method, verifyFlags, checkHostname, verifyMode, context));
     }
 
     public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, PSocket socket) {

@@ -28,6 +28,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -113,21 +114,31 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization
         PSSLContext createContext(Object type, int protocol) {
-            SSLProtocolVersion version = SSLProtocolVersion.fromPythonId(protocol);
-            if (version == null) {
+            SSLMethod method = SSLMethod.fromPythonId(protocol);
+            if (method == null) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
             }
             try {
                 boolean checkHostname;
                 int verifyMode;
-                if (version == SSLProtocolVersion.TLS_CLIENT) {
+                if (method == SSLMethod.TLS_CLIENT) {
                     checkHostname = true;
                     verifyMode = SSLModuleBuiltins.SSL_CERT_REQUIRED;
                 } else {
                     checkHostname = false;
                     verifyMode = SSLModuleBuiltins.SSL_CERT_NONE;
                 }
-                return factory().createSSLContext(type, version, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, createSSLContext(version));
+                SSLContext sslContext = createSSLContext(method);
+                PSSLContext context = factory().createSSLContext(type, method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, sslContext);
+                long options = SSLOptions.DEFAULT_OPTIONS;
+                if (method != SSLMethod.SSL2) {
+                    options |= SSLOptions.SSL_OP_NO_SSLv2;
+                }
+                if (method != SSLMethod.SSL3) {
+                    options |= SSLOptions.SSL_OP_NO_SSLv3;
+                }
+                context.setOptions(options);
+                return context;
             } catch (NoSuchAlgorithmException e) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e.getMessage());
             } catch (KeyManagementException e) {
@@ -137,7 +148,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static SSLContext createSSLContext(SSLProtocolVersion version) throws NoSuchAlgorithmException, KeyManagementException {
+        private static SSLContext createSSLContext(SSLMethod version) throws NoSuchAlgorithmException, KeyManagementException {
             SSLContext context = SSLContext.getInstance(version.getJavaId());
             context.init(null, null, null);
             return context;
@@ -154,6 +165,17 @@ public class SSLContextBuiltins extends PythonBuiltins {
     static SSLEngine createSSLEngine(Node node, PSSLContext context, boolean serverMode, String serverHostname, Object session) {
         SSLEngine engine = context.getContext().createSSLEngine();
         engine.setUseClientMode(!serverMode);
+        List<String> selectedProtocols = new ArrayList<>(SSLModuleBuiltins.supportedProtocols);
+        selectedProtocols.retainAll(Arrays.asList(engine.getSupportedProtocols()));
+        if (context.getMethod().isSingleVersion()) {
+            selectedProtocols.retainAll(Collections.singletonList(context.getMethod().getJavaId()));
+        }
+        for (SSLProtocol protocol : SSLProtocol.values()) {
+            if ((context.getOptions() & protocol.getDisableOption()) != 0) {
+                selectedProtocols.remove(protocol.getName());
+            }
+        }
+        engine.setEnabledProtocols(selectedProtocols.toArray(new String[0]));
         SSLParameters parameters = new SSLParameters();
         if (serverHostname != null) {
             try {
@@ -175,8 +197,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         return engine;
     }
 
-    @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
-    @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
+    @Builtin(name = "_wrap_socket", minNumOfPositionalArgs = 3, parameterNames = {"$self", "sock", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
+    @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean)
     @GenerateNodeFactory
     abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
         @Specialization
@@ -206,8 +228,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_wrap_bio", minNumOfPositionalArgs = 3, parameterNames = {"$self", "incoming", "outgoing", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
-    @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
+    @Builtin(name = "_wrap_bio", minNumOfPositionalArgs = 4, parameterNames = {"$self", "incoming", "outgoing", "server_side", "server_hostname"}, keywordOnlyNames = {"owner", "session"})
+    @ArgumentClinic(name = "server_side", conversion = ArgumentClinic.ClinicConversion.Boolean)
     @GenerateNodeFactory
     abstract static class WrapBIONode extends PythonClinicBuiltinNode {
         @Specialization
@@ -283,7 +305,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     abstract static class ProtocolNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int getProtocol(PSSLContext self) {
-            return self.getVersion().getPythonId();
+            return self.getMethod().getPythonId();
         }
     }
 
@@ -395,7 +417,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (num < 0) {
                 throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "value");
             }
-            if (self.getVersion() != SSLProtocolVersion.TLS_SERVER) {
+            if (self.getMethod() != SSLMethod.TLS_SERVER) {
                 throw raise(ValueError, ErrorMessages.SSL_CTX_NOT_SERVER_CONTEXT);
             }
             self.setNumTickets(num);

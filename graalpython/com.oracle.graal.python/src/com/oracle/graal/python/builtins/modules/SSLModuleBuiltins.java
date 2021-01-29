@@ -2,7 +2,14 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -12,7 +19,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.ALPNHelper;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
-import com.oracle.graal.python.builtins.objects.ssl.SSLProtocolVersion;
+import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
+import com.oracle.graal.python.builtins.objects.ssl.SSLOptions;
+import com.oracle.graal.python.builtins.objects.ssl.SSLProtocol;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -30,34 +39,14 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     // Taken from CPython
     static final String DEFAULT_CIPHERS = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
 
+    public static List<String> supportedProtocols;
+
     public static final int SSL_CERT_NONE = 0;
     public static final int SSL_CERT_OPTIONAL = 1;
     public static final int SSL_CERT_REQUIRED = 2;
 
     public static final int PROTO_MINIMUM_SUPPORTED = -2;
     public static final int PROTO_MAXIMUM_SUPPORTED = -1;
-    public static final int PROTO_SSLv3 = 0x0300;
-    public static final int PROTO_TLSv1 = 0x0301;
-    public static final int PROTO_TLSv1_1 = 0x0302;
-    public static final int PROTO_TLSv1_2 = 0x0303;
-    public static final int PROTO_TLSv1_3 = 0x0304;
-
-    private static final int SSL_OP_CRYPTOPRO_TLSEXT_BUG = 0x80000000;
-    private static final int SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS = 0x00000800;
-    private static final int SSL_OP_LEGACY_SERVER_CONNECT = 0x00000004;
-    private static final int SSL_OP_TLSEXT_PADDING = 0x00000010;
-    private static final int SSL_OP_SAFARI_ECDHE_ECDSA_BUG = 0x00000040;
-
-    private static final int SSL_OP_ALL = (SSL_OP_CRYPTOPRO_TLSEXT_BUG | SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS | SSL_OP_LEGACY_SERVER_CONNECT | SSL_OP_TLSEXT_PADDING | SSL_OP_SAFARI_ECDHE_ECDSA_BUG);
-
-    private static final int OP_ALL = SSL_OP_ALL & ~SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
-
-    private static final int SSL_OP_NO_SSLv2 = 0;
-    private static final int SSL_OP_NO_SSLv3 = 33554432;
-    private static final int SSL_OP_NO_TLSv1 = 67108864;
-    private static final int SSL_OP_NO_TLSv1_1 = 268435456;
-    private static final int SSL_OP_NO_TLSv1_2 = 134217728;
-    private static final int SSL_OP_NO_TLSv1_3 = 536870912;
 
     private static final int X509_V_FLAG_CRL_CHECK = 0x4;
     private static final int X509_V_FLAG_CRL_CHECK_ALL = 0x8;
@@ -67,6 +56,22 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        try {
+            SSLParameters supportedSSLParameters = SSLContext.getDefault().getSupportedSSLParameters();
+            List<String> protocols = Arrays.stream(SSLProtocol.values()).map(SSLProtocol::getName).collect(Collectors.toList());
+            protocols.retainAll(Arrays.asList(supportedSSLParameters.getProtocols()));
+            // TODO JDK supports it, but we would need to make sure that all the related facilities
+            // work
+            protocols.remove(SSLProtocol.TLSv1_3.getName());
+            supportedProtocols = Collections.unmodifiableList(protocols);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -85,35 +90,37 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("CERT_NONE", SSL_CERT_NONE);
         module.setAttribute("CERT_OPTIONAL", SSL_CERT_OPTIONAL);
         module.setAttribute("CERT_REQUIRED", SSL_CERT_REQUIRED);
-        // TODO enable
+
         module.setAttribute("HAS_SNI", true);
+        // TODO enable
         module.setAttribute("HAS_ECDH", false);
+        // TODO enable
         module.setAttribute("HAS_NPN", false);
         module.setAttribute("HAS_ALPN", ALPNHelper.hasAlpn());
-        module.setAttribute("HAS_SSLv2", false);
-        module.setAttribute("HAS_SSLv3", false);
-        module.setAttribute("HAS_TLSv1", false);
-        module.setAttribute("HAS_TLSv1_1", false);
-        module.setAttribute("HAS_TLSv1_2", false);
-        module.setAttribute("HAS_TLSv1_3", false);
+        module.setAttribute("HAS_SSLv2", supportedProtocols.contains(SSLProtocol.SSLv2.getName()));
+        module.setAttribute("HAS_SSLv3", supportedProtocols.contains(SSLProtocol.SSLv3.getName()));
+        module.setAttribute("HAS_TLSv1", supportedProtocols.contains(SSLProtocol.TLSv1.getName()));
+        module.setAttribute("HAS_TLSv1_1", supportedProtocols.contains(SSLProtocol.TLSv1_1.getName()));
+        module.setAttribute("HAS_TLSv1_2", supportedProtocols.contains(SSLProtocol.TLSv1_2.getName()));
+        module.setAttribute("HAS_TLSv1_3", supportedProtocols.contains(SSLProtocol.TLSv1_3.getName()));
 
         module.setAttribute("PROTO_MINIMUM_SUPPORTED", PROTO_MINIMUM_SUPPORTED);
         module.setAttribute("PROTO_MAXIMUM_SUPPORTED", PROTO_MAXIMUM_SUPPORTED);
-        module.setAttribute("PROTO_SSLv3", PROTO_SSLv3);
-        module.setAttribute("PROTO_TLSv1", PROTO_TLSv1);
-        module.setAttribute("PROTO_TLSv1_1", PROTO_TLSv1_1);
-        module.setAttribute("PROTO_TLSv1_2", PROTO_TLSv1_2);
-        module.setAttribute("PROTO_TLSv1_3", PROTO_TLSv1_3);
+        module.setAttribute("PROTO_SSLv3", SSLProtocol.SSLv3.getId());
+        module.setAttribute("PROTO_TLSv1", SSLProtocol.TLSv1.getId());
+        module.setAttribute("PROTO_TLSv1_1", SSLProtocol.TLSv1_1.getId());
+        module.setAttribute("PROTO_TLSv1_2", SSLProtocol.TLSv1_2.getId());
+        module.setAttribute("PROTO_TLSv1_3", SSLProtocol.TLSv1_3.getId());
 
-        module.setAttribute("PROTOCOL_SSLv2", SSLProtocolVersion.SSL2.getPythonId());
-        module.setAttribute("PROTOCOL_SSLv3", SSLProtocolVersion.SSL3.getPythonId());
-        module.setAttribute("PROTOCOL_SSLv23", SSLProtocolVersion.TLS.getPythonId());
-        module.setAttribute("PROTOCOL_TLS", SSLProtocolVersion.TLS.getPythonId());
-        module.setAttribute("PROTOCOL_TLS_CLIENT", SSLProtocolVersion.TLS_CLIENT.getPythonId());
-        module.setAttribute("PROTOCOL_TLS_SERVER", SSLProtocolVersion.TLS_SERVER.getPythonId());
-        module.setAttribute("PROTOCOL_TLSv1", SSLProtocolVersion.TLS1.getPythonId());
-        module.setAttribute("PROTOCOL_TLSv1_1", SSLProtocolVersion.TLS1_1.getPythonId());
-        module.setAttribute("PROTOCOL_TLSv1_2", SSLProtocolVersion.TLS1_2.getPythonId());
+        module.setAttribute("PROTOCOL_SSLv2", SSLMethod.SSL2.getPythonId());
+        module.setAttribute("PROTOCOL_SSLv3", SSLMethod.SSL3.getPythonId());
+        module.setAttribute("PROTOCOL_SSLv23", SSLMethod.TLS.getPythonId());
+        module.setAttribute("PROTOCOL_TLS", SSLMethod.TLS.getPythonId());
+        module.setAttribute("PROTOCOL_TLS_CLIENT", SSLMethod.TLS_CLIENT.getPythonId());
+        module.setAttribute("PROTOCOL_TLS_SERVER", SSLMethod.TLS_SERVER.getPythonId());
+        module.setAttribute("PROTOCOL_TLSv1", SSLMethod.TLS1.getPythonId());
+        module.setAttribute("PROTOCOL_TLSv1_1", SSLMethod.TLS1_1.getPythonId());
+        module.setAttribute("PROTOCOL_TLSv1_2", SSLMethod.TLS1_2.getPythonId());
 
         module.setAttribute("SSL_ERROR_SSL", SSLErrorCode.ERROR_SSL.getErrno());
         module.setAttribute("SSL_ERROR_WANT_READ", SSLErrorCode.ERROR_WANT_READ.getErrno());
@@ -125,13 +132,13 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("SSL_ERROR_EOF", SSLErrorCode.ERROR_EOF.getErrno());
         module.setAttribute("SSL_ERROR_INVALID_ERROR_CODE", 10);
 
-        module.setAttribute("OP_ALL", OP_ALL);
-        module.setAttribute("OP_NO_SSLv2", SSL_OP_NO_SSLv2);
-        module.setAttribute("OP_NO_SSLv3", SSL_OP_NO_SSLv3);
-        module.setAttribute("OP_NO_TLSv1", SSL_OP_NO_TLSv1);
-        module.setAttribute("OP_NO_TLSv1_1", SSL_OP_NO_TLSv1_1);
-        module.setAttribute("OP_NO_TLSv1_2", SSL_OP_NO_TLSv1_2);
-        module.setAttribute("OP_NO_TLSv1_3", SSL_OP_NO_TLSv1_3);
+        module.setAttribute("OP_ALL", SSLOptions.DEFAULT_OPTIONS);
+        module.setAttribute("OP_NO_SSLv2", SSLOptions.SSL_OP_NO_SSLv2);
+        module.setAttribute("OP_NO_SSLv3", SSLOptions.SSL_OP_NO_SSLv3);
+        module.setAttribute("OP_NO_TLSv1", SSLOptions.SSL_OP_NO_TLSv1);
+        module.setAttribute("OP_NO_TLSv1_1", SSLOptions.SSL_OP_NO_TLSv1_1);
+        module.setAttribute("OP_NO_TLSv1_2", SSLOptions.SSL_OP_NO_TLSv1_2);
+        module.setAttribute("OP_NO_TLSv1_3", SSLOptions.SSL_OP_NO_TLSv1_3);
 
         module.setAttribute("VERIFY_DEFAULT", 0);
         module.setAttribute("VERIFY_CRL_CHECK_LEAF", X509_V_FLAG_CRL_CHECK);
