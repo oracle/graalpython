@@ -195,7 +195,6 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static byte[] doJavaString(Charset charset, String unicodeObject, String errors,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, raiseNode);
