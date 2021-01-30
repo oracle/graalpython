@@ -1120,6 +1120,7 @@ public abstract class ExternalFunctionNodes {
 
         private ReleaseNativeWrapperNode ensureReleaseSelfNode() {
             if (releaseSelfNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 releaseSelfNode = insert(ReleaseNativeWrapperNodeGen.create());
             }
             return releaseSelfNode;
@@ -1174,6 +1175,7 @@ public abstract class ExternalFunctionNodes {
 
         private ReadIndexedArgumentNode ensureReadArgNode() {
             if (readArgNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 readArgNode = insert(ReadIndexedArgumentNode.create(1));
             }
             return readArgNode;
@@ -1181,6 +1183,7 @@ public abstract class ExternalFunctionNodes {
 
         private ReleaseNativeWrapperNode ensureReleaseSelfNode() {
             if (releaseSelfNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 releaseSelfNode = insert(ReleaseNativeWrapperNodeGen.create());
             }
             return releaseSelfNode;
@@ -1188,6 +1191,7 @@ public abstract class ExternalFunctionNodes {
 
         private ReleaseNativeWrapperNode ensureReleaseArgNode() {
             if (releaseArgNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 releaseArgNode = insert(ReleaseNativeWrapperNodeGen.create());
             }
             return releaseArgNode;
