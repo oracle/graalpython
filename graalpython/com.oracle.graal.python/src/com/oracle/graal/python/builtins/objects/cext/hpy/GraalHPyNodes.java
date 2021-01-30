@@ -1236,10 +1236,15 @@ public class GraalHPyNodes {
             return createString((char) l);
         }
 
-        @Specialization(replaces = {"doByte", "doShort", "doLong"})
-        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n) {
-            if (n instanceof Number) {
-                return createString((char) ((Number) n).shortValue());
+        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n,
+                        @CachedLibrary("n") InteropLibrary lib) {
+            if (lib.fitsInShort(n)) {
+                try {
+                    return createString((char) lib.asShort(n));
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -1273,10 +1278,15 @@ public class GraalHPyNodes {
             return l != 0;
         }
 
-        @Specialization(replaces = {"doByte", "doShort", "doLong"})
-        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n) {
-            if (n instanceof Number) {
-                return ((Number) n).longValue() != 0;
+        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n,
+                        @CachedLibrary("n") InteropLibrary lib) {
+            if (lib.fitsInLong(n)) {
+                try {
+                    return lib.asLong(n) != 0;
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
