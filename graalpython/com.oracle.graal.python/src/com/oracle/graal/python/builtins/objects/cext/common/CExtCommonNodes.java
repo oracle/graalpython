@@ -77,7 +77,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -207,12 +206,11 @@ public abstract class CExtCommonNodes {
         @Specialization
         static byte[] doGeneric(Charset charset, Object unicodeObject, String errors,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
 
             try {
                 String s = castToJavaStringNode.execute(unicodeObject);
-                return doJavaString(charset, s, errors, factory, raiseNode);
+                return doJavaString(charset, s, errors, raiseNode);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
             }
