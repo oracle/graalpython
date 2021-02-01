@@ -64,6 +64,7 @@
 *unittest.test.test_case.Test_TestCase.testAssertRaisesRegexMismatch
 *unittest.test.test_case.Test_TestCase.testAssertRaisesRegexNoExceptionType
 *unittest.test.test_case.Test_TestCase.testAssertRegex
+*unittest.test.test_case.Test_TestCase.testAssertSequenceEqualMaxDiff
 *unittest.test.test_case.Test_TestCase.testAssertSetEqual
 *unittest.test.test_case.Test_TestCase.testAssertWarnsModifySysModules
 *unittest.test.test_case.Test_TestCase.testAssertWarnsNoExceptionType
