@@ -358,7 +358,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             if (ProcessProperties.getArgumentVectorBlockSize() > 0) {
                 binPathName = ProcessProperties.getArgumentVectorProgramName();
             }
-            return binPathName != null ? binPathName : ProcessProperties.getExecutableName();
+            if (binPathName != null) {
+                return Paths.get(binPathName).toAbsolutePath().toString();
+            }
+            return ProcessProperties.getExecutableName();
         }
         return GraalPythonMain.BASH_LAUNCHER_EXEC_NAME;
     }
