@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_empty_cert
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_enum_certificates
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_enum_crls
+*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_errors_sslwrap
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_malformed_cert
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_malformed_key
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_purpose_enum
@@ -88,6 +89,8 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_default_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_dh_params
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_do_handshake_enotconn
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_dual_rsa_ecc
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ecc_cert
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ecdh_curve
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_echo
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_getpeercert
