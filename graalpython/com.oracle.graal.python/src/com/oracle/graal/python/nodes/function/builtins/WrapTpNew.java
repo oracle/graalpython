@@ -74,7 +74,7 @@ public final class WrapTpNew extends SlotWrapper {
     @CompilationFinal private byte state = 0;
     private final PythonBuiltinClassType owner;
     // we cache two node classes here, otherwise we use a truffle boundary lookup
-    @CompilationFinal(dimensions = 1) private Pair<?, ?>[] cachedFactoriesNodeClasses = new Pair<?, ?>[2];
+    @CompilationFinal(dimensions = 1) private final Pair<?, ?>[] cachedFactoriesNodeClasses = new Pair<?, ?>[2];
 
     private static final short NOT_SUBTP_STATE = 0b10000000;
     private static final short NOT_CLASS_STATE = 0b01000000;
