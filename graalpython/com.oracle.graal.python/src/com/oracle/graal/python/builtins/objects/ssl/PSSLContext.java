@@ -11,7 +11,12 @@ import javax.net.ssl.SSLContext;
 
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
+import java.security.KeyManagementException;
+import java.security.UnrecoverableKeyException;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 public final class PSSLContext extends PythonBuiltinObject {
     private final SSLMethod method;
@@ -55,6 +60,18 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     public SSLMethod getMethod() {
         return method;
+    }
+
+    void init() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException {
+        init(PythonUtils.EMPTY_CHAR_ARRAY);
+    }
+
+    void init(char[] password) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException {
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(getKeyStore());
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(getKeyStore(), password);
+        context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
     }
 
     public SSLContext getContext() {

@@ -76,6 +76,7 @@ import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -560,8 +561,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         String alias = file.getAbsoluteFile().getPath() + ":" + cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
                         keystore.setCertificateEntry(alias, cert);
                     }
+                    // TODO: maybe do init only once on communication start and not in every
+                    // particular ctx builtin?
+                    self.init();
                 }
-            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException ex) {
+            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | KeyManagementException | UnrecoverableKeyException ex) {
                 // TODO
                 throw raise(ValueError, ex.getMessage());
             }
@@ -686,6 +690,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         private Object load(PSSLContext self, TruffleFile certfile, TruffleFile keyfile, String password) {
+            // TODO add logging
             try {
                 X509Certificate[] certs;
                 try (BufferedReader r = certfile.newBufferedReader()) {
@@ -715,12 +720,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 checkPrivateKey(this, pk, certs[0]);
 
                 KeyStore keystore = self.getKeyStore();
-                keystore.setKeyEntry(keyfile.getName(), pk, "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY, certs);
-            } catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | InvalidKeySpecException ex) {
+                String alias = keyfile.getName();
+                char[] psswdChars = "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY;
+                keystore.setKeyEntry(alias, pk, psswdChars, certs);
+                self.init(psswdChars);
+            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | InvalidKeySpecException | KeyManagementException | UnrecoverableKeyException ex) {
                 throw raise(SSLError, ErrorMessages.SSL_ERROR, ex.getMessage());
-            } catch (IOException ex) {
-                // TODO
-                throw raise(SSLError, ex.getMessage());
             }
             return PNone.NONE;
         }
