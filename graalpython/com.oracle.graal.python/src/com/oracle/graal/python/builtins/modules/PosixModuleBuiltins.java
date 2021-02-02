@@ -414,17 +414,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetUidNode extends PythonBuiltinNode {
         @Specialization
-        static long getPid() {
-            return getSystemUid();
-        }
-
-        @TruffleBoundary
-        static long getSystemUid() {
-            String osName = System.getProperty("os.name");
-            if (osName.contains("Linux")) {
-                return new com.sun.security.auth.module.UnixSystem().getUid();
-            }
-            return 1000;
+        long getUid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getuid(getPosixSupport());
         }
     }
 

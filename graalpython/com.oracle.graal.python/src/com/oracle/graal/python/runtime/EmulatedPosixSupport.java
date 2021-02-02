@@ -1562,6 +1562,17 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public long getuid() {
+        String osName = System.getProperty("os.name");
+        if (osName.contains("Linux")) {
+            return new com.sun.security.auth.module.UnixSystem().getUid();
+        }
+        return 1000;
+    }
+
+    @ExportMessage
     @TruffleBoundary
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException {

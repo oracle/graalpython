@@ -148,6 +148,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_wexitstatus("(sint32):sint32"),
         call_wtermsig("(sint32):sint32"),
         call_wstopsig("(sint32):sint32"),
+        call_getuid("():sint64"),
         fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32");
 
         private final String signature;
@@ -888,6 +889,11 @@ public final class NFIPosixSupport extends PosixSupport {
     public int wstopsig(int status,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(this, PosixNativeFunction.call_wstopsig, status);
+    }
+
+    @ExportMessage
+    public long getuid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callLong(this, PosixNativeFunction.call_getuid);
     }
 
     @ExportMessage

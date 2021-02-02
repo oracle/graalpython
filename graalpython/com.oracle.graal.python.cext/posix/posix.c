@@ -467,6 +467,10 @@ int32_t call_kill(int64_t pid, int32_t signal) {
     return kill(pid, signal);
 }
 
+int64_t call_getuid() {
+    return getuid();
+}
+
 int32_t get_errno() {
     return errno;
 }

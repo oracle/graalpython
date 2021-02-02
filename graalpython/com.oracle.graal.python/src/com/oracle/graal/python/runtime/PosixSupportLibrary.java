@@ -265,6 +265,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int wstopsig(Object receiver, int status);
 
+    public abstract long getuid(Object receiver);
+
     public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
                     int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException;
 
