@@ -47,6 +47,7 @@
 *graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_str
 *graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_subclass
 *graalpython.lib-python.3.test.test_ssl.SSLObjectTests.test_private_init
+*graalpython.lib-python.3.test.test_ssl.SSLObjectTests.test_unwrap
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_bio_handshake
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_bio_read_write_data
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_ciphers
