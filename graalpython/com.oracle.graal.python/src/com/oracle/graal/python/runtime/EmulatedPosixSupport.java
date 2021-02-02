@@ -960,7 +960,15 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     private void chdirStr(String pathStr, BranchProfile errorBranch) throws PosixException {
-        TruffleFile truffleFile = getTruffleFile(pathStr);
+        TruffleFile truffleFile = getTruffleFile(pathStr).getAbsoluteFile();
+        if (!truffleFile.exists()) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.ENOENT);
+        }
+        if (!truffleFile.isDirectory()) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.ENOTDIR);
+        }
         try {
             context.getEnv().setCurrentWorkingDirectory(truffleFile);
         } catch (IllegalArgumentException ignored) {
