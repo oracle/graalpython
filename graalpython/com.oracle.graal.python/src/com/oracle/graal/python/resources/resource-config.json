@@ -1,5 +1,6 @@
 {
   "resources":[
-    {"pattern":"com/ibm/icu/impl/data/icudt.*"}
+    {"pattern":"com/ibm/icu/impl/data/icudt.*"},
+    {"pattern":"org/graalvm/shadowed/org/jline.*"}
   ]
 }
