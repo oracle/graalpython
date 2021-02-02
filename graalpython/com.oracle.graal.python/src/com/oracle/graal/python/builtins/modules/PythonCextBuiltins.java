@@ -2448,19 +2448,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object make(PFunction func, Object errorResultObj) {
             RootCallTarget originalCallTarget = func.getCallTarget();
 
-            WeakReference<RootCallTarget> wrapperCtRef = weakCallTargetMap.get(originalCallTarget);
             RootCallTarget wrapperCallTarget = null;
-            if (wrapperCtRef != null) {
-                wrapperCallTarget = wrapperCtRef.get();
-            }
-            if (wrapperCallTarget == null) {
-                final MayRaiseErrorResult errorResult = convertToEnum(errorResultObj);
-                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+            synchronized (weakCallTargetMap) {
+                WeakReference<RootCallTarget> wrapperCtRef = weakCallTargetMap.get(originalCallTarget);
+                if (wrapperCtRef != null) {
+                    wrapperCallTarget = wrapperCtRef.get();
+                }
+                if (wrapperCallTarget == null) {
+                    final MayRaiseErrorResult errorResult = convertToEnum(errorResultObj);
+                    FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
 
-                // Replace the first expression node with the MayRaiseNode
-                functionRootNode = functionRootNode.rewriteWithNewSignature(func.getSignature(), node -> false, body -> MayRaiseNode.create(body, errorResult));
-                wrapperCallTarget = PythonUtils.getOrCreateCallTarget(functionRootNode);
-                weakCallTargetMap.put(originalCallTarget, new WeakReference<>(wrapperCallTarget));
+                    // Replace the first expression node with the MayRaiseNode
+                    functionRootNode = functionRootNode.rewriteWithNewSignature(func.getSignature(), node -> false, body -> MayRaiseNode.create(body, errorResult));
+                    wrapperCallTarget = PythonUtils.getOrCreateCallTarget(functionRootNode);
+                    weakCallTargetMap.put(originalCallTarget, new WeakReference<>(wrapperCallTarget));
+                }
             }
 
             // Although we could theoretically re-use the old function instance, we create a new one
