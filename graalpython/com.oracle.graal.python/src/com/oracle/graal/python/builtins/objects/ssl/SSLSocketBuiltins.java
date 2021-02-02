@@ -138,6 +138,16 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "shutdown", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ShutdownNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object shutdown(PSSLSocket self) {
+            SSLEngineHelper.shutdown(this, self);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "context", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ContextNode extends PythonUnaryBuiltinNode {

@@ -17,14 +17,19 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class SSLEngineHelper {
 
+    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+
+    @TruffleBoundary
     public static void write(PNodeWithRaise node, PSSLSocket socket, ByteBuffer input) {
-        loop(node, socket, input, ByteBuffer.allocate(0), true);
+        loop(node, socket, input, EMPTY_BUFFER, Operation.WRITE);
     }
 
+    @TruffleBoundary
     public static void read(PNodeWithRaise node, PSSLSocket socket, ByteBuffer target) {
-        loop(node, socket, ByteBuffer.allocate(0), target, false);
+        loop(node, socket, EMPTY_BUFFER, target, Operation.READ);
     }
 
+    @TruffleBoundary
     public static void handshake(PNodeWithRaise node, PSSLSocket socket) {
         if (!socket.isHandshakeComplete()) {
             try {
@@ -33,8 +38,14 @@ public class SSLEngineHelper {
                 // TODO better error handling
                 throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
             }
-            loop(node, socket, ByteBuffer.allocate(0), ByteBuffer.allocate(0), true);
+            loop(node, socket, EMPTY_BUFFER, EMPTY_BUFFER, Operation.HANDSHAKE);
         }
+    }
+
+    @TruffleBoundary
+    public static void shutdown(PNodeWithRaise node, PSSLSocket socket) {
+        socket.getEngine().closeOutbound();
+        loop(node, socket, EMPTY_BUFFER, EMPTY_BUFFER, Operation.SHUTDOWN);
     }
 
     private static void putAsMuchAsPossible(ByteBuffer target, MemoryBIO sourceBIO) {
@@ -47,13 +58,19 @@ public class SSLEngineHelper {
         sourceBIO.applyRead(source);
     }
 
-    @TruffleBoundary
-    private static void loop(PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, boolean writing) {
+    private enum Operation {
+        READ,
+        WRITE,
+        HANDSHAKE,
+        SHUTDOWN
+    }
+
+    private static void loop(PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, Operation op) {
         // TODO maybe we need some checks for closed connection etc here?
         MemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
         MemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
         MemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
-        if (!writing && applicationInboundBIO.getPending() > 0) {
+        if (op == Operation.READ && applicationInboundBIO.getPending() > 0) {
             // Flush leftover data from previous read
             putAsMuchAsPossible(targetBuffer, applicationInboundBIO);
             // OpenSSL's SSL_read returns only the pending data
@@ -71,15 +88,14 @@ public class SSLEngineHelper {
         // Whether we can write directly to targetBuffer
         boolean writeDirectlyToTarget = true;
         boolean hanshakeComplete = socket.isHandshakeComplete();
-        int netBufferSize = engine.getSession().getPacketBufferSize();
-        boolean currentlyWriting = writing;
+        boolean currentlyWrapping = op != Operation.READ;
         try {
             // Flush output that didn't get written in the last call (for non-blocking)
             emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
-            // TODO check engine.isInboundDone/engine.isOutboundDone
             transmissionLoop: while (true) {
                 SSLEngineResult result;
-                if (currentlyWriting) {
+                int netBufferSize = engine.getSession().getPacketBufferSize();
+                if (currentlyWrapping) {
                     networkOutboundBIO.ensureWriteCapacity(netBufferSize);
                     ByteBuffer writeBuffer = networkOutboundBIO.getBufferForWriting();
                     try {
@@ -106,15 +122,33 @@ public class SSLEngineHelper {
                         networkInboundBIO.applyRead(readBuffer);
                     }
                 }
+                // Send the network output to socket, if any. If the output is a MemoryBIO, the
+                // output is already in it at this point
+                emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
+                // Decide what we're going to do next
                 switch (result.getStatus()) {
                     case CLOSED:
-                        if (writing) {
-                            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
-                        } else {
-                            break transmissionLoop;
+                        switch (op) {
+                            case READ:
+                                // Read operation should just return empty output signifying EOF.
+                                break transmissionLoop;
+                            case WRITE:
+                            case HANDSHAKE:
+                                // Write and handshake operations need to fail loudly
+                                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
+                            case SHUTDOWN:
+                                if (engine.isInboundDone()) {
+                                    // Closing hanshake complete
+                                    break transmissionLoop;
+                                } else {
+                                    // Closing handshake needs to unwrap
+                                    currentlyWrapping = false;
+                                    continue transmissionLoop;
+                                }
                         }
+                        throw CompilerDirectives.shouldNotReachHere();
                     case BUFFER_OVERFLOW:
-                        assert !currentlyWriting;
+                        assert !currentlyWrapping;
                         // We are trying to read a packet whose content doesn't fit into the
                         // output buffer. That means we need to read the whole content into a
                         // temporary buffer, then copy as much as we can into the target buffer
@@ -122,10 +156,19 @@ public class SSLEngineHelper {
                         writeDirectlyToTarget = false;
                         continue transmissionLoop;
                     case BUFFER_UNDERFLOW:
+                        // We need to obtain more input from the socket. This can raise
+                        // SSLWantReadError if the socket is non-blocking and the operation would
+                        // block. If the input is a MemoryBIO, this will raise SSLWantReadError
+                        // because if we reached this point, it means the buffer doesn't have enough
+                        // data.
                         obtainMoreInput(node, networkInboundBIO, pSocket, netBufferSize, timeoutHelper);
                         continue transmissionLoop;
                     case OK:
-                        emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
+                        // If the handshake is not complete, do the operations that it requests
+                        // until it completes.
+                        // Note that TLS supports renegotiation - the peer can request a new
+                        // handhake at any time, so we need to check this every time and not just in
+                        // the beginning.
                         switch (result.getHandshakeStatus()) {
                             case NEED_TASK:
                                 hanshakeComplete = false;
@@ -136,22 +179,24 @@ public class SSLEngineHelper {
                                 continue transmissionLoop;
                             case NEED_WRAP:
                                 hanshakeComplete = false;
-                                currentlyWriting = true;
+                                currentlyWrapping = true;
                                 continue transmissionLoop;
                             case NEED_UNWRAP:
                                 hanshakeComplete = false;
-                                currentlyWriting = false;
+                                currentlyWrapping = false;
                                 continue transmissionLoop;
                             case FINISHED:
                                 hanshakeComplete = true;
-                                currentlyWriting = writing;
+                                currentlyWrapping = op != Operation.READ;
                                 continue transmissionLoop;
                             case NOT_HANDSHAKING:
                                 assert hanshakeComplete;
                                 // Read operation needs to return after a single packet of
                                 // application data has been read.
-                                // Write operation needs to continue until the buffer is empty
-                                if (writing && appInput.hasRemaining()) {
+                                // Write operation needs to continue until the buffer is empty.
+                                // Shutdown operation needs to continue until the closing handshake
+                                // is complete.
+                                if ((op == Operation.WRITE && appInput.hasRemaining()) || op == Operation.SHUTDOWN) {
                                     continue transmissionLoop;
                                 } else {
                                     break transmissionLoop;
