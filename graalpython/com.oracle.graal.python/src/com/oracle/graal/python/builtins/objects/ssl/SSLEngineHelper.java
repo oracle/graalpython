@@ -26,13 +26,15 @@ public class SSLEngineHelper {
     }
 
     public static void handshake(PNodeWithRaise node, PSSLSocket socket) {
-        try {
-            socket.getEngine().beginHandshake();
-        } catch (SSLException e) {
-            // TODO better error handling
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
+        if (!socket.isHandshakeComplete()) {
+            try {
+                socket.getEngine().beginHandshake();
+            } catch (SSLException e) {
+                // TODO better error handling
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
+            }
+            loop(node, socket, ByteBuffer.allocate(0), ByteBuffer.allocate(0), true);
         }
-        loop(node, socket, ByteBuffer.allocate(0), ByteBuffer.allocate(0), true);
     }
 
     private static void putAsMuchAsPossible(ByteBuffer target, MemoryBIO sourceBIO) {
