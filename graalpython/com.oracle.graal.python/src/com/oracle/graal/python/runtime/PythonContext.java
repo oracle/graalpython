@@ -141,7 +141,7 @@ public final class PythonContext {
         }
 
         boolean isOwner(Thread thread) {
-            return owner.get() == thread;
+            return owner != null && owner.get() == thread;
         }
 
         void setOwner(Thread thread) {
@@ -432,23 +432,30 @@ public final class PythonContext {
     }
 
     public void initialize() {
-        initalizePosixSupport();
-        core.initialize(this);
-        setupRuntimeInformation(false);
-        core.postInitialize();
-        if (getLanguage().getEngineOption(PythonOptions.AlwaysAcquireGil)) {
-            getLanguage().singleThreadedAssumption.invalidate();
-        }
-        if (!ImageInfo.inImageBuildtimeCode()) {
-            importSiteIfForced();
+        acquireGil();
+        try {
+            initalizePosixSupport();
+            core.initialize(this);
+            setupRuntimeInformation(false);
+            core.postInitialize();
+            if (!ImageInfo.inImageBuildtimeCode()) {
+                importSiteIfForced();
+            }
+        } finally {
+            releaseGil();
         }
     }
 
     public void patch(Env newEnv) {
-        setEnv(newEnv);
-        setupRuntimeInformation(true);
-        core.postInitialize();
-        importSiteIfForced();
+        acquireGil();
+        try {
+            setEnv(newEnv);
+            setupRuntimeInformation(true);
+            core.postInitialize();
+            importSiteIfForced();
+        } finally {
+            releaseGil();
+        }
     }
 
     private void importSiteIfForced() {
@@ -760,10 +767,13 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public void finalizeContext() {
         finalizing = true;
-        shutdownThreads();
-        runShutdownHooks();
+        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            shutdownThreads();
+            runShutdownHooks();
+        }
     }
 
     @TruffleBoundary
@@ -934,6 +944,10 @@ public final class PythonContext {
         return null;
     }
 
+    boolean ownsGil() {
+        return globalInterpreterLock.isHeldByCurrentThread();
+    }
+
     /**
      * Should not be called directly.
      *
@@ -941,25 +955,24 @@ public final class PythonContext {
      */
     @TruffleBoundary
     void acquireGil() {
-        if (!globalInterpreterLock.isHeldByCurrentThread()) {
-            try {
-                globalInterpreterLock.lockInterruptibly();
-            } catch (InterruptedException e) {
-                if (threadStateMapping.get(Thread.currentThread()) == null) {
-                    // This is a thread being killed during normal context shutdown. This thread
-                    // should exit now. This should usually only happen for daemon threads on
-                    // context shutdown. This is the equivalent to the logic in pylifecycle.c and
-                    // PyEval_RestoreThread which, on Python shutdown, will join non-daemon threads
-                    // and then simply start destroying the thread states of remaining threads. If
-                    // any remaining daemon thread then tries to acquire the GIL, it'll notice the
-                    // shutdown is happening and exit.
-                    throw new PythonThreadKillException();
-                } else {
-                    // We are being interrupted through some non-internal means. If this happens to
-                    // the main thread (which can only occur if we are embedded somewhere) we exit
-                    // with the same exit code that SIGINT would produce. Other threads just die.
-                    throw new PythonExitException(null, 130);
-                }
+        assert !ownsGil() : "trying to acquire the GIL more than once";
+        try {
+            globalInterpreterLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            if (threadStateMapping.get(Thread.currentThread()) == null) {
+                // This is a thread being killed during normal context shutdown. This thread
+                // should exit now. This should usually only happen for daemon threads on
+                // context shutdown. This is the equivalent to the logic in pylifecycle.c and
+                // PyEval_RestoreThread which, on Python shutdown, will join non-daemon threads
+                // and then simply start destroying the thread states of remaining threads. If
+                // any remaining daemon thread then tries to acquire the GIL, it'll notice the
+                // shutdown is happening and exit.
+                throw new PythonThreadKillException();
+            } else {
+                // We are being interrupted through some non-internal means. If this happens to
+                // the main thread (which can only occur if we are embedded somewhere) we exit
+                // with the same exit code that SIGINT would produce. Other threads just die.
+                throw new PythonExitException(null, 130);
             }
         }
     }
@@ -971,9 +984,8 @@ public final class PythonContext {
      */
     @TruffleBoundary
     void releaseGil() {
-        if (globalInterpreterLock.isHeldByCurrentThread()) {
-            globalInterpreterLock.unlock();
-        }
+        assert globalInterpreterLock.getHoldCount() == 1 : "trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount();
+        globalInterpreterLock.unlock();
     }
 
     /**
@@ -1077,11 +1089,16 @@ public final class PythonContext {
         if (curThreadState == null) {
             // this should happen just the first time the current thread accesses the thread state
             curThreadState = getThreadStateFullLookup();
-            if (curThreadState == null) {
-                // we're shutting down, and getting into a similar situation as _Py_FatalError_TstateNULL
-                throw new PythonThreadKillException();
+            if (curThreadState != null) {
+                threadState.set(curThreadState);
             }
-            threadState.set(curThreadState);
+        }
+        if (curThreadState == null || curThreadState.getOwner() == null) {
+            // we're shutting down, and getting into a similar situation as _Py_FatalError_TstateNULL
+            if (ownsGil()) {
+                releaseGil();
+            }
+            throw new PythonThreadKillException();
         }
         assert curThreadState.isOwner(Thread.currentThread());
         return curThreadState;

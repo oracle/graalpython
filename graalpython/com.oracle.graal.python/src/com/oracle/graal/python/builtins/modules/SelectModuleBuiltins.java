@@ -144,7 +144,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
             SelectResult result;
             try {
-                gil.release();
+                gil.release(true);
                 try {
                     result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
                 } finally {

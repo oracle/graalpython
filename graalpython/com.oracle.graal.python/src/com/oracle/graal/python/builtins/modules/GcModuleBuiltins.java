@@ -71,7 +71,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         @Specialization
         int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level,
                         @Cached GilNode gil) {
-            gil.release();
+            gil.release(true);
             try {
                 PythonUtils.forceFullGC();
             } finally {

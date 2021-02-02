@@ -409,7 +409,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         Object sleep(VirtualFrame frame, long seconds,
                         @Cached GilNode gil) {
             long deadline = (long) timeSeconds() + seconds;
-            gil.release();
+            gil.release(true);
             try {
                 doSleep(seconds, deadline);
             } finally {
@@ -429,7 +429,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         Object sleep(VirtualFrame frame, double seconds,
                         @Cached GilNode gil) {
             double deadline = timeSeconds() + seconds;
-            gil.release();
+            gil.release(true);
             try {
                 doSleep(seconds, deadline);
             } finally {
@@ -455,7 +455,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
             }
             double deadline = timeSeconds() + seconds;
-            gil.release();
+            gil.release(true);
             try {
                 doSleep(seconds, deadline);
             } finally {

@@ -450,7 +450,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             int fixedFlags = flags | CLOEXEC;
             auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
-            gil.release();
+            gil.release(true);
             try {
                 while (true) {
                     try {
@@ -460,7 +460,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         gil.acquire();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             getContext().triggerAsyncActions(frame);
-                            gil.release();
+                            gil.release(true);
                         } else {
                             throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
                         }
@@ -514,7 +514,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 int error = OSErrorEnum.EINVAL.getNumber();
                 throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
             }
-            gil.release();
+            gil.release(true);
             try {
                 while (true) {
                     try {
@@ -530,7 +530,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         gil.acquire(); // need gil to trigger actions or construct OSError
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             getContext().triggerAsyncActions(frame);
-                            gil.release(); // continue read loop without gil
+                            gil.release(true); // continue read loop without gil
                         } else {
                             throw raiseOSErrorFromPosixException(frame, e);
                         }
@@ -558,7 +558,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile,
                         @Cached GilNode gil) {
-            gil.release();
+            gil.release(true);
             try {
                 while (true) {
                     try {
@@ -568,7 +568,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         gil.acquire();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             getContext().triggerAsyncActions(frame);
-                            gil.release();
+                            gil.release(true);
                         } else {
                             throw raiseOSErrorFromPosixException(frame, e);
                         }
@@ -685,14 +685,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             int[] pipe;
-            gil.release();
+            boolean thrown = false;
+            gil.release(true);
             try {
                 pipe = posixLib.pipe(getPosixSupport());
             } catch (PosixException e) {
+                thrown = true;
                 gil.acquire(); // need to acquire the gil to construct the OSError object
                 throw raiseOSErrorFromPosixException(frame, e);
             } finally {
-                gil.acquire();
+                if (!thrown) {
+                    gil.acquire();
+                }
             }
             return factory().createTuple(new Object[]{pipe[0], pipe[1]});
         }
@@ -1196,7 +1200,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         boolean isatty(int fd,
                         @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            gil.release();
+            gil.release(true);
             try {
                 return posixLib.isatty(getPosixSupport(), fd);
             } finally {
@@ -1676,7 +1680,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
-            gil.release();
+            gil.release(true);
             while (true) {
                 try {
                     long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
@@ -1687,7 +1691,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     gil.acquire();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                         getContext().triggerAsyncActions(frame);
-                        gil.release();
+                        gil.release(true);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1908,7 +1912,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     stdout.start();
                     stderr.start();
                 }
-                gil.release();
+                gil.release(true);
                 int exitStatus = -1;
                 try {
                     exitStatus = proc.waitFor();

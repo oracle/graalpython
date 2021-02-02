@@ -211,9 +211,6 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "The executed command list as string joined by the executable list separator char. This must always correspond to the real, valid command list used to run GraalPython.") //
     public static final OptionKey<String> ExecutableList = new OptionKey<>("");
 
-    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Multi-threaded use can only be safely initiated outside of the Python _thread module when this is true.") //
-    public static final OptionKey<Boolean> AlwaysAcquireGil = new OptionKey<>(true);
-
     @Option(category = OptionCategory.EXPERT, help = "Determines wether context startup tries to re-use previously cached sources of the core library.") //
     public static final OptionKey<Boolean> WithCachedSources = new OptionKey<>(true);
 

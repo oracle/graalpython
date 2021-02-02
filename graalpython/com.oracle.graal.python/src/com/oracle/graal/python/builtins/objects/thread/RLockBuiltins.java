@@ -87,7 +87,7 @@ public class RLockBuiltins extends PythonBuiltins {
                         @Cached CastToJavaUnsignedLongNode castLong,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
             if (!self.acquireNonBlocking()) {
-                gil.release();
+                gil.release(true);
                 try {
                     self.acquireBlocking();
                 } finally {

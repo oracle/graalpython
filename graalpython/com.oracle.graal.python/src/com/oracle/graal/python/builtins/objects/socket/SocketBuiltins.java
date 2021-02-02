@@ -210,7 +210,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] hostAndPort = getObjectArrayNode.execute(address);
-            gil.release();
+            gil.release(true);
             try {
                 doConnect(socket, hostAndPort);
                 return PNone.NONE;
@@ -350,7 +350,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags,
                         @Cached GilNode gil) {
-            gil.release();
+            gil.release(true);
             ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
             try {
                 int length = SocketUtils.recv(this, socket, readBytes);
@@ -423,7 +423,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile byteStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItem) {
-            gil.release();
+            gil.release(true);
             SequenceStorage storage = buffer.getSequenceStorage();
             int bufferLen = lenNode.execute(storage);
             if (byteStorage.profile(storage instanceof ByteSequenceStorage)) {
@@ -499,7 +499,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 throw raise(OSError);
             }
 
-            gil.release();
+            gil.release(true);
             int written;
             ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
             try {
@@ -526,7 +526,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes,
                         @Cached ConditionProfile hasTimeoutProfile) {
             // TODO: do not ignore flags
-            gil.release();
+            gil.release(true);
             ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
             long timeoutMillis = socket.getTimeoutInMilliseconds();
             TimeoutHelper timeoutHelper = null;

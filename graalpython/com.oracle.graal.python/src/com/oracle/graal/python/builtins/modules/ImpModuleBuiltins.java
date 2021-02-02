@@ -144,7 +144,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run(@Cached GilNode gil) {
-            gil.release();
+            gil.release(true);
             try {
                 getContext().getImportLock().lock();
             } finally {

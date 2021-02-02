@@ -48,12 +48,14 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class GilNode extends Node {
 
     private static final class Cached extends GilNode {
         @CompilationFinal ContextReference<PythonContext> contextRef;
         @CompilationFinal LanguageReference<PythonLanguage> languageRef;
+        private final ConditionProfile binaryProfile = ConditionProfile.createBinaryProfile();
 
         @Override
         public boolean isAdoptable() {
@@ -61,27 +63,29 @@ public abstract class GilNode extends Node {
         }
 
         @Override
-        public GilNode release() {
-            if (!getLanguage().singleThreadedAssumption.isValid()) {
+        public void release(boolean wasAcquired) {
+            // n.b.: we cannot make any optimizations here based on the singleThreadedAssumption of
+            // the language. You would think that you could use that assumption to get rid even of
+            // the ownsGil check, but we need to actually release the GIL around blocking operations
+            // like sleeping. Consider an embedded use where one Python thread goes to sleep, while
+            // another thread enters the same Python context, invalidating the assumption. The
+            // regular "release GIL" logic will start to tick, but the second thread won't be able
+            // to acquire the GIL at all until the first one has finished sleeping and actually runs
+            // into the next (e.g. regular) GIL release. So we need to always have this ownsGil
+            // check.
+            if (binaryProfile.profile(wasAcquired)) {
                 getContext().releaseGil();
             }
-            return this;
         }
 
         @Override
-        public GilNode acquire() {
-            if (!getLanguage().singleThreadedAssumption.isValid()) {
-                getContext().acquireGil();
+        public boolean acquire() {
+            PythonContext context = getContext();
+            if (binaryProfile.profile(!context.ownsGil())) {
+                context.acquireGil();
+                return true;
             }
-            return this;
-        }
-
-        private final PythonLanguage getLanguage() {
-            if (languageRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                languageRef = lookupLanguageReference(PythonLanguage.class);
-            }
-            return languageRef.get();
+            return false;
         }
 
         private final PythonContext getContext() {
@@ -101,20 +105,21 @@ public abstract class GilNode extends Node {
 
         @Override
         @TruffleBoundary
-        public Uncached acquire() {
-            if (!PythonLanguage.getCurrent().singleThreadedAssumption.isValid()) {
+        public final boolean acquire() {
+            PythonContext context = PythonLanguage.getContext();
+            if (!context.ownsGil()) {
                 PythonLanguage.getContext().acquireGil();
+                return true;
             }
-            return this;
+            return false;
         }
 
         @Override
         @TruffleBoundary
-        public Uncached release() {
-            if (!PythonLanguage.getCurrent().singleThreadedAssumption.isValid()) {
+        public final void release(boolean wasAcquired) {
+            if (wasAcquired) {
                 PythonLanguage.getContext().releaseGil();
             }
-            return this;
         }
 
         public abstract void close();
@@ -136,28 +141,52 @@ public abstract class GilNode extends Node {
         private UncachedAcquire() {
         }
 
-        private static final UncachedAcquire INSTANCE = new UncachedAcquire();
+        private static final UncachedAcquire INSTANCE_WITH_RELEASE = new UncachedAcquire();
+        private static final UncachedAcquire INSTANCE_WITHOUT_RELEASE = new UncachedAcquire();
 
         @Override
         public final void close() {
-            release();
+            if (PythonLanguage.getContext().ownsGil()) {
+                // we are forgiving in this usage for cases where the gil is released and we're
+                // exiting with an exception
+                release(this == INSTANCE_WITH_RELEASE);
+            }
         }
     }
 
-    public abstract GilNode acquire();
+    /**
+     * Acquires the GIL if it isn't already held. Returns {@code true} if the GIL had to be
+     * acquired. Pass the return value into the {@link #release(boolean wasAcquired)} method in
+     * order to ensure releasing the GIL only if it has been acquired.
+     */
+    public abstract boolean acquire();
 
-    public abstract GilNode release();
+    /**
+     * Release the GIL if {@code wasAcquired} is {@code true}.
+     *
+     * @param wasAcquired - the return value of the preceding {@link #acquire} call.
+     */
+    public abstract void release(boolean wasAcquired);
 
     public static GilNode create() {
         return new Cached();
     }
 
     public static UncachedRelease uncachedRelease() {
-        return (UncachedRelease) UncachedRelease.INSTANCE.release();
+        assert PythonLanguage.getContext().ownsGil();
+        UncachedRelease.INSTANCE.release(true);
+        return UncachedRelease.INSTANCE;
     }
 
     public static UncachedAcquire uncachedAcquire() {
-        return (UncachedAcquire) UncachedAcquire.INSTANCE.acquire();
+        // if we already had the GIL, we don't acquire it again
+        boolean wasAcquired = UncachedAcquire.INSTANCE_WITH_RELEASE.acquire();
+        if (wasAcquired) {
+            // the close method of this instance will release it again
+            return UncachedAcquire.INSTANCE_WITH_RELEASE;
+        } else {
+            return UncachedAcquire.INSTANCE_WITHOUT_RELEASE;
+        }
     }
 
     public static GilNode getUncached() {

@@ -103,7 +103,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached ConditionProfile errProfile,
                         @Cached GilNode gil) {
-            gil.release();
+            gil.release(true);
             try {
                 NFIBz2Support bz2Support = ctxt.getNFIBz2Support();
                 Object bzst = bz2Support.createStream(createStream);

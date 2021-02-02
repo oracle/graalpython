@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -74,13 +75,13 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -95,9 +96,9 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -360,6 +361,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final ExecutableNode executableNode = new ExecutableNode(this) {
             @CompilationFinal private ContextReference<PythonContext> contextRef;
             @CompilationFinal private volatile PythonContext cachedContext;
+            @Child private GilNode gilNode;
             @Child private ExpressionNode expression;
 
             @Override
@@ -376,13 +378,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     parseAndCache(context);
                     cachedCtx = context;
                 }
-                Object result;
-                if (context == cachedCtx) {
-                    result = expression.execute(frame);
-                } else {
-                    result = parseAndEval(context, frame.materialize());
+                if (gilNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    gilNode = insert(GilNode.create());
                 }
-                return result;
+                boolean wasAcquired = gilNode.acquire();
+                try {
+                    Object result;
+                    if (context == cachedCtx) {
+                        result = expression.execute(frame);
+                    } else {
+                        result = parseAndEval(context, frame.materialize());
+                    }
+                    return result;
+                } finally {
+                    gilNode.release(wasAcquired);
+                }
             }
 
             private void parseAndCache(PythonContext context) {
