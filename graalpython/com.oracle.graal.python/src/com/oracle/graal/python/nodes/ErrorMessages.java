@@ -221,7 +221,6 @@ public abstract class ErrorMessages {
     public static final String EMPTY_STR_FOR_COMPLEX = "empty string for complex()";
     public static final String ENCODING_WITHOUT_STR_ARG = "encoding without a string argument";
     public static final String END_MUST_BE_NONE_OR_STRING = "end must be None or a string, not %p";
-    public static final String ERROR57_SOCKET_CANNOT_BE_CONNECTED = "[Errno 57] Socket is not connected";
     public static final String ERROR_5_WHILE_DECOMPRESSING = "Error -5 while decompressing data: incomplete or truncated stream";
     public static final String ERROR_WRITING_FORKEXEC = "there was an error writing the fork_exec error to the error pipe";
     public static final String ERROR_CALLING_SET_NAME = "Error calling __set_name__ on '%p' instance '%s' in '%N'";
@@ -569,6 +568,7 @@ public abstract class ErrorMessages {
     public static final String TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN = "%s() takes exactly %d arguments (%d given)";
     public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
+    public static final String TIMED_OUT = "timed out";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
     public static final String TIMEOUT_VALUE_TOO_LARGE = "timeout value is too large";
     public static final String TIMESTAMP_OUT_OF_RANGE = "timestamp out of range for platform time_t";

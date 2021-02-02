@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
+import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
@@ -411,10 +412,23 @@ public final class EmulatedPosixSupport extends PosixResources {
         SelectableChannel[] writeChannels = getSelectableChannels(writefds);
         SelectableChannel[] errChannels = getSelectableChannels(errorfds);
 
+        boolean[] wasBlocking = new boolean[readChannels.length + writeChannels.length + errChannels.length];
+        int i = 0;
+
+        for (SelectableChannel channel : readChannels) {
+            wasBlocking[i++] = channel.isBlocking();
+        }
+        for (SelectableChannel channel : writeChannels) {
+            wasBlocking[i++] = channel.isBlocking();
+        }
+        for (SelectableChannel channel : errChannels) {
+            wasBlocking[i++] = channel.isBlocking();
+        }
+
         try (Selector selector = Selector.open()) {
             for (SelectableChannel channel : readChannels) {
                 channel.configureBlocking(false);
-                channel.register(selector, SelectionKey.OP_READ);
+                channel.register(selector, (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT) & channel.validOps());
             }
 
             for (SelectableChannel channel : writeChannels) {
@@ -425,7 +439,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             for (SelectableChannel channel : errChannels) {
                 // TODO(fa): not sure if these ops are representing "exceptional condition pending"
                 channel.configureBlocking(false);
-                channel.register(selector, SelectionKey.OP_ACCEPT | SelectionKey.OP_CONNECT);
+                channel.register(selector, SelectionKey.OP_CONNECT);
             }
 
             // IMPORTANT: The meaning of the timeout value is slightly different: 'timeout == 0.0'
@@ -457,6 +471,27 @@ public final class EmulatedPosixSupport extends PosixResources {
             return new SelectResult(resReadfds, resWritefds, resErrfds);
         } catch (IOException e) {
             throw posixException(OSErrorEnum.fromException(e));
+        } finally {
+            i = 0;
+            try {
+                for (SelectableChannel channel : readChannels) {
+                    if (wasBlocking[i++]) {
+                        channel.configureBlocking(true);
+                    }
+                }
+                for (SelectableChannel channel : writeChannels) {
+                    if (wasBlocking[i++]) {
+                        channel.configureBlocking(true);
+                    }
+                }
+                for (SelectableChannel channel : errChannels) {
+                    if (wasBlocking[i++]) {
+                        channel.configureBlocking(true);
+                    }
+                }
+            } catch (IOException e) {
+                // We didn't manage to restore the blocking status, ignore
+            }
         }
     }
 
@@ -487,10 +522,20 @@ public final class EmulatedPosixSupport extends PosixResources {
             if (ch == null) {
                 throw posixException(OSErrorEnum.EBADF);
             }
-            if (!(ch instanceof SelectableChannel)) {
+            if (ch instanceof SelectableChannel) {
+                channels[i] = (SelectableChannel) ch;
+            } else if (ch instanceof PSocket) {
+                PSocket socket = (PSocket) ch;
+                if (socket.getSocket() != null) {
+                    channels[i] = socket.getSocket();
+                } else if (socket.getServerSocket() != null) {
+                    channels[i] = socket.getServerSocket();
+                } else {
+                    throw posixException(OSErrorEnum.EBADF);
+                }
+            } else {
                 throw ChannelNotSelectableException.INSTANCE;
             }
-            channels[i] = (SelectableChannel) ch;
         }
         return channels;
     }
@@ -580,7 +625,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             PSocket socket = getSocket(fd);
             if (socket != null) {
-                SocketBuiltins.SetBlockingNode.setBlocking(socket, blocking);
+                SocketUtils.setBlocking(socket, blocking);
                 return;
             }
             Channel fileChannel = getFileChannel(fd, channelClassProfile);

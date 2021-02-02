@@ -40,24 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NotYetConnectedException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -73,17 +71,24 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -120,9 +125,9 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object accept(PSocket socket) {
             try {
-                SocketChannel acceptSocket = socket.getServerSocket().accept();
+                SocketChannel acceptSocket = SocketUtils.accept(this, socket);
                 if (acceptSocket == null) {
-                    throw raise(OSError);
+                    throw raiseOSError(null, OSErrorEnum.EWOULDBLOCK);
                 }
                 SocketAddress addr = acceptSocket.getLocalAddress();
                 if (!acceptSocket.socket().isBound() || addr == null) {
@@ -224,18 +229,22 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetPeerNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object get(PSocket socket) {
+        Object get(VirtualFrame frame, PSocket socket) {
             if (socket.getSocket() == null) {
-                throw raise(OSError, ErrorMessages.ERROR57_SOCKET_CANNOT_BE_CONNECTED);
+                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
             }
 
             try {
-                InetSocketAddress addr = (InetSocketAddress) socket.getSocket().getRemoteAddress();
-                return factory().createTuple(new Object[]{addr.getAddress().getHostAddress(), addr.getPort()});
+                return factory().createTuple(doGet(socket));
             } catch (IOException e) {
-                throw raise(OSError);
+                throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
+        }
+
+        @TruffleBoundary
+        private static Object[] doGet(PSocket socket) throws IOException {
+            InetSocketAddress addr = (InetSocketAddress) socket.getSocket().getRemoteAddress();
+            return new Object[]{addr.getAddress().getHostAddress(), addr.getPort()};
         }
     }
 
@@ -286,30 +295,12 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "gettimeout", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetTimeoutNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
-        private static int getSoTimeout(SocketChannel channel) throws SocketException {
-            return channel.socket().getSoTimeout();
-        }
-
-        @TruffleBoundary
-        private static int getSoTimeout(ServerSocketChannel channel) throws IOException {
-            return channel.socket().getSoTimeout();
-        }
-
         @Specialization
-        Object get(PSocket socket) {
-            try {
-                if (socket.getSocket() != null) {
-                    return getSoTimeout(socket.getSocket());
-                }
-
-                if (socket.getServerSocket() != null) {
-                    return getSoTimeout(socket.getServerSocket());
-                }
-            } catch (IOException e) {
-                throw raise(OSError);
+        static Object get(PSocket socket) {
+            if (socket.isBlocking()) {
+                return PNone.NONE;
             }
-            return PNone.NONE;
+            return socket.getTimeout();
         }
     }
 
@@ -350,22 +341,18 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RecvNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object recv(PSocket socket, int bufsize, int flags) {
-            return recv(socket, bufsize, PNone.NONE);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        PBytes recv(PSocket socket, int bufsize, PNone flags) {
-            SocketChannel nativeSocket = socket.getSocket();
-            ByteBuffer readBytes = ByteBuffer.allocate(bufsize);
+        Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags) {
+            ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
             try {
-                int length = nativeSocket.read(readBytes);
-                return factory().createBytes(Arrays.copyOfRange(readBytes.array(), 0, length));
-            } catch (IOException | NullPointerException e) {
-                throw raise(OSError);
+                int length = SocketUtils.recv(this, socket, readBytes);
+                return factory().createBytes(PythonUtils.getBufferArray(readBytes), length);
+            } catch (NotYetConnectedException e) {
+                throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
+            } catch (IOException e) {
+                throw raiseOSError(frame, OSErrorEnum.EBADF, e);
             }
         }
+
     }
 
     // recvfrom(bufsize[, flags])
@@ -399,10 +386,10 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached("create(__SETITEM__)") LookupAndCallTernaryNode setItem) {
             int bufferLen = lib.asSizeWithState(callLen.executeObject(frame, buffer), PArguments.getThreadState(frame));
             byte[] targetBuffer = new byte[bufferLen];
-            ByteBuffer byteBuffer = wrap(targetBuffer);
+            ByteBuffer byteBuffer = PythonUtils.wrapByteBuffer(targetBuffer);
             int length;
             try {
-                length = fillBuffer(socket, byteBuffer);
+                length = SocketUtils.recv(this, socket, byteBuffer);
             } catch (NotYetConnectedException e) {
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
             } catch (IOException e) {
@@ -428,7 +415,7 @@ public class SocketBuiltins extends PythonBuiltins {
             if (byteStorage.profile(storage instanceof ByteSequenceStorage)) {
                 ByteBuffer byteBuffer = ((ByteSequenceStorage) storage).getBufferView();
                 try {
-                    return fillBuffer(socket, byteBuffer);
+                    return SocketUtils.recv(this, socket, byteBuffer);
                 } catch (NotYetConnectedException e) {
                     throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
                 } catch (IOException e) {
@@ -436,10 +423,10 @@ public class SocketBuiltins extends PythonBuiltins {
                 }
             } else {
                 byte[] targetBuffer = new byte[bufferLen];
-                ByteBuffer byteBuffer = wrap(targetBuffer);
+                ByteBuffer byteBuffer = PythonUtils.wrapByteBuffer(targetBuffer);
                 int length;
                 try {
-                    length = fillBuffer(socket, byteBuffer);
+                    length = SocketUtils.recv(this, socket, byteBuffer);
                 } catch (NotYetConnectedException e) {
                     throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
                 } catch (IOException e) {
@@ -451,17 +438,6 @@ public class SocketBuiltins extends PythonBuiltins {
                 }
                 return length;
             }
-        }
-
-        @TruffleBoundary
-        private static int fillBuffer(PSocket socket, ByteBuffer byteBuffer) throws IOException {
-            SocketChannel nativeSocket = socket.getSocket();
-            return nativeSocket.read(byteBuffer);
-        }
-
-        @TruffleBoundary
-        private static ByteBuffer wrap(byte[] data) {
-            return ByteBuffer.wrap(data);
         }
     }
 
@@ -501,36 +477,18 @@ public class SocketBuiltins extends PythonBuiltins {
                 throw raise(OSError);
             }
 
-            // According to 'socketmodule.c', function 'socket_send' tries to select the socket
-            // before it writes to it
-            // regardless whether it is blocking or not.
+            int written;
+            ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
             try {
-                if (SendNode.select(socket.getSocket()) == 0) {
-                    throw raise(BlockingIOError);
-                }
-            } catch (IOException e) {
-                throw raiseOSError(frame, e);
-            }
-
-            try {
-                doWrite(socket, toBytes.execute(bytes.getSequenceStorage()));
-                return PNone.NONE;
+                written = SocketUtils.send(this, socket, buffer);
             } catch (IOException e) {
                 throw raise(OSError);
             }
+            if (written == 0) {
+                throw raiseOSError(frame, OSErrorEnum.EWOULDBLOCK);
+            }
+            return written;
         }
-
-        @TruffleBoundary
-        private static int select(SocketChannel socket) throws IOException {
-            Selector selector = Selector.open();
-            socket.register(selector, SelectionKey.OP_WRITE);
-            return selector.selectNow();
-        }
-    }
-
-    @TruffleBoundary
-    private static void doWrite(PSocket socket, byte[] data) throws IOException {
-        socket.getSocket().write(ByteBuffer.wrap(data));
     }
 
     // sendall(bytes[, flags])
@@ -539,14 +497,30 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class SendAllNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object sendAll(VirtualFrame frame, PSocket socket, PBytesLike bytes, Object flags,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
+                        @Cached SequenceStorageNodes.ToByteArrayNode toBytes,
+                        @Cached ConditionProfile hasTimeoutProfile) {
             // TODO: do not ignore flags
-            try {
-                doWrite(socket, toBytes.execute(bytes.getSequenceStorage()));
-                return PNone.NONE;
-            } catch (IOException e) {
-                throw raise(OSError);
+            ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
+            long timeoutMillis = socket.getTimeoutInMilliseconds();
+            TimeoutHelper timeoutHelper = null;
+            if (hasTimeoutProfile.profile(timeoutMillis > 0)) {
+                timeoutHelper = new TimeoutHelper(timeoutMillis);
             }
+            while (PythonUtils.bufferHasRemaining(buffer)) {
+                if (timeoutHelper != null) {
+                    timeoutMillis = timeoutHelper.checkAndGetRemainingTimeout(this);
+                }
+                int written;
+                try {
+                    written = SocketUtils.send(this, socket, buffer, timeoutMillis);
+                } catch (IOException e) {
+                    throw raise(OSError);
+                }
+                if (written == 0) {
+                    throw raiseOSError(frame, OSErrorEnum.EWOULDBLOCK);
+                }
+            }
+            return PythonUtils.getBufferPosition(buffer);
         }
     }
 
@@ -576,30 +550,27 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "setblocking", minNumOfPositionalArgs = 2)
+    @Builtin(name = "setblocking", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "blocking"})
+    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean)
     @GenerateNodeFactory
-    public abstract static class SetBlockingNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetBlockingNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         PNone doBoolean(PSocket socket, boolean blocking) {
-            try {
-                SetBlockingNode.setBlocking(socket, blocking);
-            } catch (IOException e) {
-                throw raise(OSError);
-            }
+            setBlocking(this, socket, blocking);
             return PNone.NONE;
         }
 
-        @TruffleBoundary
-        public static void setBlocking(PSocket socket, boolean blocking) throws IOException {
-            socket.setBlocking(blocking);
-
-            if (socket.getSocket() != null) {
-                socket.getSocket().configureBlocking(socket.isBlocking());
+        public static void setBlocking(PNodeWithRaise node, PSocket socket, boolean blocking) {
+            try {
+                SocketUtils.setBlocking(socket, blocking);
+            } catch (IOException e) {
+                throw node.raise(OSError);
             }
+        }
 
-            if (socket.getServerSocket() != null) {
-                socket.getServerSocket().configureBlocking(socket.isBlocking());
-            }
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.SetBlockingNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -607,28 +578,26 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "settimeout", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SetTimeoutNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object setTimeout(PSocket socket, Integer value) {
-            try {
-                if (socket.getSocket() != null) {
-                    socket.getSocket().socket().setSoTimeout(value);
-                }
-
-                if (socket.getServerSocket() != null) {
-                    socket.getServerSocket().socket().setSoTimeout(value);
-                }
-            } catch (SocketException e) {
-                throw raise(OSError);
-            }
-
+        @Specialization(guards = "isNone(none)")
+        Object setTimeout(PSocket socket, @SuppressWarnings("unused") PNone none) {
+            SetBlockingNode.setBlocking(this, socket, true);
             return PNone.NONE;
         }
 
-        @Specialization
-        Object setTimeout(PSocket socket, double value) {
-            Integer intValue = (int) value;
-            return setTimeout(socket, intValue);
+        @Specialization(guards = "!isNone(secondsObj)")
+        Object setTimeout(PSocket socket, Object secondsObj,
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
+            try {
+                double seconds = castToJavaDoubleNode.execute(secondsObj);
+                if (seconds < 0.0) {
+                    throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
+                }
+                SetBlockingNode.setBlocking(this, socket, false);
+                socket.setTimeout(seconds);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_FLOAT);
+            }
+            return PNone.NONE;
         }
     }
 
@@ -730,8 +699,14 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "getsockopt", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSockOptionNode extends PythonBuiltinNode {
+        private static final int SO_TYPE = 3;
+
         @Specialization
-        Object setSockOpt(PSocket socket, @SuppressWarnings("unused") Object level, Object option) {
+        Object getSockOpt(PSocket socket, @SuppressWarnings("unused") Object level, int option) {
+            // TODO implement more of these
+            if (option == SO_TYPE) {
+                return socket.getType();
+            }
             return socket.getSockOpt(option);
         }
     }

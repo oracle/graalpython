@@ -59,8 +59,8 @@ public class PSocket extends PythonBuiltinObject implements Channel {
     public static final int AF_INET = 2;
     public static final int AF_INET6 = 23;
 
-    public static final int SOCK_DGRAM = 1;
-    public static final int SOCK_STREAM = 2;
+    public static final int SOCK_STREAM = 1;
+    public static final int SOCK_DGRAM = 2;
 
     public static final int AI_PASSIVE = 1;
     public static final int AI_CANONNAME = 2;
@@ -109,7 +109,10 @@ public class PSocket extends PythonBuiltinObject implements Channel {
     private SocketChannel socket;
 
     private ServerSocketChannel serverSocket;
-    private boolean blocking;
+
+    // TODO this should be true by default, but until we have threads, blocking sockets cause too
+    // many deadlocks in the tests
+    private boolean blocking = false;
 
     private HashMap<Object, Object> options;
 
@@ -153,6 +156,10 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         return timeout;
     }
 
+    public long getTimeoutInMilliseconds() {
+        return (long) Math.ceil(timeout * 1000.0);
+    }
+
     public void setTimeout(double timeout) {
         this.timeout = timeout;
     }
@@ -191,6 +198,9 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     public void setBlocking(boolean blocking) {
         this.blocking = blocking;
+        if (blocking) {
+            this.timeout = 0.0;
+        }
     }
 
     @TruffleBoundary

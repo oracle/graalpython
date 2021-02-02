@@ -135,6 +135,7 @@ import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -308,7 +309,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBytes createBytes(byte[] array) {
-        return createBytes(PythonBuiltinClassType.PBytes, array);
+        return createBytes(array, array.length);
     }
 
     public PBytes createBytes(byte[] array, int offset, int length) {
@@ -321,7 +322,15 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBytes createBytes(Object cls, byte[] array) {
-        return trace(new PBytes(cls, getShape(cls), array));
+        return createBytes(cls, array, array.length);
+    }
+
+    public PBytes createBytes(byte[] array, int length) {
+        return createBytes(new ByteSequenceStorage(array, length));
+    }
+
+    public PBytes createBytes(Object cls, byte[] array, int length) {
+        return createBytes(cls, new ByteSequenceStorage(array, length));
     }
 
     public PBytes createBytes(SequenceStorage storage) {
@@ -342,6 +351,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PTuple createTuple(Object[] objects) {
         return createTuple(PythonBuiltinClassType.PTuple, objects);
+    }
+
+    public final PTuple createTuple(int[] ints) {
+        return createTuple(new IntSequenceStorage(ints));
     }
 
     public final PTuple createTuple(SequenceStorage store) {
@@ -720,8 +733,20 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PArray(cls, getShape(cls), formatString, format, length));
     }
 
+    public PByteArray createByteArray(byte[] array) {
+        return createByteArray(array, array.length);
+    }
+
     public PByteArray createByteArray(Object cls, byte[] array) {
-        return trace(new PByteArray(cls, getShape(cls), array));
+        return createByteArray(cls, array, array.length);
+    }
+
+    public PByteArray createByteArray(byte[] array, int length) {
+        return createByteArray(new ByteSequenceStorage(array, length));
+    }
+
+    public PByteArray createByteArray(Object cls, byte[] array, int length) {
+        return createByteArray(cls, new ByteSequenceStorage(array, length));
     }
 
     public PByteArray createByteArray(SequenceStorage storage) {
@@ -730,10 +755,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public PByteArray createByteArray(Object cls, SequenceStorage storage) {
         return trace(new PByteArray(cls, getShape(cls), storage));
-    }
-
-    public PByteArray createByteArray(byte[] array) {
-        return trace(new PByteArray(PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PByteArray.getInstanceShape(getLanguage()), array));
     }
 
     /*

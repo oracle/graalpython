@@ -41,6 +41,7 @@
 package com.oracle.graal.python.util;
 
 import java.lang.management.ManagementFactory;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
@@ -323,5 +324,30 @@ public final class PythonUtils {
             }
         }
         return os;
+    }
+
+    @TruffleBoundary
+    public static ByteBuffer allocateByteBuffer(int capacity) {
+        return ByteBuffer.allocate(capacity);
+    }
+
+    @TruffleBoundary
+    public static ByteBuffer wrapByteBuffer(byte[] array) {
+        return ByteBuffer.wrap(array);
+    }
+
+    @TruffleBoundary
+    public static byte[] getBufferArray(ByteBuffer buffer) {
+        return buffer.array();
+    }
+
+    @TruffleBoundary
+    public static int getBufferPosition(ByteBuffer buffer) {
+        return buffer.position();
+    }
+
+    @TruffleBoundary
+    public static boolean bufferHasRemaining(ByteBuffer buffer) {
+        return buffer.hasRemaining();
     }
 }
