@@ -111,7 +111,7 @@ public final class ExceptionUtils {
 
     private static void appendStackLine(ArrayList<String> stack, Node location, RootNode rootNode, boolean evenWithoutSource) {
         StringBuilder sb = new StringBuilder();
-        SourceSection sourceSection = location != null ? location.getSourceSection() : null;
+        SourceSection sourceSection = location != null ? location.getEncapsulatingSourceSection() : null;
         String rootName = rootNode.getName();
         if (sourceSection != null) {
             sb.append("  ");
