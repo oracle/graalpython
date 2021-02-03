@@ -66,6 +66,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             }
             ByteBuffer output = ByteBuffer.allocate(len);
             SSLEngineHelper.read(this, self, output);
+            output.flip();
             return factory().createBytes(output.array(), output.limit());
         }
 
