@@ -368,6 +368,16 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "shared_ciphers", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SharedCiphers extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(PSSLSocket socket) {
+            // TODO implement
+            return factory().createList();
+        }
+    }
+
     @Builtin(name = "selected_alpn_protocol", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SelectedAlpnProtocol extends PythonUnaryBuiltinNode {
