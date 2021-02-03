@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
@@ -54,11 +56,14 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
@@ -69,8 +74,12 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethONode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -78,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyDeleteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
@@ -99,20 +109,24 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -121,11 +135,13 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -138,6 +154,8 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -358,7 +376,7 @@ public class GraalHPyNodes {
 
             assert checkLayout(methodDef) : "provided pointer has unexpected structure";
 
-            String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_GET_ML_NAME, methodDef));
+            String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_METHODDEF_GET_ML_NAME, methodDef));
 
             // note: 'ml_doc' may be NULL; in this case, we would store 'None'
             Object methodDoc = PNone.NONE;
@@ -398,7 +416,7 @@ public class GraalHPyNodes {
             // CPy-style methods
             // TODO(fa) support static and class methods
             PRootNode rootNode = createWrapperRootNode(language, flags, methodName);
-            PKeyword[] kwDefaults = {new PKeyword(ExternalFunctionNodes.KW_CALLABLE, mlMethObj)};
+            PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, PythonUtils.getOrCreateCallTarget(rootNode));
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
@@ -432,6 +450,109 @@ public class GraalHPyNodes {
                 return new MethVarargsRoot(language, name, MethVarargsNode.METH_VARARGS_CONVERTER);
             }
             throw new IllegalStateException("illegal method flags");
+        }
+    }
+
+    /**
+     * Parses a pointer to a {@code PyGetSetDef} struct and creates the corresponding property.
+     * 
+     * <pre>
+     *     typedef struct PyGetSetDef {
+     *         const char *name;
+     *         getter get;
+     *         setter set;
+     *         const char *doc;
+     *         void *closure;
+     * } PyGetSetDef;
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class HPyAddLegacyGetSetDefNode extends PNodeWithContext {
+
+        public abstract GetSetDescriptor execute(GraalHPyContext context, Object owner, Object legacyGetSetDef);
+
+        @Specialization(limit = "1")
+        static GetSetDescriptor doGeneric(GraalHPyContext context, Object owner, Object legacyGetSetDef,
+                        @CachedLanguage PythonLanguage lang,
+                        @Cached GetNameNode getNameNode,
+                        @CachedLibrary("legacyGetSetDef") InteropLibrary interopLibrary,
+                        @CachedLibrary(limit = "2") InteropLibrary resultLib,
+                        @Cached PCallHPyFunction callGetNameNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            assert checkLayout(legacyGetSetDef) : "provided pointer has unexpected structure";
+
+            String getSetDescrName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_GETSETDEF_GET_NAME, legacyGetSetDef));
+
+            // note: 'doc' may be NULL; in this case, we would store 'None'
+            Object getSetDescrDoc = PNone.NONE;
+            try {
+                Object getSetDocPtr = interopLibrary.readMember(legacyGetSetDef, "doc");
+                if (!resultLib.isNull(getSetDocPtr)) {
+                    getSetDescrDoc = fromCharPointerNode.execute(getSetDocPtr);
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                // fall through
+            }
+
+            Object getterFunPtr;
+            Object setterFunPtr;
+            Object closurePtr;
+            boolean readOnly;
+            try {
+                getterFunPtr = interopLibrary.readMember(legacyGetSetDef, "get");
+                // TODO eagerly resolve function ptr
+                // the pointer must either be NULL or a callable function pointer
+                if (!(resultLib.isNull(getterFunPtr) || resultLib.isExecutable(getterFunPtr))) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "get of %s is not callable", getSetDescrName);
+                }
+
+                setterFunPtr = interopLibrary.readMember(legacyGetSetDef, "set");
+                // TODO eagerly resolve function ptr
+                // the pointer must either be NULL or a callable function pointer
+                if (!(resultLib.isNull(setterFunPtr) || resultLib.isExecutable(setterFunPtr))) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "set of %s is not callable", getSetDescrName);
+                }
+                readOnly = resultLib.isNull(setterFunPtr);
+
+                closurePtr = interopLibrary.readMember(legacyGetSetDef, "closure");
+            } catch (UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Invalid struct member '%s'", e.getUnknownIdentifier());
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
+            }
+
+            PBuiltinFunction getterObject = HPyGetSetDescriptorGetterRootNode.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
+            Object setterObject;
+            if (readOnly) {
+                setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), getNameNode.execute(owner), getSetDescrName);
+            } else {
+                setterObject = HPyGetSetDescriptorSetterRootNode.createLegacyFunction(lang, owner, getSetDescrName, setterFunPtr, closurePtr);
+            }
+
+            GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, getSetDescrName, owner, !readOnly);
+            writeDocNode.execute(getSetDescriptor, SpecialAttributeNames.__DOC__, getSetDescrDoc);
+            return getSetDescriptor;
+        }
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object methodDef) {
+            String[] members = new String[]{"name", "get", "set", "doc", "closure"};
+            InteropLibrary lib = InteropLibrary.getUncached(methodDef);
+            for (String member : members) {
+                if (!lib.isMemberReadable(methodDef, member)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
@@ -577,15 +698,19 @@ public class GraalHPyNodes {
                     memberDoc = fromCharPointerNode.execute(doc);
                 }
 
-                boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
                 int type = valueLib.asInt(callHelperNode.call(context, GRAAL_HPY_MEMBER_GET_TYPE, memberDef));
+                boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
 
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
                 Object setterObject = PNone.NONE;
+                Object deleterObject = PNone.NONE;
                 if (!readOnly) {
                     setterObject = HPyWriteMemberNode.createBuiltinFunction(language, name, type, offset);
+                    // Members are, of course, not deletable; this built-in function will throw a
+                    // TypeError.
+                    deleterObject = HPyDeleteMemberNode.createBuiltinFunction(language, name);
                 }
 
                 // read class 'property' from 'builtins/property.py'
@@ -593,6 +718,7 @@ public class GraalHPyNodes {
                 Object propertyObject = callPropertyClassNode.execute(property, PythonUtils.EMPTY_OBJECT_ARRAY, new PKeyword[]{
                                 new PKeyword("fget", getterObject),
                                 new PKeyword("fset", setterObject),
+                                new PKeyword("fdel", deleterObject),
                                 new PKeyword("doc", memberDoc),
                                 new PKeyword("name", name)
                 });
@@ -634,7 +760,7 @@ public class GraalHPyNodes {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToObjectNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
             assert interopLibrary.hasMembers(memberDef);
@@ -664,12 +790,12 @@ public class GraalHPyNodes {
 
                 // signature: self, closure
                 Object getterFunctionPtr = interopLibrary.readMember(memberDef, "getter_impl");
-                PFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context.getContext(), enclosingClassName, name, getterFunctionPtr, closurePtr);
 
                 // signature: self, value, closure
                 Object setterFunctionPtr = interopLibrary.readMember(memberDef, "setter_impl");
                 boolean readOnly = interopLibrary.isNull(setterFunctionPtr);
 
+                PFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context.getContext(), enclosingClassName, name, getterFunctionPtr, closurePtr);
                 Object setterObject;
                 if (readOnly) {
                     setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), enclosingClassName, name);
@@ -678,14 +804,13 @@ public class GraalHPyNodes {
                 }
 
                 GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, name, type, !readOnly);
-                writeAttributeToObjectNode.execute(getSetDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+                writeDocNode.execute(getSetDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
                 return getSetDescriptor;
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot read field 'name' from member definition");
             }
         }
-
     }
 
     /**
@@ -801,12 +926,15 @@ public class GraalHPyNodes {
 
         @Specialization
         static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
+                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") InteropLibrary resultLib,
                         @Cached HPyAddLegacyMethodNode legacyMethodNode,
                         @Cached HPyCreateLegacyMemberNode createLegacyMemberNode,
+                        @Cached HPyAddLegacyGetSetDefNode legacyGetSetNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached PCallHPyFunction callHelperFunctionNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PythonObjectFactory factory) {
             assert checkLayout(slotDef) : "invalid layout of legacy slot definition";
 
             int slotId;
@@ -858,8 +986,27 @@ public class GraalHPyNodes {
                         throw raiseNode.raise(PythonBuiltinClassType.SystemError, "error when reading legacy method definition for type %s", enclosingType);
                     }
                     break;
+                case Py_tp_repr:
+                    Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
+                    RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, SpecialMethodNames.__REPR__));
+                    PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(pfuncPtr);
+                    PBuiltinFunction method = factory.createBuiltinFunction(SpecialMethodNames.__REPR__, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, callTarget);
+                    writeAttributeToObjectNode.execute(enclosingType, SpecialMethodNames.__REPR__, method);
+                    break;
                 case Py_tp_getset:
-                    // intentionally fall-through as long as this is not implemented
+                    Object getSetDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_DESCRS, slotDef);
+                    try {
+                        int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(getSetDefArrayPtr));
+                        for (int i = 0; i < nLegacyMemberDefs; i++) {
+                            Object legacyMethodDef = resultLib.readArrayElement(getSetDefArrayPtr, i);
+                            GetSetDescriptor getSetDescriptor = legacyGetSetNode.execute(context, enclosingType, legacyMethodDef);
+                            writeAttributeToObjectNode.execute(enclosingType, getSetDescriptor.getName(), getSetDescriptor);
+                        }
+                    } catch (InteropException | OverflowException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "error when reading legacy method definition for type %s", enclosingType);
+                    }
+                    break;
                 default:
                     // TODO(fa): implement support for remaining legacy slot kinds
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1066,15 +1213,82 @@ public class GraalHPyNodes {
     }
 
     /**
-     * A special and simple node for converting everything to {@code None}. This is needed for
-     * reading members of type {@code HPyMember_None}.
+     * Similar to {@link HPyAsPythonObjectNode}, this node converts a native primitive value to an
+     * appropriate Python char value (a single-char Python string).
      */
     @GenerateUncached
-    public abstract static class HPyAsNone extends CExtToJavaNode {
+    public abstract static class HPyPrimitiveAsPythonCharNode extends CExtToJavaNode {
+
         @Specialization
-        @SuppressWarnings("unused")
-        static Object doGeneric(GraalHPyContext hpyContext, Object value) {
-            return PNone.NONE;
+        static Object doByte(@SuppressWarnings("unused") GraalHPyContext hpyContext, byte b) {
+            return PythonUtils.newString(new char[]{(char) b});
+        }
+
+        @Specialization
+        static Object doShort(@SuppressWarnings("unused") GraalHPyContext hpyContext, short i) {
+            return createString((char) i);
+        }
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long l) {
+            // If the integer is out of byte range, we just to a lossy cast since that's the same
+            // sematics as we should just read a single byte.
+            return createString((char) l);
+        }
+
+        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n,
+                        @CachedLibrary("n") InteropLibrary lib) {
+            if (lib.fitsInShort(n)) {
+                try {
+                    return createString((char) lib.asShort(n));
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private static String createString(char c) {
+            return PythonUtils.newString(new char[]{c});
+        }
+    }
+
+    /**
+     * Similar to {@link HPyAsPythonObjectNode}, this node converts a Boolean value to Python
+     * Boolean.
+     */
+    @GenerateUncached
+    public abstract static class HPyPrimitiveAsPythonBooleanNode extends CExtToJavaNode {
+
+        @Specialization
+        static Object doByte(@SuppressWarnings("unused") GraalHPyContext hpyContext, byte b) {
+            return b != 0;
+        }
+
+        @Specialization
+        static Object doShort(@SuppressWarnings("unused") GraalHPyContext hpyContext, short i) {
+            return i != 0;
+        }
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long l) {
+            // If the integer is out of byte range, we just to a lossy cast since that's the same
+            // sematics as we should just read a single byte.
+            return l != 0;
+        }
+
+        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n,
+                        @CachedLibrary("n") InteropLibrary lib) {
+            if (lib.fitsInLong(n)) {
+                try {
+                    return lib.asLong(n) != 0;
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
@@ -1109,6 +1323,45 @@ public class GraalHPyNodes {
         Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
                         @Cached ConvertPIntToPrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(null, value, PInt.intValue(signed), targetTypeSize);
+        }
+    }
+
+    /**
+     * Converts a Python character (1-element Python string) into a UTF-8 encoded C {@code char}.
+     * According to CPython, we need to encode the whole Python string before we access the first
+     * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
+     */
+    @GenerateUncached
+    public abstract static class HPyAsNativeCharNode extends CExtToNativeNode {
+
+        @Specialization
+        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, CodecsModuleBuiltins.STRICT);
+            if (encoded.length != 1) {
+                throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            }
+            return encoded[0];
+        }
+    }
+
+    /**
+     * Converts a Python Boolean into a C Boolean {@code char} (see also:
+     * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
+     */
+    @GenerateUncached
+    public abstract static class HPyAsNativeBooleanNode extends CExtToNativeNode {
+
+        @Specialization
+        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return (byte) PInt.intValue(castToJavaBooleanNode.execute(value));
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+            }
         }
     }
 
@@ -1357,6 +1610,50 @@ public class GraalHPyNodes {
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
             ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
             ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext, isAllocatedProfile);
+        }
+    }
+
+    /**
+     * Argument converter for calling a native legacy get/set descriptor getter function. The native
+     * signature is: {@code PyObject* getter(struct _HPyObject_head_s *self, void* closure)} whereas
+     * {@code struct _HPyObject_head_s} is size-compatible to {@code PyObject}.
+     */
+    public abstract static class HPyLegacyGetSetGetterToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyGetNativeSpacePointerNode readNativeSpaceNode) {
+            dest[destOffset] = readNativeSpaceNode.execute(args[argsOffset]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+        }
+    }
+
+    /**
+     * Argument converter for calling a native legacy get/set descriptor setter function. The native
+     * signature is:
+     * {@code int setter(struct _HPyObject_head_s *self, PyObject *value, void* closure)}.
+     */
+    public abstract static class HPyLegacyGetSetSetterToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyGetNativeSpacePointerNode getNativeSpacePointerNode,
+                        @Cached ToBorrowedRefNode toSulongNode) {
+            dest[destOffset] = getNativeSpacePointerNode.execute(args[argsOffset]);
+            dest[destOffset + 1] = toSulongNode.execute(args[argsOffset + 1]);
+            dest[destOffset + 2] = args[argsOffset + 2];
+        }
+    }
+
+    /**
+     * The counter part of {@link HPyGetSetSetterToSulongNode}.
+     */
+    public abstract static class HPyLegacyGetSetSetterDecrefNode extends HPyCloseArgHandlesNode {
+
+        @Specialization
+        static void doConvert(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached SubRefCntNode subRefCntNode) {
+            subRefCntNode.dec(dest[destOffset + 1]);
         }
     }
 
@@ -1678,6 +1975,19 @@ public class GraalHPyNodes {
                 }
             }
             throw OverflowException.INSTANCE;
+        }
+    }
+
+    @ImportStatic(PythonOptions.class)
+    @GenerateUncached
+    public abstract static class HPyGetNativeSpacePointerNode extends Node {
+
+        public abstract Object execute(Object object);
+
+        @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
+        static Object doDynamicObject(DynamicObject object,
+                        @CachedLibrary("object") DynamicObjectLibrary lib) {
+            return lib.getOrDefault(object, OBJECT_HPY_NATIVE_SPACE, PNone.NO_VALUE);
         }
     }
 

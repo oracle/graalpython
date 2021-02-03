@@ -399,16 +399,16 @@ static inline HPy HPyDict_GetItem(HPyContext ctx, HPy h_dict, HPy h_key) {
      return WRAP(ctx->ctx_Dict_GetItem ( ctx, UNWRAP(h_dict), UNWRAP(h_key) ));
 }
 
+static inline HPy HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n) {
+     return WRAP(ctx->ctx_Tuple_FromArray ( ctx, (_HPyPtr)items, n ));
+}
+
 static inline HPy HPy_FromPyObject(HPyContext ctx, cpy_PyObject *obj) {
      return WRAP(ctx->ctx_FromPyObject ( ctx, obj )); 
 }
 
 static inline cpy_PyObject *HPy_AsPyObject(HPyContext ctx, HPy h) {
      return ctx->ctx_AsPyObject ( ctx, UNWRAP(h) ); 
-}
-
-static inline HPy HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n) {
-     return WRAP(ctx->ctx_Tuple_FromArray ( ctx, items, n )); 
 }
 
 static inline void _HPy_CallRealFunctionFromTrampoline(HPyContext ctx, HPyFunc_Signature sig, void *func, void *args) {
@@ -448,6 +448,6 @@ static inline HPy HPyTupleBuilder_Build(HPyContext ctx, HPyTupleBuilder builder)
 }
 
 static inline void HPyTupleBuilder_Cancel(HPyContext ctx, HPyTupleBuilder builder) {
-     ctx->ctx_TupleBuilder_Cancel ( ctx, UNWRAP_TUPLE_BUILDER(builder) ); 
+     ctx->ctx_TupleBuilder_Cancel ( ctx, UNWRAP_TUPLE_BUILDER(builder));
 }
 

@@ -62,6 +62,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPyth
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateTypeFromSpecNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
@@ -817,6 +819,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode resultAsHandleNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached PythonObjectFactory factory,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -825,8 +828,8 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object unicodeObject = asPythonObjectNode.execute(context, arguments[1]);
             try {
-                Object result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, "strict");
-                return resultAsHandleNode.execute(context, result);
+                byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, CodecsModuleBuiltins.STRICT);
+                return resultAsHandleNode.execute(context, factory.createBytes(result));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
                 return context.getNullHandle();
@@ -1330,7 +1333,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) throws ArityException {
+                        @Cached HPyGetNativeSpacePointerNode getNativeSpacePointerNode) throws ArityException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
@@ -1339,7 +1342,7 @@ public abstract class GraalHPyContextFunctions {
             Object receiver = asPythonObjectNode.execute(context, arguments[1]);
 
             // we can also just return NO_VALUE since that will be interpreter as NULL
-            return readAttributeFromObjectNode.execute(receiver, OBJECT_HPY_NATIVE_SPACE);
+            return getNativeSpacePointerNode.execute(receiver);
         }
     }
 

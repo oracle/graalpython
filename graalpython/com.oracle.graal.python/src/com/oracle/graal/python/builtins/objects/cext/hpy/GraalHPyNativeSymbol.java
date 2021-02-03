@@ -80,9 +80,12 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_SLOT_GET_SLOT("graal_hpy_slot_get_slot"),
     GRAAL_HPY_CALLOC("graal_hpy_calloc"),
     GRAAL_HPY_LEGACY_SLOT_GET_SLOT("graal_hpy_legacy_slot_get_slot"),
+    GRAAL_HPY_LEGACY_SLOT_GET_PFUNC("graal_hpy_legacy_slot_get_pfunc"),
     GRAAL_HPY_LEGACY_SLOT_GET_METHODS("graal_hpy_legacy_slot_get_methods"),
     GRAAL_HPY_LEGACY_SLOT_GET_MEMBERS("graal_hpy_legacy_slot_get_members"),
     GRAAL_HPY_LEGACY_SLOT_GET_DESCRS("graal_hpy_legacy_slot_get_descrs"),
+    GRAAL_HPY_LEGACY_METHODDEF_GET_ML_NAME("graal_hpy_legacy_methoddef_get_ml_name"),
+    GRAAL_HPY_LEGACY_GETSETDEF_GET_NAME("graal_hpy_legacy_getsetdef_get_name"),
 
     /* C functions for reading native members by offset */
     GRAAL_HPY_READ_S("graal_hpy_read_s"),

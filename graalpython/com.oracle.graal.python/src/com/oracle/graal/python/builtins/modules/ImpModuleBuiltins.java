@@ -55,13 +55,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyInitObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
@@ -340,7 +340,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
             }
             Object nativeResult = interop.execute(pyinitFunc, hpyContext);
-            getCheckResultNode().execute(initFuncName, nativeResult);
+            getCheckResultNode().execute(context, initFuncName, nativeResult);
 
             Object result = HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
             if (!(result instanceof PythonModule)) {
@@ -377,7 +377,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 nativeResult = interop.execute(pyinitFunc, arguments);
             }
 
-            getCheckResultNode().execute(initFuncName, nativeResult);
+            getCheckResultNode().execute(context, initFuncName, nativeResult);
 
             Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
             if (!(result instanceof PythonModule)) {

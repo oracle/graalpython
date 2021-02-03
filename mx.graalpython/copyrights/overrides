@@ -74,14 +74,13 @@ graalpython/com.oracle.graal.python.cext/include/common/hpymodule.h,hpy.copyrigh
 graalpython/com.oracle.graal.python.cext/include/common/hpytype.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/implementation.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/macros.h,hpy.copyright
-graalpython/com.oracle.graal.python.cext/include/common/runtime.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/argparse.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_listbuilder.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_module.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_tuplebuilder.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_tuple.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_type.h,hpy.copyright
-graalpython/com.oracle.graal.python.cext/include/common/typeslots.h,hpy.copyright
+graalpython/com.oracle.graal.python.cext/include/common/version.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/compile.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/complexobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/cpython/abstract.h,python.copyright
@@ -585,6 +584,7 @@ graalpython/lib-graalpython/modules/hpy/test/test_number.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_object.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_slots.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_support.py,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/version.py,hpy.copyright
 graalpython/lib-graalpython/object.py,pypy.copyright
 graalpython/lib-graalpython/str.py,pypy.copyright
 graalpython/lib-graalpython/timsort.py,pypy.copyright

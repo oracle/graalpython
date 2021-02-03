@@ -65,6 +65,9 @@ FAIL = '\033[91m'
 ENDC = '\033[0m'
 BOLD = '\033[1m'
 
+class SkipTest(BaseException):
+    pass
+
 _fixture_scopes = {"session": {}, "module": {}, "function": {}}
 _fixture_marks = []
 _itertools_module = None
@@ -239,10 +242,14 @@ def _pytest_fixture_maker(*args, **kwargs):
         return _fixture_decorator(args[0])
     return _fixture_decorator
 
+def _pytest_skip():
+    raise SkipTest
+
 _pytest_module = type(os)("pytest")
 _pytest_module.mark = Mark()
 _pytest_module.fixture = _pytest_fixture_maker
 _pytest_module.raises = lambda x: TestCase.assertRaisesRegex(x, None)
+_pytest_module.skip = _pytest_skip
 sys.modules["pytest"] = _pytest_module
 
 verbose = False
@@ -312,10 +319,6 @@ def dump_truffle_ast(func):
         pass
 
 
-class SkipTest(BaseException):
-    pass
-
-
 class TestCase(object):
 
     def __init__(self):
@@ -362,7 +365,7 @@ class TestCase(object):
                 func()                
         except BaseException as e:
             if isinstance(e, SkipTest):
-                print("Skipped: %s" % e)
+                return _skipped_marker
             else:
                 if print_immediately:
                     print("Exception during setup occurred: %s\n" % e)
@@ -500,6 +503,9 @@ class TestCase(object):
     def fail(self, msg):
         assert False, msg
 
+    def skip(self):
+        raise SkipTest
+
     def assertRaises(self, exc_type, function=None, *args, **kwargs):
         return self.assertRaisesRegex(exc_type, None, function, *args, **kwargs)
 
@@ -526,14 +532,24 @@ class TestCase(object):
             self.type = exc_type
             self.value = exc
             self.tb = traceback
-            import re
             if not exc_type:
                 assert False, "expected '%r' to be raised" % self.exc_type
-            elif self.exc_type in exc_type.mro():
-                self.exception = exc
+            else:
+                if isinstance(self.exc_type, tuple):
+                    for _exc_type in self.exc_type:
+                        if self._match_exc(_exc_type, exc_type, exc):
+                            return True
+                elif self._match_exc(self.exc_type, exc_type, exc):
+                    return True
+            
+        def _match_exc(self, expected_exc_type, actual_exc_type, actual_exc):
+            import re
+            if expected_exc_type in actual_exc_type.mro():
+                self.exception = actual_exc
                 if self.exc_regex:
-                    assert re.search(self.exc_regex, str(exc)), "%s does not match %s" % (self.exc_regex, exc)
+                    assert re.search(self.exc_regex, str(actual_exc)), "%s does not match %s" % (self.exc_regex, actual_exc)
                 return True
+
 
     def assertIn(self, expected, in_str, msg=""):
         if not msg:

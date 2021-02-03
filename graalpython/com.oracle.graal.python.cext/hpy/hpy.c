@@ -167,6 +167,10 @@ int graal_hpy_legacy_slot_get_slot(cpy_PyTypeSlot *slot) {
 	return slot->slot;
 }
 
+void* graal_hpy_legacy_slot_get_pfunc(cpy_PyTypeSlot *slot) {
+	return slot->pfunc;
+}
+
 void* graal_hpy_legacy_slot_get_methods(cpy_PyTypeSlot *slot) {
 	uint64_t len=0;
 	cpy_PyMethodDef *legacy_methods = (cpy_PyMethodDef *) slot->pfunc;
@@ -201,6 +205,18 @@ void* graal_hpy_legacy_slot_get_descrs(cpy_PyTypeSlot *slot) {
 		return polyglot_from_cpy_PyGetSetDef_array(legacy_getset, len);
 	}
 	return NULL;
+}
+
+/* getters for legacy cpy_PyMethodDef */
+
+void* graal_hpy_legacy_methoddef_get_ml_name(cpy_PyMethodDef *methodDef) {
+	return polyglot_from_string(methodDef->ml_name, SRC_CS);
+}
+
+/* getters for legacy cpy_PyGetSetDef */
+
+void* graal_hpy_legacy_getsetdef_get_name(cpy_PyGetSetDef *getSetDef) {
+	return polyglot_from_string(getSetDef->name, SRC_CS);
 }
 
 /* getters for HPyDef */
