@@ -1989,15 +1989,6 @@ public class GraalHPyNodes {
                         @CachedLibrary("object") DynamicObjectLibrary lib) {
             return lib.getOrDefault(object, OBJECT_HPY_NATIVE_SPACE, PNone.NO_VALUE);
         }
-
-        @Specialization(replaces = "doDynamicObject")
-        static Object doOther(Object object,
-                        @CachedLibrary(limit = "getVariableArgumentInlineCacheLimit()") DynamicObjectLibrary lib) {
-            if (object instanceof DynamicObject) {
-                return lib.getOrDefault((DynamicObject) object, OBJECT_HPY_NATIVE_SPACE, PNone.NO_VALUE);
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
     }
 
 }
