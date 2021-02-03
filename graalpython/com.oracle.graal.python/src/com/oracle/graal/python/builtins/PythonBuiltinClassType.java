@@ -209,6 +209,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SocketGAIError("gaierror", "_socket"),
     SocketHError("herror", "_socket"),
     SocketTimeout("timeout", "_socket"),
+    BinasciiError("Error", "binascii"),
+    BinasciiIncomplete("Incomplete", "binascii"),
 
     // todo: all OS errors
 
@@ -396,6 +398,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
         UnicodeTranslateError.base = UnicodeError;
         RecursionError.base = RuntimeError;
         StructError.base = Exception;
+        BinasciiError.base = ValueError;
+        BinasciiIncomplete.base = Exception;
 
         // warnings
         Warning.base = Exception;

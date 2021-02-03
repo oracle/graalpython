@@ -40,10 +40,13 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BinasciiError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.zip.CRC32;
 
@@ -53,24 +56,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.statement.RaiseNode;
-import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -81,26 +75,13 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 @CoreFunctions(defineModule = "binascii")
 public class BinasciiModuleBuiltins extends PythonBuiltins {
-    private static final String INCOMPLETE = "Incomplete";
-    private static final String ERROR = "Error";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BinasciiModuleBuiltinsFactory.getFactories();
-    }
-
-    @Override
-    public void initialize(PythonCore core) {
-        super.initialize(core);
-        String pre = "binascii.";
-        PythonAbstractClass[] errorBases = new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.ValueError)};
-        builtinConstants.put(ERROR, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + ERROR, errorBases));
-        PythonAbstractClass[] incompleteBases = new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.Exception)};
-        builtinConstants.put(INCOMPLETE, core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, pre + INCOMPLETE, incompleteBases));
     }
 
     @Builtin(name = "a2b_base64", minNumOfPositionalArgs = 1)
@@ -122,69 +103,68 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static byte[] b64decode(String data) {
-            return Base64.decode(data);
+        private byte[] b64decode(String data) {
+            return b64decode(data.getBytes(StandardCharsets.US_ASCII));
         }
 
         @TruffleBoundary
         private byte[] b64decode(byte[] data) {
-            byte[] asciis = Base64.decode(BytesUtils.createASCIIString(data));
-            if (asciis != null) {
-                return asciis;
+            try {
+                // Using MIME decoder because that one skips over anything that is not the alphabet,
+                // just like CPython does
+                return Base64.getMimeDecoder().decode(data);
+            } catch (IllegalArgumentException e) {
+                throw raise(BinasciiError, e);
             }
-            throw raise(ValueError);
         }
     }
 
-    @Builtin(name = "a2b_hex", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "a2b_hex", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class A2bHexNode extends PythonBinaryBuiltinNode {
-        @Child private ReadAttributeFromObjectNode readAttrNode;
-        @Child private RaiseNode raiseNode;
-        @Child private CallNode callExceptionConstructor;
+    abstract static class A2bHexNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        PBytes a2b(PythonModule self, String data) {
+        PBytes a2b(String data) {
             int length = data.length();
             if (length % 2 != 0) {
-                throw oddLengthError(self);
+                throw raise(BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
             }
             byte[] output = new byte[length / 2];
             for (int i = 0; i < length / 2; i++) {
                 try {
-                    output[i] = (byte) (digitValue(self, data.charAt(i * 2)) * 16 + digitValue(self, data.charAt(i * 2 + 1)));
+                    output[i] = (byte) (digitValue(data.charAt(i * 2)) * 16 + digitValue(data.charAt(i * 2 + 1)));
                 } catch (NumberFormatException e) {
-                    throw nonHexError(self);
+                    throw raise(BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
                 }
             }
             return factory().createBytes(output);
         }
 
         @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "2")
-        PBytes a2b(PythonModule self, Object buffer,
+        PBytes a2b(Object buffer,
                         @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
             try {
-                return a2b(self, bufferLib.getBufferBytes(buffer));
+                return a2b(bufferLib.getBufferBytes(buffer));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
         @TruffleBoundary
-        private PBytes a2b(PythonModule self, byte[] bytes) {
+        private PBytes a2b(byte[] bytes) {
             int length = bytes.length;
             if (length % 2 != 0) {
-                throw oddLengthError(self);
+                throw raise(BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
             }
             byte[] output = new byte[length / 2];
             for (int i = 0; i < length / 2; i++) {
-                output[i] = (byte) (digitValue(self, (char) bytes[i * 2]) * 16 + digitValue(self, (char) bytes[i * 2 + 1]));
+                output[i] = (byte) (digitValue((char) bytes[i * 2]) * 16 + digitValue((char) bytes[i * 2 + 1]));
             }
             return factory().createBytes(output);
         }
 
-        private int digitValue(PythonModule self, char b) {
+        private int digitValue(char b) {
             if (b >= '0' && b <= '9') {
                 return b - '0';
             } else if (b >= 'a' && b <= 'f') {
@@ -192,41 +172,10 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             } else if (b >= 'A' && b <= 'F') {
                 return b - 'A' + 10;
             } else {
-                throw nonHexError(self);
+                throw raise(BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
             }
         }
 
-        private PException oddLengthError(PythonModule self) {
-            raiseObject(getAttrNode().execute(self, ERROR), ErrorMessages.ODD_LENGTH_STRING);
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("should not be reached");
-        }
-
-        private PException nonHexError(PythonModule self) {
-            raiseObject(getAttrNode().execute(self, ERROR), ErrorMessages.NON_HEX_DIGIT_FOUND);
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("should not be reached");
-        }
-
-        private ReadAttributeFromObjectNode getAttrNode() {
-            if (readAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttrNode = insert(ReadAttributeFromObjectNode.create());
-            }
-            return readAttrNode;
-        }
-
-        private void raiseObject(Object exceptionObject, String message) {
-            if (callExceptionConstructor == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callExceptionConstructor = insert(CallNode.create());
-            }
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(RaiseNodeGen.create(null, null));
-            }
-            raiseNode.execute(callExceptionConstructor.execute(exceptionObject, message), PNone.NO_VALUE);
-        }
     }
 
     @Builtin(name = "b2a_base64", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"}, keywordOnlyNames = {"newline"})
@@ -234,12 +183,18 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class B2aBase64Node extends PythonClinicBuiltinNode {
         @TruffleBoundary
-        private static byte[] b2a(byte[] data, int newline) {
-            String encode = Base64.encode(data);
-            if (newline != 0) {
-                return (encode + "\n").getBytes();
+        private byte[] b2a(byte[] data, int newline) {
+            byte[] encoded;
+            try {
+                encoded = Base64.getEncoder().encode(data);
+            } catch (IllegalArgumentException e) {
+                throw raise(BinasciiError, e);
             }
-            return encode.getBytes();
+            if (newline != 0) {
+                encoded = Arrays.copyOf(encoded, encoded.length + 1);
+                encoded[encoded.length - 1] = '\n';
+            }
+            return encoded;
         }
 
         @Specialization(guards = "bufferLib.isBuffer(data)", limit = "3")
@@ -318,7 +273,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class HexlifyNode extends B2aHexNode {
     }
 
-    @Builtin(name = "unhexlify", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = "unhexlify", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UnhexlifyNode extends A2bHexNode {
     }
