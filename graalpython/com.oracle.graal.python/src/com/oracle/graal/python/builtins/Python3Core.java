@@ -239,7 +239,6 @@ public final class Python3Core implements PythonCore {
                         "_functools",
                         "method",
                         "code",
-                        "posix",
                         "_io",
                         "_frozen_importlib",
                         "classes",

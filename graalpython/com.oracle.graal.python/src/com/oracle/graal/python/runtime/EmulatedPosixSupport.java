@@ -83,8 +83,10 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -92,13 +94,18 @@ import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
+import org.graalvm.polyglot.io.ProcessHandler.Redirect;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
@@ -119,6 +126,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.io.TruffleProcessBuilder;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -1322,6 +1330,294 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw e;
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    private static final String[] KILL_SIGNALS = new String[]{"SIGKILL", "SIGQUIT", "SIGTRAP", "SIGABRT"};
+    private static final String[] TERMINATION_SIGNALS = new String[]{"SIGTERM", "SIGINT"};
+
+    @ExportMessage
+    public void kill(long pid, int signal,
+                    @Cached ReadAttributeFromObjectNode readSignalNode,
+                    @Cached IsNode isNode) throws PosixException {
+        // TODO looking up the signal values by name is probably not compatible with CPython
+        // (the user might change the value of _signal.SIGKILL, but kill(pid, 9) should still work
+        PythonModule signalModule = context.getCore().lookupBuiltinModule("_signal");
+        for (String name : TERMINATION_SIGNALS) {
+            Object value = readSignalNode.execute(signalModule, name);
+            if (isNode.execute(signal, value)) {
+                try {
+                    sigterm((int) pid);
+                } catch (IndexOutOfBoundsException e) {
+                    throw posixException(OSErrorEnum.ESRCH);
+                }
+                return;
+            }
+        }
+        for (String name : KILL_SIGNALS) {
+            Object value = readSignalNode.execute(signalModule, name);
+            if (isNode.execute(signal, value)) {
+                try {
+                    sigkill((int) pid);
+                } catch (IndexOutOfBoundsException e) {
+                    throw posixException(OSErrorEnum.ESRCH);
+                }
+                return;
+            }
+        }
+        Object dfl = readSignalNode.execute(signalModule, "SIG_DFL");
+        if (isNode.execute(signal, dfl)) {
+            try {
+                sigdfl((int) pid);
+            } catch (IndexOutOfBoundsException e) {
+                throw posixException(OSErrorEnum.ESRCH);
+            }
+            return;
+        }
+        throw new UnsupportedPosixFeatureException("Sending arbitrary signals to child processes. Can only send some kill and term signals.");
+    }
+
+    @ExportMessage
+    public long[] waitpid(long pid, int options) throws PosixException {
+        try {
+            if (options == 0) {
+                int exitStatus = waitpid((int) pid);
+                return new long[]{pid, exitStatus};
+            } else if (options == WNOHANG) {
+                // TODO: simplify once the super class is merged with this class
+                int[] res = exitStatus((int) pid);
+                return new long[]{res[0], res[1]};
+            } else {
+                throw new UnsupportedPosixFeatureException("Only 0 or WNOHANG are supported for waitpid");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (pid < -1) {
+                throw new UnsupportedPosixFeatureException("Process groups are not supported.");
+            } else if (pid <= 0) {
+                throw posixException(OSErrorEnum.ECHILD);
+            } else {
+                throw posixException(OSErrorEnum.ESRCH);
+            }
+        } catch (InterruptedException e) {
+            throw posixException(OSErrorEnum.EINTR);
+        }
+    }
+
+    // TODO the implementation of the following builtins is taken from posix.py,
+    // do they really make sense for the emulated backend? Is the handling of exist status correct?
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean wcoredump(int status) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean wifcontinued(int status) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean wifstopped(int status) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean wifsignaled(int status) {
+        return status > 128;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean wifexited(int status) {
+        return !wifsignaled(status);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int wexitstatus(int status) {
+        return status & 127;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int wtermsig(int status) {
+        return status - 128;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int wstopsig(int status) {
+        return 0;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException {
+
+        // TODO there are a few arguments we ignore, we should throw an exception or report a
+        // compatibility warning
+
+        if (!context.isExecutableAccessAllowed()) {
+            // TODO is this check relevant to NFI backend as well?
+            // TODO raise an exception instead of returning an invalid pid
+            return -1;
+        }
+
+        // TODO do we need to do this check (and the isExecutable() check later)?
+        TruffleFile cwdFile = cwd == null ? context.getEnv().getCurrentWorkingDirectory() : getTruffleFile(pathToJavaStr(cwd));
+        if (!cwdFile.exists()) {
+            throw posixException(OSErrorEnum.ENOENT);
+        }
+
+        HashMap<String, String> envMap = null;
+        if (env != null) {
+            envMap = new HashMap<>(env.length);
+            for (Object o : env) {
+                String str = pathToJavaStr(o);
+                String[] strings = str.split("=", 2);
+                if (strings.length == 2) {
+                    envMap.put(strings[0], strings[1]);
+                } else {
+                    throw new UnsupportedPosixFeatureException("Only key=value environment variables are supported");
+                }
+            }
+        }
+
+        String[] argStrings;
+        if (args.length == 0) {
+            // Posix execv() function distinguishes between the name of the file to be executed and
+            // the arguments. It is only a convention that the first argument is the filename of the
+            // executable and is not even mandatory, i.e. it is possible to exec a program with no
+            // arguments at all, but some programs fail by printing "A NULL argv[0] was passed
+            // through an exec system call".
+            // https://stackoverflow.com/questions/36673765/why-can-the-execve-system-call-run-bin-sh-without-any-argv-arguments-but-not
+            // Java's Process API uses the first argument as the executable name so we always need
+            // to provide it.
+            argStrings = new String[1];
+        } else {
+            argStrings = new String[args.length];
+            for (int i = 0; i < args.length; ++i) {
+                argStrings[i] = pathToJavaStr(args[i]);
+            }
+        }
+
+        IOException firstError = null;
+        for (Object o : executables) {
+            String path = pathToJavaStr(o);
+            TruffleFile executableFile = cwdFile.resolve(path);
+            if (executableFile.isExecutable()) {
+                argStrings[0] = path;
+                try {
+                    return exec(argStrings, cwdFile, envMap, stdinWriteFd, stdinReadFd, stdoutWriteFd, stdoutReadFd, stderrWriteFd, errPipeWriteFd, stderrReadFd);
+                } catch (IOException ex) {
+                    if (firstError == null) {
+                        firstError = ex;
+                    }
+                }
+            } else {
+                LOGGER.finest(() -> "_posixsubprocess.fork_exec not executable: " + executableFile);
+            }
+        }
+
+        // TODO we probably do not need to use the pipe at all, CPython uses it to pass errno from
+        // the child to the parent which then raises an OSError. Since we are still in the parent,
+        // we could just throw an exception.
+        // However, there is no errno if the executables array is empty - CPython raises
+        // SubprocessError in that case
+        if (errPipeWriteFd != -1) {
+            handleIOError(errPipeWriteFd, firstError);
+        }
+        // TODO returning -1 is not correct - we should either throw an exception directly or use
+        // the pipe to pretend that there is a child - in which case we should return a valid pid_t
+        // (and pretend that the child exited in the upcoming waitpid call)
+        return -1;
+    }
+
+    private int exec(String[] argStrings, TruffleFile cwd, Map<String, String> env,
+                    int p2cwrite, int p2cread, int c2pwrite, int c2pread,
+                    int errwrite, int errpipe_write, int errread) throws IOException {
+        LOGGER.finest(() -> "_posixsubprocess.fork_exec trying to exec: " + String.join(" ", argStrings));
+        TruffleProcessBuilder pb = context.getEnv().newProcessBuilder(argStrings);
+        if (p2cread != -1 && p2cwrite != -1) {
+            pb.redirectInput(Redirect.PIPE);
+        } else {
+            pb.redirectInput(Redirect.INHERIT);
+        }
+
+        if (c2pread != -1 && c2pwrite != -1) {
+            pb.redirectOutput(Redirect.PIPE);
+        } else {
+            pb.redirectOutput(Redirect.INHERIT);
+        }
+
+        if (errread != -1 && errwrite != -1) {
+            pb.redirectError(Redirect.PIPE);
+        } else {
+            pb.redirectError(Redirect.INHERIT);
+        }
+
+        if (errwrite == c2pwrite) {
+            pb.redirectErrorStream(true);
+        }
+
+        pb.directory(cwd);
+        if (env != null) {
+            pb.clearEnvironment(true);
+            pb.environment(env);
+        }
+
+        ProcessWrapper process = new ProcessWrapper(pb.start(), p2cwrite != -1, c2pread != 1, errread != -1);
+        try {
+            if (p2cwrite != -1) {
+                // user code is expected to close the unused ends of the pipes
+                getFileChannel(p2cwrite).close();
+                fdopen(p2cwrite, process.getOutputChannel());
+            }
+            if (c2pread != -1) {
+                getFileChannel(c2pread).close();
+                fdopen(c2pread, process.getInputChannel());
+            }
+            if (errread != -1) {
+                getFileChannel(errread).close();
+                fdopen(errread, process.getErrorChannel());
+            }
+        } catch (IOException ex) {
+            // We only want to rethrow the IOException that may come out of pb.start()
+            if (errpipe_write != -1) {
+                handleIOError(errpipe_write, ex);
+            }
+            return -1;
+        }
+
+        return registerChild(process);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private void handleIOError(int errpipe_write, IOException e) {
+        // write exec error information here. Data format: "exception name:hex
+        // errno:description". The exception can be null if we did not find any file in the
+        // execList that could be executed
+        Channel err = getFileChannel(errpipe_write);
+        if (!(err instanceof WritableByteChannel)) {
+            // TODO if we are pretending to be the child, then we should probably ignore errors like
+            // we do below
+            throw new UnsupportedPosixFeatureException(ErrorMessages.ERROR_WRITING_FORKEXEC);
+        } else {
+            ErrorAndMessagePair pair;
+            if (e == null) {
+                pair = new ErrorAndMessagePair(OSErrorEnum.ENOENT, OSErrorEnum.ENOENT.getMessage());
+            } else {
+                pair = OSErrorEnum.fromException(e);
+            }
+            try {
+                ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
+            } catch (IOException e1) {
+            }
         }
     }
 

@@ -177,6 +177,7 @@ graalpython/com.oracle.graal.python.cext/modules/sre_lib.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
+graalpython/com.oracle.graal.python.cext/posix/fork_exec.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/complexobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/floatobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright

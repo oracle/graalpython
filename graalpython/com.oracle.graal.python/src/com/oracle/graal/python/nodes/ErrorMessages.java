@@ -66,6 +66,7 @@ public abstract class ErrorMessages {
     public static final String ARG_SHOULD_BE_INT_BYTESLIKE_OBJ = "argument should be integer or bytes-like object, not '%p'";
     public static final String ARG_SHOULD_BE_INT_OR_NONE = "argument should be integer or None, not %p";
     public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %d";
+    public static final String ARGS_CHANGED_DURING_ITERATION = "args changed during iteration";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
     public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
     public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
@@ -89,6 +90,7 @@ public abstract class ErrorMessages {
     public static final String BAD_FILE_DESCRIPTOR = "bad file descriptor";
     public static final String BAD_MARSHAL_DATA = "bad marshal data";
     public static final String BAD_OPERAND_FOR = "bad operand type for %s%s: '%p'";
+    public static final String BAD_VALUES_IN_FDS_TO_KEEP = "bad value(s) in fds_to_keep";
     public static final String BAD_TYPECODE = "bad typecode (must be i, d, b, B, or l)";
     public static final String BASE_OUT_OF_RANGE_FOR_INT = "base is out of range for int()";
     public static final String BASES_MUST_BE_TYPES = "bases must be types";
@@ -518,6 +520,8 @@ public abstract class ErrorMessages {
     public static final String RETURNED_RESULT_WITH_ERROR_SET = "%s returned a result with an error set";
     public static final String RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = "%s returned an unexpected return code; expected 'int' but was %s";
     public static final String S_EMBEDDED_NULL_CHARACTER_IN_S = "%sembedded null character in %s";
+    public static final String S_MUST_BE_S = "%s must be %s";
+    public static final String S_NOT_SUPPORTED = "%s not supported";
     public static final String S_S_SHOULD_BE_S_NOT_P = "%s%s should be %s, not %p";
     public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
@@ -613,6 +617,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_SIZE_WAS = "unsupported %s size; was: %d";
     public static final String UNSUPPORTED_STR_TYPE = "unsupported string type: %s";
     public static final String UNSUPPORTED_TARGET_SIZE = "Unsupported target size: %d";
+    public static final String UNSUPPORTED_USE_OF_SYS_EXECUTABLE = "internal error: unsupported use of sys.executable";
     public static final String VALUE_EXPECTED = "%s value expected";
     public static final String VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = "value too large to fit into index-sized integer";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
