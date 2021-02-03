@@ -87,10 +87,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -411,9 +409,10 @@ public final class EmulatedPosixSupport extends PosixResources {
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         SelectableChannel[] readChannels = getSelectableChannels(readfds);
         SelectableChannel[] writeChannels = getSelectableChannels(writefds);
-        SelectableChannel[] errChannels = getSelectableChannels(errorfds);
+        // Java doesn't support any exceptional conditions we could apply on errfds
+        // TODO raise exception if errfds is not a subset of readfds & writefds?
 
-        boolean[] wasBlocking = new boolean[readChannels.length + writeChannels.length + errChannels.length];
+        boolean[] wasBlocking = new boolean[readChannels.length + writeChannels.length];
         int i = 0;
 
         for (SelectableChannel channel : readChannels) {
@@ -422,25 +421,19 @@ public final class EmulatedPosixSupport extends PosixResources {
         for (SelectableChannel channel : writeChannels) {
             wasBlocking[i++] = channel.isBlocking();
         }
-        for (SelectableChannel channel : errChannels) {
-            wasBlocking[i++] = channel.isBlocking();
-        }
+
+        final int readOps = SelectionKey.OP_READ | SelectionKey.OP_ACCEPT;
+        final int writeOps = SelectionKey.OP_WRITE;
 
         try (Selector selector = Selector.open()) {
             for (SelectableChannel channel : readChannels) {
                 channel.configureBlocking(false);
-                channel.register(selector, (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT) & channel.validOps());
+                channel.register(selector, readOps & channel.validOps());
             }
 
             for (SelectableChannel channel : writeChannels) {
                 channel.configureBlocking(false);
-                channel.register(selector, SelectionKey.OP_WRITE);
-            }
-
-            for (SelectableChannel channel : errChannels) {
-                // TODO(fa): not sure if these ops are representing "exceptional condition pending"
-                channel.configureBlocking(false);
-                channel.register(selector, SelectionKey.OP_CONNECT);
+                channel.register(selector, writeOps);
             }
 
             // IMPORTANT: The meaning of the timeout value is slightly different: 'timeout == 0.0'
@@ -464,9 +457,9 @@ public final class EmulatedPosixSupport extends PosixResources {
             int selected = useSelectNow ? selector.selectNow() : selector.select(timeoutMs);
 
             // remove non-selected channels from given lists
-            boolean[] resReadfds = createSelectedMap(readfds, readChannels, selector, SelectionKey::isReadable);
-            boolean[] resWritefds = createSelectedMap(writefds, writeChannels, selector, SelectionKey::isWritable);
-            boolean[] resErrfds = createSelectedMap(errorfds, errChannels, selector, key -> key.isAcceptable() || key.isConnectable());
+            boolean[] resReadfds = createSelectedMap(readfds, readChannels, selector, readOps);
+            boolean[] resWritefds = createSelectedMap(writefds, writeChannels, selector, writeOps);
+            boolean[] resErrfds = new boolean[errorfds.length];
 
             assert selected == countSelected(resReadfds) + countSelected(resWritefds) + countSelected(resErrfds);
             return new SelectResult(resReadfds, resWritefds, resErrfds);
@@ -485,23 +478,18 @@ public final class EmulatedPosixSupport extends PosixResources {
                         channel.configureBlocking(true);
                     }
                 }
-                for (SelectableChannel channel : errChannels) {
-                    if (wasBlocking[i++]) {
-                        channel.configureBlocking(true);
-                    }
-                }
             } catch (IOException e) {
                 // We didn't manage to restore the blocking status, ignore
             }
         }
     }
 
-    private static boolean[] createSelectedMap(int[] fds, SelectableChannel[] channels, Selector selector, Function<SelectionKey, Boolean> selectedPredicate) {
+    private static boolean[] createSelectedMap(int[] fds, SelectableChannel[] channels, Selector selector, int op) {
         boolean[] result = new boolean[fds.length];
         for (int i = 0; i < channels.length; i++) {
             SelectableChannel channel = channels[i];
             SelectionKey selectionKey = channel.keyFor(selector);
-            result[i] = selectedPredicate.apply(selectionKey);
+            result[i] = (selectionKey.readyOps() & op) != 0;
         }
         return result;
     }
