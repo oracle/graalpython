@@ -337,7 +337,6 @@ public class TypeBuiltins extends PythonBuiltins {
         @CompilationFinal private ConditionProfile hasNew = ConditionProfile.createBinaryProfile();
         @CompilationFinal private ConditionProfile hasInit = ConditionProfile.createBinaryProfile();
         @CompilationFinal private ConditionProfile gotInitResult = ConditionProfile.createBinaryProfile();
-        @CompilationFinal private ConditionProfile needsInit = ConditionProfile.createBinaryProfile();
 
         @CompilationFinal private boolean newWasDescriptor = false;
 
@@ -487,7 +486,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 // see typeobject.c#type_call()
                 // Ugly exception: when the call was type(something),
                 // don't call tp_init on the result.
-                if (needsInit.profile(!(arguments.length == 2 && arguments[0] == PythonBuiltinClassType.PythonClass && keywords.length == 0))) {
+                if (!(self == PythonBuiltinClassType.PythonClass && arguments.length == 2 && keywords.length == 0)) {
                     callInit(lib, newInstance, self, frame, doCreateArgs, arguments, keywords);
                 }
                 return newInstance;
@@ -496,7 +495,7 @@ public class TypeBuiltins extends PythonBuiltins {
             }
         }
 
-        private void callInit(PythonObjectLibrary lib, Object newInstance, Object self, VirtualFrame frame, boolean doCreateArgs, Object[] arguments, PKeyword[] keywords) throws PException {
+        private void callInit(PythonObjectLibrary lib, Object newInstance, Object self, VirtualFrame frame, boolean doCreateArgs, Object[] arguments, PKeyword[] keywords) {
             Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
             if (isSubType(newInstanceKlass, self)) {
                 Object initMethod = getInitNode().execute(frame, newInstanceKlass, newInstance);
