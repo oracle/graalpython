@@ -75,6 +75,11 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int DT_REG = 8;
     public static final int DT_LNK = 10;
 
+    public static final int LOCK_SH = 1;
+    public static final int LOCK_EX = 2;
+    public static final int LOCK_NB = 4;
+    public static final int LOCK_UN = 8;
+
     public abstract String getBackend(Object recevier);
 
     public abstract String strerror(Object receiver, int errorCode);
@@ -108,6 +113,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;
 
     public abstract void fsync(Object receiver, int fd) throws PosixException;
+
+    public abstract void flock(Object receiver, int fd, int operation) throws PosixException;
 
     public abstract boolean getBlocking(Object receiver, int fd) throws PosixException;
 

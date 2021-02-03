@@ -863,7 +863,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         Object result = methodLib.callObjectWithState(filenoFunc, state);
         if (isIntProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
             try {
-                return castToJavaIntNode.execute(result);
+                return PInt.asFileDescriptor(castToJavaIntNode.execute(result), raiseNode);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.TypeError, isAttrError);
                 throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");

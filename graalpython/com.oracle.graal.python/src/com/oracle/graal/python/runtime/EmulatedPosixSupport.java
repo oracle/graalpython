@@ -65,6 +65,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.SelectableChannel;
@@ -599,6 +601,69 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (!fsync(fd)) {
             throw posixException(OSErrorEnum.ENOENT);
         }
+    }
+
+    @ExportMessage
+    final void flock(int fd, int operation,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
+        Channel channel = getFileChannel(fd, channelClassProfile);
+        if (channel == null) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.EBADFD);
+        }
+        // TODO: support other types, throw unsupported feature exception otherwise (GR-28740)
+        if (channel instanceof FileChannel) {
+            FileChannel fc = (FileChannel) channel;
+            FileLock lock = getFileLock(fd);
+            try {
+                lock = doLockOperation(operation, fc, lock);
+            } catch (IOException e) {
+                throw posixException(OSErrorEnum.fromException(e));
+            }
+            setFileLock(fd, lock);
+        }
+    }
+
+    @TruffleBoundary
+    private static FileLock doLockOperation(int operation, FileChannel fc, FileLock oldLock) throws IOException {
+        FileLock lock = oldLock;
+        if (lock == null) {
+            if ((operation & PosixSupportLibrary.LOCK_SH) != 0) {
+                if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+                    lock = fc.tryLock(0, Long.MAX_VALUE, true);
+                } else {
+                    lock = fc.lock(0, Long.MAX_VALUE, true);
+                }
+            } else if ((operation & PosixSupportLibrary.LOCK_EX) != 0) {
+                if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+                    lock = fc.tryLock();
+                } else {
+                    lock = fc.lock();
+                }
+            } else {
+                // not locked, that's ok
+            }
+        } else {
+            if ((operation & PosixSupportLibrary.LOCK_UN) != 0) {
+                lock.release();
+                lock = null;
+            } else if ((operation & PosixSupportLibrary.LOCK_EX) != 0) {
+                if (lock.isShared()) {
+                    if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+                        FileLock newLock = fc.tryLock();
+                        if (newLock != null) {
+                            lock = newLock;
+                        }
+                    } else {
+                        lock = fc.lock();
+                    }
+                }
+            } else {
+                // we already have a suitable lock
+            }
+        }
+        return lock;
     }
 
     @ExportMessage

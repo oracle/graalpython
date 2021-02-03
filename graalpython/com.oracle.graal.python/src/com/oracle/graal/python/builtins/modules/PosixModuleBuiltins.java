@@ -2407,13 +2407,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Equivalent of CPython's {@code fildes_converter()}. Always returns an {@code int}.
+     * Equivalent of CPython's {@code fildes_converter()}, which in turn delegates to
+     * {@code PyObject_AsFileDescriptor}. Always returns an {@code int}.
      */
     public abstract static class FileDescriptorConversionNode extends ArgumentCastNodeWithRaise {
-
         @Specialization
         int doFdInt(int value) {
-            return value;
+            return PInt.asFileDescriptor(value, getRaiseNode());
         }
 
         @Specialization(guards = "!isInt(value)", limit = "3")

@@ -281,6 +281,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void flock(int fd, int operation,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("flock", "%d %d", fd, operation);
+        try {
+            lib.flock(delegate, fd, operation);
+        } catch (PosixException e) {
+            throw logException("flock", e);
+        }
+    }
+
+    @ExportMessage
     final boolean getBlocking(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("getBlocking", "%d", fd);

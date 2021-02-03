@@ -60,6 +60,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
+#include <sys/file.h>
 #include <unistd.h>
 
 
@@ -215,6 +216,10 @@ int32_t call_ftruncate(int32_t fd, int64_t length) {
 
 int32_t call_fsync(int32_t fd) {
     return fsync(fd);
+}
+
+int32_t call_flock(int32_t fd, int32_t operation) {
+    return flock(fd, operation);
 }
 
 int32_t get_blocking(int32_t fd) {

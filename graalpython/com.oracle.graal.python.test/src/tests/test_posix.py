@@ -216,6 +216,17 @@ class PosixTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, r"expected C.__fspath__\(\) to return str or bytes, not bytearray"):
             os.open(C(), 0)
 
+    def test_fd_converter(self):
+        class MyInt(int):
+            def fileno(self): return 0
+
+        class MyObj:
+            def fileno(self): return -1
+
+        self.assertRaises(ValueError, os.fsync, -1)
+        self.assertRaises(ValueError, os.fsync, MyInt(-1)) # fileno should be ignored
+        self.assertRaises(ValueError, os.fsync, MyObj())
+
 
 class WithCurdirFdTests(unittest.TestCase):
 

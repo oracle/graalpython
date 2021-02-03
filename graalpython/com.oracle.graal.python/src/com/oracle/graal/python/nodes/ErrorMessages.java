@@ -120,6 +120,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_ASSIGN_TO_COMPREHENSION = "cannot assign to %s comprehension";
     public static final String CANNOT_BE_INTEPRETED_AS_LONG = "%s cannot be interpreted as long (type %p)";
     public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
+    public static final String S_CANNOT_BE_NEGATIVE_INTEGER_D = "%s cannot be negative integer (%d)";
     public static final String CANNOT_CALL_CTOR_OF = "cannot call constructor of %s";
     public static final String CANNOT_CLOSE_EXPORTED_PTRS_EXIST = "cannot close exported pointers exist";
     public static final String CANNOT_CONVERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
