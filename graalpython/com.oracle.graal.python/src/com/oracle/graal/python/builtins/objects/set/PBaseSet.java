@@ -42,36 +42,22 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(PythonObjectLibrary.class)
 public abstract class PBaseSet extends PHashingCollection {
 
-    protected HashingStorage set;
-
     public PBaseSet(Object clazz, Shape instanceShape) {
-        super(clazz, instanceShape);
-        this.set = EconomicMapStorage.create();
+        super(clazz, instanceShape, EconomicMapStorage.create());
     }
 
     public PBaseSet(Object clazz, Shape instanceShape, HashingStorage set) {
-        super(clazz, instanceShape);
-        this.set = set;
-    }
-
-    @Override
-    public final HashingStorage getDictStorage() {
-        return set;
-    }
-
-    @Override
-    public void setDictStorage(HashingStorage storage) {
-        set = storage;
+        super(clazz, instanceShape, set);
     }
 
     @ExportMessage(limit = "1")
     int lengthWithState(ThreadState state,
                     @Exclusive @Cached ConditionProfile gotState,
-                    @CachedLibrary("this.set") HashingStorageLibrary lib) {
+                    @CachedLibrary("this.getDictStorage()") HashingStorageLibrary lib) {
         if (gotState.profile(state != null)) {
-            return lib.lengthWithState(set, state);
+            return lib.lengthWithState(storage, state);
         } else {
-            return lib.length(set);
+            return lib.length(storage);
         }
     }
 }

@@ -1044,7 +1044,6 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached PCallCExtFunction callCStringToString,
@@ -1066,7 +1065,7 @@ public abstract class CExtParseArgumentsNode {
                 if (kwdname instanceof String) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)
-                    out = lib.getItem(getDictStorageNode.execute((PDict) kwds), kwdname);
+                    out = lib.getItem(((PDict) kwds).getDictStorage(), kwdname);
                 }
             }
             if (out == null && !state.restOptional) {

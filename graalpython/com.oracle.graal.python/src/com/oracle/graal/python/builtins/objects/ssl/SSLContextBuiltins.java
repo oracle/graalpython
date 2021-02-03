@@ -81,7 +81,6 @@ import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
@@ -564,13 +563,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached("createEnvironLookup()") GetAttributeNode getAttribute,
                         @CachedLibrary(limit = "1") HashingStorageLibrary environLib,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
                         @Cached("createCertFileKey()") PBytes certFileKey,
                         @Cached("createCertDirKey()") PBytes certDirKey) {
 
             PythonModule posix = getCore().lookupBuiltinModule("posix");
             PDict environ = (PDict) getAttribute.executeObject(frame, posix);
-            HashingStorage storage = getStorage.execute(environ);
+            HashingStorage storage = environ.getDictStorage();
 
             TruffleFile file = toTruffleFile(lib, environLib.getItem(storage, certFileKey));
             TruffleFile path = toTruffleFile(lib, environLib.getItem(storage, certDirKey));

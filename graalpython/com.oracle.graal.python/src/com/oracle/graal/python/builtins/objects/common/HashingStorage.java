@@ -168,20 +168,18 @@ public abstract class HashingStorage {
         @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(dictLike, dictLib)"}, limit = "1")
         HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary("dictLike") PythonObjectLibrary dictLib,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
-            return lib.copy(getDictStorageNode.execute(dictLike));
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            return lib.copy(dictLike.getDictStorage());
         }
 
         @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, iterLib)"}, limit = "1")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary iterLib,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                        @Cached("create()") HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                HashingStorage iterableDictStorage = getDictStorageNode.execute(iterable);
+                HashingStorage iterableDictStorage = iterable.getDictStorage();
                 HashingStorage dictStorage = lib.copy(iterableDictStorage);
                 return lib.addAllToOther(new KeywordsStorage(kwargs), dictStorage);
             } finally {

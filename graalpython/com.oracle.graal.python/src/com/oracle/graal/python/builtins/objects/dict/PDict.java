@@ -59,33 +59,28 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PDict extends PHashingCollection {
 
-    protected HashingStorage dictStorage;
-
     public PDict(PythonLanguage lang) {
         this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(lang));
     }
 
     public PDict(Object cls, Shape instanceShape, HashingStorage dictStorage) {
-        super(cls, instanceShape);
-        this.dictStorage = dictStorage;
+        super(cls, instanceShape, dictStorage);
     }
 
     public PDict(Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
-        this.dictStorage = new EmptyStorage();
+        super(cls, instanceShape, new EmptyStorage());
     }
 
     public PDict(Object cls, Shape instanceShape, PKeyword[] keywords) {
-        super(cls, instanceShape);
-        this.dictStorage = (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage();
+        super(cls, instanceShape, (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage());
     }
 
     public Object getItem(Object key) {
-        return HashingStorageLibrary.getUncached().getItem(dictStorage, key);
+        return HashingStorageLibrary.getUncached().getItem(storage, key);
     }
 
     public void setItem(Object key, Object value) {
-        dictStorage = HashingStorageLibrary.getUncached().setItem(dictStorage, key, value);
+        storage = HashingStorageLibrary.getUncached().setItem(storage, key, value);
     }
 
     public static HashingStorage createNewStorage(PythonLanguage lang, boolean isStringKey, int expectedSize) {
@@ -101,17 +96,7 @@ public final class PDict extends PHashingCollection {
     }
 
     public void update(PDict other) {
-        dictStorage = HashingStorageLibrary.getUncached().addAllToOther(other.getDictStorage(), dictStorage);
-    }
-
-    @Override
-    public void setDictStorage(HashingStorage newStorage) {
-        dictStorage = newStorage;
-    }
-
-    @Override
-    public HashingStorage getDictStorage() {
-        return dictStorage;
+        storage = HashingStorageLibrary.getUncached().addAllToOther(other.getDictStorage(), storage);
     }
 
     @ExportMessage
@@ -135,9 +120,9 @@ public final class PDict extends PHashingCollection {
                         @SuppressWarnings("unused") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Cached LookupAttributeInMRONode.Dynamic lookupDict) {
             if (gotState.profile(state == null)) {
-                return storageLib.length(self.dictStorage);
+                return storageLib.length(self.storage);
             } else {
-                return storageLib.lengthWithState(self.dictStorage, state);
+                return storageLib.lengthWithState(self.storage, state);
             }
         }
 
@@ -160,6 +145,6 @@ public final class PDict extends PHashingCollection {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "PDict<" + dictStorage.getClass().getSimpleName() + ">";
+        return "PDict<" + storage.getClass().getSimpleName() + ">";
     }
 }

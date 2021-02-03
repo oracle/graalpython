@@ -121,12 +121,11 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     protected boolean writeToDict(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
         handlePythonClass(isClassProfile, object, key);
         PDict dict = lib.getDict(object);
-        HashingStorage dictStorage = getDictStorage.execute(dict);
+        HashingStorage dictStorage = dict.getDictStorage();
         HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();

@@ -2290,7 +2290,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached IsIdentifierNode isIdentifier,
-                        @Cached HashingCollectionNodes.SetDictStorageNode setStorage,
                         @Cached HashingStorage.InitNode initNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
@@ -2307,7 +2306,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = factory().createDict();
-                setStorage.execute(namespace, initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
+                namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
                                 isIdentifier);
 

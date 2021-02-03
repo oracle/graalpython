@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTy
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -775,7 +774,6 @@ public abstract class TypeNodes {
         @Child private GetBaseClassNode getBaseClassNode;
         @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private LookupAttributeInMRONode lookupNewNode;
-        @Child private GetDictStorageNode getDictStorageNode;
         @Child private HashingStorageLibrary hashingStorageLib;
         @Child private PythonObjectLibrary objectLibrary;
         @Child private GetObjectArrayNode getObjectArrayNode;
@@ -913,7 +911,7 @@ public abstract class TypeNodes {
                 if (dict instanceof PMappingproxy) {
                     dict = ((PMappingproxy) dict).getMapping();
                 }
-                HashingStorage storage = getDictStorageNode().execute((PHashingCollection) dict);
+                HashingStorage storage = ((PHashingCollection) dict).getDictStorage();
                 return getHashingStorageLibrary().getItem(storage, __SLOTS__);
             }
             return null;
@@ -937,14 +935,6 @@ public abstract class TypeNodes {
                 objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(4));
             }
             return objectLibrary;
-        }
-
-        private GetDictStorageNode getDictStorageNode() {
-            if (getDictStorageNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDictStorageNode = insert(GetDictStorageNode.create());
-            }
-            return getDictStorageNode;
         }
 
         private HashingStorageLibrary getHashingStorageLibrary() {
@@ -1022,25 +1012,24 @@ public abstract class TypeNodes {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached LookupSpecialMethodNode.Dynamic lookupGetAttribute,
                         @Cached CallBinaryMethodNode callGetAttr,
-                        @Cached GetDictStorageNode getDictStorageNode,
                         @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
                         @CachedLibrary(limit = "6") PythonObjectLibrary objectLibrary,
                         @Cached GetInternalObjectArrayNode getArrayNode,
                         @Cached BranchProfile typeIsNotBase,
                         @Cached BranchProfile hasBase,
                         @Cached BranchProfile hasNoBase) {
-            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode, typeIsNotBase, hasBase, hasNoBase, 0);
+            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, storageLibrary, objectLibrary, getArrayNode, typeIsNotBase, hasBase, hasNoBase, 0);
         }
 
         @TruffleBoundary
         protected Object solidBaseTB(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, GetInternalObjectArrayNode getArrayNode, int depth) {
-            return solidBase(type, getBaseClassNode, context, LookupSpecialMethodNode.Dynamic.getUncached(), CallBinaryMethodNode.getUncached(), GetDictStorageNode.getUncached(),
+            return solidBase(type, getBaseClassNode, context, LookupSpecialMethodNode.Dynamic.getUncached(), CallBinaryMethodNode.getUncached(),
                             HashingStorageLibrary.getUncached(), PythonObjectLibrary.getUncached(), getArrayNode, BranchProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
                             depth);
         }
 
         protected Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, LookupSpecialMethodNode.Dynamic lookupGetAttribute,
-                        CallBinaryMethodNode callGetAttr, GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary,
+                        CallBinaryMethodNode callGetAttr, HashingStorageLibrary storageLibrary,
                         PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode, BranchProfile typeIsNotBase, BranchProfile hasBase, BranchProfile hasNoBase, int depth) {
             CompilerAsserts.partialEvaluationConstant(depth);
             Object base = getBaseClassNode.execute(type);
@@ -1049,7 +1038,7 @@ public abstract class TypeNodes {
                 if (depth > 3) {
                     base = solidBaseTB(base, getBaseClassNode, context, getArrayNode, depth);
                 } else {
-                    base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary, getArrayNode, typeIsNotBase, hasBase,
+                    base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, storageLibrary, objectLibrary, getArrayNode, typeIsNotBase, hasBase,
                                     hasNoBase, depth + 1);
                 }
             } else {
@@ -1062,8 +1051,8 @@ public abstract class TypeNodes {
             }
             typeIsNotBase.enter();
 
-            Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getDictStorageNode, objectLibrary, storageLibrary);
-            Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getDictStorageNode, objectLibrary, storageLibrary);
+            Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, objectLibrary, storageLibrary);
+            Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, objectLibrary, storageLibrary);
             if (extraivars(type, base, typeSlots, baseSlots, objectLibrary, getArrayNode)) {
                 return type;
             } else {
@@ -1101,14 +1090,14 @@ public abstract class TypeNodes {
         }
 
         private static Object getSlotsFromDict(Object type, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
-                        GetDictStorageNode getDictStorageNode, PythonObjectLibrary objectLibrary, HashingStorageLibrary lib) {
+                        PythonObjectLibrary objectLibrary, HashingStorageLibrary lib) {
             Object getAttr = lookupGetAttribute.execute(objectLibrary.getLazyPythonClass(type), __GETATTRIBUTE__, type, false);
             Object dict = callGetAttr.executeObject(getAttr, type, __DICT__);
             if (dict != PNone.NO_VALUE) {
                 if (dict instanceof PMappingproxy) {
                     dict = ((PMappingproxy) dict).getMapping();
                 }
-                HashingStorage storage = getDictStorageNode.execute((PHashingCollection) dict);
+                HashingStorage storage = ((PHashingCollection) dict).getDictStorage();
                 return lib.getItem(storage, __SLOTS__);
             }
             return null;
