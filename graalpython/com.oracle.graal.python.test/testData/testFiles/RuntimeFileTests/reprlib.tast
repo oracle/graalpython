@@ -335,7 +335,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [1099,1116]`'__annotations__'`
-                                      DictLiteralNodeGen SourceSection: [1118,1120]`{}`
+                                      EmptyDictLiteralNode SourceSection: [1118,1120]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                   FrameReturnNode SourceSection: [1130,1144]`return wrapper`
                                     WriteLocalVariableNodeGen SourceSection: None

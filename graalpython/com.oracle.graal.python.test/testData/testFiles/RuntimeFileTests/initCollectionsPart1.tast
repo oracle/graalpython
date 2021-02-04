@@ -1028,7 +1028,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: [4521,4525]`self`
                                                 Frame: [2,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              DictLiteralNodeGen SourceSection: [4534,4536]`{}`
+                                              EmptyDictLiteralNode SourceSection: [4534,4536]`{}`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4357,4371]`AttributeError`
                                             Identifier: AttributeError
@@ -3566,7 +3566,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           BlockNode SourceSection: None
       WriteNameNodeGen SourceSection: [11121,11141]`_nt_itemgetters = {}...`
         Identifier: _nt_itemgetters
-        DictLiteralNodeGen SourceSection: [11139,11141]`{}`
+        EmptyDictLiteralNode SourceSection: [11139,11141]`{}`
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11143,17741]`def namedtuple(typen...`
         Identifier: namedtuple
@@ -4036,7 +4036,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       Identifier: field_defaults
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [9,field_defaults,Illegal]
-                      DictLiteralNodeGen SourceSection: [13552,13554]`{}`
+                      EmptyDictLiteralNode SourceSection: [13552,13554]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [13559,13934]`if defaults is not N...`
                       NotNodeGen SourceSection: [13562,13582]`defaults is not None...`
@@ -4321,10 +4321,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       Identifier: namespace
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [16,namespace,Illegal]
-                      DictLiteralNodeGen SourceSection: [14371,14442]`{'_tuple_new': tuple...`
+                      FixedDictLiteralNodeGen SourceSection: [14371,14442]`{'_tuple_new': tuple...`
                         PythonObjectFactoryNodeGen SourceSection: None
-                        StringLiteralNode SourceSection: [14372,14384]`'_tuple_new'`
-                        StringLiteralNode SourceSection: [14397,14407]`'__name__'`
                         ReadLocalCellNodeGen SourceSection: [14386,14395]`tuple_new`
                           ReadLocalVariableNode SourceSection: None
                             Frame: [13,tuple_new,Illegal]
@@ -4857,18 +4855,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       Identifier: class_namespace
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [24,class_namespace,Illegal]
-                      DictLiteralNodeGen SourceSection: [16187,16523]`{↵        '__doc__':...`
+                      FixedDictLiteralNodeGen SourceSection: [16187,16523]`{↵        '__doc__':...`
                         PythonObjectFactoryNodeGen SourceSection: None
-                        StringLiteralNode SourceSection: [16197,16206]`'__doc__'`
-                        StringLiteralNode SourceSection: [16243,16254]`'__slots__'`
-                        StringLiteralNode SourceSection: [16268,16277]`'_fields'`
-                        StringLiteralNode SourceSection: [16300,16318]`'_fields_defaults'`
-                        StringLiteralNode SourceSection: [16344,16353]`'__new__'`
-                        StringLiteralNode SourceSection: [16372,16379]`'_make'`
-                        StringLiteralNode SourceSection: [16396,16406]`'_replace'`
-                        StringLiteralNode SourceSection: [16426,16436]`'__repr__'`
-                        StringLiteralNode SourceSection: [16456,16465]`'_asdict'`
-                        StringLiteralNode SourceSection: [16484,16500]`'__getnewargs__'`
                         FormatStringLiteralNode SourceSection: [16208,16233]`f'{typename}({arg_li...`
                           Parts: 4
                         TupleLiteralNode SourceSection: [16256,16258]`()`

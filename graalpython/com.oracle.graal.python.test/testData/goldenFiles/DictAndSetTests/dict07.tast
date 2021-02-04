@@ -6,17 +6,18 @@ ModuleRootNode Name: <module 'dict07'> SourceSection: [0,25]`{**{}, 3:4, **{5:6,
   Documentation: None
   InnerRootNode SourceSection: [0,25]`{**{}, 3:4, **{5:6, ...`
     DictConcatNodeGen SourceSection: [0,25]`{**{}, 3:4, **{5:6, ...`
-      DictLiteralNodeGen SourceSection: None
+      EmptyDictLiteralNode SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      DictLiteralNodeGen SourceSection: [3,5]`{}`
+      EmptyDictLiteralNode SourceSection: [3,5]`{}`
         PythonObjectFactoryNodeGen SourceSection: None
-      DictLiteralNodeGen SourceSection: None
+      DynamicDictLiteralNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [7,8]`3`
           Value: 3
         IntegerLiteralNode SourceSection: [9,10]`4`
           Value: 4
-      DictLiteralNodeGen SourceSection: [14,24]`{5:6, 7:8}`
+        CachedDispatchFirst SourceSection: None
+      DynamicDictLiteralNodeGen SourceSection: [14,24]`{5:6, 7:8}`
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [15,16]`5`
           Value: 5
@@ -26,3 +27,5 @@ ModuleRootNode Name: <module 'dict07'> SourceSection: [0,25]`{**{}, 3:4, **{5:6,
           Value: 6
         IntegerLiteralNode SourceSection: [22,23]`8`
           Value: 8
+        CachedDispatchFirst SourceSection: None
+        CachedDispatchFirst SourceSection: None

@@ -101,6 +101,36 @@ public class DictAndSetTests extends ParserTestBase {
     }
 
     @Test
+    public void dict12() throws Exception {
+        checkTreeResult("{'a':'b',}");
+    }
+
+    @Test
+    public void dict13() throws Exception {
+        checkTreeResult("{'a':'b'}");
+    }
+
+    @Test
+    public void dict14() throws Exception {
+        checkTreeResult("{'a':'b','c':14}");
+    }
+
+    @Test
+    public void dict15() throws Exception {
+        checkTreeResult("{1:'b','c':14}");
+    }
+
+    @Test
+    public void dict16() throws Exception {
+        checkTreeResult("{'a':'b',c:14}");
+    }
+
+    @Test
+    public void dict17() throws Exception {
+        checkTreeResult("{'a':'b','c':14,'d':1234,'g':h}");
+    }
+
+    @Test
     public void set01() throws Exception {
         checkTreeResult("{2}");
     }
