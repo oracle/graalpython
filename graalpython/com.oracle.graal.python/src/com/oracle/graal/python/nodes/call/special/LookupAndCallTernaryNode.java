@@ -42,23 +42,26 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 // cpython://Objects/abstract.c#ternary_op
 // Order operations are tried until either a valid result or error: v.op(v,w,z), w.op(v,w,z), z.op(v,w,z)
-@ImportStatic({SpecialMethodNames.class})
+@ImportStatic({SpecialMethodNames.class, PythonOptions.class})
 public abstract class LookupAndCallTernaryNode extends Node {
     public abstract static class NotImplementedHandler extends PNodeWithContext {
         public abstract Object execute(Object arg, Object arg2, Object arg3);
@@ -100,26 +103,30 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return isReversible;
     }
 
-    @Specialization(guards = "!isReversible()")
+    @Specialization(guards = "!isReversible()", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObject(
                     VirtualFrame frame,
                     Object arg1,
                     int arg2,
                     Object arg3,
-                    @Cached("create()") GetClassNode getclass,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(frame, getattr.executeObject(frame, getclass.execute(arg1), name), arg1, arg2, arg3);
+                    @CachedLibrary("arg1") PythonObjectLibrary libArg1,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+        Object klass = libArg1.getLazyPythonClass(arg1);
+        Object value = libArg1.getDelegatedValue(arg1);
+        return dispatchNode.execute(frame, getattr.execute(frame, klass, value), value, arg2, arg3);
     }
 
-    @Specialization(guards = "!isReversible()")
+    @Specialization(guards = "!isReversible()", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObject(
                     VirtualFrame frame,
                     Object arg1,
                     Object arg2,
                     Object arg3,
-                    @Cached("create()") GetClassNode getclass,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(frame, getattr.executeObject(frame, getclass.execute(arg1), name), arg1, arg2, arg3);
+                    @CachedLibrary("arg1") PythonObjectLibrary libArg1,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+        Object klass = libArg1.getLazyPythonClass(arg1);
+        Object value = libArg1.getDelegatedValue(arg1);
+        return dispatchNode.execute(frame, getattr.execute(frame, klass, value), value, arg2, arg3);
     }
 
     private CallTernaryMethodNode ensureReverseDispatch() {
