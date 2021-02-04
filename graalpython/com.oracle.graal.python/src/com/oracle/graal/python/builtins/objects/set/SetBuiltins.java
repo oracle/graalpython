@@ -44,15 +44,26 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -61,6 +72,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -188,6 +200,74 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
+    @ImportStatic({PGuards.class, PythonOptions.class})
+    public abstract static class UpdateSingleNode extends Node {
+
+        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, Object other);
+
+        @Specialization
+        static HashingStorage update(HashingStorage storage, PHashingCollection other,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            HashingStorage dictStorage = other.getDictStorage();
+            return lib.addAllToOther(dictStorage, storage);
+        }
+
+        @Specialization
+        static HashingStorage update(HashingStorage storage, PDictView.PDictKeysView other,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            HashingStorage dictStorage = other.getWrappedDict().getDictStorage();
+            return lib.addAllToOther(dictStorage, storage);
+        }
+
+        static boolean isBuiltinSequence(Object other, PythonObjectLibrary lib) {
+            return other instanceof PSequence && !(other instanceof PString) && lib.getLazyPythonClass(other) instanceof PythonBuiltinClassType;
+        }
+
+        static SequenceStorage getSequenceStorage(PSequence sequence, Class<? extends PSequence> clazz) {
+            return clazz.cast(sequence).getSequenceStorage();
+        }
+
+        @Specialization(guards = {"isBuiltinSequence(other, otherLib)", "other.getClass() == sequenceClass",
+                        "sequenceStorage.getClass() == storageClass"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, @SuppressWarnings("unused") PSequence other,
+                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @SuppressWarnings("unused") @Cached("other.getClass()") Class<? extends PSequence> sequenceClass,
+                        @Bind("getSequenceStorage(other, sequenceClass)") SequenceStorage sequenceStorage,
+                        @SuppressWarnings("unused") @Cached("sequenceStorage.getClass()") Class<? extends SequenceStorage> storageClass,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+            SequenceStorage profiledSequenceStorage = storageClass.cast(sequenceStorage);
+            int length = profiledSequenceStorage.length();
+            HashingStorage curStorage = storage;
+            for (int i = 0; i < length; i++) {
+                Object key = profiledSequenceStorage.getItemNormalized(i);
+                curStorage = lib.setItemWithFrame(curStorage, key, PNone.NONE, hasFrame, frame);
+            }
+            return curStorage;
+        }
+
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, otherLib)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, Object other,
+                        @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+            HashingStorage curStorage = storage;
+            Object iterator = otherLib.getIteratorWithFrame(other, frame);
+            while (true) {
+                Object key;
+                try {
+                    key = nextNode.execute(frame, iterator);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    return curStorage;
+                }
+                curStorage = lib.setItemWithFrame(curStorage, key, PNone.NONE, hasFrame, frame);
+            }
+        }
+    }
+
     @Builtin(name = "update", minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class UpdateNode extends PythonBuiltinNode {
@@ -195,6 +275,13 @@ public final class SetBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(other)")
         @SuppressWarnings("unused")
         static PNone doSet(VirtualFrame frame, PSet self, PNone other) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "args.length == 1")
+        static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
+                        @Cached UpdateSingleNode update) {
+            self.setDictStorage(update.execute(frame, self.getDictStorage(), args[0]));
             return PNone.NONE;
         }
 
