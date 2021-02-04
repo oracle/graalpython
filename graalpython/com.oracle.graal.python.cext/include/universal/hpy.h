@@ -59,6 +59,7 @@ typedef intptr_t HPy_hash_t;
 typedef struct _HPy_s { void* _i; } HPy;
 typedef struct { void* _lst; } HPyListBuilder;
 typedef struct { void* _tup; } HPyTupleBuilder;
+typedef struct { void* _i; } HPyTracker;
 
 typedef struct _HPyContext_s *HPyContext;
 
