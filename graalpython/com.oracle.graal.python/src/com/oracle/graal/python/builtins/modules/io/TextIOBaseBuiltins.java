@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,66 +41,98 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(defineModule = "_io")
-public class IOModuleBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PTextIOBase)
+public class TextIOBaseBuiltins extends PythonBuiltins {
+
+    static final String DETACH = "detach";
+    static final String READ = "read";
+    static final String READLINE = "readinto";
+    static final String WRITE = "write";
+
+    static final String ENCODING = "encoding";
+    static final String NEWLINES = "newlines";
+    static final String ERRORS = "errors";
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return IOModuleBuiltinsFactory.getFactories();
+        return TextIOBaseBuiltinsFactory.getFactories();
     }
 
-    public static final int DEFAULT_BUFFER_SIZE = 8 * 1024;
-
-    @Override
-    public void initialize(PythonCore core) {
-        super.initialize(core);
-        builtinConstants.put("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
-    }
-
-    @Override
-    public void postInitialize(PythonCore core) {
-        super.postInitialize(core);
-        /*
-         * This is temporary fix and will be removed once _io patches are removed.
-         */
-        PythonModule ioModule = core.lookupBuiltinModule("_io");
-        PythonAbstractClass unspportedOp = (PythonAbstractClass) ioModule.getAttribute("UnsupportedOperation");
-        core.lookupType(IOUnsupportedOperation).setSuperClass(unspportedOp);
-    }
-
-    @Builtin(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)
+    @Builtin(name = DETACH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class IOBaseNode extends PythonBuiltinNode {
+    abstract static class DetachNode extends PythonBuiltinNode {
         @Specialization
-        public PythonObject create(Object cls) {
-            return factory().createPythonObject(cls);
+        Object detach(@SuppressWarnings("unused") Object self) {
+            throw raise(IOUnsupportedOperation, "detach");
         }
     }
 
-    @Builtin(name = "BufferedReader", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedReader)
+    @Builtin(name = READ, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class BufferedReaderNode extends PythonBuiltinNode {
+    abstract static class ReadNode extends PythonBuiltinNode {
         @Specialization
-        public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
-            // data filled in subsequent __init__ call - see BufferedReaderBuiltins.InitNode
-            return factory().createBufferedReader(cls);
+        Object read(@SuppressWarnings("unused") Object self) {
+            throw raise(IOUnsupportedOperation, READ);
+        }
+    }
+
+    @Builtin(name = READLINE, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReadlineNode extends PythonBuiltinNode {
+        @Specialization
+        Object read(@SuppressWarnings("unused") Object self) {
+            throw raise(IOUnsupportedOperation, READ);
+        }
+    }
+
+    @Builtin(name = WRITE, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class WriteNode extends PythonBuiltinNode {
+        @Specialization
+        Object write(@SuppressWarnings("unused") Object self) {
+            throw raise(IOUnsupportedOperation, WRITE);
+        }
+    }
+
+    @Builtin(name = ENCODING, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class EncodingNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doit(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class NewlinesNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doit(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = ERRORS, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ErrorsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doit(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
         }
     }
 }

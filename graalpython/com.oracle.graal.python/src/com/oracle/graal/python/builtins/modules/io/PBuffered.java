@@ -53,6 +53,11 @@ public class PBuffered extends PythonBuiltinObject {
     private final boolean readable;
     private final boolean writable;
 
+    /*
+     * TODO: finalizing is set using an unimplemented `bufferedio.c:buffered_dealloc`
+     */
+    private boolean finalizing;
+
     /*-
      * TODO: should be used once FileIO is implemented. 
      * True if this is a vanilla Buffered object
@@ -92,6 +97,7 @@ public class PBuffered extends PythonBuiltinObject {
         this.detached = false;
         this.readable = readable;
         this.writable = writable;
+        this.finalizing = false;
     }
 
     public static PBuffered createBufferedReader(Object cls, Shape instanceShape) {
@@ -144,6 +150,14 @@ public class PBuffered extends PythonBuiltinObject {
 
     public boolean isWritable() {
         return writable;
+    }
+
+    public boolean isFinalizing() {
+        return finalizing;
+    }
+
+    public void setFinalizing(boolean finalizing) {
+        this.finalizing = finalizing;
     }
 
     public boolean isFastClosedChecks() {

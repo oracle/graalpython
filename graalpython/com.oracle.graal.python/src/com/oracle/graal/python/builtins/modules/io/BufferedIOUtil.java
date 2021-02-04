@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 
 import com.oracle.truffle.api.CompilerDirectives;
 
@@ -103,17 +102,4 @@ public class BufferedIOUtil {
     protected static byte[] toByteArray(ByteArrayOutputStream chunks) {
         return chunks.toByteArray();
     }
-
-    protected static ArrayList<Object> createList() {
-        return new ArrayList<>();
-    }
-
-    protected static void append(ArrayList<Object> list, Object v) {
-        list.add(v);
-    }
-
-    protected static Object[] asArray(ArrayList<Object> list) {
-        return list.toArray(new Object[0]);
-    }
-
 }

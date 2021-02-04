@@ -35,13 +35,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 
 public final class BytesUtils {
 
@@ -729,5 +732,21 @@ public final class BytesUtils {
     @TruffleBoundary
     public static String createASCIIString(byte[] retbuf) {
         return new String(retbuf, StandardCharsets.US_ASCII);
+    }
+
+    public static byte[] getBytes(PythonObjectLibrary lib, Object object) {
+        try {
+            return lib.getBufferBytes(object);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    public static int getBytesLength(PythonObjectLibrary lib, Object object) {
+        try {
+            return lib.getBufferLength(object);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 }

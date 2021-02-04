@@ -105,8 +105,12 @@ import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -379,7 +383,15 @@ public final class Python3Core implements PythonCore {
                         new PythonCextBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
+
+                        // io
                         new IOModuleBuiltins(),
+                        new IOBaseBuiltins(),
+                        new BufferedIOBaseBuiltins(),
+                        new RawIOBaseBuiltins(),
+                        new TextIOBaseBuiltins(),
+                        new BufferedReaderBuiltins(),
+
                         new StringModuleBuiltins(),
                         new ItertoolsModuleBuiltins(),
                         new FunctoolsModuleBuiltins(),
@@ -415,10 +427,12 @@ public final class Python3Core implements PythonCore {
                         new OperatorModuleBuiltins(),
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
+
+                        // zlib
                         new ZLibModuleBuiltins(),
                         new ZlibCompressBuiltins(),
                         new ZlibDecompressBuiltins(),
-                        new BufferedReaderBuiltins(),
+
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
                         new MMapBuiltins(),
@@ -430,9 +444,12 @@ public final class Python3Core implements PythonCore {
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
                         new ContextvarsModuleBuiltins(),
+
+                        // lzma
                         new LZMAModuleBuiltins(),
                         new LZMACompressorBuiltins(),
                         new LZMADecompressorBuiltins(),
+
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
                         new WarningsModuleBuiltins(),

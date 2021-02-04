@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -76,22 +76,21 @@ public class BufferedReaderNodes {
     /**
      * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_raw_read
      */
-    abstract static class RawReadNode extends PNodeWithContext {
+    abstract static class RawReadNode extends PNodeWithRaise {
 
         public abstract byte[] execute(VirtualFrame frame, PBuffered self, int len);
 
         // This might be more efficient
         @Specialization(limit = "2")
-        static byte[] fastWay(VirtualFrame frame, PBuffered self, int len,
-                        @Cached PRaiseNode raise,
+        byte[] fastWay(VirtualFrame frame, PBuffered self, int len,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
                         @Cached ConditionProfile osError) {
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "read", len);
+            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, BufferedReaderBuiltins.READ, len);
             byte[] bytes = toBytes.execute(res);
             int n = bytes.length;
             if (osError.profile(n > len)) {
-                throw raise.raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
+                throw raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
             }
             if (n > 0 && self.getAbsPos() != -1) {
                 self.incAbsPos(n);
@@ -113,6 +112,7 @@ public class BufferedReaderNodes {
                         @CachedLibrary(limit = "1") PythonObjectLibrary asSize,
                         @Cached ConditionProfile osError) {
             PByteArray memobj = factory.createByteArray(new byte[len]);
+            // TODO _PyIO_trap_eintr [GR-23297]
             Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "readinto", memobj);
             int n = asSize.asSize(res, ValueError);
             if (osError.profile(n < 0 || n > len)) {
@@ -162,7 +162,7 @@ public class BufferedReaderNodes {
         }
     }
 
-    abstract static class ReadNode extends PNodeWithContext {
+    abstract static class ReadNode extends PNodeWithRaise {
 
         public abstract byte[] execute(VirtualFrame frame, PBuffered self, int size);
 
@@ -175,7 +175,7 @@ public class BufferedReaderNodes {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"size == 0"})
+        @Specialization(guards = "size == 0")
         public static byte[] empty(PBuffered self, int size) {
             return PythonUtils.EMPTY_BYTE_ARRAY;
         }
@@ -285,7 +285,6 @@ public class BufferedReaderNodes {
          */
         @Specialization(guards = "isReadAll(size)", limit = "2")
         byte[] bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
-                        @Cached PRaiseNode raiseNode,
                         @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached("create(READALL)") LookupAttributeInMRONode readallAttr,
                         @Cached ConditionProfile hasReadallProfile,
@@ -328,7 +327,7 @@ public class BufferedReaderNodes {
                         throw CompilerDirectives.shouldNotReachHere(e);
                     }
                 } else {
-                    throw raiseNode.raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
+                    throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
                 }
             }
 
@@ -341,9 +340,9 @@ public class BufferedReaderNodes {
                 }
 
                 /* Read until EOF or until read() would block. */
-                Object r = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "read");
+                Object r = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, BufferedReaderBuiltins.READ);
                 if (r != PNone.NONE && !getBytes.isBuffer(r)) {
-                    throw raiseNode.raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
+                    throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
                 }
                 int len = 0;
                 if (r != PNone.NONE) {
