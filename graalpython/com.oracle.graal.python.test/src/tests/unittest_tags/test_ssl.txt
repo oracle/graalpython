@@ -79,5 +79,6 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_sslv2
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_read_write_after_close_raises_valuerror
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_rude_shutdown
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sendfile
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_tls1_3
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_wrong_cert_tls13
