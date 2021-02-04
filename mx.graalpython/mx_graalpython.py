@@ -2053,13 +2053,33 @@ def update_hpy_import_cmd(args):
     remove_inexisting_files(hpy_repo_test_dir, test_files_dest)
 
     # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
-    import_file(join(hpy_repo_path, "hpy", "devel", "version.py"), join(_get_core_home(), "modules", "hpy", "devel", "version.py"))
+    dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
+    import_file(join(hpy_repo_path, "hpy", "devel", "version.py"), dest_version_file)
+
+    # read version from 'version.py'
+    with open(dest_version_file, "r") as f:
+        dummy_globals = {}
+        exec(f.read(), dummy_globals)
+        imported_version = dummy_globals["__version__"]
 
     SUITE.vc.git_command(SUITE.dir, ["add", header_dest, runtime_files_dest, test_files_dest])
     raw_input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update HPy inlined files: %s" % import_version)
     SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
     SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])
+    
+    # update PKG-INFO version
+    pkg_info_file = join(_get_core_home(), "modules", "hpy.devel.egg-info", "PKG-INFO")
+    with open(pkg_info_file, "w") as f:
+        f.write("Metadata-Version: 2.1\n"
+                "Name: hpy.devel\n"
+                "Version: {}\n"
+                "Summary: UNKNOWN\n"
+                "Home-page: UNKNOWN\n"
+                "License: UNKNOWN\n"
+                "Description: UNKNOWN\n"
+                "Platform: UNKNOWN\n"
+                "Provides-Extra: dev".format(imported_version).strip())
 
 
 def run_leak_launcher(input_args, out=None):
