@@ -687,6 +687,7 @@ public abstract class ErrorMessages {
     public static final String KEY_TYPE_MISMATCH = "[X509: X509_R_KEY_TYPE_MISMATCH] key type mismatch";
     public static final String BAD_BASE64_DECODE = "[PEM: BAD_BASE64_DECODE] bad base64 decode";
     public static final String NO_CERTIFICATE_OR_CRL_FOUND = "[X509: NO_CERTIFICATE_OR_CRL_FOUND] no certificate or crl found";
+    public static final String CERTIFICATE_VERIFY_FAILED = "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: %s";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";

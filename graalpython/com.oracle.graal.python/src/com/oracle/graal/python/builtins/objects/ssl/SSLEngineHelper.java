@@ -14,6 +14,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import java.security.cert.CertPathBuilderException;
+import javax.net.ssl.SSLHandshakeException;
 
 public class SSLEngineHelper {
 
@@ -206,6 +208,18 @@ public class SSLEngineHelper {
                 }
                 throw CompilerDirectives.shouldNotReachHere("unhandled SSL status");
             }
+        } catch (SSLHandshakeException e) {
+            Throwable c = e.getCause();
+            Throwable cc = null;
+            if (c != null) {
+                cc = c.getCause();
+            }
+            if (cc instanceof CertPathBuilderException) {
+                // TODO: where else can this be "hidden"?
+                // ... cc instanceof CertificateException || c instanceof CertificateException ?
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
+            }
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
         } catch (IOException e) {
             // TODO better error handling, distinguish SSL errors and socket errors
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());

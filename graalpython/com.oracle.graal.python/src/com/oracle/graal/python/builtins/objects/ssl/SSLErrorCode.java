@@ -19,7 +19,11 @@ public enum SSLErrorCode {
     ERROR_KEY_VALUES_MISMATCH(116, PythonBuiltinClassType.SSLError),
     ERROR_BAD_BASE64_DECODE(100, PythonBuiltinClassType.SSLError),
 
-    ERROR_NOT_ENOUGH_DATA(142, PythonBuiltinClassType.SSLError);
+    ERROR_NOT_ENOUGH_DATA(142, PythonBuiltinClassType.SSLError),
+
+    // TODO: SSLCertVerificationError has attributes 'verify_code' and 'verify_message'
+    // see openssl x509_txt.c#X509_verify_cert_error_string
+    ERROR_CERT_VERIFICATION(1, PythonBuiltinClassType.SSLCertVerificationError);
 
     private final int errno;
     private final PythonBuiltinClassType type;
