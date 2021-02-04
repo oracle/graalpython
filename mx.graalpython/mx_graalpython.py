@@ -2019,23 +2019,41 @@ def update_hpy_import_cmd(args):
                 dest_file = join(to_dir, relative_dir_path, filename)
                 import_file(src_file, dest_file)
 
+    def remove_inexisting_file(src_file, dest_file):
+        if not os.path.exists(dest_file):
+            mx.logv("Removing file {} since {} does not exist".format(src_file, dest_file))
+            vc.git_command(SUITE.dir, ["rm", src_file])
+            os.unlink(src_file, missing_ok=True)
+
+    def remove_inexisting_files(hpy_dir, our_dir):
+        mx.log("Looking for removed files in {} (HPy reference dir {})".format(our_dir, hpy_dir))
+        for dirpath, _, filenames in os.walk(our_dir):
+            relative_dir_path = os.path.relpath(dirpath, start=our_dir)
+            for filename in filenames:
+                src_file = join(dirpath, filename)
+                dest_file = join(hpy_dir, relative_dir_path, filename)
+                remove_inexisting_file(src_file, dest_file)
+
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.dependency("com.oracle.graal.python.cext").dir, "include")
 
     # copy headers from .../hpy/hpy/devel/include' to 'header_dest'
     # but exclude subdir 'cpython' (since that's only for CPython)
     import_files(hpy_repo_include_dir, header_dest)
+    remove_inexisting_files(hpy_repo_include_dir, header_dest)
 
-    # runtime sources go into 'lib-graalpython/module/hpy/src'
-    runtime_files_dest = join(_get_core_home(), "modules", "hpy", "src")
+    # runtime sources go into 'lib-graalpython/module/hpy/devel/src'
+    runtime_files_dest = join(_get_core_home(), "modules", "hpy", "devel", "src")
     import_files(hpy_repo_runtime_dir, runtime_files_dest)
+    remove_inexisting_files(hpy_repo_runtime_dir, runtime_files_dest)
 
     # tests go to 'lib-graalpython/module/hpy/tests'
     test_files_dest = _hpy_test_root()
     import_files(hpy_repo_test_dir, test_files_dest)
+    remove_inexisting_files(hpy_repo_test_dir, test_files_dest)
 
-    # 'version.py' goes to 'lib-graalpython/module/hpy/'
-    import_file(join(hpy_repo_path, "hpy", "devel", "version.py"), join(_get_core_home(), "modules", "hpy", "version.py"))
+    # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
+    import_file(join(hpy_repo_path, "hpy", "devel", "version.py"), join(_get_core_home(), "modules", "hpy", "devel", "version.py"))
 
     SUITE.vc.git_command(SUITE.dir, ["add", header_dest, runtime_files_dest, test_files_dest])
     raw_input("Check that the updated files look as intended, then press RETURN...")
