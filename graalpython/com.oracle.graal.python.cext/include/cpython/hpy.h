@@ -32,6 +32,7 @@
 typedef struct { PyObject *_o; } HPy;
 typedef struct { Py_ssize_t _lst; } HPyListBuilder;
 typedef struct { Py_ssize_t _tup; } HPyTupleBuilder;
+typedef struct { void *_o; } HPyTracker;
 typedef Py_ssize_t HPy_ssize_t;
 typedef Py_hash_t HPy_hash_t;
 
@@ -141,6 +142,7 @@ HPy_AsPyObject(HPyContext ctx, HPy h)
 #include "../common/runtime/ctx_module.h"
 #include "../common/runtime/ctx_type.h"
 #include "../common/runtime/ctx_listbuilder.h"
+#include "../common/runtime/ctx_tracker.h"
 #include "../common/runtime/ctx_tuple.h"
 #include "../common/runtime/ctx_tuplebuilder.h"
 
@@ -234,6 +236,30 @@ HPyAPI_FUNC(HPy)
 HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n)
 {
     return ctx_Tuple_FromArray(ctx, items, n);
+}
+
+HPyAPI_FUNC(HPyTracker)
+HPyTracker_New(HPyContext ctx, HPy_ssize_t size)
+{
+    return ctx_Tracker_New(ctx, size);
+}
+
+HPyAPI_FUNC(int)
+HPyTracker_Add(HPyContext ctx, HPyTracker ht, HPy h)
+{
+    return ctx_Tracker_Add(ctx, ht, h);
+}
+
+HPyAPI_FUNC(void)
+HPyTracker_RemoveAll(HPyContext ctx, HPyTracker ht)
+{
+    ctx_Tracker_RemoveAll(ctx, ht);
+}
+
+HPyAPI_FUNC(void)
+HPyTracker_Free(HPyContext ctx, HPyTracker ht)
+{
+    ctx_Tracker_Free(ctx, ht);
 }
 
 #endif /* !HPy_CPYTHON_H */

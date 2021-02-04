@@ -126,4 +126,8 @@ struct _HPyContext_s {
     void (*ctx_TupleBuilder_Set)(HPyContext ctx, HPyTupleBuilder builder, HPy_ssize_t index, HPy h_item);
     HPy (*ctx_TupleBuilder_Build)(HPyContext ctx, HPyTupleBuilder builder);
     void (*ctx_TupleBuilder_Cancel)(HPyContext ctx, HPyTupleBuilder builder);
+    HPyTracker (*ctx_Tracker_New)(HPyContext ctx, HPy_ssize_t size);
+    int (*ctx_Tracker_Add)(HPyContext ctx, HPyTracker ht, HPy h);
+    void (*ctx_Tracker_RemoveAll)(HPyContext ctx, HPyTracker ht);
+    void (*ctx_Tracker_Free)(HPyContext ctx, HPyTracker ht);
 };

@@ -11,6 +11,16 @@ from .support import HPyTest
 
 class TestBasic(HPyTest):
 
+    def test_get_version(self):
+        if self.compiler.hpy_abi != 'universal':
+            return
+        import hpy.universal
+        version, gitrev = hpy.universal.get_version()
+        # it's a bit hard to test the CONTENT of these values. Let's just
+        # check that they are strings...
+        assert isinstance(version, str)
+        assert isinstance(gitrev, str)
+
     def test_empty_module(self):
         import sys
         mod = self.make_module("""
@@ -26,7 +36,7 @@ class TestBasic(HPyTest):
 
     def test_noop_function(self):
         mod = self.make_module("""
-            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS, .doc="hello world")
             static HPy f_impl(HPyContext ctx, HPy self)
             {
                 return HPy_Dup(ctx, ctx->h_None);
@@ -36,6 +46,7 @@ class TestBasic(HPyTest):
             @INIT
         """)
         assert mod.f() is None
+        assert mod.f.__doc__ == 'hello world'
 
     def test_self_is_module(self):
         mod = self.make_module("""
