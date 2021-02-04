@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -400,11 +399,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         void handlePDict(VirtualFrame frame, PDict d, int version, DataOutputStream buffer,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("d.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_DICT, version, buffer);
             HashingStorage dictStorage = d.getDictStorage();
-            int len = lib.lengthWithFrame(dictStorage, hasFrame, frame);
+            int len = lib.length(dictStorage);
             writeInt(len, version, buffer);
             for (DictEntry entry : lib.entries(dictStorage)) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
@@ -413,7 +411,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePCode(@SuppressWarnings("unused") VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
+        void handlePCode(PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
             writeString(getSourceCode(c), version, buffer);
             writeString(c.getFilename(), version, buffer);
@@ -431,16 +429,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_SET, version, buffer);
-            int len;
             HashingStorage dictStorage = s.getDictStorage();
-            if (hasFrame.profile(frame != null)) {
-                len = lib.lengthWithState(dictStorage, PArguments.getThreadState(frame));
-            } else {
-                len = lib.length(dictStorage);
-            }
+            int len = lib.length(dictStorage);
             writeInt(len, version, buffer);
             for (DictEntry entry : lib.entries(dictStorage)) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
@@ -449,16 +441,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         void handlePForzenSet(VirtualFrame frame, PFrozenSet s, int version, DataOutputStream buffer,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_FROZENSET, version, buffer);
-            int len;
             HashingStorage dictStorage = s.getDictStorage();
-            if (hasFrame.profile(frame != null)) {
-                len = lib.lengthWithState(dictStorage, PArguments.getThreadState(frame));
-            } else {
-                len = lib.length(dictStorage);
-            }
+            int len = lib.length(dictStorage);
             writeInt(len, version, buffer);
             for (DictEntry entry : lib.entries(dictStorage)) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);

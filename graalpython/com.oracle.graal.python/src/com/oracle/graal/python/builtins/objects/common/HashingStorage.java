@@ -330,19 +330,12 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public boolean equalsWithState(HashingStorage other, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
         if (this == other) {
             return true;
         }
-        if (gotState.profile(state != null)) {
-            if (lib.lengthWithState(this, state) == lib.lengthWithState(other, state)) {
-                return lib.compareEntriesWithState(this, other, state) == 0;
-            }
-        } else {
-            if (lib.length(this) == lib.length(other)) {
-                return lib.compareEntries(this, other) == 0;
-            }
+        if (lib.length(this) == lib.length(other)) {
+            return lib.compareEntries(this, other) == 0;
         }
         return false;
 
@@ -417,19 +410,12 @@ public abstract class HashingStorage {
     @ExportMessage
     public int compareEntriesWithState(HashingStorage other, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached TestKeyValueEqual testNode,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Cached TestKeyValueEqual testNode) {
         if (this == other) {
             return 0;
         }
-        int otherLen, selfLen;
-        if (gotState.profile(state != null)) {
-            otherLen = lib.lengthWithState(other, state);
-            selfLen = lib.lengthWithState(this, state);
-        } else {
-            otherLen = lib.length(other);
-            selfLen = lib.length(this);
-        }
+        int otherLen = lib.length(other);
+        int selfLen = lib.length(this);
         if (selfLen > otherLen) {
             return 1;
         }
@@ -506,8 +492,8 @@ public abstract class HashingStorage {
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile selfIsShorterProfile,
                     @Cached IsDisjointForEachNode isDisjointForEachNode) {
         try {
-            int selfLen = libSelf.lengthWithState(this, state);
-            int otherLen = libOther.lengthWithState(other, state);
+            int selfLen = libSelf.length(this);
+            int otherLen = libOther.length(other);
             if (selfIsShorterProfile.profile(selfLen < otherLen)) {
                 libSelf.forEach(this, isDisjointForEachNode, new IsDisjoinForEachAcc(other, libOther, state));
             } else {

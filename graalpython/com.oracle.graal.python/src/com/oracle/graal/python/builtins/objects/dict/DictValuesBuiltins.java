@@ -66,10 +66,9 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
-        static Object run(VirtualFrame frame, PDictView self,
-                        @Cached ConditionProfile hasFrameProfile,
+        static Object run(PDictView self,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return lib.lengthWithFrame(self.getWrappedDict().getDictStorage(), hasFrameProfile, frame);
+            return lib.length(self.getWrappedDict().getDictStorage());
         }
     }
 

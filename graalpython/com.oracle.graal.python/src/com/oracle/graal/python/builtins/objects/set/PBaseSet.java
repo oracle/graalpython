@@ -31,13 +31,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public abstract class PBaseSet extends PHashingCollection {
@@ -52,12 +49,7 @@ public abstract class PBaseSet extends PHashingCollection {
 
     @ExportMessage(limit = "1")
     int lengthWithState(ThreadState state,
-                    @Exclusive @Cached ConditionProfile gotState,
                     @CachedLibrary("this.getDictStorage()") HashingStorageLibrary lib) {
-        if (gotState.profile(state != null)) {
-            return lib.lengthWithState(storage, state);
-        } else {
-            return lib.length(storage);
-        }
+        return lib.length(storage);
     }
 }
