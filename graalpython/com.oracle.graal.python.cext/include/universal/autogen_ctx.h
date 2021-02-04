@@ -38,6 +38,7 @@ typedef HPy _HPyConst;
 #define HPy void*
 #define HPyListBuilder void*
 #define HPyTupleBuilder void*
+#define HPyTracker void*
 
 
 struct _HPyContext_s {
@@ -167,3 +168,4 @@ struct _HPyContext_s {
 #undef HPy
 #undef HPyListBuilder
 #undef HPyTupleBuilder
+#undef HPyTracker

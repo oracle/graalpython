@@ -38,6 +38,8 @@
 #define WRAP_TUPLE_BUILDER(_ptr) ((HPyTupleBuilder){(_ptr)})
 #define UNWRAP_LIST_BUILDER(_h) ((_h)._lst)
 #define WRAP_LIST_BUILDER(_ptr) ((HPyListBuilder){(_ptr)})
+#define UNWRAP_TRACKER(_h) ((_h)._i)
+#define WRAP_TRACKER(_ptr) ((HPyTracker){(_ptr)})
 
 static inline HPy HPyModule_Create(HPyContext ctx, HPyModuleDef *def) {
      return WRAP(ctx->ctx_Module_Create ( ctx, def ));
@@ -452,18 +454,18 @@ static inline void HPyTupleBuilder_Cancel(HPyContext ctx, HPyTupleBuilder builde
 }
 
 static inline HPyTracker HPyTracker_New(HPyContext ctx, HPy_ssize_t size) {
-     return ctx->ctx_Tracker_New ( ctx, size ); 
+     return WRAP_TRACKER(ctx->ctx_Tracker_New ( ctx, size )); 
 }
 
 static inline int HPyTracker_Add(HPyContext ctx, HPyTracker ht, HPy h) {
-     return ctx->ctx_Tracker_Add ( ctx, ht, h ); 
+     return ctx->ctx_Tracker_Add ( ctx, UNWRAP_TRACKER(ht), UNWRAP(h) ); 
 }
 
 static inline void HPyTracker_RemoveAll(HPyContext ctx, HPyTracker ht) {
-     ctx->ctx_Tracker_RemoveAll ( ctx, ht ); 
+     ctx->ctx_Tracker_RemoveAll ( ctx, UNWRAP_TRACKER(ht) ); 
 }
 
 static inline void HPyTracker_Free(HPyContext ctx, HPyTracker ht) {
-     ctx->ctx_Tracker_Free ( ctx, ht ); 
+     ctx->ctx_Tracker_Free ( ctx, UNWRAP_TRACKER(ht) ); 
 }
 
