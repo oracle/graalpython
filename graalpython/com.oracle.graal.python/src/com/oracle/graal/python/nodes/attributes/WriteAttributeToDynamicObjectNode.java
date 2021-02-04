@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 
 @ImportStatic(PythonOptions.class)
 @ReportPolymorphism
@@ -57,6 +58,8 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, Object key, Object value);
+
+    public abstract boolean execute(Object primary, HiddenKey key, Object value);
 
     public abstract boolean execute(Object primary, String key, Object value);
 
@@ -68,17 +71,21 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return WriteAttributeToDynamicObjectNodeGen.getUncached();
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(guards = "key == cachedKey", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected boolean writeDirect(DynamicObject dynamicObject, @SuppressWarnings("unused") String key, Object value,
-                    @Cached("key") String cachedKey,
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected boolean writeDirect(DynamicObject dynamicObject, String key, Object value,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        dylib.put(dynamicObject, cachedKey, value);
+        dylib.put(dynamicObject, key, value);
         return true;
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = "writeDirect")
+    @Specialization(guards = "isHiddenKey(key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected boolean writeDirectHidden(DynamicObject dynamicObject, Object key, Object value,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        dylib.put(dynamicObject, key, value);
+        return true;
+    }
+
+    @Specialization(guards = "!isHiddenKey(key)", replaces = "writeDirect", limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected boolean write(DynamicObject dynamicObject, Object key, Object value,
                     @Cached CastToJavaStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
