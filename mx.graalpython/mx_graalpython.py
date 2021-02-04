@@ -2023,7 +2023,6 @@ def update_hpy_import_cmd(args):
         if not os.path.exists(dest_file):
             mx.logv("Removing file {} since {} does not exist".format(src_file, dest_file))
             vc.git_command(SUITE.dir, ["rm", src_file])
-            os.unlink(src_file, missing_ok=True)
 
     def remove_inexisting_files(hpy_dir, our_dir):
         mx.log("Looking for removed files in {} (HPy reference dir {})".format(our_dir, hpy_dir))
