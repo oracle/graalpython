@@ -26,7 +26,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     private final SSLContext context;
     private boolean checkHostname;
     private int verifyMode;
-    private String[] ciphers;
+    private SSLCipher[] ciphers;
     private long options;
     private boolean setDefaultVerifyPaths = false;
 
@@ -111,11 +111,11 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.verifyMode = verifyMode;
     }
 
-    public String[] getCiphers() {
+    public SSLCipher[] getCiphers() {
         return ciphers;
     }
 
-    public void setCiphers(String[] ciphers) {
+    public void setCiphers(SSLCipher[] ciphers) {
         this.ciphers = ciphers;
     }
 

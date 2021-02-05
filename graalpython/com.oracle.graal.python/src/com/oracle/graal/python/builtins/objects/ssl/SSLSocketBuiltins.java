@@ -342,28 +342,19 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class CipherNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getCipher(PSSLSocket self) {
-            Object[] cipherTuple = getCipherTuple(self.getEngine());
-            if (cipherTuple == null) {
+            SSLCipher cipher = getCipher(self.getEngine());
+            if (cipher == null) {
                 return PNone.NONE;
             }
-            return factory().createTuple(cipherTuple);
+            return factory().createTuple(new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
         }
 
         @TruffleBoundary
-        private static Object[] getCipherTuple(SSLEngine engine) {
+        private static SSLCipher getCipher(SSLEngine engine) {
             SSLSession session = engine.getSession();
             String cipherSuite = session.getCipherSuite();
-            String protocol = session.getProtocol();
-            if (cipherSuite != null && protocol != null) {
-                // TODO I don't see a nice way to obtain the number of bits, we have to rely on
-                // string matching
-                int cipherBits = 0;
-                if (cipherSuite.contains("_AES_128_")) {
-                    cipherBits = 128;
-                } else if (cipherSuite.contains("_AES_256_")) {
-                    cipherBits = 256;
-                }
-                return new Object[]{cipherSuite, protocol, cipherBits};
+            if (cipherSuite != null) {
+                return SSLCipher.valueOf(cipherSuite);
             }
             return null;
         }
