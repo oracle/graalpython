@@ -577,10 +577,12 @@ class TestCase(object):
                 return instance
         for k, v in items:
             if k.startswith("test"):
+                testfn = getattr(instance, k, v)
                 if patterns:
-                    if not any(p in k for p in patterns):
+                    import fnmatch
+                    if not any(fnmatch.fnmatch(testfn.__qualname__, p) for p in patterns):
                         continue
-                instance.run_test(getattr(instance, k, v))
+                instance.run_test(testfn)
         if hasattr(instance, "tearDownClass"):
             instance.run_safely(instance.tearDownClass)
         return instance
@@ -752,7 +754,10 @@ if __name__ == "__main__":
         if argv[idx] == "-k":
             argv.pop(idx)
             try:
-                patterns.append(argv.pop(idx))
+                pattern = argv.pop(idx)
+                if '*' not in pattern:
+                    pattern = '*' + pattern + '*'
+                patterns.append(pattern)
             except IndexError:
                 print("-k needs an argument")
         else:
