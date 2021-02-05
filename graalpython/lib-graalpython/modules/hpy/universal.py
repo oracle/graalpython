@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 import _imp
-from . import version
+from .devel import version
 
 def load_from_spec(spec):
     try:
