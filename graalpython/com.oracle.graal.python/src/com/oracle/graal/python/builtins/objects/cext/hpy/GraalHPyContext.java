@@ -376,6 +376,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         CTX_ERR_NOMEMORY("ctx_Err_NoMemory"),
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
+        CTX_ERR_SETOBJECT("ctx_Err_SetObject"),
         CTX_ERR_OCCURRED("ctx_Err_Occurred"),
         CTX_ERR_CLEAR("ctx_Err_Clear"),
         CTX_ISTRUE("ctx_IsTrue"),
@@ -912,7 +913,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_BYTES_AS_STRING.ordinal()] = new GraalHPyBytesAsString();
         members[HPyContextMembers.CTX_BYTES_ASSTRING.ordinal()] = new GraalHPyBytesAsString();
         members[HPyContextMembers.CTX_ERR_NOMEMORY.ordinal()] = new GraalHPyErrRaisePredefined(MemoryError);
-        members[HPyContextMembers.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString();
+        members[HPyContextMembers.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString(true);
+        members[HPyContextMembers.CTX_ERR_SETOBJECT.ordinal()] = new GraalHPyErrSetString(false);
         members[HPyContextMembers.CTX_ERR_OCCURRED.ordinal()] = new GraalHPyErrOccurred();
         members[HPyContextMembers.CTX_ERR_CLEAR.ordinal()] = new GraalHPyErrClear();
         members[HPyContextMembers.CTX_FROMPYOBJECT.ordinal()] = new GraalHPyFromPyObject();

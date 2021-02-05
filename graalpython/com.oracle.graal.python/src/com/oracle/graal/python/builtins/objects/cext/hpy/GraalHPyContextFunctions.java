@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -116,6 +117,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -140,8 +142,10 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -766,6 +770,12 @@ public abstract class GraalHPyContextFunctions {
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyErrSetString extends GraalHPyContextFunction {
 
+        private final boolean stringMode;
+
+        public GraalHPyErrSetString(boolean stringMode) {
+            this.stringMode = stringMode;
+        }
+
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
@@ -774,7 +784,10 @@ public abstract class GraalHPyContextFunctions {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
-                        @Cached HPyRaiseNode raiseNode) throws ArityException {
+                        @Cached CallNode callExceptionConstructorNode,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLanguage LanguageReference<PythonLanguage> langRef,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 3) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(3, arguments.length);
@@ -782,16 +795,29 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object errTypeObj = asPythonObjectNode.execute(context, arguments[1]);
             if (!(PGuards.isClass(errTypeObj, interopLib) && isSubtypeNode.execute(errTypeObj, PBaseException))) {
-                return raiseNode.raiseIntWithoutFrame(context, -1, SystemError, "exception %s not a BaseException subclass", errTypeObj);
+                return raiseNode.raise(SystemError, "exception %s not a BaseException subclass", errTypeObj);
             }
-            // the cast is now guaranteed because it is a subtype of PBaseException and there it is
-            // a type
-            Object valueObj = fromCharPointerNode.execute(arguments[2]);
             try {
-                String errorMessage = castToJavaStringNode.execute(valueObj);
-                return raiseNode.raiseIntWithoutFrame(context, 0, errTypeObj, errorMessage);
-            } catch (CannotCastException e) {
-                return raiseNode.raiseIntWithoutFrame(context, -1, TypeError, "exception value is not a valid string");
+                if (stringMode) {
+                    Object valueObj = fromCharPointerNode.execute(arguments[2]);
+                    try {
+                        String errorMessage = castToJavaStringNode.execute(valueObj);
+                        throw raiseNode.raise(errTypeObj, errorMessage);
+                    } catch (CannotCastException e) {
+                        throw raiseNode.raise(TypeError, "exception value is not a valid string");
+                    }
+                } else {
+                    Object exception = callExceptionConstructorNode.execute(errTypeObj, asPythonObjectNode.execute(context, arguments[2]));
+                    if (PGuards.isPBaseException(exception)) {
+                        throw raiseNode.raiseExceptionObject((PBaseException) exception, langRef.get());
+                    }
+                    // This should really not happen since we did a type check above but in theory,
+                    // the constructor could be broken.
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } catch (PException p) {
+                transformExceptionToNativeNode.execute(context, p);
+                return 0;
             }
         }
     }
