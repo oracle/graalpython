@@ -46,12 +46,13 @@ def data_file(name):
     return os.path.join(os.path.dirname(__file__), "ssldata", name)
 
 
+class StringWrapper(str):
+    pass
+
+
 class CertTests(unittest.TestCase):
 
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-
-    class StringWrapper(str):
-        pass
 
     def check_load_cert_chain_error(self, certfile, keyfile=None, errno=-1, strerror=None, err=ssl.SSLError):
         try:
@@ -61,7 +62,7 @@ class CertTests(unittest.TestCase):
                 self.ctx.load_cert_chain(data_file(certfile), data_file(keyfile))
         except err as e:
             self.assertEqual(e.errno, errno)
-            self.assertIn(e.strerror, strerror)
+            self.assertIn(strerror, e.strerror)
             self.assertIsInstance(type(e), type(err))
         else:
             assert False
@@ -74,7 +75,7 @@ class CertTests(unittest.TestCase):
                 self.ctx.load_verify_locations(data_file(cafile), data_file(capath))
         except err as e:
             self.assertEqual(e.errno, errno)
-            self.assertIn(e.strerror, strerror)
+            self.assertIn(strerror, e.strerror)
             self.assertIsInstance(type(e), type(err))
         else:
             assert False
@@ -139,7 +140,7 @@ class CertTests(unittest.TestCase):
         self.check_load_verify_locations_error(cafile="does_not_exit", capath='does_not_exit', errno=2, strerror="No such file or directory", err=FileNotFoundError)
 
         self.check_load_verify_locations_error(cafile="empty.pem", errno=136, strerror="[X509: NO_CERTIFICATE_OR_CRL_FOUND] no certificate or crl found")
-        self.check_load_verify_locations_error(cafile="empty_cert.pem", errno=136, strerror="[X509: NO_CERTIFICATE_OR_CRL_FOUND] no certificate or crl found")
+        self.check_load_verify_locations_error(cafile="empty_cert.pem", errno=9, strerror="[X509] PEM lib")
         self.check_load_verify_locations_error(cafile="empty_cert_at_begin.pem", errno=9, strerror="[X509] PEM lib")
         self.check_load_verify_locations_error(cafile="empty_cert_at_end.pem", errno=9, strerror="[X509] PEM lib")
 
