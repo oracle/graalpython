@@ -39,7 +39,9 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.crypto.interfaces.DHPrivateKey;
 import javax.crypto.interfaces.DHPublicKey;
@@ -199,14 +201,14 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 parameters.setEndpointIdentificationAlgorithm("HTTPS");
             }
         }
-        SSLCipher[] ciphers = context.getCiphers();
-        if (ciphers != null) {
-            String[] cipherNames = new String[ciphers.length];
-            for (int i = 0; i < ciphers.length; i++) {
-                cipherNames[i] = ciphers[i].name();
+        Set<String> allowedCiphers = new HashSet<>(Arrays.asList(engine.getSupportedCipherSuites()));
+        List<String> enabledCiphers = new ArrayList<>(context.getCiphers().length);
+        for (SSLCipher cipher : context.getCiphers()) {
+            if (allowedCiphers.contains(cipher.name())) {
+                enabledCiphers.add(cipher.name());
             }
-            parameters.setCipherSuites(cipherNames);
         }
+        parameters.setCipherSuites(enabledCiphers.toArray(new String[0]));
         if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
             ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());
         }

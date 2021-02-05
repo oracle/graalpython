@@ -5,6 +5,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,6 +21,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.ALPNHelper;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipher;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipherSelector;
+import com.oracle.graal.python.builtins.objects.ssl.SSLCipherStringMapping;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.ssl.SSLOptions;
@@ -72,6 +74,8 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             // work
             protocols.remove(SSLProtocol.TLSv1_3.getName());
             supportedProtocols = Collections.unmodifiableList(protocols);
+
+            SSLCipherStringMapping.initalize(new HashSet<>(Arrays.asList(supportedSSLParameters.getCipherSuites())));
             defaultCiphers = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);

@@ -4,7 +4,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -88,7 +87,7 @@ public class SSLCipherSelector {
     private static List<SSLCipher> getCiphersForCipherString(Node node, String cipherString) {
         List<SSLCipher> result = null;
         for (String component : cipherString.split("\\+")) {
-            SSLCipher[] ciphers = SSLCipherStringMapping.get(component);
+            List<SSLCipher> ciphers = SSLCipherStringMapping.get(component);
             if (ciphers == null) {
                 if (component.equals("PROFILE=SYSTEM")) {
                     throw PRaiseNode.raiseUncached(node, NotImplementedError, "PROFILE=SYSTEM not implemented");
@@ -96,9 +95,9 @@ public class SSLCipherSelector {
                 return Collections.emptyList();
             }
             if (result == null) {
-                result = new ArrayList<>(Arrays.asList(ciphers));
+                result = new ArrayList<>(ciphers);
             } else {
-                result.retainAll(Arrays.asList(ciphers));
+                result.retainAll(ciphers);
             }
         }
         if (result == null) {
