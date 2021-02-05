@@ -18,6 +18,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.ALPNHelper;
+import com.oracle.graal.python.builtins.objects.ssl.SSLCipher;
+import com.oracle.graal.python.builtins.objects.ssl.SSLCipherSelector;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.ssl.SSLOptions;
@@ -37,8 +39,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 @CoreFunctions(defineModule = "_ssl")
 public class SSLModuleBuiltins extends PythonBuiltins {
     // Taken from CPython
-    static final String DEFAULT_CIPHERS = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
+    static final String DEFAULT_CIPHER_STRING = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
 
+    public static SSLCipher[] defaultCiphers;
     public static List<String> supportedProtocols;
 
     public static final int SSL_CERT_NONE = 0;
@@ -69,6 +72,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             // work
             protocols.remove(SSLProtocol.TLSv1_3.getName());
             supportedProtocols = Collections.unmodifiableList(protocols);
+            defaultCiphers = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -84,7 +88,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("OPENSSL_VERSION_NUMBER", 269488287);
         module.setAttribute("OPENSSL_VERSION_INFO", factory.createTuple(new int[]{1, 1, 1, 9, 15}));
         module.setAttribute("OPENSSL_VERSION", "Java");
-        module.setAttribute("_DEFAULT_CIPHERS", DEFAULT_CIPHERS);
+        module.setAttribute("_DEFAULT_CIPHERS", DEFAULT_CIPHER_STRING);
         module.setAttribute("_OPENSSL_API_VERSION", PNone.NONE);
 
         module.setAttribute("CERT_NONE", SSL_CERT_NONE);

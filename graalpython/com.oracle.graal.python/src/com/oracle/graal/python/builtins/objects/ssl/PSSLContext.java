@@ -1,25 +1,25 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 import javax.crypto.spec.DHParameterSpec;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
-import java.security.KeyManagementException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.TrustManagerFactory;
 
 public final class PSSLContext extends PythonBuiltinObject {
     private final SSLMethod method;
@@ -51,6 +51,8 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.verifyFlags = verifyFlags;
         this.checkHostname = checkHostname;
         this.verifyMode = verifyMode;
+        this.ciphers = SSLModuleBuiltins.defaultCiphers;
+        assert this.ciphers != null;
     }
 
     public KeyStore getKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
