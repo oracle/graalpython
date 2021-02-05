@@ -45,6 +45,7 @@ import os
 def data_file(name):
     return os.path.join(os.path.dirname(__file__), "ssldata", name)
 
+
 class CertTests(unittest.TestCase):
 
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
