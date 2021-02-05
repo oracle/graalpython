@@ -14,7 +14,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
 import java.security.KeyManagementException;
+import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -62,16 +65,29 @@ public final class PSSLContext extends PythonBuiltinObject {
         return method;
     }
 
-    void init() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, KeyManagementException, UnrecoverableKeyException {
-        init(PythonUtils.EMPTY_CHAR_ARRAY);
+    private char[] password = PythonUtils.EMPTY_CHAR_ARRAY;
+
+    void setCertificateEntry(String alias, Certificate cert) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+        getKeyStore().setCertificateEntry(alias, cert);
     }
 
-    void init(char[] password) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException {
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        tmf.init(getKeyStore());
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(getKeyStore(), password);
-        context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+    void setKeyEntry(String alias, PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+        this.password = password;
+        for (X509Certificate cert : certs) {
+            getKeyStore().setKeyEntry(alias, pk, password, certs);
+        }
+    }
+
+    void init() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException {
+        if (keystore != null && keystore.size() > 0) {
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(getKeyStore());
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            kmf.init(getKeyStore(), password);
+            context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+        } else {
+            context.init(null, null, null);
+        }
     }
 
     public SSLContext getContext() {

@@ -155,9 +155,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static SSLContext createSSLContext(SSLMethod version) throws NoSuchAlgorithmException, KeyManagementException {
-            SSLContext context = SSLContext.getInstance(version.getJavaId());
-            context.init(null, null, null);
-            return context;
+            return SSLContext.getInstance(version.getJavaId());
         }
 
         @Override
@@ -169,6 +167,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @TruffleBoundary
     // TODO session
     static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname, Object session) {
+        try {
+            context.init();
+        } catch (NoSuchAlgorithmException | KeyStoreException | IOException | CertificateException | UnrecoverableKeyException | KeyManagementException ex) {
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, ex.toString());
+        }
         SSLEngine engine = context.getContext().createSSLEngine();
         engine.setUseClientMode(!serverMode);
         List<String> selectedProtocols = new ArrayList<>(SSLModuleBuiltins.supportedProtocols);
@@ -522,13 +525,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
 
             try {
-                KeyStore keystore = self.getKeyStore();
                 if (!(cadata instanceof PNone)) {
                     try {
-                        fromString(castToString.execute(cadata), keystore);
+                        fromString(castToString.execute(cadata), self);
                     } catch (CannotCastException cannotCastException) {
                         if (cadata instanceof PBytesLike) {
-                            fromBytesLike(toBytes, cadata, keystore);
+                            fromBytesLike(toBytes, cadata, self);
                         } else {
                             throw raise(TypeError, ErrorMessages.S_SHOULD_BE_ASCII_OR_BYTELIKE, "cadata");
                         }
@@ -559,13 +561,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     for (X509Certificate cert : certs) {
                         // TODO what to use for alias
                         String alias = file.getAbsoluteFile().getPath() + ":" + cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
-                        keystore.setCertificateEntry(alias, cert);
+                        self.setCertificateEntry(alias, cert);
                     }
-                    // TODO: maybe do init only once on communication start and not in every
-                    // particular ctx builtin?
-                    self.init();
                 }
-            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | KeyManagementException | UnrecoverableKeyException ex) {
+            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException ex) {
                 // TODO
                 throw raise(ValueError, ex.getMessage());
             }
@@ -585,7 +584,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private void fromString(String dataString, KeyStore keystore) throws IOException, CertificateException, KeyStoreException {
+        private void fromString(String dataString, PSSLContext context) throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException {
             if (dataString.isEmpty()) {
                 throw raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
             }
@@ -610,18 +609,18 @@ public class SSLContextBuiltins extends PythonBuiltins {
             for (X509Certificate cert : certs) {
                 // TODO what to use for alias
                 String alias = cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
-                keystore.setCertificateEntry(alias, cert);
+                context.setCertificateEntry(alias, cert);
             }
         }
 
-        private void fromBytesLike(ToByteArrayNode toBytes, Object cadata, KeyStore keystore) throws KeyStoreException {
+        private void fromBytesLike(ToByteArrayNode toBytes, Object cadata, PSSLContext context) throws KeyStoreException, IOException, NoSuchAlgorithmException {
             byte[] bytes = toBytes.execute(((PBytesLike) cadata).getSequenceStorage());
             try {
                 Collection<? extends Certificate> col = CertificateFactory.getInstance("X.509").generateCertificates(new ByteArrayInputStream(bytes));
                 for (Certificate cert : col) {
                     X509Certificate x509Cert = (X509Certificate) cert;
                     String alias = x509Cert.getIssuerX500Principal().getName() + ":" + x509Cert.getSerialNumber();
-                    keystore.setCertificateEntry(alias, x509Cert);
+                    context.setCertificateEntry(alias, x509Cert);
                 }
             } catch (CertificateException ex) {
                 String msg = ex.getMessage();
@@ -719,12 +718,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 PrivateKey pk = getPrivateKey(this, keyfile, certs[0].getPublicKey().getAlgorithm());
                 checkPrivateKey(this, pk, certs[0]);
 
-                KeyStore keystore = self.getKeyStore();
                 String alias = keyfile.getName();
                 char[] psswdChars = "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY;
-                keystore.setKeyEntry(alias, pk, psswdChars, certs);
-                self.init(psswdChars);
-            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | InvalidKeySpecException | KeyManagementException | UnrecoverableKeyException ex) {
+                self.setKeyEntry(alias, pk, psswdChars, certs);
+            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | InvalidKeySpecException ex) {
                 throw raise(SSLError, ErrorMessages.SSL_ERROR, ex.getMessage());
             }
             return PNone.NONE;
