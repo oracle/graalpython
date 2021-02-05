@@ -2036,6 +2036,15 @@ def update_hpy_import_cmd(args):
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.dependency("com.oracle.graal.python.cext").dir, "include")
 
+    # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
+    dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
+    src_version_file = join(hpy_repo_path, "hpy", "devel", "version.py")
+    if not os.path.exists(src_version_file):
+        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
+        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
+        mx.abort("File 'version.py' is not available. Did you forget to run 'setup.py build' ?")
+    import_file(src_version_file, dest_version_file)
+
     # copy headers from .../hpy/hpy/devel/include' to 'header_dest'
     # but exclude subdir 'cpython' (since that's only for CPython)
     import_files(hpy_repo_include_dir, header_dest)
@@ -2050,10 +2059,6 @@ def update_hpy_import_cmd(args):
     test_files_dest = _hpy_test_root()
     import_files(hpy_repo_test_dir, test_files_dest)
     remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
-
-    # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
-    dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
-    import_file(join(hpy_repo_path, "hpy", "devel", "version.py"), dest_version_file)
 
     # import 'version.py' by path and read '__version__'
     from importlib import util
