@@ -439,7 +439,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         long getSid(VirtualFrame frame, long pid,
-                    @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.getsid(getPosixSupport(), pid);
             } catch (PosixException e) {
@@ -1989,8 +1989,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CtermId extends PythonBuiltinNode {
         @Specialization
-        static String ctermid() {
-            return "/dev/tty";
+        String ctermid(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.ctermid(getPosixSupport());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 

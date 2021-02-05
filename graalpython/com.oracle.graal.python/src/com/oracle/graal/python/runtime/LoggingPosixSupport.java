@@ -687,6 +687,16 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final String ctermid(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("ctermid", "");
+        try {
+            return logExit("ctermid", "%s", lib.ctermid(delegate));
+        } catch (PosixException e) {
+            throw logException("ctermid", e);
+        }
+    }
+
+    @ExportMessage
     final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {

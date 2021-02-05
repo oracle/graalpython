@@ -89,6 +89,7 @@ public final class NFIPosixSupport extends PosixSupport {
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
     private static final int PATH_MAX = 4096;
+    private static final int L_ctermid = 9;
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
@@ -151,6 +152,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getuid("():sint64"),
         call_getppid("():sint64"),
         call_getsid("(sint64):sint64"),
+        call_ctermid("([sint8]):sint32"),
         fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32");
 
         private final String signature;
@@ -911,6 +913,17 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return res;
+    }
+
+    @ExportMessage
+    public String ctermid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        byte[] buf = new byte[L_ctermid];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_ctermid, wrap(buf));
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        // TODO PyUnicode_DecodeFSDefault
+        return cStringToJavaString(buf);
     }
 
     @ExportMessage
