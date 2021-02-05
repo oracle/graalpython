@@ -46,8 +46,6 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
                 GetNextNode SourceSection: None
-                  LookupAndCallUnaryNodeGen SourceSection: None
-                    Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
@@ -98,8 +96,6 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                       GetNextNode SourceSection: None
-                        LookupAndCallUnaryNodeGen SourceSection: None
-                          Op: __next__
                       GeneratorAccessNode SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None

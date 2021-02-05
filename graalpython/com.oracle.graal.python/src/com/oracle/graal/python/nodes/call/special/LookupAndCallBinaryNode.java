@@ -391,7 +391,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Specialization(guards = {"!isReversible()"}, limit = "5")
     Object callObject(VirtualFrame frame, Object left, Object right,
                     @CachedLibrary("left") PythonObjectLibrary libLeft,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
         Object leftClass = libLeft.getLazyPythonClass(left);
         Object leftValue = libLeft.getDelegatedValue(left);
         Object leftCallable = getattr.execute(frame, leftClass, leftValue);
@@ -408,7 +408,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Specialization(guards = {"!isReversible()"}, replaces = "callObject")
     Object callObjectUncached(VirtualFrame frame, Object left, Object right,
                     @CachedLibrary(limit = "1") PythonObjectLibrary libLeft,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
         return callObject(frame, left, right, libLeft, getattr);
     }
 

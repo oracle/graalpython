@@ -509,22 +509,17 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-        @Specialization(limit = "4")
-        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @CachedLibrary("object") PythonObjectLibrary libObj,
+
+        public abstract PNone executeWithString(VirtualFrame frame, Object object, String key, Object value);
+
+        @Specialization
+        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary libObj,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
                         @Cached("create()") CallTernaryMethodNode callSetNode,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode,
-                        @Cached CastToJavaStringNode castKeyToStringNode) {
-            String key;
-            try {
-                key = castKeyToStringNode.execute(keyObject);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
-            }
-
+                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
             Object type = libObj.getLazyPythonClass(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
@@ -543,6 +538,24 @@ public class ObjectBuiltins extends PythonBuiltins {
             } else {
                 throw raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
             }
+        }
+
+        @Specialization(replaces = "doStringKey")
+        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary libObj,
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
+                        @Cached("create()") GetClassNode getDataClassNode,
+                        @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
+                        @Cached("create()") CallTernaryMethodNode callSetNode,
+                        @Cached("create()") WriteAttributeToObjectNode writeNode,
+                        @Cached CastToJavaStringNode castKeyToStringNode) {
+            String key;
+            try {
+                key = castKeyToStringNode.execute(keyObject);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
+            }
+            return doStringKey(frame, object, key, value, libObj, getExisting, getDataClassNode, lookupSetNode, callSetNode, writeNode);
         }
     }
 

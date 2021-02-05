@@ -1316,7 +1316,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       Identifier: h_append
                       Frame: [4,h_append,Illegal]
                       GetAttributeNode SourceSection: [13992,14000]`h.append`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: append
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -1412,7 +1412,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Identifier: next
                                       Frame: [9,next,Illegal]
                                       GetAttributeNode SourceSection: [14385,14396]`it.__next__`
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: __next__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1623,8 +1623,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               YieldFromNode SourceSection: [15086,15110]`yield from next.__se...`
                                 CachedDispatchFirst SourceSection: None
                                 GetNextNode SourceSection: None
-                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                    Op: __next__
                                 GeneratorAccessNode SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
@@ -1639,7 +1637,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
                                 GetAttributeNode SourceSection: [15097,15110]`next.__self__`
-                                  GetFixedAttributeNode SourceSection: None
+                                  GetFixedAttributeNodeGen SourceSection: None
                                     Key: __self__
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -1680,7 +1678,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Identifier: next
                                   Frame: [9,next,Illegal]
                                   GetAttributeNode SourceSection: [15213,15224]`it.__next__`
-                                    GetFixedAttributeNode SourceSection: None
+                                    GetFixedAttributeNodeGen SourceSection: None
                                       Key: __next__
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -1934,8 +1932,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           YieldFromNode SourceSection: [15792,15816]`yield from next.__se...`
                             CachedDispatchFirst SourceSection: None
                             GetNextNode SourceSection: None
-                              LookupAndCallUnaryNodeGen SourceSection: None
-                                Op: __next__
                             GeneratorAccessNode SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
@@ -1950,7 +1946,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
                             GetAttributeNode SourceSection: [15803,15816]`next.__self__`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: __self__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -2261,8 +2257,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                       GetNextNode SourceSection: None
-                                        LookupAndCallUnaryNodeGen SourceSection: None
-                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -2459,8 +2453,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
                                         GetNextNode SourceSection: None
-                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                            Op: __next__
                                         GeneratorAccessNode SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
@@ -2554,8 +2546,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
                                   GetNextNode SourceSection: None
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -2782,8 +2772,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                     GetNextNode SourceSection: None
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -3077,8 +3065,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                       GetNextNode SourceSection: None
-                                        LookupAndCallUnaryNodeGen SourceSection: None
-                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -3290,8 +3276,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
                                         GetNextNode SourceSection: None
-                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                            Op: __next__
                                         GeneratorAccessNode SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
@@ -3385,8 +3369,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
                                   GetNextNode SourceSection: None
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -3628,8 +3610,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                     GetNextNode SourceSection: None
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None

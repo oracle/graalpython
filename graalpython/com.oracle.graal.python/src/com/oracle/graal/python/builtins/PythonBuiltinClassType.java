@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -309,6 +310,20 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
 
+    /**
+     * @see #redefinesSlot(SpecialMethodSlot)
+     */
+    private SpecialMethodSlot[] redefinedSlots;
+
+    /**
+     * Lookup cache for special slots defined in {@link SpecialMethodSlot}. Use
+     * {@link SpecialMethodSlot} to access the values. Unlike the cache in
+     * {@link com.oracle.graal.python.builtins.objects.type.PythonManagedClass}, this caches only
+     * builtin context independent values, most notably instances of
+     * {@link com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo}.
+     */
+    private Object[] specialMethodSlots;
+
     PythonBuiltinClassType(String name, String module, Flags flags) {
         this.name = name;
         this.publicInModule = flags.isPublic ? module : null;
@@ -358,6 +373,37 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return publicInModule;
     }
 
+    /**
+     * Access the values using methods in {@link SpecialMethodSlot}.
+     */
+    public Object[] getSpecialMethodSlots() {
+        return specialMethodSlots;
+    }
+
+    public void setSpecialMethodSlots(Object[] slots) {
+        assert specialMethodSlots == null; // should be assigned only once per VM
+        specialMethodSlots = slots;
+    }
+
+    /**
+     * Returns {@code true} if this method slot is redefined in Python code during initialization.
+     * Values of such slots cannot be cached in {@link #specialMethodSlots}, because they are not
+     * context independent.
+     */
+    public boolean redefinesSlot(SpecialMethodSlot slot) {
+        if (redefinedSlots != null) {
+            for (SpecialMethodSlot redefSlot : redefinedSlots) {
+                if (redefSlot == slot) {
+                    return true;
+                }
+            }
+        }
+        if (base != null) {
+            return base.redefinesSlot(slot);
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
@@ -374,6 +420,35 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
 
     static {
+        // fill the overridden slots
+        SpecialMethodSlot[] repr = new SpecialMethodSlot[]{SpecialMethodSlot.Repr};
+        SpecialMethodSlot[] reprAndNew = new SpecialMethodSlot[]{SpecialMethodSlot.Repr, SpecialMethodSlot.New};
+
+        Boolean.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.And};
+        PBaseException.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str, SpecialMethodSlot.Repr};
+        PythonModule.redefinedSlots = Super.redefinedSlots = repr;
+
+        // These slots actually contain context independent values, but they are initialized in
+        // StructSequence to artificial PBuiltinFunctions with artificial builtin node factories,
+        // which are different for each context. We'd have to turn those factories into singletons
+        // to guarantee their identity across contexts. For the sake of simplicity, we just ignore
+        // those slots for now.
+        PStructRusage.redefinedSlots = reprAndNew;
+        PStructPasswd.redefinedSlots = reprAndNew;
+        PUnameResult.redefinedSlots = reprAndNew;
+        PUnraisableHookArgs.redefinedSlots = reprAndNew;
+        PIntInfo.redefinedSlots = reprAndNew;
+        PHashInfo.redefinedSlots = reprAndNew;
+        PStructTime.redefinedSlots = reprAndNew;
+        PProfilerEntry.redefinedSlots = reprAndNew;
+        PProfilerSubentry.redefinedSlots = reprAndNew;
+        PThreadInfo.redefinedSlots = reprAndNew;
+        PStatResult.redefinedSlots = repr;
+        PFloatInfo.redefinedSlots = reprAndNew;
+        PVersionInfo.redefinedSlots = repr;
+        PFlags.redefinedSlots = repr;
+        PTerminalSize.redefinedSlots = reprAndNew;
+
         // set the base classes (and check uniqueness):
 
         HashSet<String> set = new HashSet<>();

@@ -42,19 +42,16 @@ package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChild(value = "object", type = ExpressionNode.class)
-@NodeChild(value = "rhs", type = ExpressionNode.class)
-public abstract class SetAttributeNode extends StatementNode implements WriteNode {
+public final class SetAttributeNode extends StatementNode implements WriteNode {
 
     public static final class Dynamic extends PNodeWithContext {
         @Child private LookupAndCallTernaryNode call = LookupAndCallTernaryNode.create(__SETATTR__);
@@ -68,22 +65,32 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
         }
     }
 
-    private final String key;
+    @Child ExpressionNode objectExpression;
+    @Child ExpressionNode rhsExpression;
+    @Child PythonObjectLibrary lib;
+    @Child SetAttributeWithClassNode setAttrWithClass;
 
-    protected SetAttributeNode(String key) {
-        this.key = key;
+    protected SetAttributeNode(String key, ExpressionNode objectExpression, ExpressionNode rhsExpression) {
+        this.setAttrWithClass = SetAttributeWithClassNodeGen.create(key);
+        this.objectExpression = objectExpression;
+        this.rhsExpression = rhsExpression;
     }
 
-    protected abstract ExpressionNode getObject();
+    protected ExpressionNode getObject() {
+        return objectExpression;
+    }
 
-    public abstract ExpressionNode getRhs();
+    @Override
+    public ExpressionNode getRhs() {
+        return rhsExpression;
+    }
 
     public static SetAttributeNode create(String key) {
-        return create(key, null, null);
+        return new SetAttributeNode(key, null, null);
     }
 
     public static SetAttributeNode create(String key, ExpressionNode object, ExpressionNode rhs) {
-        return SetAttributeNodeGen.create(key, object, rhs);
+        return new SetAttributeNode(key, object, rhs);
     }
 
     @Override
@@ -91,19 +98,26 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
         executeVoid(frame, getObject().execute(frame), value);
     }
 
-    public abstract void executeVoid(VirtualFrame frame, Object object, Object value);
+    public void executeVoid(VirtualFrame frame, Object object, Object value) {
+        setAttrWithClass.setAttr(frame, object, ensureLib().getLazyPythonClass(object), value);
+    }
 
     public String getAttributeId() {
-        return key;
+        return setAttrWithClass.getKey();
     }
 
-    public ExpressionNode getPrimaryNode() {
-        return getObject();
+    @Override
+    public void executeVoid(VirtualFrame frame) {
+        Object object = objectExpression.execute(frame);
+        Object rhs = rhsExpression.execute(frame);
+        executeVoid(frame, object, rhs);
     }
 
-    @Specialization
-    protected void doIt(VirtualFrame frame, Object object, Object value,
-                    @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
-        call.execute(frame, object, key, value);
+    private PythonObjectLibrary ensureLib() {
+        if (lib == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lib = insert(PythonObjectLibrary.getFactory().createDispatched(4));
+        }
+        return lib;
     }
 }

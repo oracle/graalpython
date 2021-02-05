@@ -102,8 +102,6 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                             Frame: [2,files,Illegal]
                                           ReadFromCellNodeGen SourceSection: None
                                       GetNextNode SourceSection: None
-                                        LookupAndCallUnaryNodeGen SourceSection: None
-                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -114,8 +112,6 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                     GetNextNode SourceSection: None
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None

@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
       CallNodeGen SourceSection: None
       GetCallAttributeNodeGen SourceSection: None
         GetAttributeNode SourceSection: [0,12]`a().b.c(x).d`
-          GetFixedAttributeNode SourceSection: None
+          GetFixedAttributeNodeGen SourceSection: None
             Key: d
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
             CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNode SourceSection: [0,5]`a().b`
-                GetFixedAttributeNode SourceSection: None
+                GetFixedAttributeNodeGen SourceSection: None
                   Key: b
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__

@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'assignment08'> SourceSection: [0,7]`a.b = 1`
       Expression:
         EmptyNode SourceSection: None
       SideEffect:
-        SetAttributeNodeGen SourceSection: [0,7]`a.b = 1`
+        SetAttributeNode SourceSection: [0,7]`a.b = 1`
           Attribute: b
           ReadNameNodeGen SourceSection: [0,1]`a`
             Identifier: a
@@ -17,3 +17,4 @@ ModuleRootNode Name: <module 'assignment08'> SourceSection: [0,7]`a.b = 1`
               CachedDispatchFirst SourceSection: None
           IntegerLiteralNode SourceSection: [6,7]`1`
             Value: 1
+          SetAttributeWithClassNodeGen SourceSection: None

@@ -25,11 +25,16 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -47,12 +52,42 @@ import com.oracle.truffle.api.source.SourceSection;
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
+    private AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
+
     public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, PythonAbstractClass[] baseClasses) {
         super(lang, typeClass, classShape, null, name, baseClasses);
     }
 
     public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
         super(lang, typeClass, classShape, null, name, invokeMro, false, baseClasses);
+    }
+
+    public Assumption getSlotsFinalAssumption() {
+        Assumption result = slotsFinalAssumption.get();
+        if (result == null) {
+            result = Truffle.getRuntime().createAssumption("slots");
+            if (!slotsFinalAssumption.compareAndSet(null, result)) {
+                result = slotsFinalAssumption.get();
+            }
+        }
+        return result;
+    }
+
+    public void invalidateSlotsFinalAssumption() {
+        Assumption assumption = slotsFinalAssumption.get();
+        if (assumption != null) {
+            assumption.invalidate();
+        }
+    }
+
+    @Override
+    @TruffleBoundary
+    public void setAttribute(Object key, Object value) {
+        if (slotsFinalAssumption != null) {
+            // slotsFinalAssumption == null can happen during super ctor call
+            invalidateSlotsFinalAssumption();
+        }
+        super.setAttribute(key, value);
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")

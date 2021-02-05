@@ -109,8 +109,6 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                             GetNextNode SourceSection: None
-                                              LookupAndCallUnaryNodeGen SourceSection: None
-                                                Op: __next__
                                             GeneratorAccessNode SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
@@ -121,7 +119,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                           PRaiseNodeGen SourceSection: None
                                     GetIteratorExpressionNodeGen SourceSection: [95,108]`cls.__bases__`
                                       GetAttributeNode SourceSection: [95,108]`cls.__bases__`
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: __bases__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -205,8 +203,6 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                     GetNextNode SourceSection: None
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None

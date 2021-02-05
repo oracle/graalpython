@@ -316,8 +316,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        PythonClass errorHandlerClass = core.factory().createPythonClass(PythonBuiltinClassType.PythonClass, "CErrorHandler",
-                        new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
+        PythonClass errorHandlerClass = core.factory().createPythonClassAndFixupSlots(PythonBuiltinClassType.PythonClass,
+                        "CErrorHandler", new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
         builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
         builtinConstants.put(NATIVE_NULL, new PythonNativeNull());

@@ -47,92 +47,32 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNodeFactory.DynamicNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Similar to CPython's lookup_maybe_method. If the found method is a function, it is returned
  * unbound. In the rare case that the method is a different type of descriptor, the descriptor is
- * called and the result returned wrapped in a {@link BoundDescriptor} object to be able to
+ * called and the result returned wrapped in a {@code BoundDescriptor} object to be able to
  * differentiate it from the unbound case. {@link CallUnaryMethodNode} and other method calling
  * nodes handle this wrapper.
  */
-public abstract class LookupSpecialMethodNode extends Node {
-    protected final String name;
-    private final boolean ignoreDescriptorException;
-    @Child private LookupInheritedAttributeNode lookupGet;
-    @Child private CallNode callGet;
-
-    /**
-     * Note: may return bound descriptor result wrapped in {@link BoundDescriptor} object. It needs
-     * to be passed to a method calling node, such as {@link CallUnaryMethodNode}, or handled
-     * explicitly.
-     */
-    public abstract Object execute(VirtualFrame frame, Object type, Object receiver);
-
+public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
     LookupSpecialMethodNode(String name, boolean ignoreDescriptorException) {
-        this.name = name;
-        this.ignoreDescriptorException = ignoreDescriptorException;
+        super(ignoreDescriptorException);
+        this.lookupNode = LookupAttributeInMRONode.create(name);
     }
 
     public static LookupSpecialMethodNode create(String name, boolean ignoreDescriptorException) {
-        return LookupSpecialMethodNodeGen.create(name, ignoreDescriptorException);
+        return new LookupSpecialMethodNode(name, ignoreDescriptorException);
     }
 
     public static LookupSpecialMethodNode create(String name) {
-        return LookupSpecialMethodNodeGen.create(name, false);
-    }
-
-    public static class BoundDescriptor {
-        public final Object descriptor;
-
-        public BoundDescriptor(Object descriptor) {
-            this.descriptor = descriptor;
-        }
-    }
-
-    @Specialization
-    Object lookup(VirtualFrame frame, Object type, Object receiver,
-                    @Cached("create(name)") LookupAttributeInMRONode lookupAttr) {
-        Object descriptor = lookupAttr.execute(type);
-        if (descriptor == PNone.NO_VALUE || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction) {
-            // Return unbound to avoid constructing the bound object
-            return descriptor;
-        }
-        // Acts as a profile
-        Object getMethod = ensureLookupGet().execute(descriptor);
-        if (getMethod != PNone.NO_VALUE) {
-            try {
-                return new BoundDescriptor(ensureCallGet().execute(frame, getMethod, descriptor, receiver, type));
-            } catch (PException pe) {
-                if (ignoreDescriptorException) {
-                    return PNone.NO_VALUE;
-                }
-                throw pe;
-            }
-        }
-        return descriptor;
-    }
-
-    private LookupInheritedAttributeNode ensureLookupGet() {
-        if (lookupGet == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            lookupGet = insert(LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__));
-        }
-        return lookupGet;
-    }
-
-    private CallNode ensureCallGet() {
-        if (callGet == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callGet = insert(CallNode.create());
-        }
-        return callGet;
+        return new LookupSpecialMethodNode(name, false);
     }
 
     @GenerateUncached
@@ -141,11 +81,11 @@ public abstract class LookupSpecialMethodNode extends Node {
         public abstract Object execute(Object type, Object name, Object receiver, boolean ignoreDescriptorException);
 
         public static Dynamic create() {
-            return LookupSpecialMethodNodeGen.DynamicNodeGen.create();
+            return DynamicNodeGen.create();
         }
 
         public static Dynamic getUncached() {
-            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached();
+            return DynamicNodeGen.getUncached();
         }
 
         @Specialization

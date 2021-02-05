@@ -124,7 +124,9 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -421,11 +423,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonModule(cls, getShape(cls)));
     }
 
-    public PythonClass createPythonClass(Object metaclass, String name, PythonAbstractClass[] bases) {
-        return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, bases));
+    public PythonClass createPythonClassAndFixupSlots(Object metaclass, String name, PythonAbstractClass[] bases) {
+        PythonClass result = trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, bases));
+        SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.getUncached());
+        return result;
     }
 
     public PythonClass createPythonClass(Object metaclass, String name, boolean invokeMro, PythonAbstractClass[] bases) {
+        // Note: called from type ctor, which itself will invoke setupSpecialMethodSlots at the
+        // right point
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
     }
 

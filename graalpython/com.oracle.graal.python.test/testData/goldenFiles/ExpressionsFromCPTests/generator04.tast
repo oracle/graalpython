@@ -52,8 +52,6 @@ ModuleRootNode Name: <module 'generator04'> SourceSection: [0,29]`list(x**3 for 
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
                 GetNextNode SourceSection: None
-                  LookupAndCallUnaryNodeGen SourceSection: None
-                    Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None

@@ -40,15 +40,19 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.BinaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialBaseNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,6 +81,21 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
 
     public final Object executeObject(Object callable, Object arg1, Object arg2) {
         return executeObject(null, callable, arg1, arg2);
+    }
+
+    @Specialization(guards = "cachedInfo.isSameFactory(info)", limit = "5")
+    Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinInfo info, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("info") BinaryBuiltinInfo cachedInfo,
+                    @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
+        return node.call(frame, arg1, arg2);
+    }
+
+    @Specialization(replaces = "callSpecialMethodSlotInlined")
+    Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BinaryBuiltinInfo info, Object arg1, Object arg2,
+                    @Cached CallNode callNode,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object func = info.getBuiltinMethod(context.getCore());
+        return callNode.execute(frame, func, new Object[]{arg1, arg2}, PKeyword.EMPTY_KEYWORDS);
     }
 
     @Specialization(guards = {"func == cachedFunc",
@@ -449,11 +468,12 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return builtinNode.call(frame, func.getSelf(), arg1, arg2);
     }
 
-    @Specialization(replaces = {"callBoolSingle", "callBool", "callIntSingle", "callInt", "callBoolIntSingle", "callBoolInt", "callLongSingle", "callLong", "callBoolLongSingle", "callBoolLong",
-                    "callDoubleSingle", "callDouble", "callBoolDoubleSingle", "callBoolDouble", "callObjectSingleContext", "callObject", "callBoolSingleReverse", "callBoolReverse",
-                    "callIntSingleReverse", "callIntReverse", "callBoolIntSingleReverse", "callBoolIntReverse", "callLongSingleReverse", "callLongReverse", "callBoolLongSingleReverse",
-                    "callBoolLongReverse", "callDoubleSingleReverse", "callDoubleReverse", "callBoolDoubleSingleReverse", "callBoolDoubleReverse", "callObjectSingleContextReverse",
-                    "callObjectReverse", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
+    @Specialization(guards = "!isBinaryBuiltinInfo(func)", //
+                    replaces = {"callBoolSingle", "callBool", "callIntSingle", "callInt", "callBoolIntSingle", "callBoolInt", "callLongSingle", "callLong", "callBoolLongSingle",
+                                    "callBoolLong", "callDoubleSingle", "callDouble", "callBoolDoubleSingle", "callBoolDouble", "callObjectSingleContext", "callObject", "callBoolSingleReverse",
+                                    "callBoolReverse", "callIntSingleReverse", "callIntReverse", "callBoolIntSingleReverse", "callBoolIntReverse", "callLongSingleReverse", "callLongReverse",
+                                    "callBoolLongSingleReverse", "callBoolLongReverse", "callDoubleSingleReverse", "callDoubleReverse", "callBoolDoubleSingleReverse", "callBoolDoubleReverse",
+                                    "callObjectSingleContextReverse", "callObjectReverse", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
     @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2,
                     @Cached CallNode callNode,

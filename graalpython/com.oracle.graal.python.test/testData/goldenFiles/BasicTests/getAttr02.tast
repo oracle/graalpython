@@ -6,7 +6,7 @@ ModuleRootNode Name: <module 'getAttr02'> SourceSection: [0,5]`a().b`
   Documentation: None
   InnerRootNode SourceSection: [0,5]`a().b`
     GetAttributeNode SourceSection: [0,5]`a().b`
-      GetFixedAttributeNode SourceSection: None
+      GetFixedAttributeNodeGen SourceSection: None
         Key: b
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__

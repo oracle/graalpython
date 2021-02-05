@@ -70,8 +70,6 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                             ReadGeneratorFrameVariableNodeGen SourceSection: [73,74]`f`
                               Frame: [2,f,Illegal]
                           GetNextNode SourceSection: None
-                            LookupAndCallUnaryNodeGen SourceSection: None
-                              Op: __next__
                           GeneratorAccessNode SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -86,8 +84,16 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: [41,45]`path`
                           Frame: [0,path,Illegal]
+<<<<<<< HEAD
                       LookupSpecialMethodNodeGen SourceSection: None
                       LookupSpecialMethodNodeGen SourceSection: None
+=======
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+>>>>>>> Add special methods slots to managed classes and builtin types.
                       CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None

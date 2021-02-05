@@ -110,7 +110,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     int arg2,
                     Object arg3,
                     @CachedLibrary("arg1") PythonObjectLibrary libArg1,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
         Object klass = libArg1.getLazyPythonClass(arg1);
         Object value = libArg1.getDelegatedValue(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, value), value, arg2, arg3);
@@ -123,7 +123,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     Object arg2,
                     Object arg3,
                     @CachedLibrary("arg1") PythonObjectLibrary libArg1,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
         Object klass = libArg1.getLazyPythonClass(arg1);
         Object value = libArg1.getDelegatedValue(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, value), value, arg2, arg3);

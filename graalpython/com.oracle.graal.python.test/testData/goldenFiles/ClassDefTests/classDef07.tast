@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                           FunctionDefinitionNode Name: setup SourceSection: None
                             Arguments:
                               GetAttributeNode SourceSection: [52,68]`dict.__setitem__`
-                                GetFixedAttributeNode SourceSection: None
+                                GetFixedAttributeNodeGen SourceSection: None
                                   Key: __setitem__
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__

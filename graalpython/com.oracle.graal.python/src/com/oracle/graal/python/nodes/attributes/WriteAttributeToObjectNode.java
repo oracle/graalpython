@@ -52,7 +52,10 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -60,15 +63,18 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.Wr
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeUncachedNodeGen;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
 public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
@@ -94,9 +100,32 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
-    private static void handlePythonClass(ConditionProfile isClassProfile, PythonObject object, Object key) {
-        if (isClassProfile.profile(object instanceof PythonManagedClass)) {
-            ((PythonManagedClass) object).invalidateFinalAttribute(key);
+    private static void handlePossiblePythonClass(HandlePythonClassProfiles profiles, PythonObject object, Object keyObj, Object value) {
+        boolean isUserClass = object instanceof PythonClass;
+        boolean isBuiltinClass = object instanceof PythonBuiltinClass;
+        // Check the assumption that those are the only two subclasses of PythonManagedClass
+        assert !(object instanceof PythonManagedClass) || isBuiltinClass || isUserClass;
+        if (isBuiltinClass || isUserClass) {
+            profiles.isManagedClass.enter();
+            handlePythonClass(profiles, (PythonManagedClass) object, keyObj, value, isUserClass);
+        }
+    }
+
+    private static void handlePythonClass(HandlePythonClassProfiles profiles, PythonManagedClass object, Object keyObj, Object value, boolean isUserClass) {
+        String key = profiles.castKey(keyObj);
+        if (key == null) {
+            return;
+        }
+        object.invalidateFinalAttribute(key);
+        if (isUserClass) {
+            profiles.isUserClass.enter();
+            if (SpecialMethodSlot.canBeSpecial(key)) {
+                profiles.isSpecialKey.enter();
+                SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+                if (slot != null) {
+                    SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
+                }
+            }
         }
     }
 
@@ -108,9 +137,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
-        handlePythonClass(isClassProfile, object, key);
-        return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
+                    @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
+        try {
+            return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
+        } finally {
+            handlePossiblePythonClass(handlePythonClassProfiles, object, key, value);
+        }
     }
 
     // write to the dict
@@ -123,16 +155,19 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Cached BranchProfile updateStorage,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
-        handlePythonClass(isClassProfile, object, key);
-        PDict dict = lib.getDict(object);
-        HashingStorage dictStorage = getDictStorage.execute(dict);
-        HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
-        if (dictStorage != hashingStorage) {
-            updateStorage.enter();
-            dict.setDictStorage(hashingStorage);
+                    @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
+        try {
+            PDict dict = lib.getDict(object);
+            HashingStorage dictStorage = getDictStorage.execute(dict);
+            HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
+            if (dictStorage != hashingStorage) {
+                updateStorage.enter();
+                dict.setDictStorage(hashingStorage);
+            }
+            return true;
+        } finally {
+            handlePossiblePythonClass(handlePythonClassProfiles, object, key, value);
         }
-        return true;
     }
 
     private static boolean writeNativeGeneric(PythonAbstractNativeObject object, Object key, Object value, Object d, HashingCollectionNodes.SetItemNode setItemNode, PRaiseNode raiseNode) {
@@ -188,10 +223,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
                         @Cached CallNode callSetItem,
                         @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
-            handlePythonClass(isClassProfile, object, key);
-            PDict dict = lib.getDict(object);
-            return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, dict);
+                        @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
+            try {
+                PDict dict = lib.getDict(object);
+                return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, dict);
+            } finally {
+                handlePossiblePythonClass(handlePythonClassProfiles, object, key, value);
+            }
         }
 
         @Specialization(guards = {"!isHiddenKey(key)"}, limit = "1")
@@ -226,4 +264,45 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
+    protected static final class HandlePythonClassProfiles extends Node {
+        private static final HandlePythonClassProfiles UNCACHED = new HandlePythonClassProfiles(BranchProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
+                        CastToJavaStringNode.getUncached());
+        final BranchProfile isManagedClass;
+        final BranchProfile isUserClass;
+        final BranchProfile isSpecialKey;
+        @Child CastToJavaStringNode castKeyNode;
+
+        public HandlePythonClassProfiles(BranchProfile isManagedClass, BranchProfile isUserClass, BranchProfile isSpecialKey, CastToJavaStringNode castKeyNode) {
+            this.isManagedClass = isManagedClass;
+            this.isUserClass = isUserClass;
+            this.isSpecialKey = isSpecialKey;
+            this.castKeyNode = castKeyNode;
+        }
+
+        public static HandlePythonClassProfiles create() {
+            return new HandlePythonClassProfiles(BranchProfile.create(), BranchProfile.create(), BranchProfile.create(), null);
+        }
+
+        public static HandlePythonClassProfiles getUncached() {
+            return UNCACHED;
+        }
+
+        String castKey(Object key) {
+            if (castKeyNode == null) {
+                // fast-path w/o node for two most common situations
+                if (key instanceof String) {
+                    return (String) key;
+                } else if (isHiddenKey(key)) {
+                    return null;
+                }
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castKeyNode = insert(CastToJavaStringNode.create());
+            }
+            try {
+                return castKeyNode.execute(key);
+            } catch (CannotCastException ex) {
+                return null;
+            }
+        }
+    }
 }

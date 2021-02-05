@@ -102,8 +102,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 0
                                           GetNextNode SourceSection: None
-                                            LookupAndCallUnaryNodeGen SourceSection: None
-                                              Op: __next__
                                           GeneratorAccessNode SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -126,8 +124,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                           ReadGeneratorFrameVariableNodeGen SourceSection: [92,93]`t`
                             Frame: [1,t,Illegal]
                         GetNextNode SourceSection: None
-                          LookupAndCallUnaryNodeGen SourceSection: None
-                            Op: __next__
                         GeneratorAccessNode SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
                           CachedDispatchFirst SourceSection: None
@@ -138,8 +134,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                       GetNextNode SourceSection: None
-                        LookupAndCallUnaryNodeGen SourceSection: None
-                          Op: __next__
                       GeneratorAccessNode SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None

@@ -40,17 +40,21 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.UnaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialBaseNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -96,6 +100,21 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
 
     public final Object executeObject(Object callable, Object receiver) {
         return executeObject(null, callable, receiver);
+    }
+
+    @Specialization(guards = "cachedInfo.isSameFactory(info)", limit = "5")
+    Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") UnaryBuiltinInfo info, Object receiver,
+                    @SuppressWarnings("unused") @Cached("info") UnaryBuiltinInfo cachedInfo,
+                    @Cached("cachedInfo.createNode()") PythonUnaryBuiltinNode node) {
+        return node.call(frame, receiver);
+    }
+
+    @Specialization(replaces = "callSpecialMethodSlotInlined")
+    Object callSpecialMethodSlotCallTarget(VirtualFrame frame, UnaryBuiltinInfo info, Object receiver,
+                    @Cached CallNode callNode,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object func = info.getBuiltinMethod(context.getCore());
+        return callNode.execute(frame, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);
     }
 
     @Specialization(guards = {"func == cachedFunc",
@@ -251,7 +270,8 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, arg, PNone.NO_VALUE);
     }
 
-    @Specialization(replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool", "callObjectSingleContext",
+    @Specialization(guards = "!isUnaryBuiltinInfo(func)", replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool",
+                    "callObjectSingleContext",
                     "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callBinaryMethodSingleContext", "callBinaryMethod"})
     @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object receiver,

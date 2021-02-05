@@ -57,8 +57,10 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,49]`def gen():↵  with
                         ReadGlobalOrBuiltinNodeGen SourceSection: [18,20]`fn`
                           Identifier: fn
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
                       CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None

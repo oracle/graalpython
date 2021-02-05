@@ -181,11 +181,13 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -2274,7 +2276,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached IsIdentifierNode isIdentifier,
                         @Cached HashingCollectionNodes.SetDictStorageNode setStorage,
-                        @Cached HashingStorage.InitNode initNode) {
+                        @Cached HashingStorage.InitNode initNode,
+                        @Cached GetMroStorageNode getMroStorageNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = calculate_metaclass(frame, cls, bases, lib);
@@ -2289,6 +2292,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
+                assert SpecialMethodSlot.pushInitializedTypePlaceholder();
                 PDict namespace = factory().createDict();
                 setStorage.execute(namespace, initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
@@ -2353,9 +2357,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     newType.setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
                 }
 
+                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode);
                 return newType;
             } catch (PException e) {
                 throw e;
+            } finally {
+                assert SpecialMethodSlot.popInitializedType();
             }
         }
 
@@ -2426,6 +2433,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // 1.) create class, but avoid calling mro method - it might try to access __dict__ so
             // we have to copy dict slots first
             PythonClass pythonClass = factory().createPythonClass(metaclass, name, false, basesArray);
+            assert SpecialMethodSlot.replaceInitializedTypeTop(pythonClass);
 
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
@@ -2459,7 +2467,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (slots[0] == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
                 addDictIfNative(frame, pythonClass, getItemSize, writeItemSize);
-                addDictDescrAttribute(basesArray, getDictAttrNode, pythonClass);
+                addDictDescrAttribute(basesArray, pythonClass);
                 addWeakrefDescrAttribute(pythonClass);
             } else {
                 // have slots
@@ -2503,7 +2511,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             throw raise(TypeError, ErrorMessages.DICT_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         addDict = true;
-                        addDictDescrAttribute(basesArray, getDictAttrNode, pythonClass);
+                        addDictDescrAttribute(basesArray, pythonClass);
                     } else if (__WEAKREF__.equals(slotName)) {
                         if (!mayAddWeakRef || addWeakRef) {
                             throw raise(TypeError, ErrorMessages.WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE);
@@ -2543,7 +2551,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 } finally {
                     ensureForeignCallContext().exit(frame, context, state);
                 }
-                if (!addDict && getDictAttrNode.execute(pythonClass) == PNone.NO_VALUE) {
+                Object dict = LookupAttributeInMRONode.lookupSlow(pythonClass, __DICT__);
+                if (!addDict && dict == PNone.NO_VALUE) {
                     pythonClass.setHasSlotsButNoDictFlag();
                 }
             }
@@ -2552,8 +2561,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private void addDictDescrAttribute(PythonAbstractClass[] basesArray, LookupAttributeInMRONode getDictAttrNode, PythonClass pythonClass) {
-            if ((!hasPythonClassBases(basesArray) && getDictAttrNode.execute(pythonClass) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
+        private void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass) {
+            // Note: we need to avoid MRO lookup of __dict__ using slots because they are not
+            // initialized yet
+            if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlow(pythonClass, __DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
                 BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true);
                 setAttribute(__DICT__, rootNode, pythonClass);

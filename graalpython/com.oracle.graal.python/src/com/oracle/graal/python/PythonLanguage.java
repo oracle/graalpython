@@ -495,6 +495,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getCurrentContext(PythonLanguage.class).getCore();
     }
 
+    /**
+     * If this object can be cached in the AST.
+     */
+    public static boolean canCache(Object value) {
+        return value instanceof Long ||
+                        value instanceof Integer ||
+                        value instanceof Boolean ||
+                        value instanceof Double ||
+                        value instanceof PNone;
+    }
+
     @Override
     protected boolean isVisible(PythonContext context, Object value) {
         return value != PNone.NONE && value != PNone.NO_VALUE;

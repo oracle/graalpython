@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -71,7 +72,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @TypeSystemReference(PythonTypes.class)
-@ImportStatic(PythonOptions.class)
+@ImportStatic({PythonOptions.class, PGuards.class})
 @NodeField(name = "maxSizeExceeded", type = boolean.class)
 abstract class CallSpecialMethodNode extends Node {
 

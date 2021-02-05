@@ -57,6 +57,9 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.BinaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.TernaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.UnaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -502,5 +505,17 @@ public abstract class PGuards {
 
     public static boolean isKindOfBuiltinClass(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
+
+    public static boolean isUnaryBuiltinInfo(Object value) {
+        return value instanceof UnaryBuiltinInfo;
+    }
+
+    public static boolean isBinaryBuiltinInfo(Object value) {
+        return value instanceof BinaryBuiltinInfo;
+    }
+
+    public static boolean isTernaryBuiltinInfo(Object value) {
+        return value instanceof TernaryBuiltinInfo;
     }
 }
