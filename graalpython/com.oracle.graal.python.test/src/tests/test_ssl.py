@@ -40,6 +40,7 @@
 import unittest
 import ssl
 import os
+import json
 
 
 def data_file(name):
@@ -153,3 +154,28 @@ class CertTests(unittest.TestCase):
         
         # TODO test cadata
         # TODO load_DH_params
+
+
+def get_cipher_list(cipher_string):
+    context = ssl.SSLContext()
+    context.set_ciphers(cipher_string)
+    return context.get_ciphers()
+
+
+class CipherTests(unittest.TestCase):
+
+    def test_set_ciphers(self):
+        with open(data_file('expected_ciphers.json')) as fo:
+            data = json.load(fo)
+        for cipher_string, expected_output in data.items():
+            output = get_cipher_list(cipher_string)
+            expected_names = [x['name'] for x in expected_output]
+            actual_names = [x['name'] for x in output]
+            self.assertEqual(expected_names, actual_names, f"Expected names: {':'.join(expected_names)}\nGot names: {':'.join(actual_names)}")
+            self.assertEqual(expected_output, output)
+
+    def test_error(self):
+        with self.assertRaisesRegex(ssl.SSLError, "No cipher can be selected"):
+            get_cipher_list("ALL:!ALL:ADH")
+        with self.assertRaisesRegex(ssl.SSLError, "No cipher can be selected"):
+            get_cipher_list("ALL:@XXX")
