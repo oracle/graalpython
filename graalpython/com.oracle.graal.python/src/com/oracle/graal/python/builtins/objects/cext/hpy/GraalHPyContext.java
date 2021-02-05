@@ -40,17 +40,76 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ArithmeticError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BrokenPipeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BytesWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ChildProcessError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ConnectionAbortedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ConnectionError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ConnectionRefusedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ConnectionResetError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.FileExistsError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.FileNotFoundError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.FloatingPointError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.FutureWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.InterruptedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IsADirectoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyboardInterrupt;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ModuleNotFoundError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NameError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotADirectoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseException;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBytes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PInt;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PList;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTuple;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PendingDeprecationWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PermissionError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ProcessLookupError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PythonClass;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PythonObject;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ReferenceError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ResourceWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopAsyncIteration;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemExit;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TimeoutError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnboundLocalError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeDecodeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeTranslateError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UserWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Warning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
@@ -64,6 +123,7 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -133,6 +193,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -166,22 +227,95 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public final class GraalHPyContext extends CExtContext implements TruffleObject {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
+    enum HPyContextTypeMember {
+
+    }
+
     /**
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
     enum HPyContextMembers {
         CTX_VERSION("ctx_version"),
+
+        // constants
         H_NONE("h_None"),
         H_TRUE("h_True"),
         H_FALSE("h_False"),
-        H_VALUE_ERROR("h_ValueError"),
-        H_TYPE_ERROR("h_TypeError"),
-        H_BASE_OBJECT_TYPE("h_BaseObjectType"),
-        H_TYPE_TYPE("h_TypeType"),
-        H_LONG_TYPE("h_LongType"),
-        H_UNICODE_TYPE("h_UnicodeType"),
-        H_TUPLE_TYPE("h_TupleType"),
-        H_LIST_TYPE("h_ListType"),
+
+        // exception types
+        H_BASEEXCEPTION("h_BaseException"),
+        H_EXCEPTION("h_Exception"),
+        H_STOPASYNCITERATION("h_StopAsyncIteration"),
+        H_STOPITERATION("h_StopIteration"),
+        H_GENERATOREXIT("h_GeneratorExit"),
+        H_ARITHMETICERROR("h_ArithmeticError"),
+        H_LOOKUPERROR("h_LookupError"),
+        H_ASSERTIONERROR("h_AssertionError"),
+        H_ATTRIBUTEERROR("h_AttributeError"),
+        H_BUFFERERROR("h_BufferError"),
+        H_EOFERROR("h_EOFError"),
+        H_FLOATINGPOINTERROR("h_FloatingPointError"),
+        H_OSERROR("h_OSError"),
+        H_IMPORTERROR("h_ImportError"),
+        H_MODULENOTFOUNDERROR("h_ModuleNotFoundError"),
+        H_INDEXERROR("h_IndexError"),
+        H_KEYERROR("h_KeyError"),
+        H_KEYBOARDINTERRUPT("h_KeyboardInterrupt"),
+        H_MEMORYERROR("h_MemoryError"),
+        H_NAMEERROR("h_NameError"),
+        H_OVERFLOWERROR("h_OverflowError"),
+        H_RUNTIMEERROR("h_RuntimeError"),
+        H_RECURSIONERROR("h_RecursionError"),
+        H_NOTIMPLEMENTEDERROR("h_NotImplementedError"),
+        H_SYNTAXERROR("h_SyntaxError"),
+        H_INDENTATIONERROR("h_IndentationError"),
+        H_TABERROR("h_TabError"),
+        H_REFERENCEERROR("h_ReferenceError"),
+        H_SYSTEMERROR("h_SystemError"),
+        H_SYSTEMEXIT("h_SystemExit"),
+        H_TYPEERROR("h_TypeError"),
+        H_UNBOUNDLOCALERROR("h_UnboundLocalError"),
+        H_UNICODEERROR("h_UnicodeError"),
+        H_UNICODEENCODEERROR("h_UnicodeEncodeError"),
+        H_UNICODEDECODEERROR("h_UnicodeDecodeError"),
+        H_UNICODETRANSLATEERROR("h_UnicodeTranslateError"),
+        H_VALUEERROR("h_ValueError"),
+        H_ZERODIVISIONERROR("h_ZeroDivisionError"),
+        H_BLOCKINGIOERROR("h_BlockingIOError"),
+        H_BROKENPIPEERROR("h_BrokenPipeError"),
+        H_CHILDPROCESSERROR("h_ChildProcessError"),
+        H_CONNECTIONERROR("h_ConnectionError"),
+        H_CONNECTIONABORTEDERROR("h_ConnectionAbortedError"),
+        H_CONNECTIONREFUSEDERROR("h_ConnectionRefusedError"),
+        H_CONNECTIONRESETERROR("h_ConnectionResetError"),
+        H_FILEEXISTSERROR("h_FileExistsError"),
+        H_FILENOTFOUNDERROR("h_FileNotFoundError"),
+        H_INTERRUPTEDERROR("h_InterruptedError"),
+        H_ISADIRECTORYERROR("h_IsADirectoryError"),
+        H_NOTADIRECTORYERROR("h_NotADirectoryError"),
+        H_PERMISSIONERROR("h_PermissionError"),
+        H_PROCESSLOOKUPERROR("h_ProcessLookupError"),
+        H_TIMEOUTERROR("h_TimeoutError"),
+        H_WARNING("h_Warning"),
+        H_USERWARNING("h_UserWarning"),
+        H_DEPRECATIONWARNING("h_DeprecationWarning"),
+        H_PENDINGDEPRECATIONWARNING("h_PendingDeprecationWarning"),
+        H_SYNTAXWARNING("h_SyntaxWarning"),
+        H_RUNTIMEWARNING("h_RuntimeWarning"),
+        H_FUTUREWARNING("h_FutureWarning"),
+        H_IMPORTWARNING("h_ImportWarning"),
+        H_UNICODEWARNING("h_UnicodeWarning"),
+        H_BYTESWARNING("h_BytesWarning"),
+        H_RESOURCEWARNING("h_ResourceWarning"),
+
+        // built-in types
+        H_BASEOBJECTTYPE("h_BaseObjectType"),
+        H_TYPETYPE("h_TypeType"),
+        H_LONGTYPE("h_LongType"),
+        H_UNICODETYPE("h_UnicodeType"),
+        H_TUPLETYPE("h_TupleType"),
+        H_LISTTYPE("h_ListType"),
+
         CTX_MODULE_CREATE("ctx_Module_Create"),
         CTX_DUP("ctx_Dup"),
         CTX_CAST("ctx_Cast"),
@@ -627,18 +761,85 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     private static Object[] createMembers(PythonContext context) {
-        Object[] members = new Object[HPyContextMembers.values().length];
-        members[HPyContextMembers.H_NONE.ordinal()] = new GraalHPyHandle(PNone.NONE);
-        members[HPyContextMembers.H_TRUE.ordinal()] = new GraalHPyHandle(context.getCore().getTrue());
-        members[HPyContextMembers.H_FALSE.ordinal()] = new GraalHPyHandle(context.getCore().getFalse());
-        members[HPyContextMembers.H_VALUE_ERROR.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(ValueError));
-        members[HPyContextMembers.H_TYPE_ERROR.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(TypeError));
-        members[HPyContextMembers.H_BASE_OBJECT_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PythonObject));
-        members[HPyContextMembers.H_TYPE_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PythonClass));
-        members[HPyContextMembers.H_LONG_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PInt));
-        members[HPyContextMembers.H_UNICODE_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PString));
-        members[HPyContextMembers.H_TUPLE_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PTuple));
-        members[HPyContextMembers.H_LIST_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PList));
+        Object[] members = new Object[HPyContextMembers.VALUES.length];
+        PythonCore core = context.getCore();
+
+        createConstant(members, HPyContextMembers.H_NONE, PNone.NONE);
+        createConstant(members, HPyContextMembers.H_TRUE, core.getTrue());
+        createConstant(members, HPyContextMembers.H_FALSE, core.getFalse());
+
+        createTypeConstant(members, HPyContextMembers.H_BASEEXCEPTION, core, PBaseException);
+        createTypeConstant(members, HPyContextMembers.H_EXCEPTION, core, PythonBuiltinClassType.Exception);
+        createTypeConstant(members, HPyContextMembers.H_STOPASYNCITERATION, core, StopAsyncIteration);
+        createTypeConstant(members, HPyContextMembers.H_STOPITERATION, core, StopIteration);
+        createTypeConstant(members, HPyContextMembers.H_GENERATOREXIT, core, GeneratorExit);
+        createTypeConstant(members, HPyContextMembers.H_ARITHMETICERROR, core, ArithmeticError);
+        createTypeConstant(members, HPyContextMembers.H_LOOKUPERROR, core, LookupError);
+        createTypeConstant(members, HPyContextMembers.H_ASSERTIONERROR, core, PythonBuiltinClassType.AssertionError);
+        createTypeConstant(members, HPyContextMembers.H_ATTRIBUTEERROR, core, AttributeError);
+        createTypeConstant(members, HPyContextMembers.H_BUFFERERROR, core, BufferError);
+        createTypeConstant(members, HPyContextMembers.H_EOFERROR, core, EOFError);
+        createTypeConstant(members, HPyContextMembers.H_FLOATINGPOINTERROR, core, FloatingPointError);
+        createTypeConstant(members, HPyContextMembers.H_OSERROR, core, OSError);
+        createTypeConstant(members, HPyContextMembers.H_IMPORTERROR, core, ImportError);
+        createTypeConstant(members, HPyContextMembers.H_MODULENOTFOUNDERROR, core, ModuleNotFoundError);
+        createTypeConstant(members, HPyContextMembers.H_INDEXERROR, core, IndexError);
+        createTypeConstant(members, HPyContextMembers.H_KEYERROR, core, KeyError);
+        createTypeConstant(members, HPyContextMembers.H_KEYBOARDINTERRUPT, core, KeyboardInterrupt);
+        createTypeConstant(members, HPyContextMembers.H_MEMORYERROR, core, MemoryError);
+        createTypeConstant(members, HPyContextMembers.H_NAMEERROR, core, NameError);
+        createTypeConstant(members, HPyContextMembers.H_OVERFLOWERROR, core, OverflowError);
+        createTypeConstant(members, HPyContextMembers.H_RUNTIMEERROR, core, RuntimeError);
+        createTypeConstant(members, HPyContextMembers.H_RECURSIONERROR, core, RecursionError);
+        createTypeConstant(members, HPyContextMembers.H_NOTIMPLEMENTEDERROR, core, NotImplementedError);
+        createTypeConstant(members, HPyContextMembers.H_SYNTAXERROR, core, SyntaxError);
+        createTypeConstant(members, HPyContextMembers.H_INDENTATIONERROR, core, IndentationError);
+        createTypeConstant(members, HPyContextMembers.H_TABERROR, core, TabError);
+        createTypeConstant(members, HPyContextMembers.H_REFERENCEERROR, core, ReferenceError);
+        createTypeConstant(members, HPyContextMembers.H_SYSTEMERROR, core, SystemError);
+        createTypeConstant(members, HPyContextMembers.H_SYSTEMEXIT, core, SystemExit);
+        createTypeConstant(members, HPyContextMembers.H_TYPEERROR, core, TypeError);
+        createTypeConstant(members, HPyContextMembers.H_UNBOUNDLOCALERROR, core, UnboundLocalError);
+        createTypeConstant(members, HPyContextMembers.H_UNICODEERROR, core, UnicodeError);
+        createTypeConstant(members, HPyContextMembers.H_UNICODEENCODEERROR, core, UnicodeEncodeError);
+        createTypeConstant(members, HPyContextMembers.H_UNICODEDECODEERROR, core, UnicodeDecodeError);
+        createTypeConstant(members, HPyContextMembers.H_UNICODETRANSLATEERROR, core, UnicodeTranslateError);
+        createTypeConstant(members, HPyContextMembers.H_VALUEERROR, core, ValueError);
+        createTypeConstant(members, HPyContextMembers.H_ZERODIVISIONERROR, core, ZeroDivisionError);
+        createTypeConstant(members, HPyContextMembers.H_BLOCKINGIOERROR, core, BlockingIOError);
+        createTypeConstant(members, HPyContextMembers.H_BROKENPIPEERROR, core, BrokenPipeError);
+        createTypeConstant(members, HPyContextMembers.H_CHILDPROCESSERROR, core, ChildProcessError);
+        createTypeConstant(members, HPyContextMembers.H_CONNECTIONERROR, core, ConnectionError);
+        createTypeConstant(members, HPyContextMembers.H_CONNECTIONABORTEDERROR, core, ConnectionAbortedError);
+        createTypeConstant(members, HPyContextMembers.H_CONNECTIONREFUSEDERROR, core, ConnectionRefusedError);
+        createTypeConstant(members, HPyContextMembers.H_CONNECTIONRESETERROR, core, ConnectionResetError);
+        createTypeConstant(members, HPyContextMembers.H_FILEEXISTSERROR, core, FileExistsError);
+        createTypeConstant(members, HPyContextMembers.H_FILENOTFOUNDERROR, core, FileNotFoundError);
+        createTypeConstant(members, HPyContextMembers.H_INTERRUPTEDERROR, core, InterruptedError);
+        createTypeConstant(members, HPyContextMembers.H_ISADIRECTORYERROR, core, IsADirectoryError);
+        createTypeConstant(members, HPyContextMembers.H_NOTADIRECTORYERROR, core, NotADirectoryError);
+        createTypeConstant(members, HPyContextMembers.H_PERMISSIONERROR, core, PermissionError);
+        createTypeConstant(members, HPyContextMembers.H_PROCESSLOOKUPERROR, core, ProcessLookupError);
+        createTypeConstant(members, HPyContextMembers.H_TIMEOUTERROR, core, TimeoutError);
+        createTypeConstant(members, HPyContextMembers.H_WARNING, core, Warning);
+        createTypeConstant(members, HPyContextMembers.H_USERWARNING, core, UserWarning);
+        createTypeConstant(members, HPyContextMembers.H_DEPRECATIONWARNING, core, DeprecationWarning);
+        createTypeConstant(members, HPyContextMembers.H_PENDINGDEPRECATIONWARNING, core, PendingDeprecationWarning);
+        createTypeConstant(members, HPyContextMembers.H_SYNTAXWARNING, core, SyntaxWarning);
+        createTypeConstant(members, HPyContextMembers.H_RUNTIMEWARNING, core, RuntimeWarning);
+        createTypeConstant(members, HPyContextMembers.H_FUTUREWARNING, core, FutureWarning);
+        createTypeConstant(members, HPyContextMembers.H_IMPORTWARNING, core, ImportWarning);
+        createTypeConstant(members, HPyContextMembers.H_UNICODEWARNING, core, UnicodeWarning);
+        createTypeConstant(members, HPyContextMembers.H_BYTESWARNING, core, BytesWarning);
+        createTypeConstant(members, HPyContextMembers.H_RESOURCEWARNING, core, ResourceWarning);
+
+        createTypeConstant(members, HPyContextMembers.H_BASEOBJECTTYPE, core, PythonObject);
+        createTypeConstant(members, HPyContextMembers.H_TYPETYPE, core, PythonClass);
+        createTypeConstant(members, HPyContextMembers.H_LONGTYPE, core, PInt);
+        createTypeConstant(members, HPyContextMembers.H_UNICODETYPE, core, PString);
+        createTypeConstant(members, HPyContextMembers.H_TUPLETYPE, core, PTuple);
+        createTypeConstant(members, HPyContextMembers.H_LISTTYPE, core, PList);
+
         members[HPyContextMembers.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
         members[HPyContextMembers.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMembers.CTX_CLOSE.ordinal()] = new GraalHPyClose();
@@ -760,6 +961,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_TRACKER_REMOVE_ALL.ordinal()] = new GraalHPyTrackerCleanup(true);
         members[HPyContextMembers.CTX_TRACKER_FREE.ordinal()] = new GraalHPyTrackerCleanup(false);
         return members;
+    }
+
+    private static void createConstant(Object[] members, HPyContextMembers member, Object value) {
+        members[member.ordinal()] = new GraalHPyHandle(value);
+    }
+
+    private static void createTypeConstant(Object[] members, HPyContextMembers member, PythonCore core, PythonBuiltinClassType value) {
+        members[member.ordinal()] = new GraalHPyHandle(core.lookupType(value));
     }
 
     @TruffleBoundary(allowInlining = true)
