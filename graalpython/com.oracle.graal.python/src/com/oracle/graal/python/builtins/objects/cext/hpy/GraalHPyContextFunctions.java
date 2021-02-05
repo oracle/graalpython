@@ -812,6 +812,22 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyErrClear extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode) throws ArityException {
+            if (arguments.length != 1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(1, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            context.getContext().setCurrentException(null);
+            return PNone.NO_VALUE;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyUnicodeAsUTF8String extends GraalHPyContextFunction {
 
         @ExportMessage
