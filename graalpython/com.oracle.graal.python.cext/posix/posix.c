@@ -471,6 +471,14 @@ int64_t call_getuid() {
     return getuid();
 }
 
+int64_t call_getppid() {
+    return getppid();
+}
+
+int64_t call_getsid(int64_t pid) {
+    return getsid(pid);
+}
+
 int32_t get_errno() {
     return errno;
 }

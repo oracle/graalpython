@@ -1573,6 +1573,18 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getppid() {
+        throw new UnsupportedPosixFeatureException("Emulated getppid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getsid(long pid) {
+        throw new UnsupportedPosixFeatureException("Emulated getsid not supported");
+    }
+
+    @ExportMessage
     @TruffleBoundary
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException {

@@ -419,6 +419,35 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "getppid", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class GetPpidNode extends PythonBuiltinNode {
+        @Specialization
+        long getPpid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getppid(getPosixSupport());
+        }
+    }
+
+    @Builtin(name = "getsid", minNumOfPositionalArgs = 1, parameterNames = {"pid"})
+    @ArgumentClinic(name = "pid", conversionClass = PidtConversionNode.class)
+    @GenerateNodeFactory
+    public abstract static class GetSidNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.GetSidNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        long getSid(VirtualFrame frame, long pid,
+                    @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getsid(getPosixSupport(), pid);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
     @Builtin(name = "open", minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"}, keywordOnlyNames = {"dir_fd"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)

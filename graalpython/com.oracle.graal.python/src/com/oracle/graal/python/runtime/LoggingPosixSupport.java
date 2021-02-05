@@ -669,6 +669,24 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getppid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getppid", "");
+        return logExit("getppid", "%d", lib.getuid(delegate));
+    }
+
+    @ExportMessage
+    final long getsid(long pid,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getsid", "%d", pid);
+        try {
+            return logExit("getsid", "%d", lib.getsid(delegate, pid));
+        } catch (PosixException e) {
+            throw logException("getsid", e);
+        }
+    }
+
+    @ExportMessage
     final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
