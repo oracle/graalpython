@@ -429,8 +429,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_LIST_BUILDER_CANCEL("ctx_ListBuilder_Cancel"),
         CTX_TRACKER_NEW("ctx_Tracker_New"),
         CTX_TRACKER_ADD("ctx_Tracker_Add"),
-        CTX_TRACKER_REMOVE_ALL("ctx_Tracker_RemoveAll"),
-        CTX_TRACKER_FREE("ctx_Tracker_Free");
+        CTX_TRACKER_FORGET_ALL("ctx_Tracker_ForgetAll"),
+        CTX_TRACKER_CLOSE("ctx_Tracker_Close");
 
         private final String name;
 
@@ -958,8 +958,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         members[HPyContextMembers.CTX_TRACKER_NEW.ordinal()] = new GraalHPyTrackerNew();
         members[HPyContextMembers.CTX_TRACKER_ADD.ordinal()] = new GraalHPyTrackerAdd();
-        members[HPyContextMembers.CTX_TRACKER_REMOVE_ALL.ordinal()] = new GraalHPyTrackerCleanup(true);
-        members[HPyContextMembers.CTX_TRACKER_FREE.ordinal()] = new GraalHPyTrackerCleanup(false);
+        members[HPyContextMembers.CTX_TRACKER_FORGET_ALL.ordinal()] = new GraalHPyTrackerCleanup(true);
+        members[HPyContextMembers.CTX_TRACKER_CLOSE.ordinal()] = new GraalHPyTrackerCleanup(false);
         return members;
     }
 
