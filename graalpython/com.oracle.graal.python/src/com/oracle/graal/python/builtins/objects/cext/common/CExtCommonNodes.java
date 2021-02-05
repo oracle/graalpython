@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.CharacterCodingException;
@@ -77,6 +78,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -107,6 +109,31 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtCommonNodes {
+
+    private static final int SIGABRT_EXIT_CODE = 134;
+
+    @TruffleBoundary
+    public static PythonExitException fatalError(Node location, PythonContext context, String prefix, String msg, int status) {
+        PrintWriter stderr = new PrintWriter(context.getStandardErr());
+        stderr.print("Fatal Python error: ");
+        if (prefix != null) {
+            stderr.print(prefix);
+            stderr.print(": ");
+        }
+        if (msg != null) {
+            stderr.print(msg);
+        } else {
+            stderr.print("<message not set>");
+        }
+        stderr.println();
+        stderr.flush();
+
+        if (status < 0) {
+            // In CPython, this will use 'abort()' which sets a special exit code.
+            throw new PythonExitException(location, SIGABRT_EXIT_CODE);
+        }
+        throw new PythonExitException(location, status);
+    }
 
     @GenerateUncached
     public abstract static class ImportCExtSymbolNode extends PNodeWithContext {

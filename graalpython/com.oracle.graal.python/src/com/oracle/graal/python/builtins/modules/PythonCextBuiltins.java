@@ -156,6 +156,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLib
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
@@ -2992,27 +2993,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private static final int SIGABRT_EXIT_CODE = 134;
 
         @Specialization
-        @TruffleBoundary
         Object doStrings(String prefix, String msg, int status) {
-            PrintWriter stderr = new PrintWriter(getContext().getStandardErr());
-            stderr.print("Fatal Python error: ");
-            if (prefix != null) {
-                stderr.print(prefix);
-                stderr.print(": ");
-            }
-            if (msg != null) {
-                stderr.print(msg);
-            } else {
-                stderr.print("<message not set>");
-            }
-            stderr.println();
-            stderr.flush();
-
-            if (status < 0) {
-                // In CPython, this will use 'abort()' which sets a special exit code.
-                throw new PythonExitException(this, SIGABRT_EXIT_CODE);
-            }
-            throw new PythonExitException(this, status);
+            throw CExtCommonNodes.fatalError(this, getContext(), prefix, msg,status);
         }
 
         @Specialization

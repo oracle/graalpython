@@ -76,11 +76,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddLegacyMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
@@ -819,6 +821,32 @@ public abstract class GraalHPyContextFunctions {
                 transformExceptionToNativeNode.execute(context, p);
                 return 0;
             }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyFatalError extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLib) throws ArityException {
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object valueObj = fromCharPointerNode.execute(arguments[1]);
+            String errorMessage = "<message not set>";
+            if (!interopLib.isNull(valueObj)) {
+                try {
+                    errorMessage = castToJavaStringNode.execute(valueObj);
+                } catch (CannotCastException e) {
+                    // ignore
+                }
+            }
+            throw CExtCommonNodes.fatalError(asContextNode, context.getContext(), null, errorMessage, -1);
         }
     }
 
