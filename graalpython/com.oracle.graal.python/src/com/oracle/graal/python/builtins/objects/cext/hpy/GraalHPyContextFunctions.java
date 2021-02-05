@@ -752,7 +752,8 @@ public abstract class GraalHPyContextFunctions {
 
             // Unfortunately, the HPyRaiseNode is not suitable because it expects a String message.
             try {
-                throw raiseNode.execute(errType, PNone.NO_VALUE, errorMessage, PythonUtils.EMPTY_OBJECT_ARRAY);
+                // TODO should probably use com.oracle.graal.python.nodes.PConstructAndRaiseNode
+                throw raiseNode.raise(errType, errorMessage);
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(context, p);
             }

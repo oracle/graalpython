@@ -266,7 +266,8 @@ public class GraalHPyNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                throw raiseNode.execute(errType, PNone.NO_VALUE, format, arguments);
+                // TODO Should properly construct the exception using its constructor
+                throw raiseNode.execute(raiseNode, errType, PNone.NO_VALUE, format, arguments);
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(frame, nativeContext, p);
             }
@@ -278,7 +279,8 @@ public class GraalHPyNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                throw raiseNode.execute(errType, PNone.NO_VALUE, format, arguments);
+                // TODO Should properly construct the exception using its constructor
+                throw raiseNode.execute(raiseNode, errType, PNone.NO_VALUE, format, arguments);
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(frame, nativeContext, p);
             }
