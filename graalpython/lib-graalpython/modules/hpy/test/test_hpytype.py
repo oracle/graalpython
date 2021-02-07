@@ -249,18 +249,18 @@ class TestType(HPyTest):
         import pytest
         BIGNUM = 2**200
         for kind, c_type in [
-            ('SHORT', 'short'),
-            ('INT', 'int'),
-            ('LONG', 'long'),
-            ('USHORT', 'unsigned short'),
-            ('UINT', 'unsigned int'),
-            ('ULONG', 'unsigned long'),
-            ('BYTE', 'char'),
-            ('UBYTE', 'unsigned char'),
-            ('LONGLONG', 'long long'),
-            ('ULONGLONG', 'unsigned long long'),
-            ('HPYSSIZET', 'HPy_ssize_t'),
-        ]:
+                ('SHORT', 'short'),
+                ('INT', 'int'),
+                ('LONG', 'long'),
+                ('USHORT', 'unsigned short'),
+                ('UINT', 'unsigned int'),
+                ('ULONG', 'unsigned long'),
+                ('BYTE', 'char'),
+                ('UBYTE', 'unsigned char'),
+                ('LONGLONG', 'long long'),
+                ('ULONGLONG', 'unsigned long long'),
+                ('HPYSSIZET', 'HPy_ssize_t'),
+                ]:
             mod = self.make_module("""
             typedef struct {
                 HPyObject_HEAD
@@ -310,18 +310,18 @@ class TestType(HPyTest):
     def test_HPyDef_Member_readonly_integers(self):
         import pytest
         for kind, c_type in [
-            ('SHORT', 'short'),
-            ('INT', 'int'),
-            ('LONG', 'long'),
-            ('USHORT', 'unsigned short'),
-            ('UINT', 'unsigned int'),
-            ('ULONG', 'unsigned long'),
-            ('BYTE', 'char'),
-            ('UBYTE', 'unsigned char'),
-            ('LONGLONG', 'long long'),
-            ('ULONGLONG', 'unsigned long long'),
-            ('HPYSSIZET', 'HPy_ssize_t'),
-        ]:
+                ('SHORT', 'short'),
+                ('INT', 'int'),
+                ('LONG', 'long'),
+                ('USHORT', 'unsigned short'),
+                ('UINT', 'unsigned int'),
+                ('ULONG', 'unsigned long'),
+                ('BYTE', 'char'),
+                ('UBYTE', 'unsigned char'),
+                ('LONGLONG', 'long long'),
+                ('ULONGLONG', 'unsigned long long'),
+                ('HPYSSIZET', 'HPy_ssize_t'),
+                ]:
             mod = self.make_module("""
             typedef struct {
                 HPyObject_HEAD

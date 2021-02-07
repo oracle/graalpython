@@ -134,6 +134,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1598,11 +1599,11 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyBuilderNew extends GraalHPyContextFunction {
+    abstract static class GraalHPyBuilderNewBase extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
+        protected abstract Object createObject(int capacity);
+
+        protected final Object doExecute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
@@ -1614,16 +1615,32 @@ public abstract class GraalHPyContextFunctions {
             try {
                 int capacity = castToJavaIntExactNode.execute(arguments[1]);
                 if (capacity >= 0) {
-                    Object[] data = new Object[capacity];
-                    for (int i = 0; i < data.length; i++) {
-                        data[i] = PNone.NONE;
-                    }
-                    return asHandleNode.execute(nativeContext, new ObjectSequenceStorage(data));
+                    return asHandleNode.execute(nativeContext, createObject(capacity));
                 }
             } catch (CannotCastException e) {
                 // fall through
             }
             return nativeContext.getNullHandle();
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyBuilderNew extends GraalHPyBuilderNewBase {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            return doExecute(arguments, asContextNode, castToJavaIntExactNode, asHandleNode);
+        }
+
+        @Override
+        protected Object createObject(int capacity) {
+            Object[] data = new Object[capacity];
+            for (int i = 0; i < data.length; i++) {
+                data[i] = PNone.NONE;
+            }
+            return new ObjectSequenceStorage(data);
         }
     }
 
@@ -1759,4 +1776,94 @@ public abstract class GraalHPyContextFunctions {
 
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTrackerNew extends GraalHPyBuilderNewBase {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            return doExecute(arguments, asContextNode, castToJavaIntExactNode, asHandleNode);
+        }
+
+        @Override
+        protected Object createObject(int capacity) {
+            return new GraalHPyTracker(capacity);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTrackerAdd extends GraalHPyContextFunction {
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyEnsureHandleNode ensureHandleNode) throws ArityException, UnsupportedTypeException {
+            if (arguments.length != 3) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            GraalHPyTracker builder = cast(asPythonObjectNode.execute(nativeContext, arguments[1]));
+            if (builder == null) {
+                // that's really unexpected since the C signature should enforce a valid builder but
+                // someone could have messed it up
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedTypeException.create(arguments, "invalid builder object");
+            }
+            try {
+                builder.add(ensureHandleNode.execute(nativeContext, arguments[2]));
+            } catch (OverflowException | OutOfMemoryError e) {
+                return -1;
+            }
+            return 0;
+        }
+
+        private static GraalHPyTracker cast(Object object) {
+            if (object instanceof GraalHPyTracker) {
+                return (GraalHPyTracker) object;
+            }
+            return null;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTrackerCleanup extends GraalHPyContextFunction {
+        private final boolean removeAll;
+
+        public GraalHPyTrackerCleanup(boolean removeAll) {
+            this.removeAll = removeAll;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode) throws ArityException, UnsupportedTypeException {
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            GraalHPyTracker builder = cast(asPythonObjectNode.execute(nativeContext, arguments[1]));
+            if (builder == null) {
+                // that's really unexpected since the C signature should enforce a valid builder but
+                // someone could have messed it up
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedTypeException.create(arguments, "invalid builder object");
+            }
+            if (removeAll) {
+                builder.removeAll();
+            } else {
+                builder.free(nativeContext, ConditionProfile.getUncached());
+            }
+            return 0;
+        }
+
+        private static GraalHPyTracker cast(Object object) {
+            if (object instanceof GraalHPyTracker) {
+                return (GraalHPyTracker) object;
+            }
+            return null;
+        }
+    }
 }

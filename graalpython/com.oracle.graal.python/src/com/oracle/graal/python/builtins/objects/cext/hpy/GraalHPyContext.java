@@ -108,6 +108,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTernaryArithmetic;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerAdd;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerCleanup;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTupleFromArray;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeFromSpec;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGenericNew;
@@ -289,7 +292,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_LIST_BUILDER_NEW("ctx_ListBuilder_New"),
         CTX_LIST_BUILDER_SET("ctx_ListBuilder_Set"),
         CTX_LIST_BUILDER_BUILD("ctx_ListBuilder_Build"),
-        CTX_LIST_BUILDER_CANCEL("ctx_ListBuilder_Cancel");
+        CTX_LIST_BUILDER_CANCEL("ctx_ListBuilder_Cancel"),
+        CTX_TRACKER_NEW("ctx_Tracker_New"),
+        CTX_TRACKER_ADD("ctx_Tracker_Add"),
+        CTX_TRACKER_REMOVE_ALL("ctx_Tracker_RemoveAll"),
+        CTX_TRACKER_FREE("ctx_Tracker_Free");
 
         private final String name;
 
@@ -297,11 +304,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             this.name = name;
         }
 
-        @CompilationFinal(dimensions = 1) private static final HPyContextMembers[] VALUES;
-        static {
-            HPyContextMembers[] members = values();
-            VALUES = Arrays.copyOf(members, members.length);
-        }
+        @CompilationFinal(dimensions = 1) private static final HPyContextMembers[] VALUES = values();
 
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         public static HPyContextMembers getByName(String name) {
@@ -751,6 +754,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_LIST_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
         members[HPyContextMembers.CTX_LIST_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PList);
         members[HPyContextMembers.CTX_LIST_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
+
+        members[HPyContextMembers.CTX_TRACKER_NEW.ordinal()] = new GraalHPyTrackerNew();
+        members[HPyContextMembers.CTX_TRACKER_ADD.ordinal()] = new GraalHPyTrackerAdd();
+        members[HPyContextMembers.CTX_TRACKER_REMOVE_ALL.ordinal()] = new GraalHPyTrackerCleanup(true);
+        members[HPyContextMembers.CTX_TRACKER_FREE.ordinal()] = new GraalHPyTrackerCleanup(false);
         return members;
     }
 
