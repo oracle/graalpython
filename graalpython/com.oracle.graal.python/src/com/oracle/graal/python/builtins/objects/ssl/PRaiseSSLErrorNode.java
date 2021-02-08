@@ -38,6 +38,9 @@ public abstract class PRaiseSSLErrorNode extends Node {
         PBaseException exception = factory.createBaseException(type.getType(), message, args);
         writeAttribute.execute(exception, "errno", type.getErrno());
         writeAttribute.execute(exception, "strerror", getFormattedMessage(message, args));
+        // TODO properly populate reason/lib attrs, this are dummy values
+        writeAttribute.execute(exception, "reason", getFormattedMessage(message, args));
+        writeAttribute.execute(exception, "library", "[SSL]");
         return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
     }
 
