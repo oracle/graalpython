@@ -1292,6 +1292,29 @@ public class GraalHPyNodes {
         }
     }
 
+    /**
+     * Similar to {@link HPyAsPythonObjectNode}, this node converts a native primitive value to an
+     * appropriate Python char value (a single-char Python string).
+     */
+    @GenerateUncached
+    public abstract static class HPyStringAsPythonStringNode extends CExtToJavaNode {
+
+        @Specialization
+        static String doString(@SuppressWarnings("unused") GraalHPyContext hpyContext, String value) {
+            return value;
+        }
+
+        @Specialization(replaces = "doString", limit = "3")
+        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object value,
+                        @CachedLibrary("value") InteropLibrary interopLib) {
+            if (interopLib.isNull(value)) {
+                return PNone.NONE;
+            }
+            assert value instanceof String;
+            return value;
+        }
+    }
+
     @GenerateUncached
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
 

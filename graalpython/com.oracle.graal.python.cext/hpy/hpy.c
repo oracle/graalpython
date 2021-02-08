@@ -416,11 +416,15 @@ double graal_hpy_read_d(void* object, HPy_ssize_t offset) {
 }
 
 void* graal_hpy_read_string(void* object, HPy_ssize_t offset) {
-    return polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
+    char *ptr = ReadMember(object, offset, char*);
+    if (ptr != NULL) {
+    	return polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
+    }
+    return NULL;
 }
 
 void* graal_hpy_read_string_in_place(void* object, HPy_ssize_t offset) {
-	char *addr = (char*) (((char*)object) + offset);
+    char *addr = (char*) (((char*)object) + offset);
     return polyglot_from_string(addr, "utf-8");
 }
 
