@@ -26,6 +26,7 @@
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseIPv4Poll.test_handle_write
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseIPv4Poll.test_quick_connect
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseIPv4Poll.test_set_reuse_addr
+*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseIPv4Select.test_create_socket
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseIPv6Poll.test_bind
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseIPv6Poll.test_connection_attributes
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseIPv6Poll.test_create_socket
