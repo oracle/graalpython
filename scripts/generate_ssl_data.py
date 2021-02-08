@@ -99,7 +99,7 @@ def get_all_ciphers():
     cipher_string = 'ALL:COMPLEMENTOFALL'
     standard_names = {}
     cmd = ['openssl', 'ciphers', '-stdname', cipher_string]
-    for line in subprocess.run(cmd, capture_output=True, text=True).stdout.splitlines():
+    for line in subprocess.run(cmd, check=True, capture_output=True, text=True).stdout.splitlines():
         stdname, _, name, *_ = line.split()
         standard_names[name] = stdname
     context = ssl.create_default_context()
@@ -138,7 +138,7 @@ def generate_test_data(outpath):
         'ALL:!ADH:@STRENGTH',
         'ALL:!aNULL',
         '3DES:+RSA',
-        'RC4:!COMPLEMENTOFDEFAULT',
+        # 'RC4:!COMPLEMENTOFDEFAULT', - skipped because it produces empty list
         'RSA:!COMPLEMENTOFALL',
         # We don't implement @SECLEVEL yet
         # 'ALL:@SECLEVEL=2',
@@ -238,6 +238,7 @@ public enum SSLCipher {
     }
     {% endfor %}
 }
+
 """
 
 SSL_CIPHER_STRING_MAPPING_TEMPLATE = """\
@@ -265,12 +266,14 @@ public abstract class SSLCipherStringMapping {
     public static void initalize(Set<String> supportedCiphers) {
         List<SSLCipher> ciphers;
         {% for cipher_string, suites in mapping -%}
+        {% if suites -%}
         ciphers = new ArrayList<>({{ suites | length }});
         {% for suite in suites -%}
         addCipher(ciphers, supportedCiphers, SSLCipher.{{suite}});
-        {% endfor %}
+        {% endfor -%}
         mapping.put("{{ cipher_string }}", ciphers);
-        {% endfor %}
+        {% endif -%}
+        {% endfor -%}
     }
 
     private static void addCipher(List<SSLCipher> ciphers, Set<String> supportedCiphers, SSLCipher cipher) {
@@ -279,6 +282,7 @@ public abstract class SSLCipherStringMapping {
         }
     }
 }
+
 """
 
 common = {
@@ -287,11 +291,15 @@ common = {
 }
 SSL_CODE_DIR = os.path.join(REPO,
                             'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/ssl/')
+SSL_CIPHER_PATH = os.path.join(SSL_CODE_DIR, 'SSLCipher.java')
+SSL_CIPHER_STRING_MAPPING_PATH = os.path.join(SSL_CODE_DIR, 'SSLCipherStringMapping.java')
 env.from_string(SSL_CIPHER_TEMPLATE) \
     .stream(ciphers=get_all_ciphers(), vars=CIPHER_KEYS, **common) \
-    .dump(os.path.join(SSL_CODE_DIR, 'SSLCipher.java'))
+    .dump(SSL_CIPHER_PATH)
 env.from_string(SSL_CIPHER_STRING_MAPPING_TEMPLATE) \
     .stream(mapping=get_cipher_strings_mapping(), **common) \
-    .dump(os.path.join(SSL_CODE_DIR, 'SSLCipherStringMapping.java'))
+    .dump(SSL_CIPHER_STRING_MAPPING_PATH)
 generate_test_data(
     os.path.join(REPO, 'graalpython/com.oracle.graal.python.test/src/tests/ssldata/expected_ciphers.json'))
+subprocess.run(['mx', 'eclipseformat', '--primary', '--filelist', '-'], text=True, stdout=subprocess.DEVNULL,
+               input='\n'.join([SSL_CIPHER_PATH, SSL_CIPHER_STRING_MAPPING_PATH]))
