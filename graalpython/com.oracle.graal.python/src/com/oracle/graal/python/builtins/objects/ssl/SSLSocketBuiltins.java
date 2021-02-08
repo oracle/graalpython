@@ -365,8 +365,12 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class SharedCiphers extends PythonUnaryBuiltinNode {
         @Specialization
         Object get(PSSLSocket socket) {
-            // TODO implement
-            return factory().createList();
+            SSLCipher[] ciphers = socket.getContext().getCiphers();
+            Object[] result = new Object[ciphers.length];
+            for (int i = 0; i < ciphers.length; i++) {
+                result[i] = factory().createTuple(new Object[]{ciphers[i].getOpensslName(), ciphers[i].getProtocol(), ciphers[i].getStrengthBits()});
+            }
+            return factory().createList(result);
         }
     }
 
