@@ -1,25 +1,27 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 
 import javax.crypto.spec.DHParameterSpec;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
+import java.security.KeyManagementException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 public final class PSSLContext extends PythonBuiltinObject {
     private final SSLMethod method;
@@ -81,14 +83,36 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     void init() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException {
+        TrustManager[] tms = null;
+        if (verifyMode == SSLModuleBuiltins.SSL_CERT_NONE) {
+            // TODO: what about optional?
+            tms = new TrustManager[]{new X509TrustManager() {
+                private X509Certificate[] chain;
+
+                public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                    this.chain = chain;
+                }
+
+                public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                    this.chain = chain;
+                }
+
+                public X509Certificate[] getAcceptedIssuers() {
+                    return chain;
+                }
+            }};
+        }
         if (keystore != null && keystore.size() > 0) {
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(getKeyStore());
+            if (tms == null) {
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(getKeyStore());
+                tms = tmf.getTrustManagers();
+            }
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             kmf.init(getKeyStore(), password);
-            context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+            context.init(kmf.getKeyManagers(), tms, null);
         } else {
-            context.init(null, null, null);
+            context.init(null, tms, null);
         }
     }
 
