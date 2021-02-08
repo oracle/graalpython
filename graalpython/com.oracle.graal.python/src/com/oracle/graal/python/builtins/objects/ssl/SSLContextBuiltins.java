@@ -546,7 +546,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
                     List<X509Certificate> certList = new ArrayList<>();
                     try (BufferedReader r = file.newBufferedReader()) {
-                        LoadCertError result = getCertificates(this, r, certList);
+                        LoadCertError result = getCertificates(r, certList);
                         switch (result) {
                             case EMPTY_CERT:
                             case BEGIN_CERTIFICATE_WITHOUT_END:
@@ -595,7 +595,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
             List<X509Certificate> certList = new ArrayList<>();
             try (BufferedReader r = new BufferedReader(new StringReader(dataString))) {
-                LoadCertError result = getCertificates(this, r, certList);
+                LoadCertError result = getCertificates(r, certList);
                 switch (result) {
                     case BAD_BASE64_DECODE:
                         throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
@@ -699,7 +699,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 X509Certificate[] certs;
                 try (BufferedReader r = certfile.newBufferedReader()) {
                     List<X509Certificate> certList = new ArrayList<>();
-                    LoadCertError result = getCertificates(this, r, certList);
+                    LoadCertError result = getCertificates(r, certList);
                     switch (result) {
                         case BAD_BASE64_DECODE:
                         case BEGIN_CERTIFICATE_WITHOUT_END:
@@ -788,7 +788,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static LoadCertError getCertificates(Node node, BufferedReader r, List<X509Certificate> result) throws IOException, CertificateException {
+    private static LoadCertError getCertificates(BufferedReader r, List<X509Certificate> result) throws IOException, CertificateException {
         Base64.Decoder decoder = Base64.getDecoder();
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
         boolean sawBegin = false;
