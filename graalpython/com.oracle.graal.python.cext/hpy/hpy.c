@@ -281,6 +281,10 @@ void* graal_hpy_from_string(const char *ptr) {
 	return polyglot_from_string(ptr, SRC_CS);
 }
 
+uint64_t graal_hpy_strlen(const char *ptr) {
+	return strlen(ptr);
+}
+
 /* getters for HPyType_Spec */
 
 void* graal_hpy_type_spec_get_defines(HPyType_Spec *type_spec) {

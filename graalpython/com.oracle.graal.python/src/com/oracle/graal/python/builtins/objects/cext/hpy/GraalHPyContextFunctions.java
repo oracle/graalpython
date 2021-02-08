@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseException;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -79,10 +80,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddLegacyMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
@@ -111,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -1025,6 +1027,60 @@ public abstract class GraalHPyContextFunctions {
                 return lenNode.execute((PSequence) object);
             }
             return raiseNode.raiseIntWithoutFrame(context, -1, TypeError, "expected bytes, %p found", object);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyBytesFromStringAndSize extends GraalHPyContextFunction {
+
+        private final boolean withSize;
+
+        public GraalHPyBytesFromStringAndSize(boolean withSize) {
+            this.withSize = withSize;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
+                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached GetByteArrayNode getByteArrayNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @CachedLibrary(limit = "2") InteropLibrary interopLib,
+                        @Cached HPyRaiseNode raiseNode,
+                        @Cached PythonObjectFactory factory) throws ArityException {
+            int expectedArity = withSize ? 3 : 2;
+            if (arguments.length != expectedArity) {
+                throw ArityException.create(expectedArity, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object charPtr = arguments[1];
+            
+            int size;
+            try {
+                if (withSize) {
+                    size = castToJavaIntNode.execute(arguments[2]);
+                    if (size == 0) {
+                        return factory.createBytes(new byte[size]);
+                    }
+                } else {
+                    size = castToJavaIntNode.execute(callHelperNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_STRLEN, charPtr));
+                }
+            } catch (PException e) {
+                return raiseNode.raiseWithoutFrame(context, context.getNullHandle(), OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
+            }
+
+            if (!interopLib.hasArrayElements(charPtr)) {
+                charPtr = callHelperNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_FROM_I8_ARRAY, charPtr, (long) size);
+            }
+
+            try {
+                return asHandleNode.execute(context, factory.createBytes(getByteArrayNode.execute(charPtr, size)));
+            } catch (InteropException e) {
+                return raiseNode.raiseWithoutFrame(context, context.getNullHandle(), TypeError, "%m", e);
+            } catch (OverflowException e) {
+                return raiseNode.raiseWithoutFrame(context, context.getNullHandle(), SystemError, "negative size passed");
+            }
         }
     }
 

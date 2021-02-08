@@ -137,6 +137,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderSet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesAsString;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesFromStringAndSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesGetSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCallBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCast;
@@ -401,6 +402,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_BYTES_GET_SIZE("ctx_Bytes_GET_SIZE"),
         CTX_BYTES_ASSTRING("ctx_Bytes_AsString"),
         CTX_BYTES_AS_STRING("ctx_Bytes_AS_STRING"),
+        CTX_BYTES_FROMSTRING("ctx_Bytes_FromString"),
+        CTX_BYTES_FROMSTRINGANDSIZE("ctx_Bytes_FromStringAndSize"),
         CTX_UNICODE_FROMSTRING("ctx_Unicode_FromString"),
         CTX_UNICODE_CHECK("ctx_Unicode_Check"),
         CTX_UNICODE_ASUTF8STRING("ctx_Unicode_AsUTF8String"),
@@ -915,6 +918,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_BYTES_SIZE.ordinal()] = new GraalHPyBytesGetSize();
         members[HPyContextMembers.CTX_BYTES_AS_STRING.ordinal()] = new GraalHPyBytesAsString();
         members[HPyContextMembers.CTX_BYTES_ASSTRING.ordinal()] = new GraalHPyBytesAsString();
+        members[HPyContextMembers.CTX_BYTES_FROMSTRING.ordinal()] = new GraalHPyBytesFromStringAndSize(false);
+        members[HPyContextMembers.CTX_BYTES_FROMSTRINGANDSIZE.ordinal()] = new GraalHPyBytesFromStringAndSize(true);
+        
         members[HPyContextMembers.CTX_ERR_NOMEMORY.ordinal()] = new GraalHPyErrRaisePredefined(MemoryError);
         members[HPyContextMembers.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString(true);
         members[HPyContextMembers.CTX_ERR_SETOBJECT.ordinal()] = new GraalHPyErrSetString(false);

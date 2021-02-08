@@ -52,6 +52,7 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_METH_GET_SIGNATURE("graal_hpy_meth_get_signature"),
     GRAAL_HPY_FROM_HPY_ARRAY("graal_hpy_from_HPy_array"),
     GRAAL_HPY_FROM_STRING("graal_hpy_from_string"),
+    GRAAL_HPY_STRLEN("graal_hpy_strlen"),
     GRAAL_HPY_ALLOCATE_OUTVAR("graal_hpy_allocate_outvar"),
     GRAAL_HPY_ARRAY_TO_NATIVE("graal_hpy_array_to_native"),
     GRAAL_HPY_FROM_I8_ARRAY("graal_hpy_from_i8_array"),
