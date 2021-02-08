@@ -59,10 +59,16 @@ import java.nio.charset.CodingErrorAction;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -80,6 +86,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -107,6 +114,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class CExtCommonNodes {
 
@@ -698,5 +706,53 @@ public abstract class CExtCommonNodes {
 
     public abstract static class CheckFunctionResultNode extends PNodeWithContext {
         public abstract Object execute(PythonContext context, String name, Object result);
+    }
+
+    @GenerateUncached
+    public abstract static class GetByteArrayNode extends Node {
+
+        public abstract byte[] execute(Object obj, long n) throws InteropException, OverflowException;
+
+        @Specialization(limit = "1")
+        static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
+            return subRangeIfNeeded(obj.getByteArray(lib), n);
+        }
+
+        @Specialization(limit = "1")
+        static byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            Object delegate = lib.getDelegate(obj);
+            if (delegate instanceof PBytesLike) {
+                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+                return subRangeIfNeeded(bytes, n);
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization(limit = "5")
+        static byte[] doForeign(Object obj, long n,
+                        @CachedLibrary("obj") InteropLibrary interopLib,
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib) throws InteropException, OverflowException {
+            long size = n < 0 ? interopLib.getArraySize(obj) : n;
+            byte[] bytes = new byte[PInt.intValueExact(size)];
+            for (int i = 0; i < bytes.length; i++) {
+                Object elem = interopLib.readArrayElement(obj, i);
+                if (elementLib.fitsInByte(elem)) {
+                    bytes[i] = elementLib.asByte(elem);
+                }
+            }
+            return bytes;
+        }
+
+        private static byte[] subRangeIfNeeded(byte[] bytes, long n) {
+            if (bytes.length > n && n >= 0) {
+                // cast to int is guaranteed because of 'bytes.length > n'
+                return PythonUtils.arrayCopyOf(bytes, (int) n);
+            } else {
+                return bytes;
+            }
+        }
     }
 }

@@ -103,13 +103,26 @@ public final class PythonUtils {
     }
 
     /**
-     * Executes Arrays.copyOf and puts all exceptions on the slow path.
+     * Executes {@link Arrays#copyOf(Object[], int)} and puts all exceptions on the slow path.
      */
     public static <T> T[] arrayCopyOf(T[] original, int newLength) {
         try {
             return Arrays.copyOf(original, newLength);
         } catch (Throwable t) {
             // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
+     * Executes {@link Arrays#copyOf(byte[], int)} and puts all exceptions on the slow path.
+     */
+    public static byte[] arrayCopyOf(byte[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
+        } catch (Throwable t) {
+            // Break exception edges
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw t;
         }
