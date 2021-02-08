@@ -218,24 +218,22 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             assert parameterNames.length == 0 : "either give all parameter names explicitly, or define the max number: " + builtin.name();
         }
 
-        if (!needsExplicitSelf) {
-            // if we don't declare the explicit self, we just read (and ignore) it
-            maxNumPosArgs++;
-        }
+        // if we don't declare the explicit self, we just ignore it
+        int skip = needsExplicitSelf ? 0 : 1;
 
         // read those arguments that only come positionally
         for (int i = 0; i < maxNumPosArgs; i++) {
-            args.add(ReadIndexedArgumentNode.create(i));
+            args.add(ReadIndexedArgumentNode.create(i + skip));
         }
 
         // read splat args if any
         if (builtin.takesVarArgs()) {
-            args.add(ReadVarArgsNode.create(args.size(), true));
+            args.add(ReadVarArgsNode.create(args.size() + skip, true));
         }
 
         int keywordCount = builtin.keywordOnlyNames().length;
         for (int i = 0; i < keywordCount; i++) {
-            args.add(ReadIndexedArgumentNode.create(i + maxNumPosArgs));
+            args.add(ReadIndexedArgumentNode.create(i + maxNumPosArgs + skip));
         }
 
         if (builtin.takesVarKeywordArgs()) {
@@ -267,57 +265,25 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             BuiltinCallNode newBody;
             ReadArgumentNode[] argumentsList = createArgumentsList(builtin, declaresExplicitSelf);
             if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
-                if (!declaresExplicitSelf) {
-                    ReadArgumentNode[] argumentsListWithoutSelf = new ReadArgumentNode[argumentsList.length - 1];
-                    PythonUtils.arraycopy(argumentsList, 1, argumentsListWithoutSelf, 0, argumentsListWithoutSelf.length);
-                    newBody = new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsListWithoutSelf));
-                } else {
-                    newBody = new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList));
-                }
+                newBody = new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList));
             } else {
                 PythonBuiltinBaseNode node = factory.createNode();
                 if (node instanceof PythonUnaryBuiltinNode) {
-                    if (!declaresExplicitSelf) {
-                        assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
-                        newBody = new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[1]);
-                    } else {
-                        assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
-                        newBody = new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]);
-                    }
+                    assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
+                    newBody = new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]);
                 } else if (node instanceof PythonBinaryBuiltinNode) {
-                    if (!declaresExplicitSelf) {
-                        assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
-                        newBody = new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[1], argumentsList[2]);
-                    } else {
-                        assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
-                        newBody = new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]);
-                    }
+                    assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
+                    newBody = new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]);
                 } else if (node instanceof PythonTernaryBuiltinNode) {
-                    if (!declaresExplicitSelf) {
-                        assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
-                        newBody = new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[1], argumentsList[2], argumentsList[3]);
-                    } else {
-                        assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
-                        newBody = new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
-                    }
+                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
+                    newBody = new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
                 } else if (node instanceof PythonQuaternaryBuiltinNode) {
-                    if (!declaresExplicitSelf) {
-                        assert argumentsList.length == 5 : "mismatch in number of arguments for " + node.getClass().getName();
-                        newBody = new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[1], argumentsList[2], argumentsList[3], argumentsList[4]);
-                    } else {
-                        assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
-                        newBody = new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3]);
-                    }
+                    assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
+                    newBody = new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3]);
                 } else if (node instanceof PythonVarargsBuiltinNode) {
-                    if (!declaresExplicitSelf) {
-                        assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
-                        assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null && argumentsList[3] != null;
-                        newBody = new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[1], argumentsList[2], argumentsList[3]);
-                    } else {
-                        assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
-                        assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
-                        newBody = new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
-                    }
+                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
+                    assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
+                    newBody = new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
                 } else {
                     throw new RuntimeException("unexpected builtin node type: " + node.getClass());
                 }
