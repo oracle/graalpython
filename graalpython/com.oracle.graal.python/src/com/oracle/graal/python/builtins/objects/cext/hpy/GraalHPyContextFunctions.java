@@ -173,6 +173,12 @@ public abstract class GraalHPyContextFunctions {
         INT32
     }
 
+    enum ReturnType {
+        OBJECT,
+        INT,
+        FLOAT
+    }
+
     @ExportLibrary(InteropLibrary.class)
     abstract static class GraalHPyContextFunction implements TruffleObject {
 
@@ -1461,20 +1467,19 @@ public abstract class GraalHPyContextFunctions {
 
         private final String key;
         private final int nPythonArguments;
+        private final ReturnType returnType;
 
         private ConversionNodeSupplier toNativeNodeSupplier;
 
         public GraalHPyCallBuiltinFunction(String key, int nPythonArguments) {
-            this.key = key;
-            assert nPythonArguments >= 0 : "number of arguments cannot be negative";
-            this.nPythonArguments = nPythonArguments;
-            this.toNativeNodeSupplier = GraalHPyConversionNodeSupplier.HANDLE;
+            this(key, nPythonArguments, ReturnType.OBJECT, null);
         }
 
-        public GraalHPyCallBuiltinFunction(String key, int nPythonArguments, ConversionNodeSupplier toNativeNodeSupplier) {
+        public GraalHPyCallBuiltinFunction(String key, int nPythonArguments, ReturnType returnType, ConversionNodeSupplier toNativeNodeSupplier) {
             this.key = key;
             assert nPythonArguments >= 0 : "number of arguments cannot be negative";
             this.nPythonArguments = nPythonArguments;
+            this.returnType = returnType;
             this.toNativeNodeSupplier = toNativeNodeSupplier != null ? toNativeNodeSupplier : GraalHPyConversionNodeSupplier.HANDLE;
         }
 
@@ -1482,7 +1487,7 @@ public abstract class GraalHPyContextFunctions {
         static class Execute {
 
             @Specialization
-            static Object execute(GraalHPyCallBuiltinFunction receiver, Object[] arguments,
+            static Object doGeneric(GraalHPyCallBuiltinFunction receiver, Object[] arguments,
                             @Cached HPyAsContextNode asContextNode,
                             @Cached HPyAsPythonObjectNode asPythonObjectNode,
                             @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
@@ -1503,8 +1508,17 @@ public abstract class GraalHPyContextFunctions {
                     return toNativeNode.execute(nativeContext, lib.callObjectWithState(builtinFunction, null, pythonArguments));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(nativeContext, e);
-                    return nativeContext.getNullHandle();
+                    switch (receiver.returnType) {
+                        case OBJECT:
+                            return nativeContext.getNullHandle();
+                        case INT:
+                            return -1;
+                        case FLOAT:
+                            return -1.0;
+
+                    }
                 }
+                throw CompilerDirectives.shouldNotReachHere();
             }
 
             static CExtToNativeNode createToNativeNode(GraalHPyCallBuiltinFunction receiver) {
