@@ -17,6 +17,15 @@
 *graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_float
 *graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_float_format
 *graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_framing_large_objects
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_framing_many_objects
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_getinitargs
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_global_ext1
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_global_ext2
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_global_ext4
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_in_band_buffers
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_inband_accept_default_buffers_argument
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_int_pickling_efficiency
+*graalpython.lib-python.3.test.test_pickletools.OptimizedPickleTests.test_ints
 *test.pickletester.AbstractPickleTests.test_attribute_name_interning
 *test.pickletester.AbstractPickleTests.test_buffer_callback_error
 *test.pickletester.AbstractPickleTests.test_buffers_error

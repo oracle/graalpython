@@ -14,3 +14,4 @@
 *graalpython.lib-python.3.test.test_concurrent_futures.FutureTests.test_multiple_set_exception
 *graalpython.lib-python.3.test.test_concurrent_futures.FutureTests.test_multiple_set_result
 *graalpython.lib-python.3.test.test_concurrent_futures.FutureTests.test_repr
+*graalpython.lib-python.3.test.test_concurrent_futures.FutureTests.test_result_with_cancel

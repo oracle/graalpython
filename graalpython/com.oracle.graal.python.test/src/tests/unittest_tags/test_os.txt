@@ -164,6 +164,7 @@
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_write
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_writev
 *graalpython.lib-python.3.test.test_os.TestPEP519.test_argument_required
+*graalpython.lib-python.3.test.test_os.TestPEP519.test_bad_pathlike
 *graalpython.lib-python.3.test.test_os.TestPEP519.test_fsencode_fsdecode
 *graalpython.lib-python.3.test.test_os.TestPEP519.test_garbage_in_exception_out
 *graalpython.lib-python.3.test.test_os.TestPEP519.test_pathlike
