@@ -78,7 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
@@ -365,14 +365,23 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyLongAsLong extends GraalHPyContextFunction {
+    public static final class GraalHPyLongAsPrimitive extends GraalHPyContextFunction {
+
+        private final int targetSize;
+        private final int signed;
+        private final boolean exact;
+
+        public GraalHPyLongAsPrimitive(int signed, int targetSize, boolean exact) {
+            this.targetSize = targetSize;
+            this.signed = signed;
+            this.exact = exact;
+        }
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -381,7 +390,7 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
             try {
-                return castToJavaLongNode.execute(convertPIntToPrimitiveNode.execute(null, object, 1, Long.BYTES));
+                return asNativePrimitiveNode.execute(object, signed, targetSize, exact);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
                 return -1L;
@@ -1055,7 +1064,7 @@ public abstract class GraalHPyContextFunctions {
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object charPtr = arguments[1];
-            
+
             int size;
             try {
                 if (withSize) {
