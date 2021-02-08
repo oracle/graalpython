@@ -168,11 +168,21 @@ class CipherTests(unittest.TestCase):
         with open(data_file('expected_ciphers.json')) as fo:
             data = json.load(fo)
         for cipher_string, expected_output in data.items():
-            output = get_cipher_list(cipher_string)
-            expected_names = [x['name'] for x in expected_output]
-            actual_names = [x['name'] for x in output]
-            self.assertEqual(expected_names, actual_names, f"Expected names: {':'.join(expected_names)}\nGot names: {':'.join(actual_names)}")
-            self.assertEqual(expected_output, output)
+            try:
+                output = get_cipher_list(cipher_string)
+            except ssl.SSLError:
+                self.fail(f"No cipher suites selected for list: {cipher_string}")
+            self.assertGreater(len(output), 0)
+            # JDK has just a subset of ciphers, test that the remaining ones are a subset of CPython's in the right order
+            unexpected = set([x['name'] for x in output]) - set([x['name'] for x in expected_output])
+            self.assertEqual(unexpected, set(), f"Cipher list: {cipher_string}\nUnexpected names: {unexpected}")
+            matches = 0
+            for entry in expected_output:
+                if output[matches] == entry:
+                    matches += 1
+                    if matches == len(output):
+                        break
+            self.assertEqual(matches, len(output))
 
     def test_error(self):
         with self.assertRaisesRegex(ssl.SSLError, "No cipher can be selected"):
