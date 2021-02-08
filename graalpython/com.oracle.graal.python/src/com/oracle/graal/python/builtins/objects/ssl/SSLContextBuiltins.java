@@ -212,6 +212,22 @@ public class SSLContextBuiltins extends PythonBuiltins {
         if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
             ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());
         }
+        if (serverMode) {
+            switch (context.getVerifyMode()) {
+                case SSLModuleBuiltins.SSL_CERT_NONE:
+                    parameters.setNeedClientAuth(false);
+                    parameters.setWantClientAuth(false);
+                    break;
+                case SSLModuleBuiltins.SSL_CERT_OPTIONAL:
+                    parameters.setWantClientAuth(true);
+                    break;
+                case SSLModuleBuiltins.SSL_CERT_REQUIRED:
+                    parameters.setNeedClientAuth(true);
+                    break;
+                default:
+                    assert false;
+            }
+        }
         engine.setSSLParameters(parameters);
         return engine;
     }
