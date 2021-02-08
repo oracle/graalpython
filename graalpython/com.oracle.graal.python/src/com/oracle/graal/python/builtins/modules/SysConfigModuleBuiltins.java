@@ -49,13 +49,17 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * this builtin module is used to fill in truffle land config options into the sysconfig python
@@ -63,12 +67,14 @@ import com.oracle.truffle.api.dsl.Specialization;
  */
 @CoreFunctions(defineModule = "_sysconfig")
 public class SysConfigModuleBuiltins extends PythonBuiltins {
-    private static final EconomicMap<String, Object> STATIC_CONFIG_OPTIONS = EconomicMap.create();
+    private static final HiddenKey CONFIG_OPTIONS = new HiddenKey("__data__");
 
     @Override
     public void initialize(PythonCore core) {
-        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PInt.intValue(core.getLanguage().getEngineOption(PythonOptions.WithThread)));
         super.initialize(core);
+        EconomicMap<String, Object> configOptions = EconomicMap.create();
+        configOptions.put("WITH_THREAD", PInt.intValue(core.getLanguage().getEngineOption(PythonOptions.WithThread)));
+        core.lookupBuiltinModule("_sysconfig").setAttribute(CONFIG_OPTIONS, configOptions);
     }
 
     @Override
@@ -76,12 +82,16 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
         return SysConfigModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "get_config_vars", takesVarArgs = true)
+    @Builtin(name = "get_config_vars", minNumOfPositionalArgs = 1, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class GetConfigVarsNode extends PythonBuiltinNode {
         @Specialization
-        PDict select(@SuppressWarnings("unused") Object[] arguments) {
-            return factory().createDict(STATIC_CONFIG_OPTIONS);
+        PDict select(PythonModule self,
+                @SuppressWarnings("unused") Object[] arguments,
+                @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            @SuppressWarnings("unchecked")
+            EconomicMap<String, Object> configOptions = (EconomicMap<String, Object>) readNode.execute(self, CONFIG_OPTIONS);
+            return factory().createDict(configOptions);
         }
     }
 }
