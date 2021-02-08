@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativePrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;

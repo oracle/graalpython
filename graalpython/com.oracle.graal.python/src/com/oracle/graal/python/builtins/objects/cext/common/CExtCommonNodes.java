@@ -59,12 +59,10 @@ import java.nio.charset.CodingErrorAction;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
@@ -77,6 +75,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -84,6 +83,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -113,8 +113,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class CExtCommonNodes {
 
@@ -601,7 +601,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)", "!isInteger(obj)", "!isPInt(obj)"})
         static Object doGeneric(Object obj, int signed, long targetTypeSize,
-                        @Cached CExtNodes.AsNativePrimitiveNode asNativePrimitiveNode) {
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
         }
 
@@ -753,6 +753,184 @@ public abstract class CExtCommonNodes {
             } else {
                 return bytes;
             }
+        }
+    }
+
+    /**
+     * Converts a Python object (i.e. {@code PyObject*}) to a C integer value ({@code int} or
+     * {@code long}).<br/>
+     * This node is used to implement {@code PyLong_AsLong} or similar C API functions and does
+     * coercion and may raise a Python exception if coercion fails.
+     */
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
+    public abstract static class AsNativePrimitiveNode extends Node {
+
+        public final int toInt32(Object value, boolean exact) {
+            return (int) execute(value, 1, 4, exact);
+        }
+
+        public final int toUInt32(Object value, boolean exact) {
+            return (int) execute(value, 0, 4, exact);
+        }
+
+        public final long toInt64(Object value, boolean exact) {
+            return (long) execute(value, 1, 8, exact);
+        }
+
+        public final long toUInt64(Object value, boolean exact) {
+            return (long) execute(value, 0, 8, exact);
+        }
+
+        public abstract Object execute(byte value, int signed, int targetTypeSize, boolean exact);
+
+        public abstract Object execute(int value, int signed, int targetTypeSize, boolean exact);
+
+        public abstract Object execute(long value, int signed, int targetTypeSize, boolean exact);
+
+        public abstract Object execute(Object value, int signed, int targetTypeSize, boolean exact);
+
+        @Specialization(guards = "targetTypeSize == 4")
+        @SuppressWarnings("unused")
+        static int doIntToInt32(int obj, int signed, int targetTypeSize, boolean exact) {
+            // n.b. even if an unsigned is requested, it does not matter because the unsigned
+            // interpretation is done in C code.
+            return obj;
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        @SuppressWarnings("unused")
+        static long doIntToInt64(int obj, int signed, int targetTypeSize, boolean exact) {
+            return obj;
+        }
+
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        @SuppressWarnings("unused")
+        static int doIntToOther(int obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        }
+
+        @Specialization(guards = "targetTypeSize == 4")
+        @SuppressWarnings("unused")
+        static int doLongToInt32(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        @SuppressWarnings("unused")
+        static long doLongToInt64(long obj, int signed, int targetTypeSize, boolean exact) {
+            return obj;
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        @SuppressWarnings("unused")
+        static Object doVoidPtrToI64(PythonNativeVoidPtr obj, int signed, int targetTypeSize, boolean exact) {
+            return obj;
+        }
+
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        @SuppressWarnings("unused")
+        static int doPInt(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
+        static int doPIntToInt32Signed(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") boolean exact,
+                        @Exclusive @Cached BranchProfile errorProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return obj.intValueExact();
+            } catch (OverflowException e) {
+                // fall through
+            }
+            errorProfile.enter();
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"})
+        static int doPIntToInt32NotSigned(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
+                        @Exclusive @Cached BranchProfile errorProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (!exact || obj.bitCount() <= 32) {
+                return obj.intValue();
+            }
+            errorProfile.enter();
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 8", "signed != 0"})
+        static long doPIntToInt64Signed(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") boolean exact,
+                        @Exclusive @Cached BranchProfile errorProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return obj.longValueExact();
+            } catch (OverflowException e) {
+                // fall through
+            }
+            errorProfile.enter();
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 8", "signed == 0"})
+        static long doPIntToInt64NotSigned(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
+                        @Exclusive @Cached BranchProfile errorProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (!exact || obj.bitCount() <= 64) {
+                return obj.longValue();
+            }
+            errorProfile.enter();
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"!exact", "targetTypeSize == 4"})
+        @SuppressWarnings("unused")
+        static int doPIntToInt32Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
+            return obj.intValue();
+        }
+
+        @Specialization(guards = {"!exact", "targetTypeSize == 8"})
+        @SuppressWarnings("unused")
+        static long doPIntToInt64Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
+            return obj.longValue();
+        }
+
+        @Specialization(guards = {"isIntegerType(obj)", "targetTypeSize != 4", "targetTypeSize != 8"})
+        @SuppressWarnings("unused")
+        static int doError(Object obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        }
+
+        @Specialization(replaces = {"doIntToInt32", "doIntToInt64", "doIntToOther", "doLongToInt32", "doLongToInt64", "doVoidPtrToI64", "doPIntToInt32Signed", "doPIntToInt32NotSigned",
+                        "doPIntToInt64Signed", "doPIntToInt64NotSigned"})
+        static Object doGeneric(Object obj, @SuppressWarnings("unused") int signed, int targetTypeSize, boolean exact,
+                        @Cached LookupAndCallUnaryDynamicNode callIndexNode,
+                        @Cached LookupAndCallUnaryDynamicNode callIntNode,
+                        @Cached AsNativePrimitiveNode recursive,
+                        @Exclusive @Cached BranchProfile noIntProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+
+            Object result = callIndexNode.executeObject(obj, SpecialMethodNames.__INDEX__);
+            if (result == PNone.NO_VALUE) {
+                result = callIntNode.executeObject(obj, SpecialMethodNames.__INT__);
+                if (result == PNone.NO_VALUE) {
+                    noIntProfile.enter();
+                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, result);
+                }
+            }
+            // n.b. this check is important to avoid endless recursions; it will ensure that
+            // 'doGeneric' is not triggered in the recursive node
+            if (!(isIntegerType(result))) {
+                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+            }
+            return recursive.execute(result, signed, targetTypeSize, exact);
+        }
+
+        static boolean isIntegerType(Object obj) {
+            return PGuards.isInteger(obj) || PGuards.isPInt(obj) || obj instanceof PythonNativeVoidPtr;
         }
     }
 }
