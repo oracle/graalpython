@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsure
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeArgFuncToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
@@ -158,6 +159,9 @@ public abstract class HPyExternalFunctionNodes {
                 break;
             case LENFUNC:
                 rootNode = new HPyMethNoargsRoot(language, name, true);
+                break;
+            case SSIZEOBJARGPROC:
+                rootNode = new HPyMethSSizeObjArgProcRoot(language, name);
                 break;
             case INQUIRY:
                 rootNode = new HPyMethInquiryRoot(language, name);
@@ -686,6 +690,43 @@ public abstract class HPyExternalFunctionNodes {
         protected Object processResult(VirtualFrame frame, Object result) {
             // 'HPyCheckPrimitiveResultNode' already guarantees that the result is 'int' or 'long'.
             return intToBoolean(result);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethSSizeObjArgProcRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "arg0", "arg1"}, KEYWORDS_HIDDEN_CALLABLE, true);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private ReadIndexedArgumentNode readArg2Node;
+
+        public HPyMethSSizeObjArgProcRoot(PythonLanguage language, String name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPySSizeObjArgProcToSulongNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArg1Node.execute(frame);
+        }
+
+        private Object getArg2(VirtualFrame frame) {
+            if (readArg2Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg2Node = insert(ReadIndexedArgumentNode.create(2));
+            }
+            return readArg2Node.execute(frame);
         }
 
         @Override

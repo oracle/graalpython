@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNod
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySelfHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
@@ -1726,6 +1727,43 @@ public class GraalHPyNodes {
 
         static boolean isArity(int len, int off, int expected) {
             return len - off == expected;
+        }
+    }
+
+    /**
+     * Converts arguments for C function signature
+     * {@code int (*HPyFunc_ssizeobjargproc)(HPyContext ctx, HPy, HPy_ssize_t, HPy)}.
+     */
+    public abstract static class HPySSizeObjArgProcToSulongNode extends HPyConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 2] = asHandleNode.execute(hpyContext, args[argsOffset + 2]);
+        }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPySSizeObjArgProcCloseNodeGen.create();
+        }
+    }
+
+    /**
+     * Always closes handle parameter at position {@code destOffset} and {@code destOffset + 2}
+     * (assuming that these are handles).
+     */
+    public abstract static class HPySSizeObjArgProcCloseNode extends HPyCloseArgHandlesNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached HPyEnsureHandleNode ensureHandleNode) {
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
+            ensureHandleNode.execute(hpyContext, dest[destOffset + 2]).close(hpyContext, isAllocatedProfile);
         }
     }
 
