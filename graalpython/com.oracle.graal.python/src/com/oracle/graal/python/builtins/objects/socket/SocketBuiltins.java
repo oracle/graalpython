@@ -174,20 +174,12 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object close(PSocket socket) {
             if (socket.getSocket() != null) {
-                if (!socket.getSocket().isOpen()) {
-                    throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
-                }
-
                 try {
                     socket.getSocket().close();
                 } catch (IOException e) {
                     throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
             } else if (socket.getServerSocket() != null) {
-                if (!socket.getServerSocket().isOpen()) {
-                    throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
-                }
-
                 try {
                     socket.getServerSocket().close();
                 } catch (IOException e) {
