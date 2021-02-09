@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -143,12 +144,13 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // read from the Dict
     @Specialization(guards = {
                     "!isHiddenKey(key)",
-                    "lib.hasDict(object)"
+                    "dict != null"
     }, replaces = "readFromBuiltinModuleDict")
     protected static Object readFromDict(PythonObject object, Object key,
                     @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
+                    @Bind("lib.getDict(object)") PDict dict,
                     @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
-        Object value = hlib.getItem(lib.getDict(object).getDictStorage(), key);
+        Object value = hlib.getItem(dict.getDictStorage(), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
