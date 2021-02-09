@@ -2710,6 +2710,11 @@ def server_params_test(client_context, server_context, indata=b"FOO\n",
                             " client:  sending %r...\n" % indata)
                 s.write(arg)
                 outdata = s.read()
+                # XXX GraalVM change: CPython assumes that since the data is so small,
+                # it will always arrive in one packet. TLS doesn't guarantee that.
+                # JDK forces packet splitting as a mitigation for BEAST attack on TLSv1.0.
+                while outdata != indata.lower() and indata.lower().startswith(outdata):
+                    outdata += s.read()
                 if connectionchatty:
                     if support.verbose:
                         sys.stdout.write(" client:  read %r\n" % outdata)
