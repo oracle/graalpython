@@ -386,4 +386,16 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             return protocol != null ? protocol : PNone.NONE;
         }
     }
+
+    @Builtin(name = "compression", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class CompressionNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object get(@SuppressWarnings("unused") PSSLSocket self) {
+            // JSSE doesn't support compression. Neither does OpenSSL in regular distribution
+            // builds. Compression is discouraged because it opens up possibilities for CRIME-type
+            // attacks
+            return PNone.NONE;
+        }
+    }
 }
