@@ -666,6 +666,8 @@ public abstract class ErrorMessages {
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
     public static final String S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = "%s() takes at least %d arguments (%d given)";
     public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
+    public static final String RES_O_O_RANGE = "%s result out of range";
+    public static final String FLOAT_TO_LARGE_TO_PACK_WITH_E_FMT = "float too large to pack with e format";
 
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
