@@ -114,7 +114,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtCommonNodes {
 
@@ -408,213 +407,63 @@ public abstract class CExtCommonNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
 
-        public abstract Object execute(Frame frame, Object o, int signed, long targetTypeSize);
+        public abstract Object execute(Frame frame, Object o, int signed, int targetTypeSize);
 
-        public final long executeLong(Frame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
+        public final long executeLong(Frame frame, Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
             return PGuards.expectLong(execute(frame, o, signed, targetTypeSize));
         }
 
-        public final int executeInt(Frame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
+        public final int executeInt(Frame frame, Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
             return PGuards.expectInteger(execute(frame, o, signed, targetTypeSize));
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize) {
+        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+            return nativeWrapper.getInt();
+        }
+
+        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInUInt32(nativeWrapper)"})
+        @SuppressWarnings("unused")
+        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
             return nativeWrapper.getInt();
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed != 0", "fitsInInt64(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize) {
+        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
             return nativeWrapper.getLong();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInUInt32(nativeWrapper)"})
-        @SuppressWarnings("unused")
-        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize) {
-            return nativeWrapper.getInt();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInInt32(nativeWrapper)"}, replaces = "doWrapperToUInt32Pos")
-        @SuppressWarnings("unused")
-        static int doWrapperToUInt32(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            return doIntToUInt32(nativeWrapper.getInt(), signed, targetTypeSize, raiseNativeNode, negativeProfile);
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInUInt64(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize) {
+        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
             return nativeWrapper.getLong();
         }
 
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInInt64(nativeWrapper)"}, replaces = "doWrapperToUInt64Pos")
+        @Specialization
         @SuppressWarnings("unused")
-        static long doWrapperToUInt64(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            long value = nativeWrapper.getLong();
-            if (negativeProfile.profile(value < 0)) {
-                throw raiseNegativeValue(raiseNativeNode);
-            }
-            return value;
+        static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize,
+                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, true);
         }
 
-        @Specialization(guards = {"targetTypeSize == 4", "signed != 0"})
-        @SuppressWarnings("unused")
-        static long doIntToInt32(int value, int signed, long targetTypeSize) {
-            return value;
+        @Specialization
+        static Object doInt(int value, int signed, int targetTypeSize,
+                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
         }
 
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static long doIntToUInt32Pos(int value, int signed, long targetTypeSize) {
-            return value;
+        @Specialization
+        static Object doLong(long value, int signed, int targetTypeSize,
+                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
         }
 
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
-        @SuppressWarnings("unused")
-        static int doIntToUInt32(int value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            if (negativeProfile.profile(value < 0)) {
-                throw raiseNegativeValue(raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
-        @SuppressWarnings("unused")
-        static long doIntToInt64(int value, int signed, long targetTypeSize) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static long doIntToUInt64Pos(int value, int signed, long targetTypeSize) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
-        @SuppressWarnings("unused")
-        static int doIntToUInt64(int value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            if (negativeProfile.profile(value < 0)) {
-                throw raiseNegativeValue(raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doIntOther(@SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            throw raiseUnsupportedSize(raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 4")
-        static long doLong4(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            throw raiseTooLarge(raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
-        @SuppressWarnings("unused")
-        static long doLongToInt64(long value, int signed, long targetTypeSize) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static long doLongToUInt64Pos(long value, int signed, long targetTypeSize) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
-        @SuppressWarnings("unused")
-        static long doLongToUInt64(long value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            if (negativeProfile.profile(value < 0)) {
-                throw raiseNegativeValue(raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        static PythonNativeVoidPtr doVoid(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return obj;
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doPInt(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            throw raiseUnsupportedSize(raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 4")
-        @TruffleBoundary
-        static int doPIntTo32Bit(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            try {
-                if (signed != 0) {
-                    return obj.intValueExact();
-                } else if (obj.bitLength() <= 32) { // investigate the use of NarrowBigIntegerNode
-                                                    // (avoid the truffle boundary)
-                    if (obj.isNegative()) {
-                        throw raiseNegativeValue(raiseNativeNode);
-                    }
-                    return obj.intValue();
-                }
-            } catch (OverflowException e) {
-                // fall through
-            }
-            throw raiseTooLarge(raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        @TruffleBoundary
-        static long doPIntTo64Bit(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            try {
-                if (signed != 0) {
-                    return obj.longValueExact();
-                } else if (obj.bitLength() <= 64) {
-                    if (obj.isNegative()) {
-                        throw raiseNegativeValue(raiseNativeNode);
-                    }
-                    return obj.longValue();
-                }
-            } catch (OverflowException e) {
-                // fall through
-            }
-            throw raiseTooLarge(raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doPInt(@SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
-            throw raiseUnsupportedSize(raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)", "!isInteger(obj)", "!isPInt(obj)"})
-        static Object doGeneric(Object obj, int signed, long targetTypeSize,
+        @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)"}, replaces = {"doInt", "doLong"})
+        static Object doOther(Object obj, int signed, int targetTypeSize,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
-        }
-
-        private static PException raiseTooLarge(PRaiseNode raiseNativeNode, long targetTypeSize) {
-            throw raiseNativeNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        private static PException raiseUnsupportedSize(PRaiseNode raiseNativeNode, long targetTypeSize) {
-            throw raiseNativeNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        private static PException raiseNegativeValue(PRaiseNode raiseNativeNode) {
-            throw raiseNativeNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+            return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, true);
         }
 
         static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
@@ -790,38 +639,112 @@ public abstract class CExtCommonNodes {
 
         public abstract Object execute(Object value, int signed, int targetTypeSize, boolean exact);
 
-        @Specialization(guards = "targetTypeSize == 4")
+        @Specialization(guards = {"targetTypeSize == 4", "signed != 0"})
         @SuppressWarnings("unused")
-        static int doIntToInt32(int obj, int signed, int targetTypeSize, boolean exact) {
-            // n.b. even if an unsigned is requested, it does not matter because the unsigned
-            // interpretation is done in C code.
-            return obj;
+        static int doIntToInt32(int value, int signed, int targetTypeSize, boolean exact) {
+            return value;
         }
 
-        @Specialization(guards = "targetTypeSize == 8")
+        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "value >= 0"})
+        @SuppressWarnings("unused")
+        static int doIntToUInt32Pos(int value, int signed, int targetTypeSize, boolean exact) {
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
+        @SuppressWarnings("unused")
+        static int doIntToUInt32(int value, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            if (exact && value < 0) {
+                throw raiseNegativeValue(raiseNativeNode);
+            }
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
         @SuppressWarnings("unused")
         static long doIntToInt64(int obj, int signed, int targetTypeSize, boolean exact) {
             return obj;
         }
 
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
         @SuppressWarnings("unused")
-        static int doIntToOther(int obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        static long doIntToUInt64Pos(int value, int signed, int targetTypeSize, boolean exact) {
+            return value;
         }
 
-        @Specialization(guards = "targetTypeSize == 4")
+        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
         @SuppressWarnings("unused")
-        static int doLongToInt32(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        static long doIntToUInt64(int value, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            if (exact && value < 0) {
+                throw raiseNegativeValue(raiseNativeNode);
+            }
+            return value;
         }
 
-        @Specialization(guards = "targetTypeSize == 8")
+        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
         @SuppressWarnings("unused")
-        static long doLongToInt64(long obj, int signed, int targetTypeSize, boolean exact) {
-            return obj;
+        static long doLongToInt64(long value, int signed, int targetTypeSize, boolean exact) {
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
+        @SuppressWarnings("unused")
+        static long doLongToUInt64Pos(long value, int signed, int targetTypeSize, boolean exact) {
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
+        @SuppressWarnings("unused")
+        static long doLongToUInt64(long value, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            if (exact && value < 0) {
+                throw raiseNegativeValue(raiseNativeNode);
+            }
+            return value;
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
+        @SuppressWarnings("unused")
+        static int doLongToInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return PInt.intValueExact(obj);
+            } catch (OverflowException e) {
+                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+            }
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0", "obj >= 0"})
+        @SuppressWarnings("unused")
+        static int doLongToUInt32PosExact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return PInt.intValueExact(obj);
+            } catch (OverflowException e) {
+                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+            }
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"}, replaces = "doLongToUInt32PosExact")
+        @SuppressWarnings("unused")
+        static int doLongToUInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (obj < 0) {
+                throw raiseNegativeValue(raiseNode);
+            }
+            try {
+                return PInt.intValueExact(obj);
+            } catch (OverflowException e) {
+                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+            }
+        }
+
+        @Specialization(guards = {"!exact", "targetTypeSize == 4"})
+        @SuppressWarnings("unused")
+        static int doLongToInt32Lossy(long obj, int signed, int targetTypeSize, boolean exact) {
+            return (int) obj;
         }
 
         @Specialization(guards = "targetTypeSize == 8")
@@ -830,58 +753,43 @@ public abstract class CExtCommonNodes {
             return obj;
         }
 
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        @Specialization(guards = {"exact", "targetTypeSize == 4"})
         @SuppressWarnings("unused")
-        static int doPInt(long obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
-        static int doPIntToInt32Signed(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") boolean exact,
-                        @Exclusive @Cached BranchProfile errorProfile,
+        @TruffleBoundary
+        static int doPIntTo32Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
-                return obj.intValueExact();
+                if (signed != 0) {
+                    return obj.intValueExact();
+                } else if (obj.bitLength() <= 32) {
+                    if (obj.isNegative()) {
+                        throw raiseNegativeValue(raiseNode);
+                    }
+                    return obj.intValue();
+                }
             } catch (OverflowException e) {
                 // fall through
             }
-            errorProfile.enter();
             throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
-        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"})
-        static int doPIntToInt32NotSigned(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
-                        @Exclusive @Cached BranchProfile errorProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (!exact || obj.bitCount() <= 32) {
-                return obj.intValue();
-            }
-            errorProfile.enter();
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 8", "signed != 0"})
-        static long doPIntToInt64Signed(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") boolean exact,
-                        @Exclusive @Cached BranchProfile errorProfile,
+        @Specialization(guards = {"exact", "targetTypeSize == 8"})
+        @SuppressWarnings("unused")
+        @TruffleBoundary
+        static long doPIntTo64Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
-                return obj.longValueExact();
+                if (signed != 0) {
+                    return obj.longValueExact();
+                } else if (obj.bitLength() <= 64) {
+                    if (obj.isNegative()) {
+                        throw raiseNegativeValue(raiseNode);
+                    }
+                    return obj.longValue();
+                }
             } catch (OverflowException e) {
                 // fall through
             }
-            errorProfile.enter();
-            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        @Specialization(guards = {"exact", "targetTypeSize == 8", "signed == 0"})
-        static long doPIntToInt64NotSigned(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
-                        @Exclusive @Cached BranchProfile errorProfile,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (!exact || obj.bitCount() <= 64) {
-                return obj.longValue();
-            }
-            errorProfile.enter();
             throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
@@ -897,16 +805,14 @@ public abstract class CExtCommonNodes {
             return obj.longValue();
         }
 
-        @Specialization(guards = {"isIntegerType(obj)", "targetTypeSize != 4", "targetTypeSize != 8"})
-        @SuppressWarnings("unused")
-        static int doError(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        @Specialization(replaces = {"doIntToInt32", "doIntToInt64", "doIntToOther", "doLongToInt32", "doLongToInt64", "doVoidPtrToI64", "doPIntToInt32Signed", "doPIntToInt32NotSigned",
-                        "doPIntToInt64Signed", "doPIntToInt64NotSigned"})
-        static Object doGeneric(Object obj, @SuppressWarnings("unused") int signed, int targetTypeSize, boolean exact,
+        @Specialization(guards = {"targetTypeSize == 4 || targetTypeSize == 8"}, //
+                        replaces = {"doIntToInt32", "doIntToUInt32Pos", "doIntToUInt32", //
+                                        "doIntToInt64", "doIntToUInt64Pos", "doIntToUInt64", //
+                                        "doLongToInt64", "doLongToUInt64Pos", "doLongToUInt64", //
+                                        "doLongToInt32Exact", "doLongToUInt32PosExact", "doLongToUInt32Exact", "doLongToInt32Lossy", //
+                                        "doVoidPtrToI64", //
+                                        "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
+        static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Cached LookupAndCallUnaryDynamicNode callIndexNode,
                         @Cached LookupAndCallUnaryDynamicNode callIntNode,
                         @Cached AsNativePrimitiveNode recursive,
@@ -929,8 +835,20 @@ public abstract class CExtCommonNodes {
             return recursive.execute(result, signed, targetTypeSize, exact);
         }
 
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        @SuppressWarnings("unused")
+        static int doUnsupportedTargetSize(Object obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        }
+
         static boolean isIntegerType(Object obj) {
             return PGuards.isInteger(obj) || PGuards.isPInt(obj) || obj instanceof PythonNativeVoidPtr;
         }
+
+        private static PException raiseNegativeValue(PRaiseNode raiseNativeNode) {
+            throw raiseNativeNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+        }
+
     }
 }

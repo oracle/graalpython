@@ -1173,10 +1173,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object resolvedPointer = resolveHandleNode.execute(object);
             try {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    return convertPIntToPrimitiveNode.executeLong(frame, resolvedPointer, signed, targetTypeSize);
+                    return convertPIntToPrimitiveNode.executeLong(frame, resolvedPointer, signed, PInt.intValueExact(targetTypeSize));
                 }
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw UnexpectedWrapperException.INSTANCE;
+            } catch (OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
@@ -1193,12 +1195,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object resolvedPointer = pointerClassProfile.profile(resolveHandleNode.execute(object));
             try {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    return convertPIntToPrimitiveNode.executeLong(frame, resolvedPointer, signed, targetTypeSize);
+                    return convertPIntToPrimitiveNode.executeLong(frame, resolvedPointer, signed, PInt.intValueExact(targetTypeSize));
                 }
-                return convertPIntToPrimitiveNode.executeLong(frame, toJavaNode.execute(resolvedPointer), signed, targetTypeSize);
+                return convertPIntToPrimitiveNode.executeLong(frame, toJavaNode.execute(resolvedPointer), signed, PInt.intValueExact(targetTypeSize));
             } catch (UnexpectedResultException e) {
                 CompilerAsserts.neverPartOfCompilation();
                 throw new UnexpectedResultException(CastToNativeLongNodeGen.getUncached().execute(e.getResult()));
+            } catch (OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
@@ -1217,10 +1221,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object resolvedPointer = pointerClassProfile.profile(resolveHandleNode.execute(object));
             try {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    return convertPIntToPrimitiveNode.execute(frame, resolvedPointer, signed, targetTypeSize);
+                    return convertPIntToPrimitiveNode.execute(frame, resolvedPointer, signed, PInt.intValueExact(targetTypeSize));
                 }
                 Object coerced = constructIntNode.call(frame, PythonBuiltinClassType.PInt, toJavaNode.execute(resolvedPointer), PNone.NO_VALUE);
-                return castToNativeLongNode.execute(convertPIntToPrimitiveNode.execute(frame, coerced, signed, targetTypeSize));
+                return castToNativeLongNode.execute(convertPIntToPrimitiveNode.execute(frame, coerced, signed, PInt.intValueExact(targetTypeSize)));
+            } catch (OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
