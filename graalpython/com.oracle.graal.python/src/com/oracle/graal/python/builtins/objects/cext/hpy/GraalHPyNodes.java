@@ -63,7 +63,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
@@ -115,7 +114,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -986,13 +984,6 @@ public class GraalHPyNodes {
                         throw raiseNode.raise(PythonBuiltinClassType.SystemError, "error when reading legacy method definition for type %s", enclosingType);
                     }
                     break;
-                case Py_tp_repr:
-                    Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
-                    RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, SpecialMethodNames.__REPR__));
-                    PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(pfuncPtr);
-                    PBuiltinFunction method = factory.createBuiltinFunction(SpecialMethodNames.__REPR__, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, callTarget);
-                    writeAttributeToObjectNode.execute(enclosingType, SpecialMethodNames.__REPR__, method);
-                    break;
                 case Py_tp_getset:
                     Object getSetDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_DESCRS, slotDef);
                     try {
@@ -1008,9 +999,23 @@ public class GraalHPyNodes {
                     }
                     break;
                 default:
-                    // TODO(fa): implement support for remaining legacy slot kinds
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw CompilerDirectives.shouldNotReachHere(String.format("support for legacy slot %s not yet implemented", slot.name()));
+                    // this is the generic slot case
+                    String attributeKey = slot.getAttributeKey();
+                    if (attributeKey != null) {
+                        Object pfuncPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_PFUNC, slotDef);
+                        /*
+                         * TODO(fa): Properly determine if 'pfuncPtr' is a native function pointer
+                         * and thus if we need to do result and argument conversion.
+                         */
+                        RootCallTarget callTarget = slot.getSignature().getOrCreateCallTarget(lang, attributeKey, true);
+                        PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(pfuncPtr);
+                        PBuiltinFunction method = factory.createBuiltinFunction(attributeKey, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, callTarget);
+                        writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
+                    } else {
+                        // TODO(fa): implement support for remaining legacy slot kinds
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw CompilerDirectives.shouldNotReachHere(String.format("support for legacy slot %s not yet implemented", slot.name()));
+                    }
             }
             return null;
         }
