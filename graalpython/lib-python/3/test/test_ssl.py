@@ -24,6 +24,8 @@ try:
     import ctypes
 except ImportError:
     ctypes = None
+# XXX GraalVM change - our ctypes is just a stub, pretend it's not there at all
+ctypes = None
 
 ssl = support.import_module("ssl")
 
