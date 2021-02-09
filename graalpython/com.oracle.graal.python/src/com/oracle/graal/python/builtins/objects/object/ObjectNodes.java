@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_PICKLE_OBJECT_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.COPYREG_SLOTNAMES;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYPE_B;
@@ -693,7 +691,7 @@ public abstract class ObjectNodes {
                 newobj = pol.lookupAttribute(copyReg, frame, __NEWOBJ_EX__);
                 newargs = factory().createTuple(new Object[]{cls, args, kwargs});
             } else {
-                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                throw raiseBadInternalCall();
             }
 
             boolean objIsList = isSubClassNode.executeWith(frame, cls, PythonBuiltinClassType.PList);

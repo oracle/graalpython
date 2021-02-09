@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -88,6 +89,10 @@ public class PNodeWithRaise extends PNodeWithContext {
 
     public final PException raise(PythonBuiltinClassType type) {
         return getRaiseNode().raise(type);
+    }
+
+    public final PException raiseBadInternalCall() {
+        return getRaiseNode().raise(PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
 
     public final PException raiseOverflow() {
