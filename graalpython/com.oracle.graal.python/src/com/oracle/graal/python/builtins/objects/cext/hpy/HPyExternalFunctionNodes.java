@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING_ARRAY;
 
 import java.util.Arrays;
@@ -74,7 +75,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -164,6 +164,9 @@ public abstract class HPyExternalFunctionNodes {
                 break;
             case SSIZEARGFUNC:
                 rootNode = new HPyMethSSizeArgFuncRoot(language, name);
+                break;
+            case OBJOBJPROC:
+                rootNode = new HPyMethObjObjProcRoot(language, name);
                 break;
             default:
                 // TODO(fa): support remaining signatures
@@ -284,6 +287,15 @@ public abstract class HPyExternalFunctionNodes {
             super(language);
             this.name = name;
             this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(checkFunctionResultNode, convertArgsToSulongNode);
+        }
+
+        protected static Object intToBoolean(Object result) {
+            if (result instanceof Integer) {
+                return ((Integer) result) != 0;
+            } else if (result instanceof Long) {
+                return ((Long) result) != 0;
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Override
@@ -627,8 +639,6 @@ public abstract class HPyExternalFunctionNodes {
     static final class HPyMethInquiryRoot extends HPyMethodDescriptorRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
 
-        @Child private CastToJavaIntExactNode castToJavaIntExactNode;
-
         public HPyMethInquiryRoot(PythonLanguage language, String name) {
             super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
         }
@@ -640,11 +650,42 @@ public abstract class HPyExternalFunctionNodes {
 
         @Override
         protected Object processResult(VirtualFrame frame, Object result) {
-            if (castToJavaIntExactNode == null) {
+            // 'HPyCheckPrimitiveResultNode' already guarantees that the result is 'int' or 'long'.
+            return intToBoolean(result);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethObjObjProcRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "other"}, KEYWORDS_HIDDEN_CALLABLE, true);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+
+        public HPyMethObjObjProcRoot(PythonLanguage language, String name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), getArg1(frame)};
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToJavaIntExactNode = insert(CastToJavaIntExactNode.create());
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
             }
-            return castToJavaIntExactNode.execute(result) != 0;
+            return readArg1Node.execute(frame);
+        }
+
+        @Override
+        protected Object processResult(VirtualFrame frame, Object result) {
+            // 'HPyCheckPrimitiveResultNode' already guarantees that the result is 'int' or 'long'.
+            return intToBoolean(result);
         }
 
         @Override
@@ -813,7 +854,7 @@ public abstract class HPyExternalFunctionNodes {
 
     /**
      * Similar to {@link HPyCheckFunctionResultNode}, this node checks a primitive result of a
-     * native function.
+     * native function. This node guarantees that an {@code int} or {@code long} is returned.
      */
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckPrimitiveResultNode extends HPyCheckFunctionResultNode {
@@ -839,18 +880,22 @@ public abstract class HPyExternalFunctionNodes {
             return value;
         }
 
-        @Specialization(guards = "!isIntOrLong(value)")
-        Object doPointer(PythonContext context, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, Object value,
+        @Specialization(limit = "1")
+        Object doObject(PythonContext context, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, Object value,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @CachedLibrary("value") InteropLibrary lib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, lib.isNull(value), context, raiseNode, factory, language);
-            return value;
-        }
-
-        static boolean isIntOrLong(Object value) {
-            return value instanceof Integer || value instanceof Long;
+            if (lib.fitsInLong(value)) {
+                try {
+                    long lvalue = lib.asLong(value);
+                    checkFunctionResult(name, lvalue == -1, context, raiseNode, factory, language);
+                    return lvalue;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw raiseNode.raise(SystemError, "function '%s' did not return an integer.", name);
         }
     }
 }
