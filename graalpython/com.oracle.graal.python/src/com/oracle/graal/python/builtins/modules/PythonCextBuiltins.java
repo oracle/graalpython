@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVararg
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeFactory;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
@@ -1017,7 +1018,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    // equivalent to result processing done in 'wrap_next' in 'Objects/typeobject.c'
+    /**
+     * Equivalent of the result processing part in {@code Objects/typeobject.c: wrap_next}.
+     */
     abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
 
         @Specialization(limit = "3")
@@ -1037,6 +1040,40 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
             }
             return result;
+        }
+    }
+
+    /**
+     * Equivalent of the result processing part in {@code Object/typeobject.c: wrap_inquirypred}.
+     */
+    abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
+
+        @Specialization
+        static boolean doLong(PythonContext context, @SuppressWarnings("unused") String name, long result) {
+            if (result == -1) {
+                PException currentException = context.getCurrentException();
+                if (currentException != null) {
+                    // consume exception
+                    context.setCurrentException(null);
+                    // re-raise exception
+                    throw currentException.getExceptionForReraise();
+                }
+            }
+            return result != 0;
+        }
+
+        @Specialization(replaces = "doLong", limit = "3")
+        static boolean doGeneric(PythonContext context, String name, Object result,
+                        @CachedLibrary("result") InteropLibrary lib,
+                        @Cached PRaiseNode raiseNode) {
+            if (lib.fitsInLong(result)) {
+                try {
+                    return doLong(context, name, lib.asLong(result));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw raiseNode.raise(SystemError, "Inquiry function '%s' did not return an integer.", name);
         }
     }
 
@@ -2118,6 +2155,28 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         static PExternalFunctionWrapper call() {
             return METH_ITERNEXT_CONVERTER;
+        }
+    }
+
+    @Builtin(name = "METH_INQUIRY")
+    @GenerateNodeFactory
+    public abstract static class MethInquiryNode extends PythonBuiltinNode {
+        public static final PExternalFunctionWrapper METH_INQUIRY_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create, CheckInquiryResultNodeGen::create) {
+
+            @Override
+            @TruffleBoundary
+            public RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, boolean doArgAndResultConversion) {
+                if (!doArgAndResultConversion) {
+                    return PythonUtils.getOrCreateCallTarget(new MethNoargsRoot(language, name));
+                } else {
+                    return PythonUtils.getOrCreateCallTarget(new MethNoargsRoot(language, name, this));
+                }
+            }
+        };
+
+        @Specialization
+        static PExternalFunctionWrapper call() {
+            return METH_INQUIRY_CONVERTER;
         }
     }
 
