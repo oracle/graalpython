@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 import java.math.BigDecimal;
 
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.ints.IntUtils;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -366,5 +367,39 @@ public final class FloatUtils {
         }
 
         return value;
+    }
+
+    // variations of the _PyFloat_Pack2, _PyFloat_Pack4 and _PyFloat_Pack8
+    public static void floatToBytes(double value, byte[] dst, int offset) {
+        final long bits = Double.doubleToLongBits(value);
+        IntUtils.longToByteArray(bits, Double.BYTES, dst, offset);
+    }
+
+    public static byte[] floatToBytes(double value) {
+        byte[] bytes = new byte[Double.BYTES];
+        floatToBytes(value, bytes, 0);
+        return bytes;
+    }
+
+    public static void floatToBytes(float value, byte[] dst, int offset) {
+        final long bits = Float.floatToIntBits(value);
+        IntUtils.longToByteArray(bits, Float.BYTES, dst, offset);
+    }
+
+    public static byte[] floatToBytes(float value) {
+        byte[] bytes = new byte[Float.BYTES];
+        floatToBytes(value, bytes, 0);
+        return bytes;
+    }
+
+    public static void halfFloatToBytes(PNodeWithRaise nodeWithRaise, float value, byte[] dst, int offset) {
+        final short bits = floatToShortBits(nodeWithRaise, value);
+        IntUtils.longToByteArray(bits, Float.BYTES / 2, dst, offset);
+    }
+
+    public static byte[] halfFloatToBytes(PNodeWithRaise nodeWithRaise, float value) {
+        byte[] bytes = new byte[Float.BYTES / 2];
+        halfFloatToBytes(nodeWithRaise, value, bytes, 0);
+        return bytes;
     }
 }

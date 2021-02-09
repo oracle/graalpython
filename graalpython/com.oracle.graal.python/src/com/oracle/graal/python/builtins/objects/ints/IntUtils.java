@@ -67,20 +67,30 @@ public final class IntUtils {
     }
 
     @ExplodeLoop
-    public static byte[] longToByteArray(long value, int size) {
+    public static void longToByteArray(long value, int size, byte[] dst, int offset) {
         CompilerAsserts.partialEvaluationConstant(size);
-        byte[] bytes = new byte[size];
+        assert dst.length - offset <= size;
         for (int i = 0; i < size; i++) {
-            bytes[i] = (byte) ((value >> (8 * i)) & 0xff);
+            dst[i] = (byte) ((value >> (8 * i)) & 0xff);
         }
+    }
+
+    public static byte[] longToByteArray(long value, int size) {
+        byte[] bytes = new byte[size];
+        longToByteArray(value, size, bytes, 0);
         return bytes;
     }
 
-    public static byte[] longToByteArray(long value, int size, boolean bigEndian) {
-        final byte[] bytes = longToByteArray(value, size);
+    public static void longToByteArray(long value, int size, boolean bigEndian, byte[] dst, int offset) {
+        longToByteArray(value, size, dst, offset);
         if (bigEndian) {
-            reverse(bytes);
+            reverse(dst, offset, size);
         }
+    }
+
+    public static byte[] longToByteArray(long value, int size, boolean bigEndian) {
+        byte[] bytes = new byte[size];
+        longToByteArray(value, size, bigEndian, bytes,0);
         return bytes;
     }
 
