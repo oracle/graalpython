@@ -158,6 +158,25 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "server_side", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ServerSideNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static boolean get(PSSLSocket self) {
+            return !self.getEngine().getUseClientMode();
+        }
+    }
+
+    @Builtin(name = "server_hostname", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ServerHostnameNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object get(PSSLSocket self) {
+            return self.getServerHostname() != null ? self.getServerHostname() : PNone.NONE;
+        }
+    }
+
     @Builtin(name = "version", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class VersionNode extends PythonUnaryBuiltinNode {
@@ -196,6 +215,32 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         static Object set(PSSLSocket self, Object obj) {
             self.setOwner(obj);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "session", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class SessionNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static Object get(PSSLSocket self, @SuppressWarnings("unused") Object none) {
+            // TODO
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(obj)")
+        Object set(PSSLSocket self, Object obj) {
+            // TODO
+            throw raise(NotImplementedError);
+        }
+    }
+
+    @Builtin(name = "session_reused", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SessionReusedNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object get(@SuppressWarnings("unused") PSSLSocket self) {
+            // TODO
+            return false;
         }
     }
 

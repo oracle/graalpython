@@ -248,6 +248,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
             }
+            sslSocket.setServerHostname(serverHostname);
             return sslSocket;
         }
 
@@ -279,6 +280,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
             }
+            sslSocket.setServerHostname(serverHostname);
             return sslSocket;
         }
 
