@@ -75,13 +75,14 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
-            if (len < 0) {
-                throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
-            }
             // TODO write directly to the backing array
             SequenceStorage storage = getSequenceStorageNode.execute(buffer);
-            int length = Math.min(len, lenNode.execute(storage));
-            ByteBuffer output = ByteBuffer.allocate(length);
+            int storageLength = lenNode.execute(storage);
+            int bufferLength = len;
+            if (len <= 0 || len > storageLength) {
+                bufferLength = storageLength;
+            }
+            ByteBuffer output = ByteBuffer.allocate(bufferLength);
             SSLEngineHelper.read(this, self, output);
             output.flip();
             for (int i = 0; i < output.limit(); i++) {
