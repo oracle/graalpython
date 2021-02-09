@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -330,9 +331,11 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // recv(bufsize[, flags])
-    @Builtin(name = "recv", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "recv", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "nbytes", "flags"})
+    @ArgumentClinic(name = "nbytes", conversion = ArgumentClinic.ClinicConversion.Index)
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    abstract static class RecvNode extends PythonTernaryBuiltinNode {
+    abstract static class RecvNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags) {
             ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
@@ -346,6 +349,10 @@ public class SocketBuiltins extends PythonBuiltins {
             }
         }
 
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.RecvNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     // recvfrom(bufsize[, flags])
