@@ -2139,7 +2139,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_ITERNEXT")
     @GenerateNodeFactory
     public abstract static class MethIterNextNode extends PythonBuiltinNode {
-        private static final PExternalFunctionWrapper METH_ITERNEXT_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create, CheckIterNextResultNodeGen::create) {
+        public static final PExternalFunctionWrapper METH_ITERNEXT_CONVERTER = new PExternalFunctionWrapper(AllToSulongNode::create, CheckIterNextResultNodeGen::create) {
 
             @Override
             @TruffleBoundary
