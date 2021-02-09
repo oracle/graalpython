@@ -40,37 +40,14 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
-public abstract class PNodeWithState extends PNodeWithContext {
+public abstract class PNodeWithState extends PNodeWithRaise {
     @Child private PythonObjectFactory objectFactory;
-    @Child private PRaiseNode raiseNode;
-
-    private PRaiseNode ensureRaiseNode() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        return raiseNode;
-    }
-
-    protected final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
-        return ensureRaiseNode().raise(type, format, arguments);
-    }
-
-    protected final PException raise(PythonBuiltinClassType type) {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        return ensureRaiseNode().raise(type);
-    }
 
     protected final PythonObjectFactory factory() {
         if (objectFactory == null) {

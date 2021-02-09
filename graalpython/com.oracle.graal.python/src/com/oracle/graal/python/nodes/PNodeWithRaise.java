@@ -86,6 +86,10 @@ public class PNodeWithRaise extends PNodeWithContext {
         return getRaiseNode().raise(type, e);
     }
 
+    public final PException raise(PythonBuiltinClassType type) {
+        return getRaiseNode().raise(type);
+    }
+
     public final PException raiseOverflow() {
         return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
     }
