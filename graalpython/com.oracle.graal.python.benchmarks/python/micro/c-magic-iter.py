@@ -240,6 +240,7 @@ PyInit_c_custom_iterable_module(void)
 ccompile("c_custom_iterable_module", code)
 import c_custom_iterable_module
 
+# igv: function_root_count_at
 def count(num):
     idxObj = c_custom_iterable_module.NativeCustomIterable(num % 11)
     for t in range(num):

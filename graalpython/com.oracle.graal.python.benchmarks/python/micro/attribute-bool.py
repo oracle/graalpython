@@ -51,6 +51,7 @@ class TaskState(object):
         return self
 
 
+# igv: function_root_do_stuff_at
 def do_stuff():
     task = TaskState()
 

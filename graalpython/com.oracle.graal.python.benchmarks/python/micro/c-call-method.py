@@ -144,6 +144,7 @@ PyInit_c_method_module(void)
 ccompile("c_method_module", code)
 from c_method_module import NativeCustomType
 
+# igv: function_root_count_at
 def count(num):
     print("###### NUM: " + str(num))
     obj = NativeCustomType()

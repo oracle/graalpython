@@ -31,6 +31,7 @@ class Foo(object):
         self.a = a
 
 
+# igv: function_root_do_stuff_at
 def do_stuff(foo):
     for i in range(iteration):
         local_a = foo.a + 1

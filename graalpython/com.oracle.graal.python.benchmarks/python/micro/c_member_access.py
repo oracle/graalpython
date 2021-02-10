@@ -138,6 +138,7 @@ ccompile("c_member_access_module", code)
 import c_member_access_module
 
 
+# igv: function_root_do_stuff_at
 def do_stuff(foo):
     for i in range(50000):
         local_a = foo.number + 1

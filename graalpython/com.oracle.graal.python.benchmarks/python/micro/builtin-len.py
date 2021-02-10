@@ -23,6 +23,7 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # builtin function len()
 
+# igv: function_root_call_len_at
 def call_len(num, ll):
     length = 0
     for i in range(num):

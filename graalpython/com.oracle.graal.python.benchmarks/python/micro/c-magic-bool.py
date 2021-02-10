@@ -183,6 +183,7 @@ PyInit_c_magic_bool_module(void)
 ccompile("c_magic_bool_module", code)
 import c_magic_bool_module
 
+# igv: function_root_count_at
 def count(num):
     idxObj = c_magic_bool_module.NativeMagicMethods()
     cnt_true = 0
