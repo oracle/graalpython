@@ -66,7 +66,7 @@ public class PNodeWithRaise extends PNodeWithContext {
         return getRaiseNode().raise(type, string);
     }
 
-    public PException raise(Object exceptionType) {
+    public PException raise(PythonBuiltinClassType exceptionType) {
         return getRaiseNode().raise(exceptionType);
     }
 

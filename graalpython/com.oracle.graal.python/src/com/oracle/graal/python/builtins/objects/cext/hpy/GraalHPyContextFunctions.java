@@ -141,7 +141,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -778,7 +777,7 @@ public abstract class GraalHPyContextFunctions {
 
             // Unfortunately, the HPyRaiseNode is not suitable because it expects a String message.
             try {
-                throw raiseNode.execute(errType, PNone.NO_VALUE, errorMessage, PythonUtils.EMPTY_OBJECT_ARRAY);
+                throw raiseNode.raise(errType, errorMessage);
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(context, p);
             }

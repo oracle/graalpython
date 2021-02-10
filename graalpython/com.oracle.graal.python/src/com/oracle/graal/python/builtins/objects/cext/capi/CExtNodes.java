@@ -2684,24 +2684,24 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PRaiseNativeNode extends Node {
 
-        public final int raiseInt(Frame frame, int errorValue, Object errType, String format, Object... arguments) {
+        public final int raiseInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
             return executeInt(frame, errorValue, errType, format, arguments);
         }
 
-        public final Object raise(Frame frame, Object errorValue, Object errType, String format, Object... arguments) {
+        public final Object raise(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
             return execute(frame, errorValue, errType, format, arguments);
         }
 
-        public final int raiseIntWithoutFrame(int errorValue, Object errType, String format, Object... arguments) {
+        public final int raiseIntWithoutFrame(int errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
             return executeInt(null, errorValue, errType, format, arguments);
         }
 
-        public abstract Object execute(Frame frame, Object errorValue, Object errType, String format, Object[] arguments);
+        public abstract Object execute(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object[] arguments);
 
-        public abstract int executeInt(Frame frame, int errorValue, Object errType, String format, Object[] arguments);
+        public abstract int executeInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object[] arguments);
 
         @Specialization
-        static int doInt(Frame frame, int errorValue, Object errType, String format, Object[] arguments,
+        static int doInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
@@ -2709,17 +2709,17 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doObject(Frame frame, Object errorValue, Object errType, String format, Object[] arguments,
+        static Object doObject(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
             return errorValue;
         }
 
-        public static void raiseNative(Frame frame, Object errType, String format, Object[] arguments, PRaiseNode raiseNode,
+        public static void raiseNative(Frame frame, PythonBuiltinClassType errType, String format, Object[] arguments, PRaiseNode raiseNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                throw raiseNode.execute(errType, PNone.NO_VALUE, format, arguments);
+                throw raiseNode.raise(errType, format, arguments);
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(frame, p);
             }
