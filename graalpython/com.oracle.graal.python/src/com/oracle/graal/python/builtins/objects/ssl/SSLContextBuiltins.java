@@ -69,8 +69,13 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.BEGIN_CERTIFICATE_WITHOUT_END;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.EMPTY_CERT;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.NO_CERT_DATA;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.SOME_BAD_BASE64_DECODE;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -101,29 +106,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import java.math.BigInteger;
-import java.security.Principal;
-import java.security.cert.CertPathBuilder;
-import java.security.cert.CertPathChecker;
-import java.security.cert.PKIXRevocationChecker;
-import java.security.cert.PKIXRevocationChecker.Option;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.EnumSet;
-import sun.security.util.DerValue;
-import sun.security.x509.CRLDistributionPointsExtension;
-import sun.security.x509.DistributionPoint;
-import sun.security.x509.GeneralName;
-import sun.security.x509.GeneralNameInterface;
-import sun.security.x509.GeneralNames;
-import sun.security.x509.URIName;
-import sun.security.x509.X500Name;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
 
-    private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
-    private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
     private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
     private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
 
@@ -816,69 +802,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, e);
             }
         }
-    }
-
-    private enum LoadCertError {
-        NO_ERROR,
-        NO_CERT_DATA,
-        EMPTY_CERT,
-        BEGIN_CERTIFICATE_WITHOUT_END,
-        SOME_BAD_BASE64_DECODE,
-        BAD_BASE64_DECODE;
-    }
-
-    @TruffleBoundary
-    private static LoadCertError getCertificates(BufferedReader r, List<X509Certificate> result) throws IOException, CertificateException {
-        Base64.Decoder decoder = Base64.getDecoder();
-        CertificateFactory factory = CertificateFactory.getInstance("X.509");
-        boolean sawBegin = false;
-        boolean someData = false;
-        StringBuilder sb = new StringBuilder(2000);
-        List<String> data = new ArrayList<>();
-        String line;
-        while ((line = r.readLine()) != null) {
-            if (sawBegin) {
-                if (line.contains(BEGIN_CERTIFICATE)) {
-                    break;
-                }
-                if (line.contains(END_CERTIFICATE)) {
-                    sawBegin = false;
-                    if (!someData && sb.length() > 0) {
-                        someData = true;
-                    }
-                    data.add(sb.toString());
-                } else {
-                    sb.append(line);
-                }
-            } else if (line.contains(BEGIN_CERTIFICATE)) {
-                sawBegin = true;
-                sb.setLength(0);
-            }
-        }
-        if (sawBegin) {
-            return LoadCertError.BEGIN_CERTIFICATE_WITHOUT_END;
-        }
-        for (String s : data) {
-            if (!s.isEmpty()) {
-                byte[] der;
-                try {
-                    der = decoder.decode(s);
-                } catch (IllegalArgumentException e) {
-                    if (result.isEmpty()) {
-                        return LoadCertError.BAD_BASE64_DECODE;
-                    } else {
-                        return LoadCertError.SOME_BAD_BASE64_DECODE;
-                    }
-                }
-                result.add((X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der)));
-            } else if (someData) {
-                return LoadCertError.EMPTY_CERT;
-            }
-        }
-        if (result.isEmpty()) {
-            return LoadCertError.NO_CERT_DATA;
-        }
-        return LoadCertError.NO_ERROR;
     }
 
     /**

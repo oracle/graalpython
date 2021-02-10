@@ -7,6 +7,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class ASN1Helper {
 
+    static final String JAVA_X509_CA_ISSUERS = "caIssuers";
     static final String JAVA_X509_COMMON_NAME = "commonName";
     static final String JAVA_X509_COUNTRY_NAME = "countryName";
     static final String JAVA_X509_CRL_DISTRIBUTION_POINTS = "crlDistributionPoints";
@@ -14,9 +15,11 @@ public class ASN1Helper {
     static final String JAVA_X509_LOCALITY_NAME = "localityName";
     static final String JAVA_X509_NOT_BEFORE = "notBefore";
     static final String JAVA_X509_NOT_AFTER = "notAfter";
+    static final String JAVA_X509_OCSP = "OCSP";
     static final String JAVA_X509_ORGANIZATIONAL_UNIT_NAME = "organizationalUnitName";
     static final String JAVA_X509_ORGANIZATION_NAME = "organizationName";
     static final String JAVA_X509_SERIAL_NUMBER = "serialNumber";
+    static final String JAVA_X509_STATE_OR_PROVICE_NAME = "stateOrProvinceName";
     static final String JAVA_X509_SUBJECT_ALT_NAME = "subjectAltName";
     static final String JAVA_X509_SUBJECT = "subject";
     static final String JAVA_X509_VERSION = "version";
@@ -25,6 +28,9 @@ public class ASN1Helper {
     static final String ASN1_EMAIL = "EMAIL";
 
     static final String OID_CRL_DISTRIBUTION_POINTS = "2.5.29.31";
+    static final String OID_OCSP = "1.3.6.1.5.5.7.48.1";
+    static final String OID_CA_ISSUERS = "1.3.6.1.5.5.7.48.2";
+    static final String OID_AUTHORITY_INFO_ACCESS = "1.3.6.1.5.5.7.1.1";
 
     private static final Map<String, String> javaToName = new HashMap<>();
 
@@ -32,8 +38,8 @@ public class ASN1Helper {
         javaToName.put("CN", JAVA_X509_COMMON_NAME);
         javaToName.put("C", JAVA_X509_COUNTRY_NAME);
         javaToName.put("L", JAVA_X509_LOCALITY_NAME);
-        javaToName.put("S", "stateOrProvinceName");
-        javaToName.put("ST", "stateOrProvinceName");
+        javaToName.put("S", JAVA_X509_STATE_OR_PROVICE_NAME);
+        javaToName.put("ST", JAVA_X509_STATE_OR_PROVICE_NAME);
         javaToName.put("O", JAVA_X509_ORGANIZATION_NAME);
         javaToName.put("OU", JAVA_X509_ORGANIZATIONAL_UNIT_NAME);
         javaToName.put("T", "title");
@@ -57,7 +63,7 @@ public class ASN1Helper {
         javaToName.put("OID.2.5.4.5", JAVA_X509_SERIAL_NUMBER);
         javaToName.put("OID.2.5.4.6", JAVA_X509_COUNTRY_NAME);
         javaToName.put("OID.2.5.4.7", JAVA_X509_LOCALITY_NAME);
-        javaToName.put("OID.2.5.4.8", "stateOrProvinceName");
+        javaToName.put("OID.2.5.4.8", JAVA_X509_STATE_OR_PROVICE_NAME);
         javaToName.put("OID.2.5.4.9", "streetAddress");
         javaToName.put("OID.2.5.4.10", JAVA_X509_ORGANIZATION_NAME);
         javaToName.put("OID.2.5.4.11", JAVA_X509_ORGANIZATIONAL_UNIT_NAME);

@@ -5,6 +5,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.ASN1_EMAIL;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.ASN1_EMAILADDRESS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CA_ISSUERS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_COMMON_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_COUNTRY_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CRL_DISTRIBUTION_POINTS;
@@ -12,33 +13,45 @@ import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_LOCALITY_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_NOT_AFTER;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_NOT_BEFORE;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_OCSP;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_ORGANIZATIONAL_UNIT_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_ORGANIZATION_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SERIAL_NUMBER;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_STATE_OR_PROVICE_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SUBJECT;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SUBJECT_ALT_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_VERSION;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_AUTHORITY_INFO_ACCESS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISSUERS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
+import java.net.URI;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Principal;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import sun.security.provider.certpath.OCSP;
 import sun.security.util.DerValue;
+import sun.security.x509.AccessDescription;
+import sun.security.x509.AuthorityInfoAccessExtension;
 import sun.security.x509.CRLDistributionPointsExtension;
 import sun.security.x509.DistributionPoint;
 import sun.security.x509.GeneralName;
@@ -47,7 +60,10 @@ import sun.security.x509.GeneralNames;
 import sun.security.x509.URIName;
 import sun.security.x509.X500Name;
 
-final class CertUtils {
+public final class CertUtils {
+
+    private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
+    private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
 
     /**
      * openssl v3_purp.c#check_ca
@@ -77,9 +93,11 @@ final class CertUtils {
     /**
      * _ssl.c#_decode_certificate
      */
-    static PDict decodeCertificate(X509Certificate cert, HashingStorageLibrary hlib, PythonObjectFactory factory) throws CertificateParsingException, IOException {
+    public static PDict decodeCertificate(X509Certificate cert, HashingStorageLibrary hlib, PythonObjectFactory factory) throws CertificateParsingException, IOException {
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
+        storage = setItem(hlib, storage, JAVA_X509_OCSP, parseOCSP(cert, factory));
+        storage = setItem(hlib, storage, JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
         storage = setItem(hlib, storage, JAVA_X509_ISSUER, parseX500Name(cert.getIssuerDN(), factory));
         storage = setItem(hlib, storage, JAVA_X509_NOT_AFTER, getNotAfter(cert));
         storage = setItem(hlib, storage, JAVA_X509_NOT_BEFORE, getNotBefore(cert));
@@ -102,12 +120,8 @@ final class CertUtils {
 
     @TruffleBoundary
     private static String getSerialNumber(X509Certificate x509Certificate) {
-        BigInteger sn = x509Certificate.getSerialNumber();
-        int signum = sn.signum();
-        if (signum == 0) {
-            return "00";
-        }
-        return sn.toString(16);
+        String sn = x509Certificate.getSerialNumber().toString(16).toUpperCase();
+        return sn.length() == 1 ? "0" + sn : sn;
     }
 
     @TruffleBoundary
@@ -149,11 +163,12 @@ final class CertUtils {
         if (p instanceof X500Name) {
             X500Name dn = (X500Name) p;
             List<PTuple> result = new ArrayList<>(6);
+            addTuple(factory, result, JAVA_X509_COUNTRY_NAME, dn.getCountry());
+            addTuple(factory, result, JAVA_X509_STATE_OR_PROVICE_NAME, dn.getState());
+            addTuple(factory, result, JAVA_X509_LOCALITY_NAME, dn.getLocality());
             addTuple(factory, result, JAVA_X509_ORGANIZATION_NAME, dn.getOrganization());
             addTuple(factory, result, JAVA_X509_ORGANIZATIONAL_UNIT_NAME, dn.getOrganizationalUnit());
             addTuple(factory, result, JAVA_X509_COMMON_NAME, dn.getCommonName());
-            addTuple(factory, result, JAVA_X509_LOCALITY_NAME, dn.getLocality());
-            addTuple(factory, result, JAVA_X509_COUNTRY_NAME, dn.getCountry());
             parseAndAddName(dn.getName(), result, factory, ASN1_EMAIL, ASN1_EMAILADDRESS);
             return factory.createTuple(result.toArray(new PTuple[result.size()]));
         }
@@ -212,12 +227,19 @@ final class CertUtils {
     @TruffleBoundary
     private static PTuple parseCRLPoints(X509Certificate cert, PythonObjectFactory factory) throws IOException {
         List<String> result = new ArrayList<>();
-        byte[] bytes = cert.getExtensionValue(ASN1Helper.OID_CRL_DISTRIBUTION_POINTS);
+        byte[] bytes = cert.getExtensionValue(OID_CRL_DISTRIBUTION_POINTS);
         if (bytes != null) {
             DerValue val = new DerValue(bytes);
             bytes = val.getOctetString();
-            CRLDistributionPointsExtension CDPExt = new CRLDistributionPointsExtension(false, bytes);
-            List<DistributionPoint> points = CDPExt.get("points");
+            CRLDistributionPointsExtension cdpe;
+            try {
+                cdpe = new CRLDistributionPointsExtension(false, bytes);
+            } catch (IOException ex) {
+                // just ignore
+                // TODO log at least?
+                return null;
+            }
+            List<DistributionPoint> points = cdpe.get("points");
             if (points != null) {
                 for (DistributionPoint point : points) {
                     GeneralNames fullName = point.getFullName();
@@ -237,5 +259,101 @@ final class CertUtils {
             return factory.createTuple(result.toArray(new String[result.size()]));
         }
         return null;
+    }
+
+    @TruffleBoundary
+    private static PTuple parseCAIssuers(X509Certificate cert, PythonObjectFactory factory) throws IOException {
+        List<String> result = new ArrayList<>();
+        byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
+        if (bytes != null) {
+            DerValue val = new DerValue(bytes);
+            bytes = val.getOctetString();
+            AuthorityInfoAccessExtension aiae = new AuthorityInfoAccessExtension(false, bytes);
+            for (AccessDescription ad : aiae.getAccessDescriptions()) {
+                if (ad.getAccessMethod().toString().equals(OID_CA_ISSUERS)) {
+                    GeneralName gn = ad.getAccessLocation();
+                    if (gn != null) {
+                        GeneralNameInterface n = gn.getName();
+                        if (n instanceof URIName) {
+                            result.add(((URIName) n).getURI().toString());
+                        }
+                    }
+                }
+            }
+            return factory.createTuple(result.toArray(new String[result.size()]));
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) throws IOException {
+        URI ocsp = OCSP.getResponderURI(cert);
+        if (ocsp != null) {
+            return factory.createTuple(new String[]{ocsp.toString()});
+        }
+        return null;
+    }
+
+    public enum LoadCertError {
+        NO_ERROR,
+        NO_CERT_DATA,
+        EMPTY_CERT,
+        BEGIN_CERTIFICATE_WITHOUT_END,
+        SOME_BAD_BASE64_DECODE,
+        BAD_BASE64_DECODE;
+    }
+
+    @TruffleBoundary
+    public static LoadCertError getCertificates(BufferedReader r, List<X509Certificate> result) throws IOException, CertificateException {
+        Base64.Decoder decoder = Base64.getDecoder();
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        boolean sawBegin = false;
+        boolean someData = false;
+        StringBuilder sb = new StringBuilder(2000);
+        List<String> data = new ArrayList<>();
+        String line;
+        while ((line = r.readLine()) != null) {
+            if (sawBegin) {
+                if (line.contains(BEGIN_CERTIFICATE)) {
+                    break;
+                }
+                if (line.contains(END_CERTIFICATE)) {
+                    sawBegin = false;
+                    if (!someData && sb.length() > 0) {
+                        someData = true;
+                    }
+                    data.add(sb.toString());
+                } else {
+                    sb.append(line);
+                }
+            } else if (line.contains(BEGIN_CERTIFICATE)) {
+                sawBegin = true;
+                sb.setLength(0);
+            }
+        }
+        if (sawBegin) {
+            return LoadCertError.BEGIN_CERTIFICATE_WITHOUT_END;
+        }
+        for (String s : data) {
+            if (!s.isEmpty()) {
+                byte[] der;
+                try {
+                    der = decoder.decode(s);
+                } catch (IllegalArgumentException e) {
+                    if (result.isEmpty()) {
+                        return LoadCertError.BAD_BASE64_DECODE;
+                    } else {
+                        return LoadCertError.SOME_BAD_BASE64_DECODE;
+                    }
+                }
+                result.add((X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der)));
+            } else if (someData) {
+                return LoadCertError.EMPTY_CERT;
+            }
+        }
+        if (result.isEmpty()) {
+            return LoadCertError.NO_CERT_DATA;
+        }
+        return LoadCertError.NO_ERROR;
     }
 }
