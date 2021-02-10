@@ -1987,13 +1987,15 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode) throws ArityException, UnsupportedTypeException {
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached ConditionProfile trackerHandleNativeProfile) throws ArityException, UnsupportedTypeException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
             }
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
-            GraalHPyTracker builder = cast(asPythonObjectNode.execute(nativeContext, arguments[1]));
+            GraalHPyHandle trackerHandle = ensureHandleNode.execute(nativeContext, arguments[1]);
+            GraalHPyTracker builder = cast(trackerHandle.getDelegate());
             if (builder == null) {
                 // that's really unexpected since the C signature should enforce a valid builder but
                 // someone could have messed it up
@@ -2004,6 +2006,7 @@ public abstract class GraalHPyContextFunctions {
                 builder.removeAll();
             } else {
                 builder.free(nativeContext, ConditionProfile.getUncached());
+                trackerHandle.close(nativeContext, trackerHandleNativeProfile);
             }
             return 0;
         }
