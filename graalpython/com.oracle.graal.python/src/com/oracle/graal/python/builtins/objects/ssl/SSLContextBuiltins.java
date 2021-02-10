@@ -60,7 +60,9 @@ import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -68,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -98,6 +101,23 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import java.math.BigInteger;
+import java.security.Principal;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertPathChecker;
+import java.security.cert.PKIXRevocationChecker;
+import java.security.cert.PKIXRevocationChecker.Option;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.EnumSet;
+import sun.security.util.DerValue;
+import sun.security.x509.CRLDistributionPointsExtension;
+import sun.security.x509.DistributionPoint;
+import sun.security.x509.GeneralName;
+import sun.security.x509.GeneralNameInterface;
+import sun.security.x509.GeneralNames;
+import sun.security.x509.URIName;
+import sun.security.x509.X500Name;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -563,21 +583,33 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 if (file != null) {
                     // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
                     List<X509Certificate> certList = new ArrayList<>();
-                    try (BufferedReader r = file.newBufferedReader()) {
-                        LoadCertError result = getCertificates(r, certList);
-                        switch (result) {
-                            case EMPTY_CERT:
-                            case BEGIN_CERTIFICATE_WITHOUT_END:
-                            case BAD_BASE64_DECODE:
-                                throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
-                            case SOME_BAD_BASE64_DECODE:
-                                throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
-                            case NO_CERT_DATA:
-                                throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_NO_CERTIFICATE_OR_CRL_FOUND, ErrorMessages.NO_CERTIFICATE_OR_CRL_FOUND);
-                            case NO_ERROR:
-                                break;
-                            default:
-                                assert false : "not handled: " + result;
+                    Collection<TruffleFile> files;
+                    if (file.isDirectory()) {
+                        // TODO: if capath is a directory, cpython loads certificates on demand, not
+                        // immediately like we do
+                        files = file.list();
+                    } else {
+                        files = Collections.singleton(file);
+                    }
+                    for (TruffleFile f : files) {
+                        try (BufferedReader r = f.newBufferedReader()) {
+                            List<X509Certificate> l = new ArrayList<>();
+                            LoadCertError result = getCertificates(r, l);
+                            switch (result) {
+                                case EMPTY_CERT:
+                                case BEGIN_CERTIFICATE_WITHOUT_END:
+                                case BAD_BASE64_DECODE:
+                                    throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
+                                case SOME_BAD_BASE64_DECODE:
+                                    throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
+                                case NO_CERT_DATA:
+                                    throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_NO_CERTIFICATE_OR_CRL_FOUND, ErrorMessages.NO_CERTIFICATE_OR_CRL_FOUND);
+                                case NO_ERROR:
+                                    break;
+                                default:
+                                    assert false : "not handled: " + result;
+                            }
+                            certList.addAll(l);
                         }
                     }
                     X509Certificate[] certs = certList.toArray(new X509Certificate[certList.size()]);
