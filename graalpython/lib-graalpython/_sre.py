@@ -159,15 +159,15 @@ FLAG_NAMES = [
 
 class SRE_Match():
     def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex):
-        self.result = result
-        self.compiled_regex = compiled_regex
-        self.re = pattern
-        self.pos = pos
-        self.endpos = endpos
-        self.input_str = input_str
+        self.__result = result
+        self.__compiled_regex = compiled_regex
+        self.__re = pattern
+        self.__pos = pos
+        self.__endpos = endpos
+        self.__input_str = input_str
 
     def end(self, groupnum=0):
-        return self.result.getEnd(groupnum)
+        return self.__result.getEnd(groupnum)
 
     def group(self, *args):
         if not args:
@@ -182,7 +182,7 @@ class SRE_Match():
 
     def groups(self, default=None):
         lst = []
-        for arg in range(1, self.compiled_regex.groupCount):
+        for arg in range(1, self.__compiled_regex.groupCount):
             lst.append(self.__group(arg, default))
         return tuple(lst)
 
@@ -192,8 +192,8 @@ class SRE_Match():
     def __groupidx(self, idx):
         try:
             if isinstance(idx, str):
-                return self.compiled_regex.groups[idx]
-            elif 0 <= idx < self.compiled_regex.groupCount:
+                return self.__compiled_regex.groups[idx]
+            elif 0 <= idx < self.__compiled_regex.groupCount:
                 return idx
         except Exception:
             pass
@@ -201,37 +201,49 @@ class SRE_Match():
 
     def __group(self, idx, default=None):
         idxarg = self.__groupidx(idx)
-        start = self.result.getStart(idxarg)
+        start = self.__result.getStart(idxarg)
         if start < 0:
             return default
         else:
-            return self.input_str[start:self.result.getEnd(idxarg)]
+            return self.__input_str[start:self.__result.getEnd(idxarg)]
 
     def groupdict(self, default=None):
-        groups = self.compiled_regex.groups
+        groups = self.__compiled_regex.groups
         if groups:
             return {name: self.__group(name, default) for name in dir(groups)}
         return {}
 
     def span(self, groupnum=0):
         idxarg = self.__groupidx(groupnum)
-        return (self.result.getStart(idxarg), self.result.getEnd(idxarg))
+        return (self.__result.getStart(idxarg), self.__result.getEnd(idxarg))
 
     def start(self, groupnum=0):
         idxarg = self.__groupidx(groupnum)
-        return self.result.getStart(idxarg)
+        return self.__result.getStart(idxarg)
 
     @property
     def string(self):
-        return self.input_str
+        return self.__input_str
+
+    @property
+    def re(self):
+        return self.__re
+
+    @property
+    def pos(self):
+        return self.__pos
+
+    @property
+    def endpos(self):
+        return self.__endpos
 
     @property
     def lastgroup(self):
-        return self.compiled_regex.groupCount
+        return self.__compiled_regex.groupCount
 
     @property
     def lastindex(self):
-        return self.result.getEnd(0)
+        return self.__result.getEnd(0)
 
     def __repr__(self):
         return "<re.Match object; span=%r, match=%r>" % (self.span(), self.group())
