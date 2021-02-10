@@ -244,7 +244,6 @@ def _is_bytes_like(object):
 class SRE_Pattern():
     def __init__(self, pattern, flags):
         self.__binary = isinstance(pattern, bytes)
-        self.groups = 0
         self.pattern = pattern
         self.flags = flags
         flags_str = []
@@ -252,14 +251,15 @@ class SRE_Pattern():
             if flags & flag:
                 flags_str.append(char)
         self.flags_str = "".join(flags_str)
-        self.__compiled_regexes = dict()
-        groupindex = dict()
-        if self.__tregex_compile(self.pattern).groups is not None:
-            for group_name in dir(self.__tregex_compile(self.pattern).groups):
-                groups = self.__tregex_compile(self.pattern).groups
-                self.groups = len(dir(groups))
-                groupindex[group_name] = groups[group_name]
-        self.groupindex = _mappingproxy(groupindex)
+        self.__compiled_regexes = {}
+        compiled_regex = self.__tregex_compile(self.pattern)
+        self.groups = compiled_regex.groupCount - 1
+        groups = compiled_regex.groups
+        if groups is None:
+            self.groupindex = {}
+        else:
+            group_names = dir(groups)
+            self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
