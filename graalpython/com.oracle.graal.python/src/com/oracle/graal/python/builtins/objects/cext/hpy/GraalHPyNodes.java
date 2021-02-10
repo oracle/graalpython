@@ -1351,15 +1351,28 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @ImportStatic(PGuards.class)
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
 
         // TODO(fa) implement handles for primitives that avoid boxing
 
-        @Specialization
+        @Specialization(guards = "isNoValue(object)")
+        static GraalHPyHandle doNoValue(GraalHPyContext hpyContext, @SuppressWarnings("unused") PNone object) {
+            return hpyContext.getNullHandle();
+        }
+
+        @Specialization(guards = "!isNoValue(object)")
         static GraalHPyHandle doObject(@SuppressWarnings("unused") CExtContext hpyContext, Object object) {
             return new GraalHPyHandle(object);
         }
 
+        @Specialization(replaces = {"doNoValue", "doObject"})
+        static GraalHPyHandle doGeneric(GraalHPyContext hpyContext, Object object) {
+            if (PGuards.isNoValue(object)) {
+                return hpyContext.getNullHandle();
+            }
+            return new GraalHPyHandle(object);
+        }
     }
 
     /**
