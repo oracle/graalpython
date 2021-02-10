@@ -171,29 +171,36 @@ class SRE_Match():
 
     def group(self, *args):
         if not args:
-            return self.__group__(0)
+            return self.__group(0)
         elif len(args) == 1:
-            return self.__group__(args[0])
+            return self.__group(args[0])
         else:
             lst = []
             for arg in args:
-                lst.append(self.__group__(arg))
+                lst.append(self.__group(arg))
             return tuple(lst)
 
     def groups(self, default=None):
         lst = []
         for arg in range(1, self.compiled_regex.groupCount):
-            lst.append(self.__group__(arg, default))
+            lst.append(self.__group(arg, default))
         return tuple(lst)
 
-    def __groupidx__(self, idx):
-        if isinstance(idx, str):
-            return self.compiled_regex.groups[idx]
-        else:
-            return idx
+    def __getitem__(self, item):
+        return self.__group(item)
 
-    def __group__(self, idx, default=None):
-        idxarg = self.__groupidx__(idx)
+    def __groupidx(self, idx):
+        try:
+            if isinstance(idx, str):
+                return self.compiled_regex.groups[idx]
+            elif 0 <= idx < self.compiled_regex.groupCount:
+                return idx
+        except Exception:
+            pass
+        raise IndexError("no such group")
+
+    def __group(self, idx, default=None):
+        idxarg = self.__groupidx(idx)
         start = self.result.getStart(idxarg)
         if start < 0:
             return default
@@ -201,20 +208,17 @@ class SRE_Match():
             return self.input_str[start:self.result.getEnd(idxarg)]
 
     def groupdict(self, default=None):
-        d = {}
-        if self.compiled_regex.groups:
-            assert dir(self.compiled_regex.groups)
-            for k in dir(self.compiled_regex.groups):
-                idx = self.compiled_regex.groups[k]
-                d[k] = self.__group__(idx)
-        return d
+        groups = self.compiled_regex.groups
+        if groups:
+            return {name: self.__group(name, default) for name in dir(groups)}
+        return {}
 
     def span(self, groupnum=0):
-        idxarg = self.__groupidx__(groupnum)
+        idxarg = self.__groupidx(groupnum)
         return (self.result.getStart(idxarg), self.result.getEnd(idxarg))
 
     def start(self, groupnum=0):
-        idxarg = self.__groupidx__(groupnum)
+        idxarg = self.__groupidx(groupnum)
         return self.result.getStart(idxarg)
 
     @property
