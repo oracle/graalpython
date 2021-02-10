@@ -611,7 +611,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         private InteropLibrary ensureCallNode() {
             if (destroyFunLib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                destroyFunLib = insert(InteropLibrary.getUncached());
+                destroyFunLib = insert(InteropLibrary.getFactory().createDispatched(3));
             }
             return destroyFunLib;
         }
