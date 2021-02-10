@@ -1829,12 +1829,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        double sumDoubleNone(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, 0, lib);
-        }
-
-        @Specialization(rewriteOn = UnexpectedResultException.class)
         double sumDoubleDouble(VirtualFrame frame, Object arg1, double start,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
             return sumDoubleInternal(frame, arg1, start, lib);
@@ -1862,7 +1856,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleNone", "sumDoubleDouble"})
+        @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile hasStart,
@@ -1898,7 +1892,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "globals", minNumOfPositionalArgs = 0)
+    @Builtin(name = "globals")
     @GenerateNodeFactory
     public abstract static class GlobalsNode extends PythonBuiltinNode {
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
@@ -1933,7 +1927,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "locals", minNumOfPositionalArgs = 0, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = "locals", needsFrame = true, alwaysNeedsCallerFrame = true)
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
 
