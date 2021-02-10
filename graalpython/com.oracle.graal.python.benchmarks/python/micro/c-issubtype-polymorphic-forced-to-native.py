@@ -131,7 +131,7 @@ PyInit_c_classmethod(void)
 ccompile("c_classmethod", code)
 from c_classmethod import NativeCustomType
 
-# igv: function_root_count_at
+# ~igv~: function_root_count_at
 def count(num):
     total = 0
     classes = [str, object, type]
