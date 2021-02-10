@@ -158,15 +158,8 @@ public abstract class GraalHPyDef {
         /** The corresponding C enum value. */
         private final int value;
 
-        private final HPySlotWrapper slotWrapper;
-
         HPyFuncSignature(int value) {
-            this(value, null);
-        }
-
-        HPyFuncSignature(int value, HPySlotWrapper slotWrapper) {
             this.value = value;
-            this.slotWrapper = slotWrapper;
         }
 
         public int getValue() {

@@ -3002,7 +3002,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_FatalError extends PythonBuiltinNode {
-        private static final int SIGABRT_EXIT_CODE = 134;
 
         @Specialization
         Object doStrings(String prefix, String msg, int status) {
