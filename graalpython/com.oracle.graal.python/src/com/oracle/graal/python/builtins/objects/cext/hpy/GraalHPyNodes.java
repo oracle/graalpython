@@ -1795,8 +1795,8 @@ public class GraalHPyNodes {
     }
 
     /**
-     * Always closes handle parameter at position {@code destOffset} and {@code destOffset + 2}
-     * (assuming that these are handles).
+     * Always closes handle parameter at position {@code destOffset} and also closes parameter at
+     * position {@code destOffset + 2} if it is not a {@code NULL} handle.
      */
     public abstract static class HPySSizeObjArgProcCloseNode extends HPyCloseArgHandlesNode {
 
@@ -1805,7 +1805,10 @@ public class GraalHPyNodes {
                         @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
             ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
-            ensureHandleNode.execute(hpyContext, dest[destOffset + 2]).close(hpyContext, isAllocatedProfile);
+            GraalHPyHandle arg2Handle = ensureHandleNode.execute(hpyContext, dest[destOffset + 2]);
+            if (!arg2Handle.isNull()) {
+                arg2Handle.close(hpyContext, isAllocatedProfile);
+            }
         }
     }
 

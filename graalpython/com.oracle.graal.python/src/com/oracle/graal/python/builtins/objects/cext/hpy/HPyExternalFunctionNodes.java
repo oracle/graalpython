@@ -162,6 +162,8 @@ public abstract class HPyExternalFunctionNodes {
                 break;
             case SSIZEOBJARGPROC:
                 rootNode = new HPyMethSSizeObjArgProcRoot(language, name);
+                // the third argument is optional
+                numDefaults = 1;
                 break;
             case INQUIRY:
                 rootNode = new HPyMethInquiryRoot(language, name);

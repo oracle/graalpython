@@ -177,6 +177,11 @@ public final class GraalHPyHandle implements TruffleObject {
         }
         throw UnknownIdentifierException.create(key);
     }
+    
+    @ExportMessage
+    boolean isNull() {
+        return id == 0;
+    }
 
     public GraalHPyHandle copy() {
         return new GraalHPyHandle(delegate);
