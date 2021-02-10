@@ -60,6 +60,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -1456,7 +1457,9 @@ public abstract class GraalHPyContextFunctions {
                 // write data pointer to out var
                 callWriteDataNode.call(context, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
 
-                LOGGER.fine(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                if (LOGGER.isLoggable(Level.FINEST)) {
+                    LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                }
                 // TODO(fa): add memory tracing
             }
             return asHandleNode.execute(pythonObject);
@@ -1515,7 +1518,9 @@ public abstract class GraalHPyContextFunctions {
                 Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicsize, 1L);
                 writeNativeSpaceNode.execute(pythonObject, OBJECT_HPY_NATIVE_SPACE, dataPtr);
 
-                LOGGER.fine(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                if (LOGGER.isLoggable(Level.FINEST)) {
+                    LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                }
                 // TODO(fa): add memory tracing
             }
             return asHandleNode.execute(pythonObject);
