@@ -494,7 +494,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CertStoreStatsNode extends PythonBuiltinNode {
         @Specialization
-        Object set(PSSLContext self) {
+        Object storeStats(PSSLContext self) {
             try {
                 KeyStore keystore = self.getKeyStore();
                 Enumeration<String> aliases = keystore.aliases();
@@ -504,40 +504,21 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     if (cert instanceof X509Certificate) {
                         X509Certificate x509Cert = (X509Certificate) cert;
                         boolean[] keyUsage = ((X509Certificate) cert).getKeyUsage();
-                        if (keyUsage != null) {
-                            if (keyUsage.length > 6 && keyUsage[6]) {
-                                crl++;
-                            } else {
-                                x509++;
-                                if (keyUsage.length > 5 && keyUsage[5]) {
-                                    ca++;
-                                }
+                        if (CertUtils.isCrl(x509Cert, keyUsage)) {
+                            crl++;
+                        } else {
+                            x509++;
+                            if (CertUtils.isCA(x509Cert, keyUsage)) {
+                                ca++;
                             }
-                            continue;
-                        }
-                        // key usage might not be filled
-                        // TODO crl++ is there some way to determine if on Certificate
-                        // Revocation List
-                        x509++;
-                        if (x509Cert.getBasicConstraints() != -1 || isSelfSigned(x509Cert)) {
-                            ca++;
                         }
                     }
                 }
                 return factory().createDict(new PKeyword[]{new PKeyword("x509", x509), new PKeyword("crl", crl), new PKeyword("x509_ca", ca)});
             } catch (Exception ex) {
                 // TODO
-                throw raise(ValueError, "cert_store_stats " + ex.getMessage());
+                throw raise(ValueError, "cert_store_stats " + ex.toString());
             }
-        }
-
-        private static boolean isSelfSigned(X509Certificate x509Cert) {
-            try {
-                x509Cert.verify(x509Cert.getPublicKey());
-            } catch (Exception e) {
-                return false;
-            }
-            return true;
         }
     }
 
@@ -1041,4 +1022,53 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return protocols.toArray(new String[0]);
         }
     }
+
+    @Builtin(name = "get_ca_certs", minNumOfPositionalArgs = 1, parameterNames = {"$self", "binary_form"})
+    @ArgumentClinic(name = "binary_form", conversion = ArgumentClinic.ClinicConversion.Boolean, useDefaultForNone = true, defaultValue = "false")
+    @GenerateNodeFactory
+    abstract static class GetCACerts extends PythonBinaryClinicBuiltinNode {
+
+        @Specialization(guards = "!binary_form")
+        Object getCerts(PSSLContext self, boolean binary_form,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
+            try {
+                List<PDict> result = new ArrayList<>();
+                KeyStore ks = self.getKeyStore();
+                Enumeration<String> aliases = ks.aliases();
+                while (aliases.hasMoreElements()) {
+                    X509Certificate cert = (X509Certificate) ks.getCertificate(aliases.nextElement());
+                    if (CertUtils.isCA(cert, cert.getKeyUsage())) {
+                        result.add(CertUtils.decodeCertificate(cert, hlib, factory()));
+                    }
+                }
+                return factory().createList(result.toArray(new Object[result.size()]));
+            } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException ex) {
+                throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, ex.toString());
+            }
+        }
+
+        @Specialization(guards = "binary_form")
+        Object getCertsBinary(PSSLContext self, boolean binary_form) {
+            try {
+                List<PBytes> result = new ArrayList<>();
+                KeyStore ks = self.getKeyStore();
+                Enumeration<String> aliases = ks.aliases();
+                while (aliases.hasMoreElements()) {
+                    X509Certificate cert = (X509Certificate) ks.getCertificate(aliases.nextElement());
+                    if (CertUtils.isCA(cert, cert.getKeyUsage())) {
+                        result.add(factory().createBytes(cert.getEncoded()));
+                    }
+                }
+                return factory().createList(result.toArray(new Object[result.size()]));
+            } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException ex) {
+                throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, ex.toString());
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.GetCACertsClinicProviderGen.INSTANCE;
+        }
+    }
+
 }

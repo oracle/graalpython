@@ -6,16 +6,36 @@ import java.util.Map;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class ASN1Helper {
+
+    static final String JAVA_X509_COMMON_NAME = "commonName";
+    static final String JAVA_X509_COUNTRY_NAME = "countryName";
+    static final String JAVA_X509_CRL_DISTRIBUTION_POINTS = "crlDistributionPoints";
+    static final String JAVA_X509_ISSUER = "issuer";
+    static final String JAVA_X509_LOCALITY_NAME = "localityName";
+    static final String JAVA_X509_NOT_BEFORE = "notBefore";
+    static final String JAVA_X509_NOT_AFTER = "notAfter";
+    static final String JAVA_X509_ORGANIZATIONAL_UNIT_NAME = "organizationalUnitName";
+    static final String JAVA_X509_ORGANIZATION_NAME = "organizationName";
+    static final String JAVA_X509_SERIAL_NUMBER = "serialNumber";
+    static final String JAVA_X509_SUBJECT_ALT_NAME = "subjectAltName";
+    static final String JAVA_X509_SUBJECT = "subject";
+    static final String JAVA_X509_VERSION = "version";
+
+    static final String ASN1_EMAILADDRESS = "EMAILADDRESS";
+    static final String ASN1_EMAIL = "EMAIL";
+
+    static final String OID_CRL_DISTRIBUTION_POINTS = "2.5.29.31";
+
     private static final Map<String, String> javaToName = new HashMap<>();
 
     static {
-        javaToName.put("CN", "commonName");
-        javaToName.put("C", "countryName");
-        javaToName.put("L", "localityName");
+        javaToName.put("CN", JAVA_X509_COMMON_NAME);
+        javaToName.put("C", JAVA_X509_COUNTRY_NAME);
+        javaToName.put("L", JAVA_X509_LOCALITY_NAME);
         javaToName.put("S", "stateOrProvinceName");
         javaToName.put("ST", "stateOrProvinceName");
-        javaToName.put("O", "organizationName");
-        javaToName.put("OU", "organizationalUnitName");
+        javaToName.put("O", JAVA_X509_ORGANIZATION_NAME);
+        javaToName.put("OU", JAVA_X509_ORGANIZATIONAL_UNIT_NAME);
         javaToName.put("T", "title");
         javaToName.put("IP", "ipAddress");
         javaToName.put("STREET", "streetAddress");
@@ -26,21 +46,21 @@ public class ASN1Helper {
         javaToName.put("GIVENNAME", "givenName");
         javaToName.put("INITIALS", "initials");
         javaToName.put("GENERATION", "generationQualifier");
-        javaToName.put("EMAIL", "emailAddress");
-        javaToName.put("EMAILADDRESS", "emailAddress");
+        javaToName.put(ASN1_EMAIL, "emailAddress");
+        javaToName.put(ASN1_EMAILADDRESS, "emailAddress");
         javaToName.put("UID", "userId");
-        javaToName.put("SERIALNUMBER", "serialNumber");
+        javaToName.put("SERIALNUMBER", JAVA_X509_SERIAL_NUMBER);
 
         // X509 OIDs
-        javaToName.put("OID.2.5.4.3", "commonName");
+        javaToName.put("OID.2.5.4.3", JAVA_X509_COMMON_NAME);
         javaToName.put("OID.2.5.4.4", "surname");
-        javaToName.put("OID.2.5.4.5", "serialNumber");
-        javaToName.put("OID.2.5.4.6", "countryName");
-        javaToName.put("OID.2.5.4.7", "localityName");
+        javaToName.put("OID.2.5.4.5", JAVA_X509_SERIAL_NUMBER);
+        javaToName.put("OID.2.5.4.6", JAVA_X509_COUNTRY_NAME);
+        javaToName.put("OID.2.5.4.7", JAVA_X509_LOCALITY_NAME);
         javaToName.put("OID.2.5.4.8", "stateOrProvinceName");
         javaToName.put("OID.2.5.4.9", "streetAddress");
-        javaToName.put("OID.2.5.4.10", "organizationName");
-        javaToName.put("OID.2.5.4.11", "organizationalUnitName");
+        javaToName.put("OID.2.5.4.10", JAVA_X509_ORGANIZATION_NAME);
+        javaToName.put("OID.2.5.4.11", JAVA_X509_ORGANIZATIONAL_UNIT_NAME);
         javaToName.put("OID.2.5.4.12", "title");
         javaToName.put("OID.2.5.4.13", "description");
         javaToName.put("OID.2.5.4.14", "searchGuide");

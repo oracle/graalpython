@@ -9,8 +9,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import javax.net.ssl.SSLEngine;
@@ -21,10 +19,10 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -47,6 +45,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import java.io.IOException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLSocket)
 public class SSLSocketBuiltins extends PythonBuiltins {
@@ -276,66 +275,14 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    X509Certificate x509Certificate = (X509Certificate) certificate;
-                    PDict dict = factory().createDict();
-                    HashingStorage storage = dict.getDictStorage();
-                    storage = hlib.setItem(storage, "subject", factory().createTuple(parseSubject(x509Certificate)));
-                    storage = hlib.setItem(storage, "subjectAltName", factory().createTuple(parseSubjectAltName(x509Certificate)));
-                    storage = hlib.setItem(storage, "version", getVersion(x509Certificate));
-                    storage = hlib.setItem(storage, "serialNumber", getSerialNumber(x509Certificate));
-                    // TODO more entries
-                    dict.setDictStorage(storage);
-                    return dict;
+                    return CertUtils.decodeCertificate((X509Certificate) certificate, hlib, factory());
                 } catch (CertificateParsingException e) {
                     return factory().createDict();
+                } catch (IOException ex) {
+                    throw raise(SSLError, ex.toString());
                 }
             }
             return factory().createDict();
-        }
-
-        @TruffleBoundary
-        private static String getSerialNumber(X509Certificate x509Certificate) {
-            return x509Certificate.getSerialNumber().toString(16).toUpperCase();
-        }
-
-        @TruffleBoundary
-        private static int getVersion(X509Certificate x509Certificate) {
-            return x509Certificate.getVersion();
-        }
-
-        @TruffleBoundary
-        private Object[] parseSubject(X509Certificate certificate) {
-            String name = certificate.getSubjectDN().getName();
-            List<Object> tuples = new ArrayList<>(16);
-            for (String component : name.split(",")) {
-                String[] kv = component.split("=");
-                if (kv.length == 2) {
-                    tuples.add(factory().createTuple(new Object[]{ASN1Helper.translateKeyToPython(kv[0].trim()), kv[1].trim()}));
-                }
-            }
-            return tuples.toArray(new Object[0]);
-        }
-
-        @TruffleBoundary
-        private Object[] parseSubjectAltName(X509Certificate certificate) throws CertificateParsingException {
-            // TODO null
-            Collection<List<?>> altNames = certificate.getSubjectAlternativeNames();
-            List<Object> tuples = new ArrayList<>(16);
-            for (List<?> altName : altNames) {
-                if (altName.size() == 2 && altName.get(0) instanceof Integer) {
-                    int type = (Integer) altName.get(0);
-                    Object value = altName.get(1);
-                    switch (type) {
-                        case 2:
-                            tuples.add(factory().createTuple(new Object[]{"DNS", value}));
-                            break;
-                        default:
-                            // TODO other types
-                            continue;
-                    }
-                }
-            }
-            return tuples.toArray(new Object[0]);
         }
 
         @TruffleBoundary
