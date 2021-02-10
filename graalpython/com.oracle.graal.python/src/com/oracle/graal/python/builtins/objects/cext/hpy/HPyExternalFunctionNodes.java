@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseArgHandlesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
@@ -162,8 +163,6 @@ public abstract class HPyExternalFunctionNodes {
                 break;
             case SSIZEOBJARGPROC:
                 rootNode = new HPyMethSSizeObjArgProcRoot(language, name);
-                // the third argument is optional
-                numDefaults = 1;
                 break;
             case INQUIRY:
                 rootNode = new HPyMethInquiryRoot(language, name);
@@ -177,6 +176,78 @@ public abstract class HPyExternalFunctionNodes {
             default:
                 // TODO(fa): support remaining signatures
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy method signature: " + signature.name());
+        }
+        Object[] defaults = new Object[numDefaults];
+        Arrays.fill(defaults, PNone.NO_VALUE);
+        return factory.createBuiltinFunction(name, enclosingType, defaults, new PKeyword[]{new PKeyword(KW_CALLABLE, callable)}, PythonUtils.getOrCreateCallTarget(rootNode));
+    }
+
+    /**
+     * Creates a built-in function for a specific slot. This built-in function also does appropriate
+     * argument and result conversion and calls the provided callable.
+     *
+     * @param language The Python language object.
+     * @param wrapper The wrapper ID as defined in {@link HPySlotWrapper}.
+     * @param name The name of the method.
+     * @param callable The native function pointer.
+     * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
+     * @param factory Just an instance of {@link PythonObjectFactory} to create the function object.
+     * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot wrapper.
+     */
+    @TruffleBoundary
+    static PBuiltinFunction createWrapperFunction(PythonLanguage language, HPySlotWrapper wrapper, String name, Object callable, Object enclosingType, PythonObjectFactory factory) {
+        assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
+        PRootNode rootNode;
+        int numDefaults = 0;
+        switch (wrapper) {
+            case NULL:
+                rootNode = new HPyMethKeywordsRoot(language, name);
+                break;
+            case UNARYFUNC:
+                rootNode = new HPyMethNoargsRoot(language, name, false);
+                break;
+            case BINARYFUNC:
+            case BINARYFUNC_L:
+                rootNode = new HPyMethORoot(language, name, false);
+                break;
+            case BINARYFUNC_R:
+                rootNode = new HPyMethReverseBinaryRoot(language, name, false);
+                break;
+            case INIT:
+                rootNode = new HPyMethInitProcRoot(language, name);
+                break;
+            case TERNARYFUNC:
+                rootNode = new HPyMethTernaryRoot(language, name);
+                // the third argument is optional
+                // so it has a default value (this implicitly is 'None')
+                numDefaults = 1;
+                break;
+            case LENFUNC:
+                rootNode = new HPyMethNoargsRoot(language, name, true);
+                break;
+            case INQUIRYPRED:
+                rootNode = new HPyMethInquiryRoot(language, name);
+                break;
+            case INDEXARGFUNC:
+                rootNode = new HPyMethSSizeArgFuncRoot(language, name);
+                break;
+            case OBJOBJARGPROC:
+                rootNode = new HPyMethObjObjProcRoot(language, name);
+                break;
+            case SQ_ITEM:
+                rootNode = new HPyMethSqItemWrapperRoot(language, name);
+                break;
+            case SQ_SETITEM:
+                rootNode = new HPyMethSqSetitemWrapperRoot(language, name);
+                break;
+            case SQ_DELITEM:
+                // it's really the same as SQ_SETITEM but with a default
+                rootNode = new HPyMethSqSetitemWrapperRoot(language, name);
+                numDefaults = 1;
+                break;
+            default:
+                // TODO(fa): support remaining slot wrappers
+                throw CompilerDirectives.shouldNotReachHere("unsupported HPy slot wrapper: wrap_" + wrapper.name().toLowerCase());
         }
         Object[] defaults = new Object[numDefaults];
         Arrays.fill(defaults, PNone.NO_VALUE);
@@ -729,6 +800,34 @@ public abstract class HPyExternalFunctionNodes {
                 readArg2Node = insert(ReadIndexedArgumentNode.create(2));
             }
             return readArg2Node.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethReverseBinaryRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "other"}, KEYWORDS_HIDDEN_CALLABLE, true);
+
+        @Child private ReadIndexedArgumentNode readOtherNode;
+
+        public HPyMethReverseBinaryRoot(PythonLanguage language, String name, boolean nativePrimitiveResult) {
+            super(language, name, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getOther(frame), getSelf(frame)};
+        }
+
+        private Object getOther(VirtualFrame frame) {
+            if (readOtherNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readOtherNode = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readOtherNode.execute(frame);
         }
 
         @Override

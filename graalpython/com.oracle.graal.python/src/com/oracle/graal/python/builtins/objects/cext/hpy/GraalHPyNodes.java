@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyDeleteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
@@ -880,7 +881,7 @@ public class GraalHPyNodes {
 
             HPyProperty property = null;
             Object[] methodNames = slot.getAttributeKeys();
-            HPyFuncSignature[] signatures = slot.getSignatures();
+            HPySlotWrapper[] slotWrappers = slot.getSignatures();
             if (methodNames == null || methodNames.length == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "slot %s is not yet supported", slot.name());
@@ -905,7 +906,7 @@ public class GraalHPyNodes {
             // create properties
             for (int i = 0; i < methodNames.length; i++) {
                 Object methodName = methodNames[i];
-                HPyFuncSignature signature = signatures[i];
+                HPySlotWrapper slotWrapper = slotWrappers[i];
                 String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
 
                 Object function;
@@ -916,8 +917,7 @@ public class GraalHPyNodes {
                      */
                     function = methodFunctionPointer;
                 } else {
-                    function = HPyExternalFunctionNodes.createWrapperFunction(language, signature, methodNameStr, methodFunctionPointer, HPY_TP_NEW.equals(slot) ? null : enclosingType,
-                                    factory);
+                    function = HPyExternalFunctionNodes.createWrapperFunction(language, slotWrapper, methodNameStr, methodFunctionPointer, HPY_TP_NEW.equals(slot) ? null : enclosingType, factory);
                 }
                 property = new HPyProperty(methodName, function, property);
             }
