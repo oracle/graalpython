@@ -64,11 +64,13 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArr
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -645,7 +647,7 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    static final class HPyMethSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
+    static class HPyMethSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
         private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "n"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
@@ -659,7 +661,7 @@ public abstract class HPyExternalFunctionNodes {
             return new Object[]{getSelf(frame), getArg1(frame)};
         }
 
-        private Object getArg1(VirtualFrame frame) {
+        protected Object getArg1(VirtualFrame frame) {
             if (readArg1Node == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readArg1Node = insert(ReadIndexedArgumentNode.create(1));
@@ -670,6 +672,58 @@ public abstract class HPyExternalFunctionNodes {
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c: wrap_sq_item}.
+     */
+    static final class HPyMethSqItemWrapperRoot extends HPyMethSSizeArgFuncRoot {
+
+        @Child private GetIndexNode getIndexNode;
+
+        public HPyMethSqItemWrapperRoot(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = getSelf(frame);
+            return new Object[]{self, getIndex(self, getArg1(frame))};
+        }
+
+        private int getIndex(Object self, Object index) {
+            if (getIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getIndexNode = insert(GetIndexNode.create());
+            }
+            return getIndexNode.execute(self, index);
+        }
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c: wrap_sq_setitem}.
+     */
+    static final class HPyMethSqSetitemWrapperRoot extends HPyMethSSizeObjArgProcRoot {
+
+        @Child private GetIndexNode getIndexNode;
+
+        public HPyMethSqSetitemWrapperRoot(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = getSelf(frame);
+            return new Object[]{self, getIndex(self, getArg1(frame)), getArg2(frame)};
+        }
+
+        private int getIndex(Object self, Object index) {
+            if (getIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getIndexNode = insert(GetIndexNode.create());
+            }
+            return getIndexNode.execute(self, index);
         }
     }
 
@@ -771,7 +825,7 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    static final class HPyMethSSizeObjArgProcRoot extends HPyMethodDescriptorRootNode {
+    static class HPyMethSSizeObjArgProcRoot extends HPyMethodDescriptorRootNode {
         private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "arg0", "arg1"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
@@ -786,7 +840,7 @@ public abstract class HPyExternalFunctionNodes {
             return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
         }
 
-        private Object getArg1(VirtualFrame frame) {
+        protected Object getArg1(VirtualFrame frame) {
             if (readArg1Node == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readArg1Node = insert(ReadIndexedArgumentNode.create(1));
@@ -794,7 +848,7 @@ public abstract class HPyExternalFunctionNodes {
             return readArg1Node.execute(frame);
         }
 
-        private Object getArg2(VirtualFrame frame) {
+        protected Object getArg2(VirtualFrame frame) {
             if (readArg2Node == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readArg2Node = insert(ReadIndexedArgumentNode.create(2));
@@ -1038,6 +1092,37 @@ public abstract class HPyExternalFunctionNodes {
                 }
             }
             throw raiseNode.raise(SystemError, "function '%s' did not return an integer.", name);
+        }
+    }
+
+    /**
+     * Implements semantics of function {@code typeobject.c: getindex}.
+     */
+    static final class GetIndexNode extends Node {
+
+        @Child private PythonObjectLibrary indexLib = PythonObjectLibrary.getFactory().createDispatched(3);
+        @Child private PythonObjectLibrary selfLib;
+        @Child private NormalizeIndexNode normalizeIndexNode;
+
+        public int execute(Object self, Object indexObj) {
+            int index = indexLib.asSize(indexObj);
+            if (index < 0) {
+                // 'selfLib' acts as an implicit profile for 'index < 0'
+                if (selfLib == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    selfLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+                }
+                if (normalizeIndexNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    normalizeIndexNode = insert(NormalizeIndexNode.create(false));
+                }
+                return normalizeIndexNode.execute(index, selfLib.length(self));
+            }
+            return index;
+        }
+
+        public static GetIndexNode create() {
+            return new GetIndexNode();
         }
     }
 }
