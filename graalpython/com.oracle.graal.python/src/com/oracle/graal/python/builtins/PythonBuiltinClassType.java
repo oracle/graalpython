@@ -159,6 +159,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBufferedWriter("BufferedWriter", "_io"),
     PBufferedRWPair("BufferedRWPair", "_io"),
     PBufferedRandom("BufferedRandom", "_io"),
+    PFileIO("FileIO", "_io"),
 
     PStatResult("stat_result", "os", false),
     PTerminalSize("terminal_size", "os", false),
@@ -459,6 +460,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PBufferedWriter.base = PBufferedIOBase;
         PBufferedRWPair.base = PBufferedIOBase;
         PBufferedRandom.base = PBufferedIOBase;
+        PFileIO.base = PRawIOBase;
     }
 
     /* InteropLibrary messages */

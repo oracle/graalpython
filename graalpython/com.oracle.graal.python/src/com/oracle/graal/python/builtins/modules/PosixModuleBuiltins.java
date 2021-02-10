@@ -139,13 +139,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int DSYNC = 4096;
     private static final int NDELAY = 2048;
     private static final int NONBLOCK = 2048;
-    private static final int APPEND = 1024;
-    private static final int TRUNC = 512;
-    private static final int EXCL = 128;
-    private static final int CREAT = 64;
-    private static final int RDWR = 2;
-    private static final int WRONLY = 1;
-    private static final int RDONLY = 0;
+    private static final int APPEND = PosixSupportLibrary.O_APPEND;
+    private static final int TRUNC = PosixSupportLibrary.O_TRUNC;
+    private static final int EXCL = PosixSupportLibrary.O_EXCL;
+    private static final int CREAT = PosixSupportLibrary.O_CREAT;
+    private static final int RDWR = PosixSupportLibrary.O_RDWR;
+    private static final int WRONLY = PosixSupportLibrary.O_WRONLY;
+    private static final int RDONLY = PosixSupportLibrary.O_RDONLY;
 
     // TODO map Python's SEEK_SET, SEEK_CUR, SEEK_END values to the underlying OS values if they are
     // different
@@ -434,7 +434,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    abstract static class OpenNode extends PythonClinicBuiltinNode {
+    public abstract static class OpenNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -466,7 +466,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "close", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class CloseNode extends PythonUnaryClinicBuiltinNode {
+    public abstract static class CloseNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -489,7 +489,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "length", conversion = ClinicConversion.Index)
     @GenerateNodeFactory
-    abstract static class ReadNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class ReadNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -497,9 +497,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes read(VirtualFrame frame, int fd, int length,
+        PBytes doRead(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
+            try {
+                return read(frame, fd, length, posixLib, errorProfile);
+            } catch (PosixException e) {
+                errorProfile.enter();
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        public PBytes read(VirtualFrame frame, int fd, int length,
+                        PosixSupportLibrary posixLib,
+                        BranchProfile errorProfile) throws PosixException {
             if (length < 0) {
                 int error = OSErrorEnum.EINVAL.getNumber();
                 throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
@@ -518,7 +529,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                         getContext().triggerAsyncActions(frame);
                     } else {
-                        throw raiseOSErrorFromPosixException(frame, e);
+                        throw e;
                     }
                 }
             }
@@ -529,7 +540,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "data", conversion = ClinicConversion.Buffer)
     @GenerateNodeFactory
-    abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -537,9 +548,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long write(VirtualFrame frame, int fd, byte[] data,
+        long doWrite(VirtualFrame frame, int fd, byte[] data,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
+            try {
+                return write(frame, fd, data, posixLib, errorProfile);
+            } catch (PosixException e) {
+                errorProfile.enter();
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        public long write(VirtualFrame frame, int fd, byte[] data,
+                        PosixSupportLibrary posixLib,
+                        BranchProfile errorProfile) throws PosixException {
             while (true) {
                 try {
                     return posixLib.write(getPosixSupport(), fd, Buffer.wrap(data));
@@ -548,7 +570,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                         getContext().triggerAsyncActions(frame);
                     } else {
-                        throw raiseOSErrorFromPosixException(frame, e);
+                        throw e;
                     }
                 }
             }
@@ -673,7 +695,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "pos", conversionClass = OffsetConversionNode.class)
     @ArgumentClinic(name = "how", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class LseekNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class LseekNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -682,10 +704,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         long lseek(VirtualFrame frame, int fd, long pos, int how,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached BranchProfile errorProfile) {
             try {
                 return posixLib.lseek(getPosixSupport(), fd, pos, how);
             } catch (PosixException e) {
+                errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -695,7 +719,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "length", conversionClass = OffsetConversionNode.class)
     @GenerateNodeFactory
-    abstract static class FtruncateNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class FtruncateNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

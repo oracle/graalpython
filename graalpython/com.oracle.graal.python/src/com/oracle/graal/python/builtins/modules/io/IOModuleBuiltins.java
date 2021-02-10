@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PFileIO;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 
 import java.util.List;
@@ -91,6 +92,16 @@ public class IOModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PythonObject create(Object cls) {
             return factory().createPythonObject(cls);
+        }
+    }
+
+    @Builtin(name = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PFileIO)
+    @GenerateNodeFactory
+    public abstract static class FileIONode extends PythonBuiltinNode {
+        @Specialization
+        public PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
+            return factory().createFileIO(cls);
         }
     }
 

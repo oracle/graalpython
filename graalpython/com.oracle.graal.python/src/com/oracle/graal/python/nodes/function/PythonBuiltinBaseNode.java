@@ -95,7 +95,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements In
         return objectFactory;
     }
 
-    private PConstructAndRaiseNode getConstructAndRaiseNode() {
+    protected PConstructAndRaiseNode getConstructAndRaiseNode() {
         if (constructAndRaiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             constructAndRaiseNode = insert(PConstructAndRaiseNode.create());

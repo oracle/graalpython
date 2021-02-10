@@ -107,6 +107,7 @@ import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
@@ -391,6 +392,7 @@ public final class Python3Core implements PythonCore {
                         new RawIOBaseBuiltins(),
                         new TextIOBaseBuiltins(),
                         new BufferedReaderBuiltins(),
+                        new FileIOBuiltins(),
 
                         new StringModuleBuiltins(),
                         new ItertoolsModuleBuiltins(),

@@ -31,6 +31,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -732,6 +737,30 @@ public final class BytesUtils {
     @TruffleBoundary
     public static String createASCIIString(byte[] retbuf) {
         return new String(retbuf, StandardCharsets.US_ASCII);
+    }
+
+    @TruffleBoundary
+    public static String createUTF8String(byte[] retbuf) {
+        return new String(retbuf, StandardCharsets.UTF_8);
+    }
+
+    @TruffleBoundary
+    public static byte[] utf8StringToBytes(String str) {
+        return str.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /*
+     * corresponds to unicode_encode_utf8.
+     */
+    @TruffleBoundary
+    public static byte[] encodeUTF8(String str) throws CharacterCodingException {
+        CodingErrorAction errorAction = CodingErrorAction.REPORT;
+        Charset cs = StandardCharsets.UTF_8;
+        ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(str));
+        int n = encoded.remaining();
+        byte[] data = new byte[n];
+        encoded.get(data);
+        return data;
     }
 
     public static byte[] getBytes(PythonObjectLibrary lib, Object object) {
