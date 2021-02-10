@@ -70,6 +70,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_escape_non_ascii_bytes
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_findall
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_exists
+*graalpython.lib-python.3.test.test_re.ReTests.test_re_groupref_overflow
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_match
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_split
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_subn
@@ -80,6 +81,8 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_search_star_plus
 *graalpython.lib-python.3.test.test_re.ReTests.test_special_escapes
 *graalpython.lib-python.3.test.test_re.ReTests.test_stack_overflow
+*graalpython.lib-python.3.test.test_re.ReTests.test_sub_template_numeric_escape
 *graalpython.lib-python.3.test.test_re.ReTests.test_symbolic_groups
+*graalpython.lib-python.3.test.test_re.ReTests.test_symbolic_refs
 *graalpython.lib-python.3.test.test_re.ReTests.test_unlimited_zero_width_repeat
 *graalpython.lib-python.3.test.test_re.ReTests.test_weakref

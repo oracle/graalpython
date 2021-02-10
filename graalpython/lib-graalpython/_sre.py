@@ -394,64 +394,6 @@ class SRE_Pattern():
             pos = result.getEnd(0) + no_progress
         return matchlist
 
-    def __replace_groups(self, repl, string, match_result, pattern):
-        def group(pattern, match_result, group_nr, string):
-            if group_nr >= pattern.groupCount:
-                return None
-            group_start = match_result.getStart(group_nr)
-            group_end = match_result.getEnd(group_nr)
-            return string[group_start:group_end]
-
-        n = len(repl)
-        result = b"" if self.__binary else ""
-        start = 0
-        backslash = b'\\' if self.__binary else '\\'
-        pos = repl.find(backslash, start)
-        while pos != -1 and start < n:
-            if pos+1 < n:
-                c = repl[pos + 1:pos + 2].decode('ascii') if self.__binary else repl[pos + 1]
-                if c.isdigit() and pattern.groupCount > 0:
-                    # TODO: Should handle backreferences longer than 1 digit and fall back to octal escapes.
-                    group_nr = int(c)
-                    group_str = group(pattern, match_result, group_nr, string)
-                    if group_str is None:
-                        raise error("invalid group reference %s" % group_nr)
-                    result += repl[start:pos] + group_str
-                    start = pos + 2
-                elif c == 'g':
-                    group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
-                    if group_ref:
-                        group_str = group(pattern, match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
-                        if group_str is None:
-                            raise error("invalid group reference %s" % group_ref)
-                        result += repl[start:pos] + group_str
-                    start = group_ref_end + 1
-                elif c == '\\':
-                    result += repl[start:pos] + backslash
-                    start = pos + 2
-                else:
-                    assert False, "unexpected escape in re.sub"
-            pos = repl.find(backslash, start)
-        result += repl[start:]
-        return result
-
-
-    def __extract_groupname(self, repl, pos):
-        if repl[pos] == (b'<' if self.__binary else '<'):
-            digits_only = True
-            n = len(repl)
-            i = pos + 1
-            while i < n and repl[i] != (b'>' if self.__binary else '>'):
-                digits_only = digits_only and repl[i].isdigit()
-                i += 1
-            if i < n:
-                # found '>'
-                group_ref = repl[pos + 1 : i]
-                group_ref_str = group_ref.decode('ascii') if self.__binary else group_ref
-                return group_ref_str, i, digits_only
-        return None, pos, False
-
-
     def sub(self, repl, string, count=0):
         return self.subn(repl, string, count)[0]
 
@@ -461,13 +403,20 @@ class SRE_Pattern():
         pattern = self.__tregex_compile(self.pattern)
         result = []
         pos = 0
-        is_string_rep = isinstance(repl, str) or _is_bytes_like(repl)
-        if is_string_rep:
+        literal = False
+        if not callable(repl):
             self.__check_input_type(repl)
-            try:
-                repl = _process_escape_sequences(repl)
-            except ValueError as e:
-                raise error(str(e))
+            if isinstance(repl, str):
+                literal = '\\' not in repl
+            else:
+                literal = b'\\' not in repl
+            if not literal:
+                import sre_parse
+                template = sre_parse.parse_template(repl, self)
+
+                def repl(match):
+                    return sre_parse.expand_template(template, match)
+
         while (count == 0 or n < count) and pos <= len(string):
             match_result = tregex_call_exec(pattern.exec, string, pos)
             if not match_result.isMatch:
@@ -476,8 +425,8 @@ class SRE_Pattern():
             start = match_result.getStart(0)
             end = match_result.getEnd(0)
             result.append(string[pos:start])
-            if is_string_rep:
-                result.append(self.__replace_groups(repl, string, match_result, pattern))
+            if literal:
+                result.append(repl)
             else:
                 _srematch = SRE_Match(self, pos, -1, match_result, string, pattern)
                 _repl = repl(_srematch)
@@ -489,9 +438,9 @@ class SRE_Pattern():
                 pos = pos + 1
         result.append(string[pos:])
         if self.__binary:
-            return (b"".join(result), n)
+            return b"".join(result), n
         else:
-            return ("".join(result), n)
+            return "".join(result), n
 
     def split(self, string, maxsplit=0):
         n = 0
