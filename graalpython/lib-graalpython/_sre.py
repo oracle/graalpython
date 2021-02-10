@@ -306,6 +306,16 @@ class SRE_Pattern():
             sflags = "|".join(flag_items)
         return "re.compile(%r%s%s)" % (self.pattern, sep, sflags)
 
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if type(other) != SRE_Pattern:
+            return NotImplemented
+        return self.pattern == other.pattern and self.flags == other.flags
+
+    def __hash__(self):
+        return hash(self.pattern) * 31 ^ hash(self.flags)
+
     def _search(self, pattern, string, pos, endpos, sticky=False):
         pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
         input_str = string
