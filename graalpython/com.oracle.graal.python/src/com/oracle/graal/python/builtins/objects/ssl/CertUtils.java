@@ -25,21 +25,32 @@ import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_AUTHOR
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISSUERS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.nodes.Node;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
+import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.InvalidParameterSpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -48,6 +59,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import javax.crypto.spec.DHParameterSpec;
 import sun.security.provider.certpath.OCSP;
 import sun.security.util.DerValue;
 import sun.security.x509.AccessDescription;
@@ -64,6 +76,10 @@ public final class CertUtils {
 
     private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
     private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
+    private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
+    private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
+    private static final String BEGIN_DH_PARAMETERS = "-----BEGIN DH PARAMETERS-----";
+    private static final String END_DH_PARAMETERS = "-----END DH PARAMETERS-----";
 
     /**
      * openssl v3_purp.c#check_ca
@@ -355,5 +371,69 @@ public final class CertUtils {
             return LoadCertError.NO_CERT_DATA;
         }
         return LoadCertError.NO_ERROR;
+    }
+
+    /**
+     * Returns the first private key found
+     */
+    @TruffleBoundary
+    static PrivateKey getPrivateKey(Node node, TruffleFile pkPem, String alg) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        boolean begin = false;
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader r = pkPem.newBufferedReader()) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                if (!begin && line.contains(BEGIN_PRIVATE_KEY)) {
+                    begin = true;
+                } else if (begin) {
+                    if (line.contains(END_PRIVATE_KEY)) {
+                        begin = false;
+                        // get first private key found
+                        break;
+                    }
+                    sb.append(line);
+                }
+            }
+        }
+        if (begin || sb.length() == 0) {
+            // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib (_ssl.c:3991)"
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+        }
+
+        byte[] bytes;
+        try {
+            bytes = Base64.getDecoder().decode(sb.toString());
+        } catch (IllegalArgumentException e) {
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+        }
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
+        KeyFactory factory = KeyFactory.getInstance(alg);
+        return factory.generatePrivate(spec);
+    }
+
+    @TruffleBoundary
+    static DHParameterSpec getDHParameters(Node node, File file) throws IOException, NoSuchAlgorithmException, InvalidParameterSpecException {
+        try (BufferedReader r = new BufferedReader(new FileReader(file))) {
+            // TODO: test me!
+            String line;
+            boolean begin = false;
+            StringBuilder sb = new StringBuilder();
+            while ((line = r.readLine()) != null) {
+                if (line.contains(BEGIN_DH_PARAMETERS)) {
+                    begin = true;
+                } else if (begin) {
+                    if (line.contains(END_DH_PARAMETERS)) {
+                        break;
+                    }
+                    sb.append(line.trim());
+                }
+            }
+            if (!begin) {
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
+            }
+            AlgorithmParameters ap = AlgorithmParameters.getInstance("DH");
+            ap.init(Base64.getDecoder().decode(sb.toString()));
+            return ap.getParameterSpec(DHParameterSpec.class);
+        }
     }
 }

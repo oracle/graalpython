@@ -8,12 +8,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-import java.security.AlgorithmParameters;
-import java.security.KeyFactory;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -32,10 +29,8 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -75,6 +70,8 @@ import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertErr
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.NO_CERT_DATA;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.SOME_BAD_BASE64_DECODE;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getDHParameters;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getPrivateKey;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -109,12 +106,6 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
-
-    private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
-    private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
-
-    private static final String BEGIN_DH_PARAMETERS = "-----BEGIN DH PARAMETERS-----";
-    private static final String END_DH_PARAMETERS = "-----END DH PARAMETERS-----";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -804,44 +795,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
-    /**
-     * Returns the first private key found in file SSL_CTX_use_PrivateKey_file
-     */
-    @TruffleBoundary
-    private static PrivateKey getPrivateKey(Node node, TruffleFile pkPem, String alg) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        boolean begin = false;
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader r = pkPem.newBufferedReader()) {
-            String line;
-            while ((line = r.readLine()) != null) {
-                if (!begin && line.contains(BEGIN_PRIVATE_KEY)) {
-                    begin = true;
-                } else if (begin) {
-                    if (line.contains(END_PRIVATE_KEY)) {
-                        begin = false;
-                        // get first private key found
-                        break;
-                    }
-                    sb.append(line);
-                }
-            }
-        }
-        if (begin || sb.length() == 0) {
-            // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib (_ssl.c:3991)"
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
-        }
-
-        byte[] bytes;
-        try {
-            bytes = Base64.getDecoder().decode(sb.toString());
-        } catch (IllegalArgumentException e) {
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
-        }
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
-        KeyFactory factory = KeyFactory.getInstance(alg);
-        return factory.generatePrivate(spec);
-    }
-
     @Builtin(name = "load_dh_params", minNumOfPositionalArgs = 2, parameterNames = {"$self", "filepath"})
     @GenerateNodeFactory
     abstract static class LoadDhParamsNode extends PythonBinaryBuiltinNode {
@@ -886,32 +839,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isString(filepath)", "!isBytes(filepath)", "!isPythonObject(filepath)"})
         Object wrap(PSSLContext self, Object filepath) {
             throw raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, filepath);
-        }
-    }
-
-    @TruffleBoundary
-    private static DHParameterSpec getDHParameters(Node node, File file) throws IOException, NoSuchAlgorithmException, InvalidParameterSpecException {
-        try (BufferedReader r = new BufferedReader(new FileReader(file))) {
-            // TODO: test me!
-            String line;
-            boolean begin = false;
-            StringBuilder sb = new StringBuilder();
-            while ((line = r.readLine()) != null) {
-                if (line.contains(BEGIN_DH_PARAMETERS)) {
-                    begin = true;
-                } else if (begin) {
-                    if (line.contains(END_DH_PARAMETERS)) {
-                        break;
-                    }
-                    sb.append(line.trim());
-                }
-            }
-            if (!begin) {
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
-            }
-            AlgorithmParameters ap = AlgorithmParameters.getInstance("DH");
-            ap.init(Base64.getDecoder().decode(sb.toString()));
-            return ap.getParameterSpec(DHParameterSpec.class);
         }
     }
 
