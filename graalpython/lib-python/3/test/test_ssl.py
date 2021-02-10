@@ -1496,6 +1496,8 @@ class ContextTests(unittest.TestCase):
 
     @needs_sni
     def test_sni_callback(self):
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("not supported")
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 
         # set_servername_callback expects a callable, or None
@@ -1511,6 +1513,8 @@ class ContextTests(unittest.TestCase):
 
     @needs_sni
     def test_sni_callback_refcycle(self):
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("not supported")
         # Reference cycles through the servername callback are detected
         # and cleared.
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -4142,6 +4146,8 @@ class ThreadedTests(unittest.TestCase):
 
     @needs_sni
     def test_sni_callback(self):
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("not supported")
         calls = []
         server_context, other_context, client_context = self.sni_contexts()
 
@@ -4183,6 +4189,8 @@ class ThreadedTests(unittest.TestCase):
 
     @needs_sni
     def test_sni_callback_alert(self):
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("not supported")
         # Returning a TLS alert is reflected to the connecting client
         server_context, other_context, client_context = self.sni_contexts()
 
@@ -4197,6 +4205,8 @@ class ThreadedTests(unittest.TestCase):
 
     @needs_sni
     def test_sni_callback_raising(self):
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("not supported")
         # Raising fails the connection with a TLS handshake failure alert.
         server_context, other_context, client_context = self.sni_contexts()
 
@@ -4216,6 +4226,8 @@ class ThreadedTests(unittest.TestCase):
 
     @needs_sni
     def test_sni_callback_wrong_return_type(self):
+        # TODO XXX GraalVM change
+        raise unittest.SkipTest("not supported")
         # Returning the wrong return type terminates the TLS connection
         # with an internal error alert.
         server_context, other_context, client_context = self.sni_contexts()

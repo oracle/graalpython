@@ -480,6 +480,15 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "sni_callback", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class SNICallbackNode extends PythonBuiltinNode {
+        @Specialization
+        Object notImplemented(PSSLContext self, @SuppressWarnings("unused") Object value) {
+            throw raise(NotImplementedError);
+        }
+    }
+
     @Builtin(name = "set_default_verify_paths", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SetDefaultVerifyPathsNode extends PythonBuiltinNode {
