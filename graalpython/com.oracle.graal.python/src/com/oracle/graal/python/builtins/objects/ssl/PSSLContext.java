@@ -77,9 +77,7 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     void setKeyEntry(String alias, PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         this.password = password;
-        for (X509Certificate cert : certs) {
-            getKeyStore().setKeyEntry(alias, pk, password, certs);
-        }
+        getKeyStore().setKeyEntry(alias, pk, password, certs);
     }
 
     void init() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException {
@@ -90,7 +88,6 @@ public final class PSSLContext extends PythonBuiltinObject {
                 private X509Certificate[] chain;
 
                 public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                    this.chain = chain;
                 }
 
                 public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
