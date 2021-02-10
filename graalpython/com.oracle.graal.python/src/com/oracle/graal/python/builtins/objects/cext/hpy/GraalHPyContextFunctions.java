@@ -800,7 +800,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached CallNode callExceptionConstructorNode,
                         @Cached PRaiseNode raiseNode,
@@ -816,23 +815,20 @@ public abstract class GraalHPyContextFunctions {
                 return raiseNode.raise(SystemError, "exception %s not a BaseException subclass", errTypeObj);
             }
             try {
+                Object valueObj;
                 if (stringMode) {
-                    Object valueObj = fromCharPointerNode.execute(arguments[2]);
-                    try {
-                        String errorMessage = castToJavaStringNode.execute(valueObj);
-                        throw raiseNode.raise(errTypeObj, errorMessage);
-                    } catch (CannotCastException e) {
-                        throw raiseNode.raise(TypeError, "exception value is not a valid string");
-                    }
+                    valueObj = fromCharPointerNode.execute(arguments[2]);
                 } else {
-                    Object exception = callExceptionConstructorNode.execute(errTypeObj, asPythonObjectNode.execute(context, arguments[2]));
-                    if (PGuards.isPBaseException(exception)) {
-                        throw raiseNode.raiseExceptionObject((PBaseException) exception, langRef.get());
-                    }
-                    // This should really not happen since we did a type check above but in theory,
-                    // the constructor could be broken.
-                    throw CompilerDirectives.shouldNotReachHere();
+                    valueObj = asPythonObjectNode.execute(context, arguments[2]);
                 }
+
+                Object exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
+                if (PGuards.isPBaseException(exception)) {
+                    throw raiseNode.raiseExceptionObject((PBaseException) exception, langRef.get());
+                }
+                // This should really not happen since we did a type check above but in theory,
+                // the constructor could be broken.
+                throw CompilerDirectives.shouldNotReachHere();
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(context, p);
                 return 0;
