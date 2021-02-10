@@ -563,9 +563,29 @@ public class GraalHPyNodes {
         final Object key;
         final Object value;
 
-        HPyProperty(Object key, Object value) {
+        /**
+         * In a very few cases, a single definition can define several properties. For example, slot
+         * {@link HPySlot#HPY_SQ_ASS_ITEM} defines properties
+         * {@link com.oracle.graal.python.nodes.SpecialMethodNames#__SETITEM__} and
+         * {@link com.oracle.graal.python.nodes.SpecialMethodNames#__DELITEM__}. Therefore, we use
+         * this field to create a linked list of such related properties.
+         */
+        final HPyProperty next;
+
+        HPyProperty(Object key, Object value, HPyProperty next) {
             this.key = key;
             this.value = value;
+            this.next = next;
+        }
+
+        HPyProperty(Object key, Object value) {
+            this(key, value, null);
+        }
+
+        public void write(WriteAttributeToObjectNode writeAttributeToObjectNode, Object enclosingType) {
+            for (HPyProperty prop = this; prop != null; prop = prop.next) {
+                writeAttributeToObjectNode.execute(enclosingType, prop.key, prop.value);
+            }
         }
     }
 
@@ -858,20 +878,21 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "invalid slot value %d", slotNr);
             }
 
-            Object methodName = slot.getAttributeKey();
-
-            if (methodName == null) {
+            HPyProperty property = null;
+            Object[] methodNames = slot.getAttributeKeys();
+            HPyFuncSignature[] signatures = slot.getSignatures();
+            if (methodNames == null || methodNames.length == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "slot %s is not yet supported", slot.name());
             }
 
+            // read and check the function pointer
             Object methodFunctionPointer;
             try {
-
                 methodFunctionPointer = interopLibrary.readMember(slotDef, "impl");
                 if (!resultLib.isExecutable(methodFunctionPointer)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "meth of %s is not callable", methodName);
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "meth for slot %s is not callable", slot.name());
                 }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -881,18 +902,26 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
+            // create properties
+            for (int i = 0; i < methodNames.length; i++) {
+                Object methodName = methodNames[i];
+                HPyFuncSignature signature = signatures[i];
+                String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
 
-            Object function;
-            if (HPY_TP_DESTROY.equals(slot)) {
-                // special case: DESTROYFUNC
-                // This won't be usable from Python, so we just store the bare pointer object into
-                // the hidden attribute.
-                function = methodFunctionPointer;
-            } else {
-                function = HPyExternalFunctionNodes.createWrapperFunction(language, slot.getSignature(), methodNameStr, methodFunctionPointer, HPY_TP_NEW.equals(slot) ? null : enclosingType, factory);
+                Object function;
+                if (HPY_TP_DESTROY.equals(slot)) {
+                    /*
+                     * special case: DESTROYFUNC This won't be usable from Python, so we just store
+                     * the bare pointer object into the hidden attribute.
+                     */
+                    function = methodFunctionPointer;
+                } else {
+                    function = HPyExternalFunctionNodes.createWrapperFunction(language, signature, methodNameStr, methodFunctionPointer, HPY_TP_NEW.equals(slot) ? null : enclosingType,
+                                    factory);
+                }
+                property = new HPyProperty(methodName, function, property);
             }
-            return new HPyProperty(methodName, function);
+            return property;
         }
 
         @TruffleBoundary
@@ -964,7 +993,7 @@ public class GraalHPyNodes {
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
                             Object legacyMemberDef = resultLib.readArrayElement(memberDefArrayPtr, i);
                             HPyProperty property = createLegacyMemberNode.execute(context, legacyMemberDef);
-                            writeAttributeToObjectNode.execute(enclosingType, property.key, property.value);
+                            property.write(writeAttributeToObjectNode, enclosingType);
                         }
                     } catch (InteropException | OverflowException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1934,7 +1963,7 @@ public class GraalHPyNodes {
                         }
 
                         if (property != null) {
-                            writeAttributeToObjectNode.execute(newType, property.key, property.value);
+                            property.write(writeAttributeToObjectNode, newType);
                         }
                     }
                 }
@@ -1947,7 +1976,7 @@ public class GraalHPyNodes {
                         Object legacySlotDef = ptrLib.readArrayElement(legacySlots, i);
                         HPyProperty property = createLegacySlotNode.execute(context, newType, legacySlotDef);
                         if (property != null) {
-                            writeAttributeToObjectNode.execute(newType, property.key, property.value);
+                            property.write(writeAttributeToObjectNode, newType);
                         }
                     }
                 }

@@ -40,9 +40,52 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ILSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INVERT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MATMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
+
 import java.util.Arrays;
 
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -159,53 +202,53 @@ public abstract class GraalHPyDef {
 
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
-        HPY_NB_ABSOLUTE(6, SpecialMethodNames.__ABS__, HPyFuncSignature.UNARYFUNC),
-        HPY_NB_ADD(7, SpecialMethodNames.__ADD__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_AND(8, SpecialMethodNames.__AND__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_BOOL(9, SpecialMethodNames.__BOOL__, HPyFuncSignature.INQUIRY),
-        HPY_NB_DIVMOD(10, SpecialMethodNames.__DIVMOD__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_FLOAT(11, SpecialMethodNames.__FLOAT__, HPyFuncSignature.UNARYFUNC),
-        HPY_NB_FLOOR_DIVIDE(12, SpecialMethodNames.__FLOORDIV__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INDEX(13, SpecialMethodNames.__INDEX__, HPyFuncSignature.UNARYFUNC),
-        HPY_NB_INPLACE_ADD(14, SpecialMethodNames.__IADD__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_AND(15, SpecialMethodNames.__IAND__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_FLOOR_DIVIDE(16, SpecialMethodNames.__IFLOORDIV__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_LSHIFT(17, SpecialMethodNames.__ILSHIFT__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_MULTIPLY(18, SpecialMethodNames.__IMUL__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_OR(19, SpecialMethodNames.__IOR__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_POWER(20, SpecialMethodNames.__IPOW__, HPyFuncSignature.TERNARYFUNC),
-        HPY_NB_INPLACE_REMAINDER(21, SpecialMethodNames.__IMOD__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_RSHIFT(22, SpecialMethodNames.__IRSHIFT__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_SUBTRACT(23, SpecialMethodNames.__ISUB__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_TRUE_DIVIDE(24, SpecialMethodNames.__ITRUEDIV__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_XOR(25, SpecialMethodNames.__IXOR__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INT(26, SpecialMethodNames.__INT__, HPyFuncSignature.UNARYFUNC),
-        HPY_NB_INVERT(27, SpecialMethodNames.__INVERT__, HPyFuncSignature.UNARYFUNC),
-        HPY_NB_LSHIFT(28, SpecialMethodNames.__LSHIFT__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_MULTIPLY(29, SpecialMethodNames.__MUL__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_NEGATIVE(30, SpecialMethodNames.__NEG__, HPyFuncSignature.UNARYFUNC),
-        HPY_NB_OR(31, SpecialMethodNames.__OR__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_POSITIVE(32, SpecialMethodNames.__POS__, HPyFuncSignature.UNARYFUNC),
-        HPY_NB_POWER(33, SpecialMethodNames.__POW__, HPyFuncSignature.TERNARYFUNC),
-        HPY_NB_REMAINDER(34, SpecialMethodNames.__MOD__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_RSHIFT(35, SpecialMethodNames.__RSHIFT__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_SUBTRACT(36, SpecialMethodNames.__SUB__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_TRUE_DIVIDE(37, SpecialMethodNames.__TRUEDIV__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_XOR(38, SpecialMethodNames.__XOR__, HPyFuncSignature.BINARYFUNC),
-        HPY_SQ_ASS_ITEM(39, SpecialMethodNames.__SETITEM__, HPyFuncSignature.SSIZEOBJARGPROC),
-        HPY_SQ_CONCAT(40, SpecialMethodNames.__ADD__, HPyFuncSignature.BINARYFUNC),
-        HPY_SQ_CONTAINS(41, SpecialMethodNames.__CONTAINS__, HPyFuncSignature.OBJOBJPROC),
-        HPY_SQ_INPLACE_CONCAT(42, SpecialMethodNames.__IADD__, HPyFuncSignature.BINARYFUNC),
-        HPY_SQ_INPLACE_REPEAT(43, SpecialMethodNames.__IMUL__, HPyFuncSignature.SSIZEARGFUNC),
-        HPY_SQ_ITEM(44, SpecialMethodNames.__GETITEM__, HPyFuncSignature.SSIZEARGFUNC),
-        HPY_SQ_LENGTH(45, SpecialMethodNames.__LEN__, HPyFuncSignature.LENFUNC),
-        HPY_SQ_REPEAT(46, SpecialMethodNames.__MUL__, HPyFuncSignature.SSIZEARGFUNC),
-        HPY_TP_INIT(60, SpecialMethodNames.__INIT__, HPyFuncSignature.INITPROC),
-        HPY_TP_NEW(65, SpecialMethodNames.__NEW__, HPyFuncSignature.KEYWORDS),
-        HPY_TP_REPR(66, SpecialMethodNames.__REPR__, HPyFuncSignature.REPRFUNC),
-        HPY_NB_MATRIX_MULTIPLY(75, SpecialMethodNames.__MATMUL__, HPyFuncSignature.BINARYFUNC),
-        HPY_NB_INPLACE_MATRIX_MULTIPLY(76, SpecialMethodNames.__IMATMUL__, HPyFuncSignature.BINARYFUNC),
-        HPY_TP_DESTROY(1000, TYPE_HPY_DESTROY, HPyFuncSignature.DESTROYFUNC);
+        HPY_NB_ABSOLUTE(6, HPyFuncSignature.UNARYFUNC, __ABS__),
+        HPY_NB_ADD(7, HPyFuncSignature.BINARYFUNC, __ADD__),
+        HPY_NB_AND(8, HPyFuncSignature.BINARYFUNC, __AND__),
+        HPY_NB_BOOL(9, HPyFuncSignature.INQUIRY, __BOOL__),
+        HPY_NB_DIVMOD(10, HPyFuncSignature.BINARYFUNC, __DIVMOD__),
+        HPY_NB_FLOAT(11, HPyFuncSignature.UNARYFUNC, __FLOAT__),
+        HPY_NB_FLOOR_DIVIDE(12, HPyFuncSignature.BINARYFUNC, __FLOORDIV__),
+        HPY_NB_INDEX(13, HPyFuncSignature.UNARYFUNC, __INDEX__),
+        HPY_NB_INPLACE_ADD(14, HPyFuncSignature.BINARYFUNC, __IADD__),
+        HPY_NB_INPLACE_AND(15, HPyFuncSignature.BINARYFUNC, __IAND__),
+        HPY_NB_INPLACE_FLOOR_DIVIDE(16, HPyFuncSignature.BINARYFUNC, __IFLOORDIV__),
+        HPY_NB_INPLACE_LSHIFT(17, HPyFuncSignature.BINARYFUNC, __ILSHIFT__),
+        HPY_NB_INPLACE_MULTIPLY(18, HPyFuncSignature.BINARYFUNC, __IMUL__),
+        HPY_NB_INPLACE_OR(19, HPyFuncSignature.BINARYFUNC, __IOR__),
+        HPY_NB_INPLACE_POWER(20, HPyFuncSignature.TERNARYFUNC, __IPOW__),
+        HPY_NB_INPLACE_REMAINDER(21, HPyFuncSignature.BINARYFUNC, __IMOD__),
+        HPY_NB_INPLACE_RSHIFT(22, HPyFuncSignature.BINARYFUNC, __IRSHIFT__),
+        HPY_NB_INPLACE_SUBTRACT(23, HPyFuncSignature.BINARYFUNC, __ISUB__),
+        HPY_NB_INPLACE_TRUE_DIVIDE(24, HPyFuncSignature.BINARYFUNC, __ITRUEDIV__),
+        HPY_NB_INPLACE_XOR(25, HPyFuncSignature.BINARYFUNC, __IXOR__),
+        HPY_NB_INT(26, HPyFuncSignature.UNARYFUNC, __INT__),
+        HPY_NB_INVERT(27, HPyFuncSignature.UNARYFUNC, __INVERT__),
+        HPY_NB_LSHIFT(28, HPyFuncSignature.BINARYFUNC, __LSHIFT__),
+        HPY_NB_MULTIPLY(29, HPyFuncSignature.BINARYFUNC, __MUL__),
+        HPY_NB_NEGATIVE(30, HPyFuncSignature.UNARYFUNC, __NEG__),
+        HPY_NB_OR(31, HPyFuncSignature.BINARYFUNC, __OR__),
+        HPY_NB_POSITIVE(32, HPyFuncSignature.UNARYFUNC, __POS__),
+        HPY_NB_POWER(33, HPyFuncSignature.TERNARYFUNC, __POW__),
+        HPY_NB_REMAINDER(34, HPyFuncSignature.BINARYFUNC, __MOD__),
+        HPY_NB_RSHIFT(35, HPyFuncSignature.BINARYFUNC, __RSHIFT__),
+        HPY_NB_SUBTRACT(36, HPyFuncSignature.BINARYFUNC, __SUB__),
+        HPY_NB_TRUE_DIVIDE(37, HPyFuncSignature.BINARYFUNC, __TRUEDIV__),
+        HPY_NB_XOR(38, HPyFuncSignature.BINARYFUNC, __XOR__),
+        HPY_SQ_ASS_ITEM(39, HPyFuncSignature.SSIZEOBJARGPROC, __SETITEM__, __DELITEM__),
+        HPY_SQ_CONCAT(40, HPyFuncSignature.BINARYFUNC, __ADD__),
+        HPY_SQ_CONTAINS(41, HPyFuncSignature.OBJOBJPROC, __CONTAINS__),
+        HPY_SQ_INPLACE_CONCAT(42, HPyFuncSignature.BINARYFUNC, __IADD__),
+        HPY_SQ_INPLACE_REPEAT(43, HPyFuncSignature.SSIZEARGFUNC, __IMUL__),
+        HPY_SQ_ITEM(44, HPyFuncSignature.SSIZEARGFUNC, __GETITEM__),
+        HPY_SQ_LENGTH(45, HPyFuncSignature.LENFUNC, __LEN__),
+        HPY_SQ_REPEAT(46, HPyFuncSignature.SSIZEARGFUNC, __MUL__),
+        HPY_TP_INIT(60, HPyFuncSignature.INITPROC, __INIT__),
+        HPY_TP_NEW(65, HPyFuncSignature.KEYWORDS, __NEW__),
+        HPY_TP_REPR(66, HPyFuncSignature.REPRFUNC, __REPR__),
+        HPY_NB_MATRIX_MULTIPLY(75, HPyFuncSignature.BINARYFUNC, __MATMUL__),
+        HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPyFuncSignature.BINARYFUNC, __IMATMUL__),
+        HPY_TP_DESTROY(1000, HPyFuncSignature.DESTROYFUNC, TYPE_HPY_DESTROY);
 
         /** The corresponding C enum value. */
         private final int value;
@@ -215,27 +258,43 @@ public abstract class GraalHPyDef {
          * method, or a {@link HiddenKey} if it's not exposed to the user, or {@code null} if
          * unsupported).
          */
-        private final Object attributeKey;
+        @CompilationFinal(dimensions = 1) private final Object[] attributeKeys;
 
-        /** The signature of the slot function. */
-        private final HPyFuncSignature signature;
+        /** The signatures of the slot functions. */
+        @CompilationFinal(dimensions = 1) private final HPyFuncSignature[] signatures;
 
-        HPySlot(int value, Object attributeKey, HPyFuncSignature signature) {
+        /**
+         * Common case: one slot causes the creation of one attribute.
+         */
+        HPySlot(int value, HPyFuncSignature signature, Object attributeKey) {
             this.value = value;
-            this.attributeKey = attributeKey;
-            this.signature = signature;
+            this.attributeKeys = new Object[]{attributeKey};
+            this.signatures = new HPyFuncSignature[]{signature};
+        }
+
+        /**
+         * Special case: one slot causes the creation of multiple attributes using the same
+         * signature.
+         */
+        HPySlot(int value, HPyFuncSignature signature, Object... attributeKeys) {
+            this.value = value;
+            this.attributeKeys = attributeKeys;
+            this.signatures = new HPyFuncSignature[this.attributeKeys.length];
+            for (int i = 0; i < this.signatures.length; i++) {
+                this.signatures[i] = signature;
+            }
         }
 
         int getValue() {
             return value;
         }
 
-        Object getAttributeKey() {
-            return attributeKey;
+        Object[] getAttributeKeys() {
+            return attributeKeys;
         }
 
-        HPyFuncSignature getSignature() {
-            return signature;
+        HPyFuncSignature[] getSignatures() {
+            return signatures;
         }
 
         @CompilationFinal(dimensions = 1) private static final HPySlot[] VALUES = Arrays.copyOf(values(), values().length);
