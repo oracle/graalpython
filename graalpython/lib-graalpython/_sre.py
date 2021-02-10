@@ -215,7 +215,7 @@ class SRE_Match():
 
     def span(self, groupnum=0):
         idxarg = self.__groupidx(groupnum)
-        return (self.__result.getStart(idxarg), self.__result.getEnd(idxarg))
+        return self.__result.getStart(idxarg), self.__result.getEnd(idxarg)
 
     def start(self, groupnum=0):
         idxarg = self.__groupidx(groupnum)
@@ -239,11 +239,17 @@ class SRE_Match():
 
     @property
     def lastgroup(self):
-        return self.__compiled_regex.groupCount
+        lastindex = self.lastindex
+        if lastindex is not None:
+            return self.__group(lastindex)
 
     @property
     def lastindex(self):
-        return self.__result.getEnd(0)
+        lastindex = None
+        for index in range(1, self.__compiled_regex.groupCount):
+            if self.__result.getStart(index) >= 0:
+                lastindex = index
+        return lastindex
 
     def __repr__(self):
         return "<re.Match object; span=%r, match=%r>" % (self.span(), self.group())
