@@ -68,6 +68,7 @@ CONFIGURATION_SANDBOXED_MULTI = "sandboxed-multi"
 
 DEFAULT_ITERATIONS = 10
 
+BENCH_BGV = 'benchmarks-bgv'
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -398,8 +399,89 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         super(PythonBaseBenchmarkSuite, self).__init__()
         self._name = name
         self._benchmarks = benchmarks
+        self._graph_dump_time = None
+        self._benchmarks_graphs = {}
 
-    def benchmarkList(self, bm_suite_args):
+    def has_graph_tags(self, benchmark):
+        has_tag = False
+        self._benchmarks_graphs[benchmark] = set()
+        benchmark_path = join(self._bench_path, "{}.py".format(benchmark))
+        with open(benchmark_path, 'r') as fp:
+            text = fp.read()
+
+        for l in text.split('\n'):
+            if '# igv:' in l:
+                s = l.replace('# igv:', '').strip()
+                if s:
+                    self._benchmarks_graphs[benchmark].add(s)
+                    has_tag = True
+
+        return benchmark if has_tag else None
+
+    def has_graph_option(self, bmSuiteArgs):
+        if "--graph" in bmSuiteArgs:
+            import time
+            self._graph_dump_time = time.time()
+            os.mkdir(join(BENCH_BGV, '%d' % self._graph_dump_time))
+            bmSuiteArgs.remove('--graph')
+            return True
+        return False
+
+    def add_graph_dump_option(self, bmSuiteArgs, benchmark):
+        if self._graph_dump_time and self._benchmarks_graphs.get(benchmark):
+            dump_opt = '-Dgraal.Dump='
+            dump_path = join(BENCH_BGV, '%d' % self._graph_dump_time, 'run')
+            dump_path_opt = '-Dgraal.DumpPath=' + dump_path
+            if dump_opt not in bmSuiteArgs:
+                return [dump_opt, dump_path_opt]
+            return [dump_path_opt]
+
+        return []
+
+    def post_run_graph(self, benchmark, host_vm_config, guest_vm_config):
+        graph_tags = self._benchmarks_graphs.get(benchmark)
+        if self._graph_dump_time and graph_tags:
+            repo_hash = SUITE.vc.tip(SUITE.dir, 'master').strip()[:7]
+            name_format = '{h}.{g_vm}.{h_vm}.{s}.{b}.{t}.bgv'
+            dump_path = join(BENCH_BGV, '%d' % self._graph_dump_time, 'run')
+            selected_bgv = {}
+            num_tags = len(graph_tags)
+            for f in sorted(os.listdir(dump_path), reverse=True):
+                selected = False
+                if num_tags == 0 or not f.endswith('.bgv'):
+                    os.remove(join(dump_path, f))
+                    continue
+                for t in graph_tags:
+                    if t in selected_bgv:
+                        continue
+                    if t in f:
+                        graph_tags.remove(t)
+                        selected = True
+                        num_tags -= 1
+                        selected_bgv[t] = f
+                        break
+                if not selected:
+                    os.remove(join(dump_path, f))
+            bench_bgv_dir = join(BENCH_BGV, '%d' % self._graph_dump_time)
+            for t in selected_bgv:
+                old_name = selected_bgv[t]
+                new_name = name_format.format(
+                    h=repo_hash,
+                    g_vm=guest_vm_config,
+                    h_vm=host_vm_config,
+                    s=self._name,
+                    b=benchmark,
+                    t=t)
+                print('rename: %s to %s' % (old_name, new_name))
+                os.rename(join(dump_path, old_name), join(bench_bgv_dir, new_name))
+            if graph_tags:
+                print('The following tags did not correspond to any bgv file:')
+                print('\n'.join(graph_tags))
+                raise FileNotFoundError
+
+    def benchmarkList(self, bmSuiteArgs):
+        if self.has_graph_option(bmSuiteArgs):
+            return [b for b in self._benchmarks.keys() if self.has_graph_tags(b)]
         return list(self._benchmarks.keys())
 
     def benchmarks(self):
@@ -495,6 +577,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
         _replace_host_vm('graalvm-ce')
         _replace_host_vm('graalvm-ee')
+        self.post_run_graph(benchmarks[0], dims['host-vm-config'], dims['guest-vm-config'])
 
         return ret_code, out, dims
 
@@ -559,13 +642,14 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
         return " ".join(self._benchmarks[bench_name])
 
     def createVmCommandLineArgs(self, benchmarks, bmSuiteArgs):
-        vm_args = self.vmArgs(bmSuiteArgs)
-        run_args = self.runArgs(bmSuiteArgs)
         if not benchmarks or len(benchmarks) != 1:
             mx.abort("Please run a specific benchmark (mx benchmark {}:<benchmark-name>) or all the benchmarks "
                      "(mx benchmark {}:*)".format(self.name(), self.name()))
 
         benchmark = benchmarks[0]
+        vm_args = self.add_graph_dump_option(bmSuiteArgs, benchmark)
+        vm_args += self.vmArgs(bmSuiteArgs)
+        run_args = self.runArgs(bmSuiteArgs)
 
         cmd_args = [self._harness_path]
 

@@ -131,6 +131,7 @@ from c_classmethod import NativeCustomType
 class X():
     pass
 
+# ~igv~: function_root_count_at
 def count(num):
     total = 0
     classes = [str, object, type, dict, list, X]

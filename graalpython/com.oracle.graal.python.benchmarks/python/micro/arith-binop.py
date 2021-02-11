@@ -23,7 +23,7 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # arithmetic ops (partially extracted from spectralnorm)
 
-
+# igv: function_root_docompute_at
 def docompute(num):
     for i in range(num):
         sum_ = 0.0

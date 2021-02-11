@@ -61,6 +61,7 @@ TASK_LIST = [DeviceTask(0), DeviceTask(1), DeviceTask(2), DeviceTask(3),
              WorkTask(12), WorkTask(13), WorkTask(14), WorkTask(15)]
 
 
+# igv: function_root_do_stuff_at
 def do_stuff():
     task_list = TASK_LIST
     total = 0
