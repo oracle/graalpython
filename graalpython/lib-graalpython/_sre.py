@@ -529,6 +529,35 @@ class Pattern():
         result.append(self.__sanitize_out_type(string[collect_pos:]))
         return result
 
+    def scanner(self, string, pos=0, endpos=None):
+        return SREScanner(self, string, pos, endpos)
+
+
+class SREScanner(object):
+    def __init__(self, pattern, string, start, end):
+        self.pattern = pattern
+        self._string = string
+        self._start = start
+        self._end = end
+
+    def _match_search(self, matcher):
+        if self._start > len(self._string):
+            return None
+        match = matcher(self._string, self._start, self._end)
+        if match is None:
+            self._start += 1
+        else:
+            self._start = match.end()
+            if match.start() == self._start:
+                self._start += 1
+        return match
+
+    def match(self):
+        return self._match_search(self.pattern.match)
+
+    def search(self):
+        return self._match_search(self.pattern.search)
+
 
 _t_compile = Pattern
 
