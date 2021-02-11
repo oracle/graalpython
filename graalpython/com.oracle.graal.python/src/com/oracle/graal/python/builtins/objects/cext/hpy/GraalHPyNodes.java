@@ -1328,8 +1328,9 @@ public class GraalHPyNodes {
     }
 
     /**
-     * Similar to {@link HPyAsPythonObjectNode}, this node converts a native primitive value to an
-     * appropriate Python char value (a single-char Python string).
+     * This node either passes a {@link String} object through or it converts a {@code NULL} pointer
+     * to {@link PNone#NONE}. This is a very special use case and certainly only good for reading a
+     * member of type {@link GraalHPyDef#HPY_MEMBER_STRING}.
      */
     @GenerateUncached
     public abstract static class HPyStringAsPythonStringNode extends CExtToJavaNode {
