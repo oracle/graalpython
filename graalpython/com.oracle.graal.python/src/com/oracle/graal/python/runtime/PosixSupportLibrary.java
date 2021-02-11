@@ -62,13 +62,29 @@ public abstract class PosixSupportLibrary extends Library {
                                                     // equal to AT_FDCWD
 
     public static final int O_CLOEXEC = 524288;
+    public static final int O_APPEND = 1024;
+    public static final int O_TRUNC = 512;
+    public static final int O_EXCL = 128;
+    public static final int O_CREAT = 64;
+    public static final int O_RDWR = 2;
+    public static final int O_WRONLY = 1;
+    public static final int O_RDONLY = 0;
 
     public static final char POSIX_FILENAME_SEPARATOR = '/';
 
-    public static final int S_IFMT = 0170000;
-    public static final int S_IFDIR = 0040000;
-    public static final int S_IFREG = 0100000;
-    public static final int S_IFLNK = 0120000;
+    // from stat.h
+
+    /* Encoding of the file mode. */
+    public static final int S_IFMT = 0170000; /* These bits determine file type. */
+
+    /* File types. */
+    public static final int S_IFDIR = 0040000; /* Directory. */
+    public static final int S_IFCHR = 0020000; /* Character device. */
+    public static final int S_IFBLK = 0060000; /* Block device. */
+    public static final int S_IFREG = 0100000; /* Regular file. */
+    public static final int S_IFIFO = 0010000; /* FIFO. */
+    public static final int S_IFLNK = 0120000; /* Symbolic link. */
+    public static final int S_IFSOCK = 0140000; /* Socket. */
 
     public static final int DT_UNKNOWN = 0;
     public static final int DT_DIR = 4;
@@ -423,6 +439,35 @@ public abstract class PosixSupportLibrary extends Library {
             CompilerAsserts.neverPartOfCompilation();
             return String.format("select[read = %s; write = %s; err = %s]", Arrays.toString(readfds), Arrays.toString(writefds), Arrays.toString(errorfds));
         }
+    }
+
+    // from stat.h macros
+    private static boolean istype(long mode, int mask) {
+        return (mode & S_IFMT) == mask;
+    }
+
+    public static boolean isDIR(long mode) {
+        return istype(mode, S_IFDIR);
+    }
+
+    public static boolean isCHR(long mode) {
+        return istype(mode, S_IFCHR);
+    }
+
+    public static boolean isBLK(long mode) {
+        return istype(mode, S_IFBLK);
+    }
+
+    public static boolean isREG(long mode) {
+        return istype(mode, S_IFREG);
+    }
+
+    public static boolean isFIFO(long mode) {
+        return istype(mode, S_IFIFO);
+    }
+
+    public static boolean isLNK(long mode) {
+        return istype(mode, S_IFLNK);
     }
 
     public static class ChannelNotSelectableException extends UnsupportedPosixFeatureException {

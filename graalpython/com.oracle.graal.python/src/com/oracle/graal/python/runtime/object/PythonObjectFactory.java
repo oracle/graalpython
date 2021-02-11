@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
+import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -993,6 +994,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
         return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
+    }
+
+    public PFileIO createFileIO(Object clazz) {
+        return trace(PFileIO.createFileIO(clazz, getShape(clazz)));
     }
 
     public PBuffered createBufferedReader(Object clazz) {

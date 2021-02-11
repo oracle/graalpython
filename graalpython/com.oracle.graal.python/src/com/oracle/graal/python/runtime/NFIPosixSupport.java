@@ -49,6 +49,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -1054,10 +1055,9 @@ public final class NFIPosixSupport extends PosixSupport {
         return (Buffer) path;
     }
 
-    @TruffleBoundary
     private static byte[] getStringBytes(String str) {
         // TODO replace getBytes with PyUnicode_FSConverter equivalent
-        return str.getBytes();
+        return BytesUtils.utf8StringToBytes(str);
     }
 
     private static Buffer checkPath(byte[] path) {

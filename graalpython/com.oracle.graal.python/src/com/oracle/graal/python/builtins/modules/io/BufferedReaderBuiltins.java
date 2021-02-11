@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -485,13 +486,13 @@ public class BufferedReaderBuiltins extends PythonBuiltins {
 
         protected static final String CLOSE_ERROR_MSG = "readline of closed file";
 
-        @Specialization(guards = "self.isOK()", limit = "1")
+        @Specialization(guards = "self.isOK()")
         int doit(VirtualFrame frame, PBuffered self, Object buffer,
                         @Cached("create(CLOSE_ERROR_MSG)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReaderNodes.ReadintoNode readintoNode,
-                        @CachedLibrary("buffer") PythonObjectLibrary getLen) {
+                        @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen) {
             checkIsClosedNode.execute(frame, self);
-            int bufLen = getLen.lengthWithFrame(buffer, frame);
+            int bufLen = getLen.execute(frame, buffer);
             return readintoNode.execute(frame, self, buffer, bufLen, isReadinto1Mode());
         }
 

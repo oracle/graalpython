@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
@@ -94,7 +95,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     protected static boolean isAttrWritable(IsBuiltinClassProfile exactBuiltinInstanceProfile, PythonObject self, Object key) {
         if (isHiddenKey(key) || self instanceof PythonManagedClass || self instanceof PFunction || self instanceof PDecoratedMethod || self instanceof PythonModule ||
-                        self instanceof PBaseException) {
+                        self instanceof PBaseException || self instanceof PFileIO) {
             return true;
         }
         if ((self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) != 0) {

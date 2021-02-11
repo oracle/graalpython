@@ -73,7 +73,6 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
@@ -99,6 +98,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -369,8 +369,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"unused", "static-method"})
     public Buffer read(int fd, long length,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                    @Cached ReadFromChannelNode readNode) {
+                    @Cached ReadFromChannelNode readNode,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
         Channel channel = getFileChannel(fd, channelClassProfile);
+        if (channel == null) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.EBADF);
+        }
         ByteSequenceStorage array = readNode.execute(channel, (int) length);
         return new Buffer(array.getInternalByteArray(), array.length());
     }
@@ -554,45 +559,71 @@ public final class EmulatedPosixSupport extends PosixResources {
     public long lseek(int fd, long offset, int how,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Exclusive @Cached ConditionProfile noFile) throws PosixException {
+                    @Exclusive @Cached ConditionProfile notSupported,
+                    @Exclusive @Cached ConditionProfile noFile,
+                    @Exclusive @Cached ConditionProfile notSeekable) throws PosixException {
         Channel channel = getFileChannel(fd, channelClassProfile);
-        if (noFile.profile(!(channel instanceof SeekableByteChannel))) {
+        if (noFile.profile(channel == null)) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        if (notSeekable.profile(!(channel instanceof SeekableByteChannel))) {
             throw posixException(OSErrorEnum.ESPIPE);
         }
         SeekableByteChannel fc = (SeekableByteChannel) channel;
+        long newPos;
         try {
-            return setPosition(offset, how, fc);
+            newPos = setPosition(offset, how, fc);
         } catch (Exception e) {
             errorBranch.enter();
             throw posixException(OSErrorEnum.fromException(e));
         }
+        if (notSupported.profile(newPos == -1)) {
+            throw new UnsupportedPosixFeatureException("emulated lseek cannot seek beyond the file size. " +
+                            "Please enable native posix support using " +
+                            "the following option '--python.PosixModuleBackend=native'");
+        }
+        return newPos;
     }
 
+    /*-
+     * There are two main differences between emulated lseek and native lseek: 
+     *      1- native lseek allows setting position beyond file size.
+     *      2- native lseek current position doesn't change after file truncate, i.e. position stays beyond file size.
+     * XXX: we do not currently track the later case, which might produce inconsistent results compare to native lseek.
+     */
     @TruffleBoundary(allowInlining = true)
     private static long setPosition(long pos, int how, SeekableByteChannel fc) throws IOException {
+        long newPos = pos;
         switch (how) {
             case SEEK_CUR:
-                fc.position(fc.position() + pos);
+                newPos += fc.position();
                 break;
             case SEEK_END:
-                fc.position(fc.size() + pos);
+                newPos += fc.size();
                 break;
             case SEEK_SET:
-                fc.position(pos);
                 break;
             default:
                 throw new IllegalArgumentException();
         }
-        return fc.position();
+        fc.position(newPos);
+        long p = fc.position();
+        return p != newPos ? -1 : p;
     }
 
     @ExportMessage(name = "ftruncate")
-    public void ftruncateMessage(int fd, long length) throws PosixException {
+    public void ftruncateMessage(int fd, long length,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
         // TODO: will merge with super.ftruncate once the super class is merged with this class
+        Object ret;
         try {
-            ftruncate(fd, length);
+            ret = ftruncate(fd, length);
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
+        }
+        if (ret == null) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.EBADF);
         }
     }
 
@@ -1705,9 +1736,8 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     public Object createPathFromBytes(byte[] path) {
-        return checkEmbeddedNulls(new String(path, StandardCharsets.UTF_8));
+        return checkEmbeddedNulls(BytesUtils.createUTF8String(path));
     }
 
     @ExportMessage
@@ -1718,9 +1748,8 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     public Buffer getPathAsBytes(Object path) {
-        return Buffer.wrap(((String) path).getBytes(StandardCharsets.UTF_8));
+        return Buffer.wrap(BytesUtils.utf8StringToBytes((String) path));
     }
 
     private static String checkEmbeddedNulls(String s) {
@@ -1814,6 +1843,10 @@ public final class EmulatedPosixSupport extends PosixResources {
         Set<StandardOpenOption> options = new HashSet<>();
         if ((flags & WRONLY) != 0) {
             options.add(StandardOpenOption.WRITE);
+        }
+        if ((flags & APPEND) != 0) {
+            options.add(StandardOpenOption.WRITE);
+            options.add(StandardOpenOption.APPEND);
         } else if ((flags & RDWR) != 0) {
             options.add(StandardOpenOption.READ);
             options.add(StandardOpenOption.WRITE);
@@ -1827,10 +1860,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         if ((flags & EXCL) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.CREATE_NEW);
-        }
-        if ((flags & APPEND) != 0) {
-            options.add(StandardOpenOption.WRITE);
-            options.add(StandardOpenOption.APPEND);
         }
         if ((flags & NDELAY) != 0 || (flags & DIRECT) != 0) {
             options.add(StandardOpenOption.DSYNC);

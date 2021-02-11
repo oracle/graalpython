@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -221,7 +220,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private SetItemNode setItemNode;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
-        @Child private PConstructAndRaiseNode constructAndRaiseNode;
 
         static class ImportException extends Exception {
             private static final long serialVersionUID = 3517291912314595890L;
@@ -494,14 +492,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 checkResultNode = insert(DefaultCheckFunctionResultNodeGen.create());
             }
             return checkResultNode;
-        }
-
-        private PConstructAndRaiseNode getConstructAndRaiseNode() {
-            if (constructAndRaiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
-            }
-            return constructAndRaiseNode;
         }
 
         @TruffleBoundary

@@ -272,6 +272,7 @@ public abstract class ErrorMessages {
     public static final String FUNC_CONSTRUCTION_NOT_SUPPORTED = "function construction not supported for (%p, %p, %p, %p, %p, %p)";
     public static final String FUNC_TAKES_AT_LEAST_D_ARGS = "function takes at least %d arguments (%d given)";
     public static final String FUNC_TAKES_EXACTLY_D_ARGS = "function takes exaclty %d arguments (%d given)";
+    public static final String FUNC_S_MUST_BE_S_NOT_P = "%s() %s must be %s, not %p";
     public static final String GENERATOR_EXPR_MUST_BE_PARENTHESIZED = "Generator expression must be parenthesized";
     public static final String GENERATOR_IGNORED_EXIT = "generator ignored GeneratorExit";
     public static final String GENERATOR_RAISED_STOPITER = "generator raised StopIteration";
@@ -712,6 +713,14 @@ public abstract class ErrorMessages {
     public static final String S_SHOULD_RETURN_BYTES = "%s should return bytes";
     public static final String S_RETURNED_TOO_MUCH_DATA = "%s returned too much data: %d bytes requested, %d returned";
     public static final String S_SHOULD_RETURN_BYTES_NOT_P = " should have returned a bytes object, not '%p'";
+    public static final String BAD_MODE = "Must have exactly one of create/read/write/append mode and at most one plus";
+    public static final String NEG_FD = "negative file descriptor";
+    public static final String CANNOT_USE_CLOSEFD = "Cannot use closefd=False with file name";
+    public static final String EXPECTED_INT_FROM_OPENER = "expected integer from opener";
+    public static final String OPENER_RETURNED_D = "opener returned %d";
+    public static final String FILE_NOT_OPEN_FOR_S = "File not open for %s";
+    public static final String UNBOUNDED_READ_RETURNED_MORE_BYTES = "unbounded read returned more bytes than a Python bytes object can hold";
+    public static final String INVALID_MODE_S = "invalid mode: %s";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT = "cannot pickle '%s' object";

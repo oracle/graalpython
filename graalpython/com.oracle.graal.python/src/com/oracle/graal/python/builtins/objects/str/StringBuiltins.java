@@ -1637,23 +1637,15 @@ public final class StringBuiltins extends PythonBuiltins {
 
     // This is only used during bootstrap and then replaced with Python code
     @Builtin(name = "encode", minNumOfPositionalArgs = 1, parameterNames = {"self", "encoding", "errors"})
+    @ArgumentClinic(name = "encoding", conversion = ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class EncodeNode extends PythonBuiltinNode {
+    public abstract static class EncodeNode extends PythonTernaryClinicBuiltinNode {
 
-        @Specialization
-        Object doString(String self, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return encodeString(self, "utf-8", "strict");
-        }
-
-        @Specialization
-        Object doStringEncoding(String self, String encoding, @SuppressWarnings("unused") PNone errors) {
-            return encodeString(self, encoding, "strict");
-        }
-
-        @Specialization
-        Object doStringErrors(String self, @SuppressWarnings("unused") PNone encoding, String errors) {
-            return encodeString(self, "utf-8", errors);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.EncodeNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
@@ -1662,14 +1654,10 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(Object self, Object encoding, Object errors,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaStringCheckedNode castEncodingNode,
-                        @Cached CastToJavaStringCheckedNode castErrorsNode) {
+        Object doGeneric(Object self, String encoding, String errors,
+                        @Cached CastToJavaStringCheckedNode castSelfNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
-            String encodingStr = PGuards.isPNone(encoding) ? "utf-8" : castEncodingNode.cast(encoding, ErrorMessages.MUST_BE_STR_NOT_P, encoding);
-            String errorsStr = PGuards.isPNone(errors) ? "strict" : castErrorsNode.cast(errors, ErrorMessages.MUST_BE_STR_NOT_P, errors);
-            return encodeString(selfStr, encodingStr, errorsStr);
+            return encodeString(selfStr, encoding, errors);
         }
 
         @TruffleBoundary

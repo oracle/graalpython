@@ -72,7 +72,6 @@ for module in [_io, io]:
     setattr(module, 'BufferedRWPair', _pyio.BufferedRWPair)
     setattr(module, 'BufferedWriter', _pyio.BufferedWriter)
     setattr(module, 'StringIO', _pyio.StringIO)
-    setattr(module, 'FileIO', _pyio.FileIO)
     setattr(module, 'BytesIO', _pyio.BytesIO)
 
 
