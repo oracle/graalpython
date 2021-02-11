@@ -47,7 +47,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class LazyString implements PCharSequence {
+public final class LazyString implements PCharSequence {
     public static int length(CharSequence cs, ConditionProfile profile1, ConditionProfile profile2) {
         if (profile1.profile(cs instanceof String)) {
             return ((String) cs).length();

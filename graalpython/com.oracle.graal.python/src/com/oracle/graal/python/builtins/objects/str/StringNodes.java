@@ -238,6 +238,7 @@ public abstract class StringNodes {
         }
     }
 
+    @ImportStatic(PGuards.class)
     public abstract static class CastToJavaStringCheckedNode extends Node {
         public final String cast(Object object, String errMsgFormat, Object... errMsgArgs) {
             return execute(object, errMsgFormat, errMsgArgs);
@@ -246,6 +247,11 @@ public abstract class StringNodes {
         public abstract String execute(Object object, String errMsgFormat, Object[] errMsgArgs);
 
         @Specialization
+        static String doConvert(String self, @SuppressWarnings("unused") String errMsgFormat, @SuppressWarnings("unused") Object[] errMsgArgs) {
+            return self;
+        }
+
+        @Specialization(guards = "!isJavaString(self)")
         static String doConvert(Object self, String errMsgFormat, Object[] errMsgArgs,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached BranchProfile errorBranch,
@@ -302,7 +308,7 @@ public abstract class StringNodes {
                         @Cached ConditionProfile isEmptyProfile,
                         @Cached ConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached CastToJavaStringCheckedNode castToJavaStringNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PRaiseNode raise) {
 
             SequenceStorage storage = getSequenceStorageNode.execute(sequence);
@@ -316,23 +322,25 @@ public abstract class StringNodes {
             StringBuilder sb = PythonUtils.newStringBuilder();
             int i = 0;
 
+            // manually peel first iteration
+            Object item = getItemNode.execute(frame, storage, i);
             try {
-                // manually peel first iteration
-                Object item = getItemNode.execute(frame, storage, i);
                 // shortcut
                 if (isSingleItemProfile.profile(len == 1)) {
-                    return castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item);
+                    return castToJavaStringNode.execute(item);
                 }
-                PythonUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                PythonUtils.append(sb, castToJavaStringNode.execute(item));
 
                 for (i = 1; i < len; i++) {
                     PythonUtils.append(sb, self);
                     item = getItemNode.execute(frame, storage, i);
-                    PythonUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                    PythonUtils.append(sb, castToJavaStringNode.execute(item));
                 }
                 return PythonUtils.sbToString(sb);
             } catch (OutOfMemoryError e) {
                 throw raise.raise(MemoryError);
+            } catch (CannotCastException e) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, INVALID_SEQ_ITEM, i, item);
             }
         }
 
@@ -458,107 +466,162 @@ public abstract class StringNodes {
         private static PException raiseError(PRaiseNode raise) {
             return raise.raise(ValueError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, PInt.toHexString(Character.MAX_CODE_POINT + 1));
         }
-
     }
 
-    public abstract static class FindNode extends PNodeWithContext {
-
-        public abstract int execute(String self, String sub, int start, int end);
-
-        @Specialization
-        int find(String haystack, String needle, int start, int end) {
-            int len1 = haystack.length();
-            int len2 = needle.length();
-
-            if (len2 == 0 && start <= len1) {
-                return emptySubIndex(start, end);
-            }
-            if (start >= len1 || len1 < len2) {
-                return -1;
-            }
-
-            return findWithBounds(haystack, needle, start, end > len1 ? len1 : end);
-        }
-
-        // Overridden in RFind
-        @SuppressWarnings("unused")
-        protected int emptySubIndex(int start, int end) {
+    @TruffleBoundary
+    public static int findFirstIndexOf(String haystack, String needle, int start, int end) {
+        assert end >= 0 && end <= haystack.length();
+        if (needle.length() == 0 && start <= haystack.length()) {
             return start;
         }
-
-        protected int findWithBounds(String haystack, String needle, int start, int end) {
-            int idx = PString.indexOf(haystack, needle, start);
-            return idx + needle.length() <= end ? idx : -1;
+        if (start >= haystack.length() || haystack.length() < needle.length()) {
+            return -1;
         }
 
-        public static FindNode create() {
-            return StringNodesFactory.FindNodeGen.create();
+        // only use j.l.String version if there's a limited amount of text after the scanned region
+        if ((end - start) > (haystack.length() - end)) {
+            // use fast j.l.String version (which doesn't take an end index)
+            int idx = PString.indexOf(haystack, needle, start);
+            return idx + needle.length() <= (end > haystack.length() ? haystack.length() : end) ? idx : -1;
+        } else {
+            // use custom search to narrow down search area
+            return indexOf(haystack, needle, start, end);
         }
     }
 
-    public abstract static class RFindNode extends FindNode {
-
-        @Override
-        protected int emptySubIndex(int start, int end) {
+    @TruffleBoundary
+    public static int findLastIndexOf(String haystack, String needle, int start, int end) {
+        assert end >= 0 && end <= haystack.length();
+        if (needle.length() == 0 && start <= haystack.length()) {
             return (end - start) + start;
         }
-
-        @Override
-        protected int findWithBounds(String haystack, String needle, int start, int end) {
-            int idx = PString.lastIndexOf(haystack, needle, end - needle.length());
-            return idx >= start ? idx : -1;
+        if (start >= haystack.length() || haystack.length() < needle.length()) {
+            return -1;
         }
 
-        public static RFindNode create() {
-            return StringNodesFactory.RFindNodeGen.create();
+        // only use j.l.String version if there's a limited amount of text before the scanned region
+        if ((end - start) > start) {
+            // use fast j.l.String version (which doesn't take a start index)
+            int idx = PString.lastIndexOf(haystack, needle, (end > haystack.length() ? haystack.length() : end) - needle.length());
+            return idx >= start ? idx : -1;
+        } else {
+            // use custom search to narrow down search area
+            return lastIndexOf(haystack, needle, start, end - needle.length());
         }
     }
 
-    public abstract static class CountNode extends PNodeWithContext {
+    static int indexOf(String haystack, String needle, int fromIndex, int toIndex) {
 
-        public abstract int execute(String self, String sub, int start, int end);
-
-        protected static boolean stringIsEmpty(String s) {
-            return s.length() == 0;
+        int trimmedToIndex = toIndex > haystack.length() ? haystack.length() : toIndex;
+        if (fromIndex >= trimmedToIndex) {
+            return needle.isEmpty() ? trimmedToIndex : -1;
+        }
+        int fromIndexTrimmed = fromIndex < 0 ? 0 : fromIndex;
+        if (needle.length() == 0) {
+            return fromIndexTrimmed;
         }
 
-        protected static boolean noStringIsEmpty(String a, String b) {
-            return !stringIsEmpty(a) && !stringIsEmpty(b);
-        }
+        char first = needle.charAt(0);
+        int max = trimmedToIndex - needle.length();
 
-        @Specialization(guards = "stringIsEmpty(self)")
-        static int countSelfEmpty(@SuppressWarnings("unused") String self, String sub, int start, @SuppressWarnings("unused") int end) {
-            return (sub.length() == 0 && start <= 0) ? 1 : 0;
-        }
-
-        @Specialization(guards = "stringIsEmpty(sub)")
-        static int countSubEmpty(String self, @SuppressWarnings("unused") String sub, int start, int end) {
-            return (start <= self.length()) ? (end - start) + 1 : 0;
-        }
-
-        @Specialization(guards = "noStringIsEmpty(self, sub)")
-        static int count(String self, String sub, int start, int end,
-                        @Cached FindNode findNode) {
-            int selfLen = self.length();
-            int subLen = sub.length();
-
-            int idx = findNode.execute(self, sub, start, end);
-            if (idx < 0) {
-                return 0;
+        for (int i = fromIndexTrimmed; i <= max; i++) {
+            /* Look for first character. */
+            if (haystack.charAt(i) != first) {
+                while (++i <= max && haystack.charAt(i) != first) {
+                    // empty
+                }
             }
 
-            int cnt = 1;
-            while (idx < selfLen && idx >= 0 && cnt < selfLen) {
-                idx = findNode.execute(self, sub, idx + subLen, end);
-                if (idx >= 0) {
+            /* Found first character, now look at the rest of v2 */
+            if (i <= max) {
+                int j = i + 1;
+                int end = j + needle.length() - 1;
+                for (int k = 1; j < end && haystack.charAt(j) == needle.charAt(k); j++, k++) {
+                    // empty
+                }
+
+                if (j == end) {
+                    /* Found whole string. */
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    @TruffleBoundary
+    static int lastIndexOf(String source, String target, int fromIndex, int toIndex) {
+        /*
+         * Check arguments; return immediately where possible.
+         */
+        if (toIndex < 0) {
+            return -1;
+        }
+        int rightIndex = source.length() - target.length();
+        int toIndexTrimmed = toIndex > rightIndex ? rightIndex : toIndex;
+
+        /* Empty string always matches. */
+        if (target.length() == 0) {
+            return toIndexTrimmed;
+        }
+
+        int strLastIndex = target.length() - 1;
+        char strLastChar = target.charAt(strLastIndex);
+        int min = fromIndex + target.length() - 1;
+        int i = toIndexTrimmed + target.length() - 1;
+
+        startSearchForLastChar: while (true) {
+            while (i >= min && source.charAt(i) != strLastChar) {
+                i--;
+            }
+            if (i < min) {
+                return -1;
+            }
+            int j = i - 1;
+            int start = j - (target.length() - 1);
+            int k = strLastIndex - 1;
+
+            while (j > start) {
+                if (source.charAt(j--) != target.charAt(k--)) {
+                    i--;
+                    continue startSearchForLastChar;
+                }
+            }
+            return start + 1;
+        }
+    }
+
+    @TruffleBoundary
+    public static int count(String self, String sub, int start, int end) {
+        if (self.isEmpty()) {
+            return (sub.length() == 0 && start <= 0) ? 1 : 0;
+        } else if (sub.isEmpty()) {
+            return (start <= self.length()) ? (end - start) + 1 : 0;
+        } else {
+            char needle = sub.charAt(0);
+            int cnt = 0;
+            if (sub.length() == 1) {
+                for (int pos = start; pos < end; pos++) {
+                    if (self.charAt(pos) == needle) {
+                        cnt++;
+                    }
+                }
+            } else {
+                int lastPos = end - sub.length();
+
+                int idx = start;
+                while (idx <= lastPos) {
+                    while (idx < lastPos && self.charAt(idx) != needle) {
+                        idx++;
+                    }
+                    if ((idx = StringNodes.findFirstIndexOf(self, sub, idx, end)) < 0) {
+                        break;
+                    }
                     cnt++;
+                    idx += sub.length();
                 }
             }
             return cnt;
-        }
-
-        public static CountNode create() {
-            return StringNodesFactory.CountNodeGen.create();
         }
     }
 

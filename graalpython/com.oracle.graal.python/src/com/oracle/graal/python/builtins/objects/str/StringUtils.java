@@ -275,11 +275,16 @@ public final class StringUtils {
             // Avoid initializing ICU4J in image build
             return self.toLowerCase();
         }
-        return toLowerCaseICU(self);
+        return UCharacter.toLowerCase(Locale.ROOT, self);
     }
 
-    private static String toLowerCaseICU(String self) {
-        return UCharacter.toLowerCase(Locale.ROOT, self);
+    @TruffleBoundary
+    public static String toUpperCase(String str) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Avoid initializing ICU4J in image build
+            return str.toUpperCase();
+        }
+        return UCharacter.toUpperCase(Locale.ROOT, str);
     }
 
     @TruffleBoundary

@@ -328,6 +328,10 @@ public abstract class PGuards {
         return obj instanceof String || obj instanceof PString;
     }
 
+    public static boolean isJavaString(Object obj) {
+        return obj instanceof String;
+    }
+
     public static boolean isBuiltinString(Object obj, IsBuiltinClassProfile profile) {
         return obj instanceof String || profile.profileObject(obj, PythonBuiltinClassType.PString);
     }
