@@ -254,7 +254,7 @@ class SRE_Match():
         return lastindex
 
     def __repr__(self):
-        return "<re.Match object; span=%r, match=%r>" % (self.span(), self.group())
+        return "<%s object; span=%r, match=%r>" % (type(self).__name__, self.span(), self.group())
 
 def _append_end_assert(pattern):
     if isinstance(pattern, str):
