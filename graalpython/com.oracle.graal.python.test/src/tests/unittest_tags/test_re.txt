@@ -51,6 +51,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_ignore_case_range
 *graalpython.lib-python.3.test.test_re.ReTests.test_ignore_case_set
 *graalpython.lib-python.3.test.test_re.ReTests.test_issue17998
+*graalpython.lib-python.3.test.test_re.ReTests.test_keep_buffer
 *graalpython.lib-python.3.test.test_re.ReTests.test_large_search
 *graalpython.lib-python.3.test.test_re.ReTests.test_large_subn
 *graalpython.lib-python.3.test.test_re.ReTests.test_lookahead
