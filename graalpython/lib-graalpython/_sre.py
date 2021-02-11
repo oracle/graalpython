@@ -259,6 +259,12 @@ class Match():
     def __repr__(self):
         return "<%s object; span=%r, match=%r>" % (type(self).__name__, self.span(), self.group())
 
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
+
 def _append_end_assert(pattern):
     if isinstance(pattern, str):
         return pattern if pattern.endswith(r"\Z") else pattern + r"\Z"
@@ -355,6 +361,12 @@ class Pattern():
 
     def __hash__(self):
         return hash(self.pattern) * 31 ^ hash(self.flags)
+
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
 
     def _search(self, pattern, string, pos, endpos, sticky=False):
         pattern = self.__tregex_compile(pattern, self.__flags_str + ("y" if sticky else ""))

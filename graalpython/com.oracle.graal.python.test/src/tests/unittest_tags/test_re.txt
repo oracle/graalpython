@@ -41,6 +41,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_character_set_errors
 *graalpython.lib-python.3.test.test_re.ReTests.test_compile
 *graalpython.lib-python.3.test.test_re.ReTests.test_constants
+*graalpython.lib-python.3.test.test_re.ReTests.test_copying
 *graalpython.lib-python.3.test.test_re.ReTests.test_debug_flag
 *graalpython.lib-python.3.test.test_re.ReTests.test_dollar_matches_twice
 *graalpython.lib-python.3.test.test_re.ReTests.test_empty_array
