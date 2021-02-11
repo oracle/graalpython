@@ -191,10 +191,12 @@ class Match():
 
     def __groupidx(self, idx):
         try:
-            if isinstance(idx, str):
+            if hasattr(idx, '__index__'):
+                int_idx = int(idx)
+                if 0 <= int_idx < self.__compiled_regex.groupCount:
+                    return int_idx
+            else:
                 return self.__compiled_regex.groups[idx]
-            elif 0 <= idx < self.__compiled_regex.groupCount:
-                return idx
         except Exception:
             pass
         raise IndexError("no such group")

@@ -45,6 +45,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_enum
 *graalpython.lib-python.3.test.test_re.ReTests.test_error
 *graalpython.lib-python.3.test.test_re.ReTests.test_flags
+*graalpython.lib-python.3.test.test_re.ReTests.test_group
 *graalpython.lib-python.3.test.test_re.ReTests.test_group_name_in_exception
 *graalpython.lib-python.3.test.test_re.ReTests.test_groupdict
 *graalpython.lib-python.3.test.test_re.ReTests.test_ignore_case
