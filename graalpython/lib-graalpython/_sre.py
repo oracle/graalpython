@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 from mmap import mmap
+from array import array
 
 _mappingproxy = type(type.__dict__)
 
@@ -265,7 +266,7 @@ def _append_end_assert(pattern):
         return pattern if pattern.endswith(rb"\Z") else pattern + rb"\Z"
 
 def _is_bytes_like(object):
-    return isinstance(object, (bytes, bytearray, memoryview, mmap))
+    return isinstance(object, (bytes, bytearray, memoryview, array, mmap))
 
 class Pattern():
     def __init__(self, pattern, flags):
