@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
@@ -2506,6 +2507,23 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.ExpandTabsNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static long doString(String self) {
+            return self.hashCode();
+        }
+
+        @Specialization(replaces = "doString")
+        static long doGeneric(Object self,
+                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
+            return doString(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __HASH__, self));
         }
     }
 

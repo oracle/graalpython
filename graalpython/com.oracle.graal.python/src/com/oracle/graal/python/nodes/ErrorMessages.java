@@ -303,6 +303,7 @@ public abstract class ErrorMessages {
     public static final String INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D = "index out of bounds on dimension %d";
     public static final String INDEX_OUT_OF_RANGE = "index out of range";
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
+    public static final String INPUT_TOO_LONG = "input too long";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
     public static final String INSTANCE_HAS_NO_ATTR_S = "%s instance has no attribute '%s'";
     public static final String INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = "int() can't convert non-string with explicit base";

@@ -225,11 +225,15 @@ class Mark:
         return decorator
 
     @staticmethod
-    def xfail(obj):
-        def foo(self):
-            pass
-        foo.__name__ = obj.__name__
-        return foo
+    def xfail(cond, *args, **kwargs):
+        def xfail_decorator(obj):
+            if cond:
+                def foo(self):
+                    pass
+                foo.__name__ = obj.__name__
+                return foo
+            return obj
+        return xfail_decorator
 
 def _pytest_fixture_maker(*args, **kwargs):
     def _fixture_decorator(fun):

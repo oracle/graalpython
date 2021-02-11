@@ -155,10 +155,6 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
     return PyDict_SetItem(base->tp_subclasses, key, (PyObject*)type);
 }
 
-static PyObject* native_int_to_bool(int res) {
-    return res ? Py_True : Py_False;
-}
-
 /*
  * finds the beginning of the docstring's introspection signature.
  * if present, returns a pointer pointing to the first '('.
@@ -582,7 +578,7 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT("__str__", cls->tp_str, -1);
     ADD_SLOT("__getattr__", cls->tp_getattro, -2);
     ADD_SLOT_PRIMITIVE("__setattr__", cls->tp_setattro, -3);
-    ADD_SLOT_CONV("__clear__", native_int_to_bool, cls->tp_clear, -1, NULL);
+    ADD_SLOT_CONV("__clear__", NULL, cls->tp_clear, -1, JWRAPPER_INQUIRY);
 
     /* IMPORTANT NOTE: If the class already provides 'tp_richcompare' but this is the default
        'object.__truffle_richcompare__' function, then we need to break a recursive cycle since
@@ -625,7 +621,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
-        ADD_SLOT_CONV("__bool__", native_int_to_bool, numbers->nb_bool, -1, NULL);
+        ADD_SLOT_CONV("__bool__", NULL, numbers->nb_bool, -1, JWRAPPER_INQUIRY);
         ADD_SLOT("__invert__", numbers->nb_invert, -1);
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
         ADD_SLOT_CONV("__rlshift__", NULL, numbers->nb_lshift, -2, JWRAPPER_REVERSE);
