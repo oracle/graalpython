@@ -478,8 +478,13 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "!isPTuple(indexObj)")
-        MemoryPointer resolveInt(PMemoryView self, Object indexObj) {
-            return resolveInt(self, convertIndex(indexObj));
+        MemoryPointer resolveIntObj(PMemoryView self, Object indexObj) {
+            final int index = convertIndex(indexObj);
+            if (self.getDimensions() == 1) {
+                return resolveInt(self, index);
+            } else {
+                return resolveIntError(self, index);
+            }
         }
 
         private void checkTupleLength(SequenceStorageNodes.LenNode lenNode, SequenceStorage indicesStorage, int ndim) {
