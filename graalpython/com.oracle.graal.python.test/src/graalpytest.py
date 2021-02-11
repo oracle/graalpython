@@ -54,6 +54,9 @@ SERIAL_TESTS = [
     # test_compileall tries to recompile the whole PYTHONPATH, which makes it interfere with any test that
     # creates temporary py files
     'test_compileall',
+    # test_import tests various behaviors related to __pycache__ directory,
+    # it can interfere with other tests that generate code
+    'test_import',
 ]
 
 
