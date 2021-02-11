@@ -135,82 +135,121 @@ CODESIZE = 4
 MAGIC = 20171005
 MAXREPEAT = 4294967295
 MAXGROUPS = 2147483647
-FLAG_NAMES = ["re.TEMPLATE", "re.IGNORECASE", "re.LOCALE", "re.MULTILINE",
-              "re.DOTALL", "re.UNICODE", "re.VERBOSE", "re.DEBUG",
-              "re.ASCII"]
+FLAG_TEMPLATE = 1
+FLAG_IGNORECASE = 2
+FLAG_LOCALE = 4
+FLAG_MULTILINE = 8
+FLAG_DOTALL = 16
+FLAG_UNICODE = 32
+FLAG_VERBOSE = 64
+FLAG_DEBUG = 128
+FLAG_ASCII = 256
+FLAG_NAMES = [
+    (FLAG_TEMPLATE, "re.TEMPLATE"),
+    (FLAG_IGNORECASE, "re.IGNORECASE"),
+    (FLAG_LOCALE, "re.LOCALE"),
+    (FLAG_MULTILINE, "re.MULTILINE"),
+    (FLAG_DOTALL, "re.DOTALL"),
+    (FLAG_UNICODE, "re.UNICODE"),
+    (FLAG_VERBOSE, "re.VERBOSE"),
+    (FLAG_DEBUG, "re.DEBUG"),
+    (FLAG_ASCII, "re.ASCII"),
+]
 
 
 class SRE_Match():
     def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex):
-        self.result = result
-        self.compiled_regex = compiled_regex
-        self.re = pattern
-        self.pos = pos
-        self.endpos = endpos
-        self.input_str = input_str
+        self.__result = result
+        self.__compiled_regex = compiled_regex
+        self.__re = pattern
+        self.__pos = pos
+        self.__endpos = endpos
+        self.__input_str = input_str
 
     def end(self, groupnum=0):
-        return self.result.getEnd(groupnum)
+        return self.__result.getEnd(groupnum)
 
     def group(self, *args):
         if not args:
-            return self.__group__(0)
+            return self.__group(0)
         elif len(args) == 1:
-            return self.__group__(args[0])
+            return self.__group(args[0])
         else:
             lst = []
             for arg in args:
-                lst.append(self.__group__(arg))
+                lst.append(self.__group(arg))
             return tuple(lst)
 
     def groups(self, default=None):
         lst = []
-        for arg in range(1, self.compiled_regex.groupCount):
-            lst.append(self.__group__(arg))
+        for arg in range(1, self.__compiled_regex.groupCount):
+            lst.append(self.__group(arg, default))
         return tuple(lst)
 
-    def __groupidx__(self, idx):
-        if isinstance(idx, str):
-            return self.compiled_regex.groups[idx]
-        else:
-            return idx
+    def __getitem__(self, item):
+        return self.__group(item)
 
-    def __group__(self, idx):
-        idxarg = self.__groupidx__(idx)
-        start = self.result.getStart(idxarg)
+    def __groupidx(self, idx):
+        try:
+            if isinstance(idx, str):
+                return self.__compiled_regex.groups[idx]
+            elif 0 <= idx < self.__compiled_regex.groupCount:
+                return idx
+        except Exception:
+            pass
+        raise IndexError("no such group")
+
+    def __group(self, idx, default=None):
+        idxarg = self.__groupidx(idx)
+        start = self.__result.getStart(idxarg)
         if start < 0:
-            return None
+            return default
         else:
-            return self.input_str[start:self.result.getEnd(idxarg)]
+            return self.__input_str[start:self.__result.getEnd(idxarg)]
 
     def groupdict(self, default=None):
-        d = {}
-        if self.compiled_regex.groups:
-            assert dir(self.compiled_regex.groups)
-            for k in dir(self.compiled_regex.groups):
-                idx = self.compiled_regex.groups[k]
-                d[k] = self.__group__(idx)
-        return d
+        groups = self.__compiled_regex.groups
+        if groups:
+            return {name: self.__group(name, default) for name in dir(groups)}
+        return {}
 
     def span(self, groupnum=0):
-        idxarg = self.__groupidx__(groupnum)
-        return (self.result.getStart(idxarg), self.result.getEnd(idxarg))
+        idxarg = self.__groupidx(groupnum)
+        return self.__result.getStart(idxarg), self.__result.getEnd(idxarg)
 
     def start(self, groupnum=0):
-        idxarg = self.__groupidx__(groupnum)
-        return self.result.getStart(idxarg)
+        idxarg = self.__groupidx(groupnum)
+        return self.__result.getStart(idxarg)
 
     @property
     def string(self):
-        return self.input_str
+        return self.__input_str
+
+    @property
+    def re(self):
+        return self.__re
+
+    @property
+    def pos(self):
+        return self.__pos
+
+    @property
+    def endpos(self):
+        return self.__endpos
 
     @property
     def lastgroup(self):
-        return self.compiled_regex.groupCount
+        lastindex = self.lastindex
+        if lastindex is not None:
+            return self.__group(lastindex)
 
     @property
     def lastindex(self):
-        return self.result.getEnd(0)
+        lastindex = None
+        for index in range(1, self.__compiled_regex.groupCount):
+            if self.__result.getStart(index) >= 0:
+                lastindex = index
+        return lastindex
 
     def __repr__(self):
         return "<re.Match object; span=%r, match=%r>" % (self.span(), self.group())
@@ -227,7 +266,6 @@ def _is_bytes_like(object):
 class SRE_Pattern():
     def __init__(self, pattern, flags):
         self.__binary = isinstance(pattern, bytes)
-        self.groups = 0
         self.pattern = pattern
         self.flags = flags
         flags_str = []
@@ -235,14 +273,15 @@ class SRE_Pattern():
             if flags & flag:
                 flags_str.append(char)
         self.flags_str = "".join(flags_str)
-        self.__compiled_regexes = dict()
-        groupindex = dict()
-        if self.__tregex_compile(self.pattern).groups is not None:
-            for group_name in dir(self.__tregex_compile(self.pattern).groups):
-                groups = self.__tregex_compile(self.pattern).groups
-                self.groups = len(dir(groups))
-                groupindex[group_name] = groups[group_name]
-        self.groupindex = _mappingproxy(groupindex)
+        self.__compiled_regexes = {}
+        compiled_regex = self.__tregex_compile(self.pattern)
+        self.groups = compiled_regex.groupCount - 1
+        groups = compiled_regex.groups
+        if groups is None:
+            self.groupindex = {}
+        else:
+            group_names = dir(groups)
+            self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
@@ -269,13 +308,15 @@ class SRE_Pattern():
                 raise
         return self.__compiled_regexes[(pattern, flags)]
 
-
     def __repr__(self):
         flags = self.flags
         flag_items = []
-        for i,name in enumerate(FLAG_NAMES):
-            if flags & (1 << i):
-                flags -= (1 << i)
+        if not self.__binary:
+            if (flags & (FLAG_LOCALE | FLAG_UNICODE | FLAG_ASCII)) == FLAG_UNICODE:
+                flags &= ~FLAG_UNICODE
+        for code, name in FLAG_NAMES:
+            if flags & code:
+                flags -= code
                 flag_items.append(name)
         if flags != 0:
             flag_items.append("0x%x" % flags)
@@ -286,6 +327,16 @@ class SRE_Pattern():
             sep = ", "
             sflags = "|".join(flag_items)
         return "re.compile(%r%s%s)" % (self.pattern, sep, sflags)
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        if type(other) != SRE_Pattern:
+            return NotImplemented
+        return self.pattern == other.pattern and self.flags == other.flags
+
+    def __hash__(self):
+        return hash(self.pattern) * 31 ^ hash(self.flags)
 
     def _search(self, pattern, string, pos, endpos, sticky=False):
         pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
@@ -365,64 +416,6 @@ class SRE_Pattern():
             pos = result.getEnd(0) + no_progress
         return matchlist
 
-    def __replace_groups(self, repl, string, match_result, pattern):
-        def group(pattern, match_result, group_nr, string):
-            if group_nr >= pattern.groupCount:
-                return None
-            group_start = match_result.getStart(group_nr)
-            group_end = match_result.getEnd(group_nr)
-            return string[group_start:group_end]
-
-        n = len(repl)
-        result = b"" if self.__binary else ""
-        start = 0
-        backslash = b'\\' if self.__binary else '\\'
-        pos = repl.find(backslash, start)
-        while pos != -1 and start < n:
-            if pos+1 < n:
-                c = repl[pos + 1:pos + 2].decode('ascii') if self.__binary else repl[pos + 1]
-                if c.isdigit() and pattern.groupCount > 0:
-                    # TODO: Should handle backreferences longer than 1 digit and fall back to octal escapes.
-                    group_nr = int(c)
-                    group_str = group(pattern, match_result, group_nr, string)
-                    if group_str is None:
-                        raise error("invalid group reference %s" % group_nr)
-                    result += repl[start:pos] + group_str
-                    start = pos + 2
-                elif c == 'g':
-                    group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
-                    if group_ref:
-                        group_str = group(pattern, match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
-                        if group_str is None:
-                            raise error("invalid group reference %s" % group_ref)
-                        result += repl[start:pos] + group_str
-                    start = group_ref_end + 1
-                elif c == '\\':
-                    result += repl[start:pos] + backslash
-                    start = pos + 2
-                else:
-                    assert False, "unexpected escape in re.sub"
-            pos = repl.find(backslash, start)
-        result += repl[start:]
-        return result
-
-
-    def __extract_groupname(self, repl, pos):
-        if repl[pos] == (b'<' if self.__binary else '<'):
-            digits_only = True
-            n = len(repl)
-            i = pos + 1
-            while i < n and repl[i] != (b'>' if self.__binary else '>'):
-                digits_only = digits_only and repl[i].isdigit()
-                i += 1
-            if i < n:
-                # found '>'
-                group_ref = repl[pos + 1 : i]
-                group_ref_str = group_ref.decode('ascii') if self.__binary else group_ref
-                return group_ref_str, i, digits_only
-        return None, pos, False
-
-
     def sub(self, repl, string, count=0):
         return self.subn(repl, string, count)[0]
 
@@ -432,13 +425,20 @@ class SRE_Pattern():
         pattern = self.__tregex_compile(self.pattern)
         result = []
         pos = 0
-        is_string_rep = isinstance(repl, str) or _is_bytes_like(repl)
-        if is_string_rep:
+        literal = False
+        if not callable(repl):
             self.__check_input_type(repl)
-            try:
-                repl = _process_escape_sequences(repl)
-            except ValueError as e:
-                raise error(str(e))
+            if isinstance(repl, str):
+                literal = '\\' not in repl
+            else:
+                literal = b'\\' not in repl
+            if not literal:
+                import sre_parse
+                template = sre_parse.parse_template(repl, self)
+
+                def repl(match):
+                    return sre_parse.expand_template(template, match)
+
         while (count == 0 or n < count) and pos <= len(string):
             match_result = tregex_call_exec(pattern.exec, string, pos)
             if not match_result.isMatch:
@@ -447,8 +447,8 @@ class SRE_Pattern():
             start = match_result.getStart(0)
             end = match_result.getEnd(0)
             result.append(string[pos:start])
-            if is_string_rep:
-                result.append(self.__replace_groups(repl, string, match_result, pattern))
+            if literal:
+                result.append(repl)
             else:
                 _srematch = SRE_Match(self, pos, -1, match_result, string, pattern)
                 _repl = repl(_srematch)
@@ -460,9 +460,9 @@ class SRE_Pattern():
                 pos = pos + 1
         result.append(string[pos:])
         if self.__binary:
-            return (b"".join(result), n)
+            return b"".join(result), n
         else:
-            return ("".join(result), n)
+            return "".join(result), n
 
     def split(self, string, maxsplit=0):
         n = 0
