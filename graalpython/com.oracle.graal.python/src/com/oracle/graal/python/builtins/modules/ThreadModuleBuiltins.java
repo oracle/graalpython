@@ -64,10 +64,11 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -206,6 +207,8 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                     // a caller which is incorrect. However, the thread-local 'topframeref' is
                     // initialized with EMPTY which will be picked up.
                     callNode.execute(null, callable, arguments, keywords);
+                } catch (PythonThreadKillException e) {
+                    return;
                 } catch (PException e) {
                     WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), "in thread started by", callable);
                 }

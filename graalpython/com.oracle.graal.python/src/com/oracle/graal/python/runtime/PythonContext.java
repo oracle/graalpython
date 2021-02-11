@@ -41,6 +41,7 @@ import java.nio.file.LinkOption;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -84,6 +85,8 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.ShutdownHook;
@@ -216,7 +219,7 @@ public final class PythonContext {
     private ThreadLocal<PythonThreadState> threadState = new ThreadLocal<>();
 
     /* map of thread IDs to indices for array 'threadStates' */
-    private Map<Thread, PythonThreadState> threadStateMapping = new WeakHashMap<>();
+    private Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -834,34 +837,26 @@ public final class PythonContext {
         }
         LOGGER.fine("successfully shut down all threads");
 
-        // collect list of threads to join in synchronized block
-        LinkedList<WeakReference<Thread>> threadList = new LinkedList<>();
-        synchronized (this) {
-            for (PythonThreadState ts : threadStateMapping.values()) {
-                // do not join the initial thread; this could cause a dead lock
-                if (ts != singleThreadState) {
-                    threadList.add(ts.getOwner());
-                }
-            }
-        }
-
-        // join threads outside the synchronized block otherwise we could run into a dead lock
-        releaseGil();
         try {
-            for (WeakReference<Thread> threadRef : threadList) {
-                Thread thread = threadRef.get();
-                if (thread != null) {
+            // make a copy of the threads, because the threads will disappear one by one from the
+            // threadStateMapping as we're joining them, which gives undefined results for the
+            // iterator over keySet
+            LinkedList<Thread> threads = new LinkedList<>(threadStateMapping.keySet());
+            for (Thread thread : threads) {
+                if (thread != Thread.currentThread()) {
+                    // cannot interrupt ourselves, we're hilding the GIL
                     LOGGER.finest("joining thread " + thread);
                     // the threads remaining here are daemon threads, all others were shut down via
-                    // the threading module above. So we just interrupt them.
+                    // the threading module above. So we just interrupt them. Their exit is handled
+                    // in the acquireGil function, which will be interrupted for these threads
+                    disposeThread(thread);
                     thread.interrupt();
                     thread.join();
                 }
             }
         } catch (InterruptedException e) {
             LOGGER.finest("got interrupt while joining threads");
-        } finally {
-            acquireGil();
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -944,7 +939,25 @@ public final class PythonContext {
     @TruffleBoundary
     void acquireGil() {
         if (!globalInterpreterLock.isHeldByCurrentThread()) {
-            globalInterpreterLock.lock();
+            try {
+                globalInterpreterLock.lockInterruptibly();
+            } catch (InterruptedException e) {
+                if (threadStateMapping.get(Thread.currentThread()) == null) {
+                    // This is a thread being killed during normal context shutdown. This thread
+                    // should exit now. This should usually only happen for daemon threads on
+                    // context shutdown. This is the equivalent to the logic in pylifecycle.c and
+                    // PyEval_RestoreThread which, on Python shutdown, will join non-daemon threads
+                    // and then simply start destroying the thread states of remaining threads. If
+                    // any remaining daemon thread then tries to acquire the GIL, it'll notice the
+                    // shutdown is happening and exit.
+                    throw new PythonThreadKillException();
+                } else {
+                    // We are being interrupted through some non-internal means. If this happens to
+                    // the main thread (which can only occur if we are embedded somewhere) we exit
+                    // with the same exit code that SIGINT would produce. Other threads just die.
+                    throw new PythonExitException(null, 130);
+                }
+            }
         }
     }
 
@@ -1061,6 +1074,10 @@ public final class PythonContext {
         if (curThreadState == null) {
             // this should happen just the first time the current thread accesses the thread state
             curThreadState = getThreadStateFullLookup();
+            if (curThreadState == null) {
+                // we're shutting down, and getting into a similar situation as _Py_FatalError_TstateNULL
+                throw new PythonThreadKillException();
+            }
             threadState.set(curThreadState);
         }
         assert curThreadState.isOwner(Thread.currentThread());
@@ -1107,7 +1124,10 @@ public final class PythonContext {
         CompilerAsserts.neverPartOfCompilation();
         // check if there is a live sentinel lock
         PythonThreadState ts = threadStateMapping.get(thread);
-        assert ts != null : "thread was not attached to this context";
+        if (ts == null) {
+            // ts already removed, that is valid during context shutdown for daemon threads
+            return;
+        }
         assert ts.isOwner(thread) : "thread state owner was changed before this thread was disposed!";
         ts.clearOwner();
         threadStateMapping.remove(thread);
