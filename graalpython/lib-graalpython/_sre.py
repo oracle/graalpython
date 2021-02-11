@@ -226,6 +226,14 @@ class Match():
         idxarg = self.__groupidx(groupnum)
         return self.__result.getStart(idxarg)
 
+    def expand(self, template):
+        import re
+        return re._expand(self.__re, self, template)
+
+    @property
+    def regs(self):
+        return tuple(self.span(i) for i in range(self.__compiled_regex.groupCount))
+
     @property
     def string(self):
         return self.__input_str
@@ -463,11 +471,10 @@ class Pattern():
             else:
                 literal = b'\\' not in repl
             if not literal:
-                import sre_parse
-                template = sre_parse.parse_template(repl, self)
-
-                def repl(match):
-                    return sre_parse.expand_template(template, match)
+                import re
+                repl = re._subx(self, repl)
+                if not callable(repl):
+                    literal = True
 
         while (count == 0 or n < count) and pos <= len(string):
             match_result = tregex_call_exec(pattern.exec, string, pos)
