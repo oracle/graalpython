@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
@@ -159,6 +158,7 @@ import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
 @GenerateUncached
@@ -507,7 +507,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new GetSetDescriptor(getLanguage(), get, set, name, type, allowsDelete));
     }
 
-    public HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenPythonKey key, Object type) {
+    public final HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, Object type) {
         return trace(new HiddenKeyDescriptor(getLanguage(), key, type));
     }
 
