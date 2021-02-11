@@ -77,7 +77,7 @@ class _ExecutablePattern:
         self.__compiled_pattern__ = compiled_pattern
         self.__sticky__ = sticky
         self.pattern = compiled_pattern.pattern
-        self.flags = flags
+        self.flags = {name: bool(flags & flag) for flag, name in FLAG_NAMES}
         self.groupCount = 1 + compiled_pattern.groups
         self.groups = _NamedCaptureGroups(compiled_pattern.groupindex)
 
@@ -111,7 +111,7 @@ def fallback_compiler(pattern, flags):
 
     compiled_pattern = _sre_compile(pattern, bit_flags)
 
-    return _ExecutablePattern(compiled_pattern, flags, sticky)
+    return _ExecutablePattern(compiled_pattern, bit_flags, sticky)
 
 def _new_compile(p, flags=0):
     if _with_tregex and isinstance(p, (str, bytes)):
@@ -292,9 +292,10 @@ class Pattern():
     def flags(self):
         # Flags can be spcified both in the flag argument or inline in the regex. Extract them back from the regex
         flags = self.__input_flags
+        regex_flags = self.__tregex_compile(self.pattern).flags
         for flag, name in FLAG_NAMES:
             try:
-                if self.__tregex_compile(self.pattern).flags[name]:
+                if regex_flags[name]:
                     flags |= flag
             except KeyError:
                 pass
