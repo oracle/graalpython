@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_re.ImplementationTest.test_overlap_table
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_bytes
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_flags_repr
+*graalpython.lib-python.3.test.test_re.PatternReprTests.test_inline_flags
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_locale
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_multiple_flags
 *graalpython.lib-python.3.test.test_re.PatternReprTests.test_quotes

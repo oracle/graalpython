@@ -146,15 +146,15 @@ FLAG_VERBOSE = 64
 FLAG_DEBUG = 128
 FLAG_ASCII = 256
 FLAG_NAMES = [
-    (FLAG_TEMPLATE, "re.TEMPLATE"),
-    (FLAG_IGNORECASE, "re.IGNORECASE"),
-    (FLAG_LOCALE, "re.LOCALE"),
-    (FLAG_MULTILINE, "re.MULTILINE"),
-    (FLAG_DOTALL, "re.DOTALL"),
-    (FLAG_UNICODE, "re.UNICODE"),
-    (FLAG_VERBOSE, "re.VERBOSE"),
-    (FLAG_DEBUG, "re.DEBUG"),
-    (FLAG_ASCII, "re.ASCII"),
+    (FLAG_TEMPLATE, "TEMPLATE"),
+    (FLAG_IGNORECASE, "IGNORECASE"),
+    (FLAG_LOCALE, "LOCALE"),
+    (FLAG_MULTILINE, "MULTILINE"),
+    (FLAG_DOTALL, "DOTALL"),
+    (FLAG_UNICODE, "UNICODE"),
+    (FLAG_VERBOSE, "VERBOSE"),
+    (FLAG_DEBUG, "DEBUG"),
+    (FLAG_ASCII, "ASCII"),
 ]
 
 
@@ -272,12 +272,12 @@ class Pattern():
     def __init__(self, pattern, flags):
         self.__binary = isinstance(pattern, bytes)
         self.pattern = pattern
-        self.flags = flags
+        self.__input_flags = flags
         flags_str = []
-        for char,flag in FLAGS.items():
+        for char, flag in FLAGS.items():
             if flags & flag:
                 flags_str.append(char)
-        self.flags_str = "".join(flags_str)
+        self.__flags_str = "".join(flags_str)
         self.__compiled_regexes = {}
         compiled_regex = self.__tregex_compile(self.pattern)
         self.groups = compiled_regex.groupCount - 1
@@ -287,6 +287,18 @@ class Pattern():
         else:
             group_names = dir(groups)
             self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
+
+    @property
+    def flags(self):
+        # Flags can be spcified both in the flag argument or inline in the regex. Extract them back from the regex
+        flags = self.__input_flags
+        for flag, name in FLAG_NAMES:
+            try:
+                if self.__tregex_compile(self.pattern).flags[name]:
+                    flags |= flag
+            except KeyError:
+                pass
+        return flags
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
@@ -303,7 +315,7 @@ class Pattern():
 
     def __tregex_compile(self, pattern, flags=None):
         if flags is None:
-            flags = self.flags_str
+            flags = self.__flags_str
         if (pattern, flags) not in self.__compiled_regexes:
             try:
                 self.__compiled_regexes[(pattern, flags)] = tregex_compile_internal(pattern, flags, fallback_compiler)
@@ -322,7 +334,7 @@ class Pattern():
         for code, name in FLAG_NAMES:
             if flags & code:
                 flags -= code
-                flag_items.append(name)
+                flag_items.append(f're.{name}')
         if flags != 0:
             flag_items.append("0x%x" % flags)
         if len(flag_items) == 0:
@@ -344,7 +356,7 @@ class Pattern():
         return hash(self.pattern) * 31 ^ hash(self.flags)
 
     def _search(self, pattern, string, pos, endpos, sticky=False):
-        pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
+        pattern = self.__tregex_compile(pattern, self.__flags_str + ("y" if sticky else ""))
         input_str = string
         if endpos == -1 or endpos >= len(string):
             endpos = len(string)
