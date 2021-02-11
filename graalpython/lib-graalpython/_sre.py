@@ -204,8 +204,10 @@ class SRE_Match():
         start = self.__result.getStart(idxarg)
         if start < 0:
             return default
-        else:
+        elif isinstance(self.__input_str, str):
             return self.__input_str[start:self.__result.getEnd(idxarg)]
+        else:
+            return bytes(self.__input_str[start:self.__result.getEnd(idxarg)])
 
     def groupdict(self, default=None):
         groups = self.__compiled_regex.groups
