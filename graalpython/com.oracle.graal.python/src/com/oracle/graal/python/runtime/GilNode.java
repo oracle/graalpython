@@ -116,6 +116,8 @@ public abstract class GilNode extends Node {
             }
             return this;
         }
+
+        public abstract void close();
     }
 
     public static final class UncachedRelease extends Uncached {
@@ -124,6 +126,7 @@ public abstract class GilNode extends Node {
 
         private static final UncachedRelease INSTANCE = new UncachedRelease();
 
+        @Override
         public final void close() {
             acquire();
         }
@@ -135,6 +138,7 @@ public abstract class GilNode extends Node {
 
         private static final UncachedAcquire INSTANCE = new UncachedAcquire();
 
+        @Override
         public final void close() {
             release();
         }
