@@ -112,6 +112,30 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     public static final String SURROGATEESCAPE = "surrogateescape";
     public static final String SURROGATEPASS = "surrogatepass";
 
+    static CodingErrorAction convertCodingErrorAction(String errors) {
+        CodingErrorAction errorAction;
+        switch (errors) {
+            // TODO: see [GR-10256] to implement the correct handling mechanics
+            case IGNORE:
+                errorAction = CodingErrorAction.IGNORE;
+                break;
+            case REPLACE:
+            case NAMEREPLACE:
+                errorAction = CodingErrorAction.REPLACE;
+                break;
+            case STRICT:
+            case BACKSLASHREPLACE:
+            case SURROGATEPASS:
+            case SURROGATEESCAPE:
+            case XMLCHARREFREPLACE:
+            default:
+                // Everything else will be handled by our Handle nodes
+                errorAction = CodingErrorAction.REPORT;
+                break;
+        }
+        return errorAction;
+    }
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CodecsModuleBuiltinsFactory.getFactories();
@@ -432,36 +456,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    protected static CodingErrorAction convertCodingErrorAction(String errors) {
-        CodingErrorAction errorAction;
-        switch (errors) {
-            // TODO: see [GR-10256] to implement the correct handling mechanics
-            case IGNORE:
-                errorAction = CodingErrorAction.IGNORE;
-                break;
-            case REPLACE:
-            case NAMEREPLACE:
-                errorAction = CodingErrorAction.REPLACE;
-                break;
-            case STRICT:
-            case BACKSLASHREPLACE:
-            case SURROGATEPASS:
-            case SURROGATEESCAPE:
-            case XMLCHARREFREPLACE:
-            default:
-                // Everything else will be handled by our Handle nodes
-                errorAction = CodingErrorAction.REPORT;
-                break;
-        }
-        return errorAction;
-    }
-
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
     @Builtin(name = "__truffle_encode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends PythonTernaryClinicBuiltinNode {
+        public abstract Object execute(Object str, Object encoding, Object errors);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -510,6 +511,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         protected ArgumentClinicProvider getArgumentClinic() {
             return CodecsModuleBuiltinsClinicProviders.CodecsDecodeNodeClinicProviderGen.INSTANCE;
         }
+
+        public abstract Object execute(VirtualFrame frame, Object str, Object encoding, Object errors, Object finalData);
 
         @Specialization
         Object decode(PBytesLike input, String encoding, String errors, boolean finalData,
