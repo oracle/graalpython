@@ -157,7 +157,7 @@ FLAG_NAMES = [
 ]
 
 
-class SRE_Match():
+class Match():
     def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex):
         self.__result = result
         self.__compiled_regex = compiled_regex
@@ -265,7 +265,7 @@ def _append_end_assert(pattern):
 def _is_bytes_like(object):
     return isinstance(object, (bytes, bytearray, memoryview, mmap))
 
-class SRE_Pattern():
+class Pattern():
     def __init__(self, pattern, flags):
         self.__binary = isinstance(pattern, bytes)
         self.pattern = pattern
@@ -333,7 +333,7 @@ class SRE_Pattern():
     def __eq__(self, other):
         if self is other:
             return True
-        if type(other) != SRE_Pattern:
+        if type(other) != Pattern:
             return NotImplemented
         return self.pattern == other.pattern and self.flags == other.flags
 
@@ -350,7 +350,7 @@ class SRE_Pattern():
             input_str = string[:endpos]
             result = tregex_call_exec(pattern.exec, input_str, min(pos, endpos % len(string) + 1))
         if result.isMatch:
-            return SRE_Match(self, pos, endpos, result, input_str, pattern)
+            return Match(self, pos, endpos, result, input_str, pattern)
         else:
             return None
 
@@ -391,7 +391,7 @@ class SRE_Pattern():
             if not result.isMatch:
                 break
             else:
-                yield SRE_Match(self, pos, endpos, result, string, compiled_regex)
+                yield Match(self, pos, endpos, result, string, compiled_regex)
             no_progress = (result.getStart(0) == result.getEnd(0))
             pos = result.getEnd(0) + no_progress
         return
@@ -413,7 +413,7 @@ class SRE_Pattern():
             elif compiled_regex.groupCount == 2:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
-                matchlist.append(tuple(map(self.__sanitize_out_type, SRE_Match(self, pos, endpos, result, string, compiled_regex).groups())))
+                matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, compiled_regex).groups())))
             no_progress = (result.getStart(0) == result.getEnd(0))
             pos = result.getEnd(0) + no_progress
         return matchlist
@@ -452,7 +452,7 @@ class SRE_Pattern():
             if literal:
                 result.append(repl)
             else:
-                _srematch = SRE_Match(self, pos, -1, match_result, string, pattern)
+                _srematch = Match(self, pos, -1, match_result, string, pattern)
                 _repl = repl(_srematch)
                 result.append(_repl)
             pos = end
@@ -495,7 +495,7 @@ class SRE_Pattern():
         return result
 
 
-_t_compile = SRE_Pattern
+_t_compile = Pattern
 
 def compile(pattern, flags, code, groups, groupindex, indexgroup):
     import _cpython_sre
