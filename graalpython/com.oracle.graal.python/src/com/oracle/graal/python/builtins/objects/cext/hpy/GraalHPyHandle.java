@@ -88,9 +88,10 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     @ExportMessage
-    long asPointer(
-                    @Exclusive @Cached ConditionProfile isNativeProfile) throws UnsupportedMessageException {
-        if (!isPointer(isNativeProfile)) {
+    long asPointer() throws UnsupportedMessageException {
+        // note: we don't use a profile here since 'asPointer' is usually used right after
+        // 'isPointer'
+        if (!isPointer(ConditionProfile.getUncached())) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
@@ -190,7 +191,7 @@ public final class GraalHPyHandle implements TruffleObject {
     public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
         if (isPointer(isAllocatedProfile)) {
             try {
-                hpyContext.releaseHPyHandleForObject((int) asPointer(isAllocatedProfile));
+                hpyContext.releaseHPyHandleForObject((int) asPointer());
                 id = -1;
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
