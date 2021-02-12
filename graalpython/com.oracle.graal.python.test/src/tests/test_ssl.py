@@ -90,7 +90,7 @@ class CertTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "certfile should be a valid filesystem path"):
             self.ctx.load_cert_chain(1, 1)
         with self.assertRaisesRegex(TypeError, "keyfile should be a valid filesystem path"):
-            self.ctx.load_cert_chain("empty.pem", 1)
+            self.ctx.load_cert_chain(data_file("empty.pem"), 1)
 
         self.check_load_cert_chain_error(certfile="does_not_exit", errno=2, strerror="No such file or directory", err=FileNotFoundError)
         self.check_load_cert_chain_error(certfile="does_not_exit", keyfile="does_not_exist", errno=2, strerror="No such file or directory", err=FileNotFoundError)
