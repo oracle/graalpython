@@ -424,8 +424,22 @@ public final class EmulatedPosixSupport extends PosixResources {
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
         SelectableChannel[] readChannels = getSelectableChannels(readfds);
         SelectableChannel[] writeChannels = getSelectableChannels(writefds);
-        // Java doesn't support any exceptional conditions we could apply on errfds
-        // TODO raise exception if errfds is not a subset of readfds & writefds?
+        // Java doesn't support any exceptional conditions we could apply on errfds, report a
+        // warning if errfds is not a subset of readfds & writefds
+        errfdsCheck: for (int fd : errorfds) {
+            for (int fd2 : readfds) {
+                if (fd == fd2) {
+                    continue errfdsCheck;
+                }
+            }
+            for (int fd2 : writefds) {
+                if (fd == fd2) {
+                    continue errfdsCheck;
+                }
+            }
+            compatibilityIgnored("POSIX emultaion layer doesn't support waiting on exceptional conditions in select()");
+            break;
+        }
 
         boolean[] wasBlocking = new boolean[readChannels.length + writeChannels.length];
         int i = 0;
