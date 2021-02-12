@@ -324,7 +324,6 @@ public final class CertUtils {
         Base64.Decoder decoder = Base64.getDecoder();
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
         boolean sawBegin = false;
-        boolean someData = false;
         StringBuilder sb = new StringBuilder(2000);
         List<String> data = new ArrayList<>();
         String line;
@@ -335,9 +334,6 @@ public final class CertUtils {
                 }
                 if (line.contains(END_CERTIFICATE)) {
                     sawBegin = false;
-                    if (!someData && sb.length() > 0) {
-                        someData = true;
-                    }
                     data.add(sb.toString());
                 } else {
                     sb.append(line);
@@ -363,7 +359,7 @@ public final class CertUtils {
                     }
                 }
                 result.add((X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der)));
-            } else if (someData) {
+            } else {
                 return LoadCertError.EMPTY_CERT;
             }
         }
@@ -381,17 +377,17 @@ public final class CertUtils {
         boolean begin = false;
         StringBuilder sb = new StringBuilder();
         try (BufferedReader r = pkPem.newBufferedReader()) {
-            String line;
-            while ((line = r.readLine()) != null) {
-                if (!begin && line.contains(BEGIN_PRIVATE_KEY)) {
-                    begin = true;
-                } else if (begin) {
-                    if (line.contains(END_PRIVATE_KEY)) {
-                        begin = false;
-                        // get first private key found
-                        break;
-                    }
-                    sb.append(line);
+        String line;
+        while ((line = r.readLine()) != null) {
+            if (!begin && line.contains(BEGIN_PRIVATE_KEY)) {
+                begin = true;
+            } else if (begin) {
+                if (line.contains(END_PRIVATE_KEY)) {
+                    begin = false;
+                    // get first private key found
+                    break;
+                }
+                sb.append(line);
                 }
             }
         }
@@ -408,7 +404,7 @@ public final class CertUtils {
         }
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
         KeyFactory factory = KeyFactory.getInstance(alg);
-        return factory.generatePrivate(spec);
+        return factory.generatePrivate(spec);        
     }
 
     @TruffleBoundary
