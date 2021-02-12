@@ -101,14 +101,14 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    static boolean isCrl(X509Certificate cert, boolean[] keyUsage) {
+    static boolean isCrl(boolean[] keyUsage) {
         return keyUsage != null && keyUsage.length > 6 && keyUsage[6];
     }
 
     /**
      * _ssl.c#_decode_certificate
      */
-    public static PDict decodeCertificate(X509Certificate cert, HashingStorageLibrary hlib, PythonObjectFactory factory) throws CertificateParsingException, IOException {
+    public static PDict decodeCertificate(X509Certificate cert, HashingStorageLibrary hlib, PythonObjectFactory factory) throws IOException, CertificateParsingException {
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
         storage = setItem(hlib, storage, JAVA_X509_OCSP, parseOCSP(cert, factory));
@@ -125,7 +125,7 @@ public final class CertUtils {
         return dict;
     }
 
-    private static HashingStorage setItem(HashingStorageLibrary hlib, HashingStorage storage, String key, Object value) throws CertificateParsingException {
+    private static HashingStorage setItem(HashingStorageLibrary hlib, HashingStorage storage, String key, Object value) {
         if (value != null) {
             return hlib.setItem(storage, key, value);
         } else {
@@ -191,7 +191,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static void parseAndAddName(String name, List<PTuple> result, PythonObjectFactory factory, String... fields) throws IOException {
+    private static void parseAndAddName(String name, List<PTuple> result, PythonObjectFactory factory, String... fields) {
         List<PTuple> tuples = new ArrayList<>(16);
         for (String component : name.split(",")) {
             String[] kv = component.split("=");
@@ -301,7 +301,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) throws IOException {
+    private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) {
         URI ocsp = OCSP.getResponderURI(cert);
         if (ocsp != null) {
             return factory.createTuple(new String[]{ocsp.toString()});
@@ -401,7 +401,7 @@ public final class CertUtils {
         }
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
         KeyFactory factory = KeyFactory.getInstance(alg);
-        return factory.generatePrivate(spec);        
+        return factory.generatePrivate(spec);
     }
 
     @TruffleBoundary

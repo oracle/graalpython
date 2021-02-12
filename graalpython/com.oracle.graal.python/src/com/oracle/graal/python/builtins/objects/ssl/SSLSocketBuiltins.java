@@ -222,13 +222,13 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SessionNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        static Object get(PSSLSocket self, @SuppressWarnings("unused") Object none) {
+        static Object get(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object none) {
             // TODO
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(obj)")
-        Object set(PSSLSocket self, Object obj) {
+        Object set(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object obj) {
             // TODO
             throw raise(NotImplementedError);
         }

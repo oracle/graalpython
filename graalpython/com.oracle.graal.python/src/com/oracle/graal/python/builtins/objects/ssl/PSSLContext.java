@@ -85,17 +85,17 @@ public final class PSSLContext extends PythonBuiltinObject {
         if (verifyMode == SSLModuleBuiltins.SSL_CERT_NONE) {
             // TODO: what about optional?
             tms = new TrustManager[]{new X509TrustManager() {
-                private X509Certificate[] chain;
+                private X509Certificate[] trustedChain;
 
                 public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
                 }
 
                 public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                    this.chain = chain;
+                    this.trustedChain = chain;
                 }
 
                 public X509Certificate[] getAcceptedIssuers() {
-                    return chain;
+                    return trustedChain;
                 }
             }};
         }

@@ -65,10 +65,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.BEGIN_CERTIFICATE_WITHOUT_END;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.EMPTY_CERT;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.NO_CERT_DATA;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError.SOME_BAD_BASE64_DECODE;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getDHParameters;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getPrivateKey;
@@ -146,14 +142,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 return context;
             } catch (NoSuchAlgorithmException e) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e.getMessage());
-            } catch (KeyManagementException e) {
-                // TODO when does this happen?
-                throw raise(SSLError, e);
             }
         }
 
         @TruffleBoundary
-        private static SSLContext createSSLContext(SSLMethod version) throws NoSuchAlgorithmException, KeyManagementException {
+        private static SSLContext createSSLContext(SSLMethod version) throws NoSuchAlgorithmException {
             return SSLContext.getInstance(version.getJavaId());
         }
 
@@ -165,7 +158,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     // TODO session
-    static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname, Object session) {
+    static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
         try {
             context.init();
         } catch (NoSuchAlgorithmException | KeyStoreException | IOException | CertificateException | UnrecoverableKeyException | KeyManagementException ex) {
@@ -234,13 +227,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, Object session,
+        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") Object session,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             String serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname, session);
+            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname);
             PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, sock);
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -266,13 +259,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WrapBIONode extends PythonClinicBuiltinNode {
         @Specialization
-        Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner, Object session,
+        Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") Object session,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             String serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
                 serverHostname = cast.cast(serverHostnameObj, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "serverHostname", serverHostnameObj);
             }
-            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname, session);
+            SSLEngine engine = createSSLEngine(this, context, serverSide, serverHostname);
             PSSLSocket sslSocket = factory().createSSLSocket(PythonBuiltinClassType.PSSLSocket, context, engine, incoming.getBio(), outgoing.getBio());
             if (!(owner instanceof PNone)) {
                 sslSocket.setOwner(owner);
@@ -461,7 +454,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SNICallbackNode extends PythonBuiltinNode {
         @Specialization
-        Object notImplemented(PSSLContext self, @SuppressWarnings("unused") Object value) {
+        Object notImplemented(@SuppressWarnings("unused") PSSLContext self, @SuppressWarnings("unused") Object value) {
             throw raise(NotImplementedError);
         }
     }
@@ -490,7 +483,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     if (cert instanceof X509Certificate) {
                         X509Certificate x509Cert = (X509Certificate) cert;
                         boolean[] keyUsage = ((X509Certificate) cert).getKeyUsage();
-                        if (CertUtils.isCrl(x509Cert, keyUsage)) {
+                        if (CertUtils.isCrl(keyUsage)) {
                             crl++;
                         } else {
                             x509++;
@@ -681,7 +674,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 return;
             }
             throw raise(NotImplementedError);
-            // TODO: once at least some psswd support exists 
+            // TODO: once at least some psswd support exists
             // String psswd = null;
             // try {
             // psswd = castToString.execute(password);
@@ -745,7 +738,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private void checkPrivateKey(Node node, PrivateKey pk, X509Certificate cert) throws PException {
+        private static void checkPrivateKey(Node node, PrivateKey pk, X509Certificate cert) throws PException {
             if (!pk.getAlgorithm().equals(cert.getPublicKey().getAlgorithm())) {
                 // TODO correct err code
                 throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_TYPE_MISMATCH, ErrorMessages.KEY_TYPE_MISMATCH);
@@ -795,8 +788,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LoadDhParamsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PNone load(VirtualFrame frame, PSSLContext self, String filepath,
-                        @Cached PRaiseSSLErrorNode raiseSSL) {
+        PNone load(VirtualFrame frame, PSSLContext self, String filepath) {
             File file = new File(filepath);
             if (!file.exists()) {
                 throw raiseOSError(frame, OSErrorEnum.ENOENT);
@@ -816,22 +808,21 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         PNone load(VirtualFrame frame, PSSLContext self, PBytes filepath,
-                        @CachedLibrary("filepath") PythonObjectLibrary lib,
-                        @Cached PRaiseSSLErrorNode raiseSSL) {
-            load(frame, self, lib.asPath(filepath), raiseSSL);
+                        @CachedLibrary("filepath") PythonObjectLibrary lib) {
+            load(frame, self, lib.asPath(filepath));
 
             return PNone.NONE;
         }
 
         @Specialization(limit = "1")
         PNone load(VirtualFrame frame, PSSLContext self, PythonObject filepath,
-                        @CachedLibrary("filepath") PythonObjectLibrary lib,
-                        @Cached PRaiseSSLErrorNode raiseSSL) {
-            load(frame, self, lib.asPath(filepath), raiseSSL);
+                        @CachedLibrary("filepath") PythonObjectLibrary lib) {
+            load(frame, self, lib.asPath(filepath));
 
             return PNone.NONE;
         }
 
+        @SuppressWarnings("unused")
         @Specialization(guards = {"!isString(filepath)", "!isBytes(filepath)", "!isPythonObject(filepath)"})
         Object wrap(PSSLContext self, Object filepath) {
             throw raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, filepath);
@@ -884,7 +875,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     abstract static class GetCACerts extends PythonBinaryClinicBuiltinNode {
 
         @Specialization(guards = "!binary_form")
-        Object getCerts(PSSLContext self, boolean binary_form,
+        Object getCerts(PSSLContext self, @SuppressWarnings("unused") boolean binary_form,
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
             try {
                 List<PDict> result = new ArrayList<>();
@@ -903,7 +894,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "binary_form")
-        Object getCertsBinary(PSSLContext self, boolean binary_form) {
+        Object getCertsBinary(PSSLContext self, @SuppressWarnings("unused") boolean binary_form) {
             try {
                 List<PBytes> result = new ArrayList<>();
                 KeyStore ks = self.getKeyStore();
