@@ -6,10 +6,9 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
   Documentation: None
   InnerRootNode SourceSection: [0,35]`class A:↵    class B...`
     PrintExpressionNode SourceSection: [0,35]`class A:↵    class B...`
-      GetAttributeNodeGen SourceSection: None
-        GetFixedAttributeNodeGen SourceSection: None
+      GetAttributeNode SourceSection: None
+        GetFixedAttributeNode SourceSection: None
           Key: displayhook
-          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None

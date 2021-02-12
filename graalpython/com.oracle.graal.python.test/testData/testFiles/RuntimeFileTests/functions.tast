@@ -780,10 +780,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   Frame: [2,it,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3344,3360]`self.__iterators`
-                                          GetAttributeNodeGen SourceSection: [3344,3360]`self.__iterators`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [3344,3360]`self.__iterators`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _map__iterators
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -932,10 +931,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                           PythonCallNodeGen SourceSection: [3524,3559]`map(self.__func, *se...`
                                             CallNodeGen SourceSection: None
                                             PositionalArgumentsNode SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [3528,3539]`self.__func`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [3528,3539]`self.__func`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _map__func
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -943,10 +941,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                 ReadLocalVariableNode SourceSection: [3528,3532]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [3542,3558]`self.__iterators`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [3542,3558]`self.__iterators`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _map__iterators
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -1045,10 +1042,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
-                            GetAttributeNodeGen SourceSection: [4021,4045]`__getframe__(1).f_lo...`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [4021,4045]`__getframe__(1).f_lo...`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: f_locals
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -1093,10 +1089,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               Identifier: <return_val>
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
-                              GetAttributeNodeGen SourceSection: [4154,4169]`obj[0].__dict__`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [4154,4169]`obj[0].__dict__`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: __dict__
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None

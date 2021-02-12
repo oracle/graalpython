@@ -134,10 +134,9 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,module,Illegal]
                       GetItemNodeGen SourceSection: [2313,2337]`sys.modules[module_n...`
-                        GetAttributeNodeGen SourceSection: None
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: modules
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -169,10 +168,9 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                           ReadLocalVariableNode SourceSection: [2391,2399]`filename`
                             Frame: [0,filename,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [2402,2427]`__graalpython__.core...`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [2402,2427]`__graalpython__.core...`
+                            GetFixedAttributeNode SourceSection: None
                               Key: core_home
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -194,10 +192,9 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                         ReadLocalVariableNode SourceSection: [2448,2456]`filename`
                           Frame: [0,filename,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [2458,2472]`posix.O_RDONLY`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [2458,2472]`posix.O_RDONLY`
+                          GetFixedAttributeNode SourceSection: None
                             Key: O_RDONLY
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -218,10 +215,9 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                         ReadLocalVariableNode SourceSection: [2499,2501]`fd`
                           Frame: [5,fd,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [2503,2514]`sys.maxsize`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [2503,2514]`sys.maxsize`
+                          GetFixedAttributeNode SourceSection: None
                             Key: maxsize
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -264,10 +260,9 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                         ReadLocalVariableNode SourceSection: [2591,2595]`code`
                           Frame: [7,code,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [2597,2612]`module.__dict__`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [2597,2612]`module.__dict__`
+                          GetFixedAttributeNode SourceSection: None
                             Key: __dict__
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None

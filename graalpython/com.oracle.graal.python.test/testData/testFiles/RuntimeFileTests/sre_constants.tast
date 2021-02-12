@@ -303,10 +303,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 ReadLocalVariableNode SourceSection: [1499,1502]`msg`
                                                   Frame: [1,msg,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [1504,1515]`self.lineno`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [1504,1515]`self.lineno`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: lineno
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -314,10 +313,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                   ReadLocalVariableNode SourceSection: [1504,1508]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [1517,1527]`self.colno`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [1517,1527]`self.colno`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: colno
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -549,10 +547,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
-                                        GetAttributeNodeGen SourceSection: [1833,1842]`self.name`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [1833,1842]`self.name`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: name
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -785,10 +782,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       YieldNode SourceSection: None
                                         flagSlot: 0
                                         TupleLiteralNode SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [2075,2084]`item.name`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [2075,2084]`item.name`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: name
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
