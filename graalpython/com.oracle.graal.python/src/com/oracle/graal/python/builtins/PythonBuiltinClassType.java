@@ -270,11 +270,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // plain name without module
     private final String printName;
     private final boolean basetype;
+    private final boolean isBuiltinWithDict;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
 
-    PythonBuiltinClassType(String name, boolean isPublic, String module, boolean basetype) {
+    PythonBuiltinClassType(String name, boolean isPublic, String module, boolean basetype, boolean isBuiltinWithDict) {
         this.name = name;
         this.publicInModule = isPublic ? module : null;
         if (module != null && module != BuiltinNames.BUILTINS) {
@@ -283,6 +284,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
             printName = name;
         }
         this.basetype = basetype;
+        this.isBuiltinWithDict = isBuiltinWithDict;
+    }
+
+    PythonBuiltinClassType(String name, boolean isPublic, String module, boolean baseType) {
+        this(name, isPublic, module, baseType, false);
     }
 
     PythonBuiltinClassType(String name, String publicInModule, boolean basetype) {
@@ -315,6 +321,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     public PythonBuiltinClassType getBase() {
         return base;
+    }
+
+    public boolean isBuiltinWithDict() {
+        return isBuiltinWithDict;
     }
 
     public String getPublicInModule() {

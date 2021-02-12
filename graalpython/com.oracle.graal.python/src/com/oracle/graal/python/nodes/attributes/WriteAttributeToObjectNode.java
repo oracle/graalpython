@@ -65,7 +65,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.Wr
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeUncachedNodeGen;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -93,15 +92,19 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return WriteAttributeToObjectNotTypeUncachedNodeGen.getUncached();
     }
 
-    protected static boolean isAttrWritable(IsBuiltinClassProfile exactBuiltinInstanceProfile, PythonObject self, Object key) {
-        if (isHiddenKey(key) || self instanceof PythonManagedClass || self instanceof PFunction || self instanceof PDecoratedMethod || self instanceof PythonModule ||
-                        self instanceof PBaseException || self instanceof PFileIO) {
+    protected static boolean isAttrWritable(PythonObject self, Object key) {
+        // TODO remove instanceof checks by unsetting the HAS_SLOTS_BUT_NO_DICT_FLAG flag (i.e. setting isBuiltinWithDict to true in the corresponding PythonBuiltinClassTypes)
+        // PythonClass is tricky - some classes (builtins) should have the flag, other (user classes) should not
+        // The common place where user classes are created is in PythonObjectFactory.createPythonClass - we need to 'unset' the flag there and set it somewhere by default
+        if (isHiddenKey(key)
+                || self instanceof PythonManagedClass   // PythonClass
+                || self instanceof PFunction            // PFunction
+                || self instanceof PDecoratedMethod     // PClassMethod, PStaticMethod
+                || self instanceof PythonModule ||      // PythonModule
+                        self instanceof PBaseException) {       // all exceptions
             return true;
         }
-        if ((self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) != 0) {
-            return false;
-        }
-        return !exactBuiltinInstanceProfile.profileIsAnyBuiltinObject(self);
+        return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
     private static void handlePythonClass(ConditionProfile isClassProfile, PythonObject object, Object key) {
@@ -112,14 +115,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     // write to the DynamicObject
     @Specialization(guards = {
-                    "isAttrWritable(exactBuiltinInstanceProfile, object, key)",
+                    "isAttrWritable(object, key)",
                     "isHiddenKey(key) || !lib.hasDict(object)"
     }, limit = "1")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile,
-                    @Exclusive @Cached @SuppressWarnings("unused") IsBuiltinClassProfile exactBuiltinInstanceProfile) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
         handlePythonClass(isClassProfile, object, key);
         return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
     }
@@ -155,18 +157,17 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    @Specialization(guards = "isErrorCase(exactBuiltinInstanceProfile, lib, object, key)")
+    @Specialization(guards = "isErrorCase(lib, object, key)")
     protected static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
                     @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary lib,
-                    @Exclusive @Cached @SuppressWarnings("unused") IsBuiltinClassProfile exactBuiltinInstanceProfile,
                     @Exclusive @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
     }
 
-    protected static boolean isErrorCase(IsBuiltinClassProfile exactBuiltinInstanceProfile, PythonObjectLibrary lib, Object object, Object key) {
+    protected static boolean isErrorCase(PythonObjectLibrary lib, Object object, Object key) {
         if (object instanceof PythonObject) {
             PythonObject self = (PythonObject) object;
-            if (isAttrWritable(exactBuiltinInstanceProfile, self, key) && (isHiddenKey(key) || !lib.hasDict(self))) {
+            if (isAttrWritable(self, key) && (isHiddenKey(key) || !lib.hasDict(self))) {
                 return false;
             }
             if (!isHiddenKey(key) && lib.hasDict(self)) {
