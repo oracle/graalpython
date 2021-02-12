@@ -72,7 +72,7 @@ def collect_working_tests():
     for tagfile in glob.glob(glob_pattern):
         test = os.path.splitext(os.path.basename(tagfile))[0]
         working_tests.append((test, working_selectors(tagfile)))
-    return working_tests
+    return sorted(working_tests)
 
 
 def make_test_function(working_test):
@@ -110,7 +110,17 @@ def make_tests_class():
     class TestTaggedUnittests(unittest.TestCase):
         pass
 
-    working_tests = collect_working_tests()
+    partial = os.environ.get('TAGGED_UNITTEST_PARTIAL')
+    if partial:
+        selected_str, total_str = partial.split('/', 1)
+        selected = int(selected_str) - 1
+        total = int(total_str)
+    else:
+        selected = 0
+        total = 1
+    assert selected < total
+
+    working_tests = collect_working_tests()[selected::total]
     for idx, working_test in enumerate(working_tests):
         fn = make_test_function(working_test)
         fn.__name__ = "%s[%d/%d]" % (fn.__name__, idx + 1, len(working_tests))
