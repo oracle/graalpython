@@ -479,16 +479,19 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 Enumeration<String> aliases = keystore.aliases();
                 int x509 = 0, crl = 0, ca = 0;
                 while (aliases.hasMoreElements()) {
-                    Certificate cert = keystore.getCertificate(aliases.nextElement());
-                    if (cert instanceof X509Certificate) {
-                        X509Certificate x509Cert = (X509Certificate) cert;
-                        boolean[] keyUsage = ((X509Certificate) cert).getKeyUsage();
-                        if (CertUtils.isCrl(keyUsage)) {
-                            crl++;
-                        } else {
-                            x509++;
-                            if (CertUtils.isCA(x509Cert, keyUsage)) {
-                                ca++;
+                    String alias = aliases.nextElement();
+                    if (keystore.isCertificateEntry(alias)) {
+                        Certificate cert = keystore.getCertificate(alias);
+                        if (cert instanceof X509Certificate) {
+                            X509Certificate x509Cert = (X509Certificate) cert;
+                            boolean[] keyUsage = ((X509Certificate) cert).getKeyUsage();
+                            if (CertUtils.isCrl(keyUsage)) {
+                                crl++;
+                            } else {
+                                x509++;
+                                if (CertUtils.isCA(x509Cert, keyUsage)) {
+                                    ca++;
+                                }
                             }
                         }
                     }
