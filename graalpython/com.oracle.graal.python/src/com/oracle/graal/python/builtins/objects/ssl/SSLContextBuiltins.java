@@ -521,10 +521,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (cafile instanceof PNone && capath instanceof PNone && cadata instanceof PNone) {
                 throw raise(TypeError, ErrorMessages.CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED);
             }
-            if (!(cafile instanceof PNone) && !PGuards.isString(cafile)) {
+            if (!(cafile instanceof PNone) && !PGuards.isString(cafile) && !PGuards.isBytes(cafile)) {
                 throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "cafile");
             }
-            if (!(capath instanceof PNone) && !PGuards.isString(capath)) {
+            if (!(capath instanceof PNone) && !PGuards.isString(capath) && !PGuards.isBytes(capath)) {
                 throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "capath");
             }
             TruffleFile file = null;
@@ -663,87 +663,83 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LoadCertChainNode extends PythonQuaternaryBuiltinNode {
         @Specialization
-        Object load(VirtualFrame frame, PSSLContext self, String certfile, PNone keyfile, PNone password) {
-            TruffleFile cert = toTruffleFile(frame, certfile);
-            return load(self, cert, cert, "");
+        Object load(VirtualFrame frame, PSSLContext self, Object certfile, Object keyfile, Object password,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+            Object kf = keyfile instanceof PNone ? certfile : keyfile;
+            try (BufferedReader certReader = getReader(frame, certfile, lib, "certfile");
+                            BufferedReader keyReader = getReader(frame, kf, lib, "keyfile")) {
+                checkPassword(password);
+                // TODO what to use for alias - certfile.toString()
+                return load(self, certReader, keyReader, certfile.toString());
+            } catch (IOException ex) {
+                throw raise(SSLError, ErrorMessages.SSL_ERROR, ex.getMessage());
+            }
         }
 
-        @Specialization
-        Object load(VirtualFrame frame, PSSLContext self, String certfile, PNone keyfile, String password) {
-            TruffleFile cert = toTruffleFile(frame, certfile);
-            return load(self, cert, cert, password);
-        }
-
-        @Specialization
-        Object load(VirtualFrame frame, PSSLContext self, String certfile, String keyfile, PNone password) {
-            TruffleFile cert = toTruffleFile(frame, certfile);
-            TruffleFile key = toTruffleFile(frame, keyfile);
-            return load(self, cert, key, "");
-        }
-
-        @Specialization
-        Object load(VirtualFrame frame, PSSLContext self, String certfile, String keyfile, String password) {
-            TruffleFile cert = toTruffleFile(frame, certfile);
-            TruffleFile key = toTruffleFile(frame, keyfile);
-            return load(self, cert, key, password);
-        }
-
-        @Specialization(guards = "!isString(password)")
-        Object loadPasswordCallback(VirtualFrame frame, PSSLContext self, String certfile, String keyfile, Object password) {
-            // TODO: password callable/callback
+        private void checkPassword(Object password) throws PException {
+            if (password instanceof PNone) {
+                return;
+            }
             throw raise(NotImplementedError);
+            // TODO: once at least some psswd support exists 
+            // String psswd = null;
+            // try {
+            // psswd = castToString.execute(password);
+            // } catch (CannotCastException e) {
+            // if(password instanceof PNone) {
+            // psswd = "";
+            // } else if(password instanceof PBytesLike) {
+            // String psswd = lib.asPath(password);
+            // if(psswd.size() > 1024) {
+            // // TODO 1024 is openssl default, might vary, might not need this restriction at all
+            // throw raise(ValueError, "password cannot be longer than 1024 bytes");
+            // }
+            // } else if(PGuards.isCallable(password)) {
+            // throw raise(NotImplementedError);
+            // } else {
+            // throw raise(TypeError, "password should be a string or callable");
+            // }
+            // }
+            // return psswd;
         }
 
-        @Specialization(guards = "!isString(password)")
-        Object loadPasswordCallback(VirtualFrame frame, PSSLContext self, String certfile, PNone keyfile, Object password) {
-            // TODO: password callable/callback
-            throw raise(NotImplementedError);
+        private BufferedReader getReader(VirtualFrame frame, Object obj, PythonObjectLibrary lib, String arg) throws IOException {
+            try {
+                return toTruffleFile(frame, lib.asPath(obj)).newBufferedReader();
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, arg);
+            }
         }
 
-        @Specialization(guards = {"!isString(certfile)"})
-        Object load(VirtualFrame frame, PSSLContext self, Object certfile, Object keyfile, Object password) {
-            throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "certfile");
-        }
-
-        @Specialization(guards = {"!isString(keyfile)", "!isNoValue(keyfile)"})
-        Object load(VirtualFrame frame, PSSLContext self, String certfile, Object keyfile, Object password) {
-            throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "keyfile");
-        }
-
-        private Object load(PSSLContext self, TruffleFile certfile, TruffleFile keyfile, String password) {
+        private Object load(PSSLContext self, BufferedReader certReader, BufferedReader keyReader, String alias) {
             // TODO add logging
             try {
                 X509Certificate[] certs;
-                try (BufferedReader r = certfile.newBufferedReader()) {
-                    List<X509Certificate> certList = new ArrayList<>();
-                    LoadCertError result = getCertificates(r, certList);
-                    switch (result) {
-                        case BAD_BASE64_DECODE:
-                        case BEGIN_CERTIFICATE_WITHOUT_END:
-                        case NO_CERT_DATA:
+                List<X509Certificate> certList = new ArrayList<>();
+                LoadCertError result = getCertificates(certReader, certList);
+                switch (result) {
+                    case BAD_BASE64_DECODE:
+                    case BEGIN_CERTIFICATE_WITHOUT_END:
+                    case NO_CERT_DATA:
+                        throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+                    case SOME_BAD_BASE64_DECODE:
+                        throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
+                    case EMPTY_CERT:
+                        if (certList.isEmpty()) {
                             throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
-                        case SOME_BAD_BASE64_DECODE:
-                            throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
-                        case EMPTY_CERT:
-                            if (certList.isEmpty()) {
-                                throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
-                            }
-                            throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_UNKNOWN, ErrorMessages.UNKNOWN_ERROR);
-                        case NO_ERROR:
-                            break;
-                        default:
-                            assert false : "not handled: " + result;
-                    }
-                    certs = certList.toArray(new X509Certificate[certList.size()]);
+                        }
+                        throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_UNKNOWN, ErrorMessages.UNKNOWN_ERROR);
+                    case NO_ERROR:
+                        break;
+                    default:
+                        assert false : "not handled: " + result;
                 }
+                certs = certList.toArray(new X509Certificate[certList.size()]);
                 // TODO only 1. cert?
-                PrivateKey pk = getPrivateKey(this, keyfile, certs[0].getPublicKey().getAlgorithm());
+                PrivateKey pk = getPrivateKey(this, keyReader, certs[0].getPublicKey().getAlgorithm());
                 checkPrivateKey(this, pk, certs[0]);
-
-                String alias = keyfile.getName();
-                char[] psswdChars = "".equals(password) ? password.toCharArray() : PythonUtils.EMPTY_CHAR_ARRAY;
-                self.setKeyEntry(alias, pk, psswdChars, certs);
-            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | InvalidKeySpecException ex) {
+                self.setKeyEntry(alias, pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
+            } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | KeyStoreException | CertificateException ex) {
                 throw raise(SSLError, ErrorMessages.SSL_ERROR, ex.getMessage());
             }
             return PNone.NONE;

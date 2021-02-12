@@ -28,7 +28,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.nodes.Node;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -76,8 +75,8 @@ public final class CertUtils {
 
     private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
     private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
-    private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
     private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
+    private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
     private static final String BEGIN_DH_PARAMETERS = "-----BEGIN DH PARAMETERS-----";
     private static final String END_DH_PARAMETERS = "-----END DH PARAMETERS-----";
 
@@ -373,10 +372,9 @@ public final class CertUtils {
      * Returns the first private key found
      */
     @TruffleBoundary
-    static PrivateKey getPrivateKey(Node node, TruffleFile pkPem, String alg) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+    static PrivateKey getPrivateKey(Node node, BufferedReader r, String alg) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         boolean begin = false;
         StringBuilder sb = new StringBuilder();
-        try (BufferedReader r = pkPem.newBufferedReader()) {
         String line;
         while ((line = r.readLine()) != null) {
             if (!begin && line.contains(BEGIN_PRIVATE_KEY)) {
@@ -388,7 +386,6 @@ public final class CertUtils {
                     break;
                 }
                 sb.append(line);
-                }
             }
         }
         if (begin || sb.length() == 0) {
