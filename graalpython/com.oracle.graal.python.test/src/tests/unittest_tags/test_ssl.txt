@@ -20,6 +20,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unknown_channel_binding
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unsupported_dtls
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test__create_stdlib_context
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_cert_store_stats
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_check_hostname
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_ciphers
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_constructor
@@ -29,10 +30,12 @@
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_get_ca_certs
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_get_ciphers
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_hostname_checks_common_name
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_cert_chain
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_default_certs
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_default_certs_env_windows
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_dh_params
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_verify_cadata
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_verify_locations
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_min_max_version
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_num_tickest
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_options
@@ -58,6 +61,7 @@
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_bio_read_write_data
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_ciphers
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_cadata
+*graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_capath
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_fail
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_with_context_fail
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_get_ca_certs_capath
