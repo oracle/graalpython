@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.ServerSocketChannel;
@@ -82,6 +81,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -129,16 +129,18 @@ public class SocketBuiltins extends PythonBuiltins {
                 if (acceptSocket == null) {
                     throw raiseOSError(null, OSErrorEnum.EWOULDBLOCK);
                 }
-                SocketAddress addr = acceptSocket.getLocalAddress();
-                if (!acceptSocket.socket().isBound() || addr == null) {
+                InetSocketAddress remoteAddress = (InetSocketAddress) acceptSocket.getRemoteAddress();
+                if (!acceptSocket.socket().isBound() || remoteAddress == null) {
                     throw raise(OSError);
                 }
                 PSocket newSocket = factory().createSocket(socket.getFamily(), socket.getType(), socket.getProto());
                 int fd = getContext().getResources().openSocket(newSocket);
                 newSocket.setFileno(fd);
                 newSocket.setSocket(acceptSocket);
-                Object[] output = {fd, ((InetSocketAddress) addr).getAddress().getHostAddress()};
-                return factory().createTuple(output);
+                SocketUtils.setBlocking(newSocket, socket.isBlocking());
+                newSocket.setTimeout(socket.getTimeout());
+                PTuple addressTuple = factory().createTuple(new Object[]{remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort()});
+                return factory().createTuple(new Object[]{fd, addressTuple});
             } catch (IOException e) {
                 throw raise(OSError);
             }
@@ -174,20 +176,12 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object close(PSocket socket) {
             if (socket.getSocket() != null) {
-                if (!socket.getSocket().isOpen()) {
-                    throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
-                }
-
                 try {
                     socket.getSocket().close();
                 } catch (IOException e) {
                     throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
             } else if (socket.getServerSocket() != null) {
-                if (!socket.getServerSocket().isOpen()) {
-                    throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
-                }
-
                 try {
                     socket.getServerSocket().close();
                 } catch (IOException e) {
@@ -337,9 +331,11 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // recv(bufsize[, flags])
-    @Builtin(name = "recv", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "recv", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "nbytes", "flags"})
+    @ArgumentClinic(name = "nbytes", conversion = ArgumentClinic.ClinicConversion.Index)
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    abstract static class RecvNode extends PythonTernaryBuiltinNode {
+    abstract static class RecvNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags) {
             ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
@@ -353,6 +349,10 @@ public class SocketBuiltins extends PythonBuiltins {
             }
         }
 
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.RecvNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     // recvfrom(bufsize[, flags])

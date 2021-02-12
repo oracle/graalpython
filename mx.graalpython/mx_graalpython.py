@@ -523,8 +523,8 @@ def _hpy_test_root():
 def graalpytest(args):
     parser = ArgumentParser(prog='mx graalpytest')
     parser.add_argument('--python', type=str, action='store', default="", help='Run tests with custom Python binary.')
-    parser.add_argument('-v', "--verbose", action="store_true", help='Verbose output.')
-    parser.add_argument('-k', dest="filter", default=[], help='Test pattern.')
+    parser.add_argument('-v', "--verbose", action="store_true", help='Verbose output.', default=True)
+    parser.add_argument('-k', dest="filter", default='', help='Test pattern.')
     parser.add_argument('test', nargs="*", default=[], help='Test file to run (specify absolute or relative; e.g. "/path/to/test_file.py" or "cpyext/test_object.py") ')
     args, unknown_args = parser.parse_known_args(args)
 
