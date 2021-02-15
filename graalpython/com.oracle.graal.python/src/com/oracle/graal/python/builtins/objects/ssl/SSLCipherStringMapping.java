@@ -47,6 +47,7 @@ import java.util.Map;
 
 /**
  * This file has been automatically generated using scripts/generate_ssl_data.py. Do not edit!
+ * Generated using: OpenSSL 1.1.1i FIPS 8 Dec 2020
  * 
  * Class containing mappings of OpenSSL cipher strings to lists of ciphers.
  **/
