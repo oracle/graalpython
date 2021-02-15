@@ -40,11 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * This file has been automatically generated using scripts/generate_ssl_data.py. Do not edit!
@@ -58,2295 +57,732 @@ public abstract class SSLCipherStringMapping {
         return mapping.get(cipherString);
     }
 
-    public static void initalize(Set<String> supportedCiphers) {
-        List<SSLCipher> ciphers;
-        ciphers = new ArrayList<>(14);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("3DES", ciphers);
-        ciphers = new ArrayList<>(12);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("ADH", ciphers);
-        ciphers = new ArrayList<>(5);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        mapping.put("AECDH", ciphers);
-        ciphers = new ArrayList<>(86);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        mapping.put("AES", ciphers);
-        ciphers = new ArrayList<>(43);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        mapping.put("AES128", ciphers);
-        ciphers = new ArrayList<>(43);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        mapping.put("AES256", ciphers);
-        ciphers = new ArrayList<>(20);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        mapping.put("AESCCM", ciphers);
-        ciphers = new ArrayList<>(10);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        mapping.put("AESCCM8", ciphers);
-        ciphers = new ArrayList<>(18);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        mapping.put("AESGCM", ciphers);
-        ciphers = new ArrayList<>(164);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("ALL", ciphers);
-        ciphers = new ArrayList<>(16);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        mapping.put("ARIA", ciphers);
-        ciphers = new ArrayList<>(8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        mapping.put("ARIA128", ciphers);
-        ciphers = new ArrayList<>(8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        mapping.put("ARIA256", ciphers);
-        ciphers = new ArrayList<>(16);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        mapping.put("ARIAGCM", ciphers);
-        ciphers = new ArrayList<>(28);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        mapping.put("CAMELLIA", ciphers);
-        ciphers = new ArrayList<>(14);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        mapping.put("CAMELLIA128", ciphers);
-        ciphers = new ArrayList<>(14);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        mapping.put("CAMELLIA256", ciphers);
-        ciphers = new ArrayList<>(7);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        mapping.put("CHACHA20", ciphers);
-        ciphers = new ArrayList<>(18);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_MD5);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("COMPLEMENTOFALL", ciphers);
-        ciphers = new ArrayList<>(107);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("COMPLEMENTOFDEFAULT", ciphers);
-        ciphers = new ArrayList<>(45);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("DH", ciphers);
-        ciphers = new ArrayList<>(33);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("DHE", ciphers);
-        ciphers = new ArrayList<>(17);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("DSS", ciphers);
-        ciphers = new ArrayList<>(37);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        mapping.put("ECDH", ciphers);
-        ciphers = new ArrayList<>(32);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        mapping.put("ECDHE", ciphers);
-        ciphers = new ArrayList<>(18);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        mapping.put("ECDSA", ciphers);
-        ciphers = new ArrayList<>(33);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("EDH", ciphers);
-        ciphers = new ArrayList<>(32);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        mapping.put("EECDH", ciphers);
-        ciphers = new ArrayList<>(79);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("FIPS", ciphers);
-        ciphers = new ArrayList<>(137);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        mapping.put("HIGH", ciphers);
-        ciphers = new ArrayList<>(1);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        mapping.put("IDEA", ciphers);
-        ciphers = new ArrayList<>(1);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_MD5);
-        mapping.put("MD5", ciphers);
-        ciphers = new ArrayList<>(27);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("MEDIUM", ciphers);
-        ciphers = new ArrayList<>(18);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_MD5);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("NULL", ciphers);
-        ciphers = new ArrayList<>(68);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("PSK", ciphers);
-        ciphers = new ArrayList<>(8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        mapping.put("RC4", ciphers);
-        ciphers = new ArrayList<>(23);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_MD5);
-        mapping.put("RSA", ciphers);
-        ciphers = new ArrayList<>(4);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        mapping.put("SEED", ciphers);
-        ciphers = new ArrayList<>(71);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("SHA", ciphers);
-        ciphers = new ArrayList<>(71);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("SHA1", ciphers);
-        ciphers = new ArrayList<>(33);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        mapping.put("SHA256", ciphers);
-        ciphers = new ArrayList<>(16);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        mapping.put("SHA384", ciphers);
-        ciphers = new ArrayList<>(9);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("SRP", ciphers);
-        ciphers = new ArrayList<>(52);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_MD5);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("SSLv3", ciphers);
-        ciphers = new ArrayList<>(44);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        mapping.put("TLSv1", ciphers);
-        ciphers = new ArrayList<>(44);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        mapping.put("TLSv1.0", ciphers);
-        ciphers = new ArrayList<>(86);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA256);
-        mapping.put("TLSv1.2", ciphers);
-        ciphers = new ArrayList<>(17);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("aDSS", ciphers);
-        ciphers = new ArrayList<>(18);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        mapping.put("aECDSA", ciphers);
-        ciphers = new ArrayList<>(17);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        mapping.put("aNULL", ciphers);
-        ciphers = new ArrayList<>(52);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("aPSK", ciphers);
-        ciphers = new ArrayList<>(75);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_MD5);
-        mapping.put("aRSA", ciphers);
-        ciphers = new ArrayList<>(3);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("aSRP", ciphers);
-        ciphers = new ArrayList<>(18);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_MD5);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("eNULL", ciphers);
-        ciphers = new ArrayList<>(45);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("kDHE", ciphers);
-        ciphers = new ArrayList<>(20);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA);
-        mapping.put("kDHEPSK", ciphers);
-        ciphers = new ArrayList<>(37);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        mapping.put("kECDHE", ciphers);
-        ciphers = new ArrayList<>(12);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA);
-        mapping.put("kECDHEPSK", ciphers);
-        ciphers = new ArrayList<>(45);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("kEDH", ciphers);
-        ciphers = new ArrayList<>(37);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA);
-        mapping.put("kEECDH", ciphers);
-        ciphers = new ArrayList<>(20);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_PSK_WITH_NULL_SHA);
-        mapping.put("kPSK", ciphers);
-        ciphers = new ArrayList<>(23);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CCM);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_WITH_NULL_MD5);
-        mapping.put("kRSA", ciphers);
-        ciphers = new ArrayList<>(16);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA);
-        mapping.put("kRSAPSK", ciphers);
-        ciphers = new ArrayList<>(9);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA);
-        addCipher(ciphers, supportedCiphers, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA);
-        mapping.put("kSRP", ciphers);
-    }
-
-    private static void addCipher(List<SSLCipher> ciphers, Set<String> supportedCiphers, SSLCipher cipher) {
-        if (supportedCiphers.contains(cipher.name())) {
-            ciphers.add(cipher);
-        }
+    static {
+        mapping.put("3DES",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("ADH",
+                        Arrays.asList(SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256,
+                                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("AECDH", Arrays.asList(SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA));
+        mapping.put("AES", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8,
+                        SSLCipher.TLS_RSA_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8, SSLCipher.TLS_PSK_WITH_AES_256_CCM,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM,
+                        SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_PSK_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA));
+        mapping.put("AES128", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8,
+                        SSLCipher.TLS_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA));
+        mapping.put("AES256", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8,
+                        SSLCipher.TLS_PSK_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA));
+        mapping.put("AESCCM",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8,
+                                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8,
+                                        SSLCipher.TLS_PSK_WITH_AES_256_CCM, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8,
+                                        SSLCipher.TLS_RSA_WITH_AES_128_CCM, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM));
+        mapping.put("AESCCM8",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8,
+                                        SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8));
+        mapping.put("AESGCM",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384,
+                                        SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256));
+        mapping.put("ALL", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM,
+                        SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8,
+                        SSLCipher.TLS_RSA_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_PSK_WITH_AES_256_CCM_8, SSLCipher.TLS_PSK_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM,
+                        SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("ARIA",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256));
+        mapping.put("ARIA128",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256));
+        mapping.put("ARIA256",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384));
+        mapping.put("ARIAGCM",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256));
+        mapping.put("CAMELLIA",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256));
+        mapping.put("CAMELLIA128",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256));
+        mapping.put("CAMELLIA256",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384));
+        mapping.put("CHACHA20",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256));
+        mapping.put("COMPLEMENTOFALL",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA,
+                                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_MD5,
+                                        SSLCipher.TLS_PSK_WITH_NULL_SHA384, SSLCipher.TLS_PSK_WITH_NULL_SHA256, SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("COMPLEMENTOFDEFAULT", Arrays.asList(SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM,
+                        SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8, SSLCipher.TLS_PSK_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_PSK_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("DH",
+                        Arrays.asList(SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM,
+                                        SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("DHE",
+                        Arrays.asList(SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("DSS",
+                        Arrays.asList(SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("ECDH", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA));
+        mapping.put("ECDHE",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA));
+        mapping.put("ECDSA",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA));
+        mapping.put("EDH",
+                        Arrays.asList(SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("EECDH",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA));
+        mapping.put("FIPS", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
+                        SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_RSA_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("HIGH", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8,
+                        SSLCipher.TLS_PSK_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM,
+                        SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256));
+        mapping.put("IDEA", Arrays.asList(SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA));
+        mapping.put("MD5", Arrays.asList(SSLCipher.TLS_RSA_WITH_NULL_MD5));
+        mapping.put("MEDIUM", Arrays.asList(SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("NULL",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA,
+                                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_MD5,
+                                        SSLCipher.TLS_PSK_WITH_NULL_SHA384, SSLCipher.TLS_PSK_WITH_NULL_SHA256, SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("PSK", Arrays.asList(SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8, SSLCipher.TLS_PSK_WITH_AES_256_CCM,
+                        SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM,
+                        SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256,
+                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_PSK_WITH_NULL_SHA384, SSLCipher.TLS_PSK_WITH_NULL_SHA256,
+                        SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("RC4",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA,
+                                        SSLCipher.TLS_PSK_WITH_RC4_128_SHA));
+        mapping.put("RSA",
+                        Arrays.asList(SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_NULL_SHA256, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_MD5));
+        mapping.put("SEED",
+                        Arrays.asList(SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA));
+        mapping.put("SHA", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA,
+                        SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("SHA1", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA,
+                        SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("SHA256",
+                        Arrays.asList(SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_PSK_WITH_NULL_SHA256));
+        mapping.put("SHA384",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384,
+                                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_PSK_WITH_NULL_SHA384));
+        mapping.put("SRP",
+                        Arrays.asList(SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("SSLv3", Arrays.asList(SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_MD5, SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("TLSv1",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384,
+                                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_PSK_WITH_NULL_SHA384, SSLCipher.TLS_PSK_WITH_NULL_SHA256));
+        mapping.put("TLSv1.0",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384,
+                                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_PSK_WITH_NULL_SHA384, SSLCipher.TLS_PSK_WITH_NULL_SHA256));
+        mapping.put("TLSv1.2", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8,
+                        SSLCipher.TLS_PSK_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM,
+                        SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_NULL_SHA256));
+        mapping.put("aDSS",
+                        Arrays.asList(SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("aECDSA",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM, SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA));
+        mapping.put("aNULL",
+                        Arrays.asList(SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256,
+                                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA,
+                                        SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA));
+        mapping.put("aPSK", Arrays.asList(SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384,
+                        SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8, SSLCipher.TLS_PSK_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8, SSLCipher.TLS_PSK_WITH_AES_128_CCM, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_PSK_WITH_NULL_SHA384,
+                        SSLCipher.TLS_PSK_WITH_NULL_SHA256, SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("aRSA", Arrays.asList(SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_NULL_SHA256, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA, SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA,
+                        SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_MD5));
+        mapping.put("aSRP", Arrays.asList(SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("eNULL",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA,
+                                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256,
+                                        SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_MD5,
+                                        SSLCipher.TLS_PSK_WITH_NULL_SHA384, SSLCipher.TLS_PSK_WITH_NULL_SHA256, SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("kDHE",
+                        Arrays.asList(SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM,
+                                        SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("kDHEPSK", Arrays.asList(SSLCipher.TLS_DHE_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_DHE_WITH_AES_256_CCM_8,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CCM, SSLCipher.TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_DHE_WITH_AES_128_CCM_8,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CCM, SSLCipher.TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_DHE_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DHE_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_DHE_PSK_WITH_NULL_SHA));
+        mapping.put("kECDHE", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA));
+        mapping.put("kECDHEPSK",
+                        Arrays.asList(SSLCipher.TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA384, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA256, SSLCipher.TLS_ECDHE_PSK_WITH_NULL_SHA));
+        mapping.put("kEDH",
+                        Arrays.asList(SSLCipher.TLS_DHE_DSS_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_256_CCM, SSLCipher.TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_DH_anon_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_DHE_DSS_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_DHE_RSA_WITH_AES_128_CCM,
+                                        SSLCipher.TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_GCM_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA,
+                                        SSLCipher.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_SEED_CBC_SHA,
+                                        SSLCipher.TLS_DHE_DSS_WITH_SEED_CBC_SHA, SSLCipher.TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_SEED_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA,
+                                        SSLCipher.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_DH_anon_WITH_3DES_EDE_CBC_SHA));
+        mapping.put("kEECDH", Arrays.asList(SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+                        SSLCipher.TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_256_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                        SSLCipher.TLS_ECDH_anon_WITH_AES_128_CBC_SHA, SSLCipher.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_ECDH_anon_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA,
+                        SSLCipher.TLS_ECDHE_ECDSA_WITH_NULL_SHA, SSLCipher.TLS_ECDHE_RSA_WITH_NULL_SHA, SSLCipher.TLS_ECDH_anon_WITH_NULL_SHA));
+        mapping.put("kPSK",
+                        Arrays.asList(SSLCipher.TLS_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_PSK_WITH_AES_256_CCM_8,
+                                        SSLCipher.TLS_PSK_WITH_AES_256_CCM, SSLCipher.TLS_PSK_WITH_ARIA_256_GCM_SHA384, SSLCipher.TLS_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_128_CCM_8,
+                                        SSLCipher.TLS_PSK_WITH_AES_128_CCM, SSLCipher.TLS_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA384,
+                                        SSLCipher.TLS_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_PSK_WITH_RC4_128_SHA,
+                                        SSLCipher.TLS_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_PSK_WITH_NULL_SHA384, SSLCipher.TLS_PSK_WITH_NULL_SHA256, SSLCipher.TLS_PSK_WITH_NULL_SHA));
+        mapping.put("kRSA",
+                        Arrays.asList(SSLCipher.TLS_RSA_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_WITH_AES_256_CCM_8, SSLCipher.TLS_RSA_WITH_AES_256_CCM, SSLCipher.TLS_RSA_WITH_ARIA_256_GCM_SHA384,
+                                        SSLCipher.TLS_RSA_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CCM_8, SSLCipher.TLS_RSA_WITH_AES_128_CCM, SSLCipher.TLS_RSA_WITH_ARIA_128_GCM_SHA256,
+                                        SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA256,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_WITH_NULL_SHA256, SSLCipher.TLS_RSA_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_256_CBC_SHA, SSLCipher.TLS_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_SEED_CBC_SHA,
+                                        SSLCipher.TLS_RSA_WITH_CAMELLIA_128_CBC_SHA, SSLCipher.TLS_RSA_WITH_IDEA_CBC_SHA, SSLCipher.TLS_RSA_WITH_RC4_128_SHA, SSLCipher.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+                                        SSLCipher.TLS_RSA_WITH_NULL_SHA, SSLCipher.TLS_RSA_WITH_NULL_MD5));
+        mapping.put("kRSAPSK", Arrays.asList(SSLCipher.TLS_RSA_PSK_WITH_AES_256_GCM_SHA384, SSLCipher.TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256, SSLCipher.TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_GCM_SHA256, SSLCipher.TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256, SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA384,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_256_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384, SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA256,
+                        SSLCipher.TLS_RSA_PSK_WITH_AES_128_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256, SSLCipher.TLS_RSA_PSK_WITH_RC4_128_SHA,
+                        SSLCipher.TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA384, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA256, SSLCipher.TLS_RSA_PSK_WITH_NULL_SHA));
+        mapping.put("kSRP",
+                        Arrays.asList(SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_256_CBC_SHA,
+                                        SSLCipher.TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_AES_128_CBC_SHA,
+                                        SSLCipher.TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA, SSLCipher.TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA));
     }
 }

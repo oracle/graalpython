@@ -191,7 +191,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 parameters.setEndpointIdentificationAlgorithm("HTTPS");
             }
         }
-        Set<String> allowedCiphers = new HashSet<>(Arrays.asList(engine.getSupportedCipherSuites()));
+        // We use SSLEngine#getEnabledCipherSuites to honor the cipher settings for this JVM
+        Set<String> allowedCiphers = new HashSet<>(Arrays.asList(engine.getEnabledCipherSuites()));
         List<String> enabledCiphers = new ArrayList<>(context.getCiphers().length);
         for (SSLCipher cipher : context.getCiphers()) {
             if (allowedCiphers.contains(cipher.name())) {

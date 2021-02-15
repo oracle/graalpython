@@ -90,7 +90,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             protocols.remove(SSLProtocol.TLSv1_3.getName());
             supportedProtocols = Collections.unmodifiableList(protocols);
 
-            SSLCipherStringMapping.initalize(new HashSet<>(Arrays.asList(supportedSSLParameters.getCipherSuites())));
             defaultCiphers = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
