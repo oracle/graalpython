@@ -272,6 +272,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
 
         // fill the environ dictionary with the current environment
+        // TODO we should probably use PosixSupportLibrary to get environ
         Map<String, String> getenv = System.getenv();
         PDict environ = core.factory().createDict();
         String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
@@ -289,8 +290,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     Object k = posixLib.createPathFromString(posixSupport, pyenvLauncherKey);
                     Object v = posixLib.createPathFromString(posixSupport, value);
                     posixLib.setenv(posixSupport, k, v, true);
-                } catch (PosixException e) {
-                    // TODO handle error
+                } catch (PosixException ignored) {
                 }
             } else {
                 value = entry.getValue();
@@ -419,7 +419,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < args.length; ++i) {
                 opaqueArgs[i] = toOpaquePathNode.execute(frame, args[i]);
             }
-            //TODO ValueError "execv() arg 2 first element cannot be empty"
+            // TODO ValueError "execv() arg 2 first element cannot be empty"
 
             auditNode.audit("os.exec", path.originalObject, argv, PNone.NONE);
 
@@ -1868,10 +1868,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int system(VirtualFrame frame, PBytes command,
-                   @Cached BytesNodes.ToBytesNode toBytesNode,
-                   @Cached SysModuleBuiltins.AuditNode auditNode,
-                   @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+        int system(PBytes command,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
             // conversions for emulated backend because the bytes version after fsencode conversion
             // is subject to sys.audit.

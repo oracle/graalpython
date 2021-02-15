@@ -61,7 +61,6 @@ import static java.lang.Math.addExact;
 import static java.lang.Math.multiplyExact;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -98,7 +97,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import com.oracle.truffle.api.TruffleLanguage.Env;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -129,6 +127,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -251,6 +250,10 @@ public final class EmulatedPosixSupport extends PosixResources {
     public EmulatedPosixSupport(PythonContext context) {
         this.context = context;
         setEnv(context.getEnv());
+    }
+
+    @Override
+    public void postInitialize() {
         environ.putAll(System.getenv());
     }
 
@@ -1835,19 +1838,26 @@ public final class EmulatedPosixSupport extends PosixResources {
             return -1;
         }
         LOGGER.fine(() -> "os.system: " + cmd);
-        String[] command = new String[]{shell[0], shell[1], cmd};
+
+        String[] command;
+        String osProperty = System.getProperty("os.name");
+        if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows")) {
+            command = new String[]{"cmd.exe", "/c", cmd};
+        } else {
+            command = new String[]{(environ.getOrDefault("SHELL", "sh")), "-c", cmd};
+        }
         Env env = context.getEnv();
         try {
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.directory(new File(env.getCurrentWorkingDirectory().getPath()));
+            TruffleProcessBuilder pb = context.getEnv().newProcessBuilder(command);
+            pb.directory(env.getCurrentWorkingDirectory());
             PipePump stdout = null, stderr = null;
             boolean stdsArePipes = !context.getOption(PythonOptions.TerminalIsInteractive);
             if (stdsArePipes) {
-                pb.redirectInput(ProcessBuilder.Redirect.PIPE);
-                pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-                pb.redirectError(ProcessBuilder.Redirect.PIPE);
+                pb.redirectInput(Redirect.PIPE);
+                pb.redirectOutput(Redirect.PIPE);
+                pb.redirectError(Redirect.PIPE);
             } else {
-                pb.inheritIO();
+                pb.inheritIO(true);
             }
             Process proc = pb.start();
             if (stdsArePipes) {
@@ -1868,13 +1878,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    private static final String[] shell;
-    static {
-        String osProperty = System.getProperty("os.name");
-        shell = osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows") ? new String[]{"cmd.exe", "/c"}
-                : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
-    }
-
+    // TODO merge with ProcessWrapper
     static class PipePump extends Thread {
         private static final int MAX_READ = 8192;
         private final InputStream in;

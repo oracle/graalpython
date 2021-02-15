@@ -698,7 +698,7 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final void setenv(Object name, Object value, boolean overwrite,
-                      @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("setenv", "%s, %s, %b", name, value, overwrite);
         try {
             lib.setenv(delegate, name, value, overwrite);
@@ -723,7 +723,7 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final void execv(Object pathname, Object[] args,
-                       @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("execv", "%s, %s", pathname, args);
         try {
             lib.execv(delegate, pathname, args);
@@ -734,7 +734,7 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final int system(Object command,
-                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter("system", "%s", command);
         return logExit("system", "%d", lib.system(delegate, command));
     }

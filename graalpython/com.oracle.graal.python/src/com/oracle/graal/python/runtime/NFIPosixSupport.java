@@ -1091,7 +1091,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public int system(Object command,
-                      @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(this, PosixNativeFunction.call_system, pathToCString(command));
     }
 
