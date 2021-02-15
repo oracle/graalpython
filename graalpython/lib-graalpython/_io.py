@@ -80,15 +80,8 @@ class StringIO(_TextIOBase):
     pass
 
 
-class BufferedWriter(_BufferedIOBase):
-    pass
-
 
 class BufferedRWPair(_BufferedIOBase):
-    pass
-
-
-class BufferedRandom(_BufferedIOBase):
     pass
 
 
