@@ -779,7 +779,7 @@ public class GraalHPyNodes {
 
         @Specialization(limit = "1")
         static GetSetDescriptor doIt(GraalHPyContext context, Object type, Object memberDef,
-                        @CachedLibrary("memberDef") InteropLibrary interopLibrary,
+                        @CachedLibrary("memberDef") InteropLibrary memberDefLib,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached GetNameNode getNameNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -788,37 +788,37 @@ public class GraalHPyNodes {
                         @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
-            assert interopLibrary.hasMembers(memberDef);
-            assert interopLibrary.isMemberReadable(memberDef, "name");
-            assert interopLibrary.isMemberReadable(memberDef, "getter_impl");
-            assert interopLibrary.isMemberReadable(memberDef, "setter_impl");
-            assert interopLibrary.isMemberReadable(memberDef, "doc");
-            assert interopLibrary.isMemberReadable(memberDef, "closure");
+            assert memberDefLib.hasMembers(memberDef);
+            assert memberDefLib.isMemberReadable(memberDef, "name");
+            assert memberDefLib.isMemberReadable(memberDef, "getter_impl");
+            assert memberDefLib.isMemberReadable(memberDef, "setter_impl");
+            assert memberDefLib.isMemberReadable(memberDef, "doc");
+            assert memberDefLib.isMemberReadable(memberDef, "closure");
 
             String enclosingClassName = getNameNode.execute(type);
             try {
                 String name;
                 try {
-                    name = castToJavaStringNode.execute(fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name")));
+                    name = castToJavaStringNode.execute(fromCharPointerNode.execute(memberDefLib.readMember(memberDef, "name")));
                 } catch (CannotCastException e) {
                     throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
                 }
 
                 // note: 'doc' may be NULL; in this case, we would store 'None'
                 Object memberDoc = PNone.NONE;
-                Object docCharPtr = interopLibrary.readMember(memberDef, "doc");
+                Object docCharPtr = memberDefLib.readMember(memberDef, "doc");
                 if (!valueLib.isNull(docCharPtr)) {
                     memberDoc = fromCharPointerNode.execute(docCharPtr);
                 }
 
-                Object closurePtr = interopLibrary.readMember(memberDef, "closure");
+                Object closurePtr = memberDefLib.readMember(memberDef, "closure");
 
                 // signature: self, closure
-                Object getterFunctionPtr = interopLibrary.readMember(memberDef, "getter_impl");
+                Object getterFunctionPtr = memberDefLib.readMember(memberDef, "getter_impl");
 
                 // signature: self, value, closure
-                Object setterFunctionPtr = interopLibrary.readMember(memberDef, "setter_impl");
-                boolean readOnly = interopLibrary.isNull(setterFunctionPtr);
+                Object setterFunctionPtr = memberDefLib.readMember(memberDef, "setter_impl");
+                boolean readOnly = valueLib.isNull(setterFunctionPtr);
 
                 PFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context.getContext(), enclosingClassName, name, getterFunctionPtr, closurePtr);
                 Object setterObject;
