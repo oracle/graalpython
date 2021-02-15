@@ -283,6 +283,9 @@ public abstract class PosixSupportLibrary extends Library {
     // args.length must be > 0
     public abstract void execv(Object receiver, Object pathname, Object[] args) throws PosixException;
 
+    // does not throw, because posix does not exactly define the return value
+    public abstract int system(Object receiver, Object command);
+
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary

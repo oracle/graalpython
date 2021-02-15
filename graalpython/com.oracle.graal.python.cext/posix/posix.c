@@ -501,6 +501,10 @@ void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
     execv(pathname, argv);
 }
 
+int32_t call_system(const char *pathname) {
+    return system(pathname);
+}
+
 int32_t get_errno() {
     return errno;
 }

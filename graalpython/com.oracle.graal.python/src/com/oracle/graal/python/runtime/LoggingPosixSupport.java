@@ -733,6 +733,13 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int system(Object command,
+                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("system", "%s", command);
+        return logExit("system", "%d", lib.system(delegate, command));
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "createPathFromString", "%s", path);

@@ -155,7 +155,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
         fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32"),
-        call_execv("([sint8], [sint64], sint32):void");
+        call_execv("([sint8], [sint64], sint32):void"),
+        call_system("([sint8]):sint32");
 
         private final String signature;
 
@@ -1086,6 +1087,12 @@ public final class NFIPosixSupport extends PosixSupport {
 
         invokeNode.call(this, PosixNativeFunction.call_execv, wrap(data), wrap(offsets), offsets.length);
         throw getErrnoAndThrowPosixException(invokeNode);
+    }
+
+    @ExportMessage
+    public int system(Object command,
+                      @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_system, pathToCString(command));
     }
 
     private static long addLengthsOfCStrings(long prevLen, Object[] src) throws OverflowException {

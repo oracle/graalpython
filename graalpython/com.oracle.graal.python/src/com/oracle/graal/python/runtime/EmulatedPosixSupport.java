@@ -61,7 +61,9 @@ import static java.lang.Math.addExact;
 import static java.lang.Math.multiplyExact;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -90,11 +92,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -1821,6 +1825,94 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
         // TODO python-specific, missing location
         throw new PythonExitException(null, pr.exitValue());
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public int system(Object commandObj) {
+        String cmd = pathToJavaStr(commandObj);
+        if (!context.isExecutableAccessAllowed()) {
+            return -1;
+        }
+        LOGGER.fine(() -> "os.system: " + cmd);
+        String[] command = new String[]{shell[0], shell[1], cmd};
+        Env env = context.getEnv();
+        try {
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.directory(new File(env.getCurrentWorkingDirectory().getPath()));
+            PipePump stdout = null, stderr = null;
+            boolean stdsArePipes = !context.getOption(PythonOptions.TerminalIsInteractive);
+            if (stdsArePipes) {
+                pb.redirectInput(ProcessBuilder.Redirect.PIPE);
+                pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
+                pb.redirectError(ProcessBuilder.Redirect.PIPE);
+            } else {
+                pb.inheritIO();
+            }
+            Process proc = pb.start();
+            if (stdsArePipes) {
+                proc.getOutputStream().close(); // stdin will be closed
+                stdout = new PipePump(cmd + " [stdout]", proc.getInputStream(), env.out());
+                stderr = new PipePump(cmd + " [stderr]", proc.getErrorStream(), env.err());
+                stdout.start();
+                stderr.start();
+            }
+            int exitStatus = proc.waitFor();
+            if (stdsArePipes) {
+                stdout.finish();
+                stderr.finish();
+            }
+            return exitStatus;
+        } catch (IOException | InterruptedException e) {
+            return -1;
+        }
+    }
+
+    private static final String[] shell;
+    static {
+        String osProperty = System.getProperty("os.name");
+        shell = osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows") ? new String[]{"cmd.exe", "/c"}
+                : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
+    }
+
+    static class PipePump extends Thread {
+        private static final int MAX_READ = 8192;
+        private final InputStream in;
+        private final OutputStream out;
+        private final byte[] buffer;
+        private volatile boolean finish;
+
+        public PipePump(String name, InputStream in, OutputStream out) {
+            this.setName(name);
+            this.in = in;
+            this.out = out;
+            this.buffer = new byte[MAX_READ];
+            this.finish = false;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (!finish || in.available() > 0) {
+                    if (Thread.interrupted()) {
+                        finish = true;
+                    }
+                    int read = in.read(buffer, 0, Math.min(MAX_READ, in.available()));
+                    if (read == -1) {
+                        return;
+                    }
+                    out.write(buffer, 0, read);
+                }
+            } catch (IOException e) {
+            }
+        }
+
+        public void finish() {
+            finish = true;
+            // Make ourselves max priority to flush data out as quickly as possible
+            setPriority(Thread.MAX_PRIORITY);
+            Thread.yield();
+        }
     }
 
     // ------------------

@@ -31,17 +31,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.ProcessBuilder.Redirect;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -114,8 +108,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -215,10 +207,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                                     "operating system name", "name of machine on network (implementation-defined)",
                                     "operating system release", "operating system version", "hardware identifier"
                     });
-
-    private static boolean terminalIsInteractive(PythonContext context) {
-        return context.getOption(PythonOptions.TerminalIsInteractive);
-    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -1870,98 +1858,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "system", minNumOfPositionalArgs = 1)
+    @Builtin(name = "system", minNumOfPositionalArgs = 1, parameterNames = {"command"})
+    @ArgumentClinic(name = "command", conversionClass = FsConverterNode.class)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class SystemNode extends PythonBuiltinNode {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SystemNode.class);
-
-        static final String[] shell;
-        static {
-            String osProperty = System.getProperty("os.name");
-            shell = osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows") ? new String[]{"cmd.exe", "/c"}
-                            : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
+    abstract static class SystemNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.SystemNodeClinicProviderGen.INSTANCE;
         }
 
-        static class PipePump extends Thread {
-            private static final int MAX_READ = 8192;
-            private final InputStream in;
-            private final OutputStream out;
-            private final byte[] buffer;
-            private volatile boolean finish;
-
-            public PipePump(String name, InputStream in, OutputStream out) {
-                this.setName(name);
-                this.in = in;
-                this.out = out;
-                this.buffer = new byte[MAX_READ];
-                this.finish = false;
-            }
-
-            @Override
-            public void run() {
-                try {
-                    while (!finish || in.available() > 0) {
-                        if (Thread.interrupted()) {
-                            finish = true;
-                        }
-                        int read = in.read(buffer, 0, Math.min(MAX_READ, in.available()));
-                        if (read == -1) {
-                            return;
-                        }
-                        out.write(buffer, 0, read);
-                    }
-                } catch (IOException e) {
-                }
-            }
-
-            public void finish() {
-                finish = true;
-                // Make ourselves max priority to flush data out as quickly as possible
-                setPriority(Thread.MAX_PRIORITY);
-                Thread.yield();
-            }
-        }
-
-        @TruffleBoundary
         @Specialization
-        int system(String cmd) {
-            PythonContext context = getContext();
-            if (!context.isExecutableAccessAllowed()) {
-                return -1;
-            }
-            LOGGER.fine(() -> "os.system: " + cmd);
-            String[] command = new String[]{shell[0], shell[1], cmd};
-            Env env = context.getEnv();
-            try {
-                ProcessBuilder pb = new ProcessBuilder(command);
-                pb.directory(new File(env.getCurrentWorkingDirectory().getPath()));
-                PipePump stdout = null, stderr = null;
-                boolean stdsArePipes = !terminalIsInteractive(context);
-                if (stdsArePipes) {
-                    pb.redirectInput(Redirect.PIPE);
-                    pb.redirectOutput(Redirect.PIPE);
-                    pb.redirectError(Redirect.PIPE);
-                } else {
-                    pb.inheritIO();
-                }
-                Process proc = pb.start();
-                if (stdsArePipes) {
-                    proc.getOutputStream().close(); // stdin will be closed
-                    stdout = new PipePump(cmd + " [stdout]", proc.getInputStream(), env.out());
-                    stderr = new PipePump(cmd + " [stderr]", proc.getErrorStream(), env.err());
-                    stdout.start();
-                    stderr.start();
-                }
-                int exitStatus = proc.waitFor();
-                if (stdsArePipes) {
-                    stdout.finish();
-                    stderr.finish();
-                }
-                return exitStatus;
-            } catch (IOException | InterruptedException e) {
-                return -1;
-            }
+        int system(VirtualFrame frame, PBytes command,
+                   @Cached BytesNodes.ToBytesNode toBytesNode,
+                   @Cached SysModuleBuiltins.AuditNode auditNode,
+                   @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
+            // conversions for emulated backend because the bytes version after fsencode conversion
+            // is subject to sys.audit.
+            auditNode.audit("os.system", command);
+            byte[] bytes = toBytesNode.execute(command);
+            Object cmdOpaque = posixLib.createPathFromBytes(getPosixSupport(), bytes);
+            return posixLib.system(getPosixSupport(), cmdOpaque);
         }
     }
 
