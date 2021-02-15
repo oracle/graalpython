@@ -107,7 +107,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isPBaseSet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
@@ -179,7 +179,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isPBaseSet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
@@ -206,7 +206,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isPBaseSet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
@@ -247,7 +247,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isPBaseSet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
