@@ -488,6 +488,19 @@ int32_t call_setenv(char *name, char *value, int overwrite) {
     return setenv(name, value, overwrite);
 }
 
+// See comment in NFiPosixSupport.execv() for the description of arguments
+void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
+    // We reuse the memory allocated for offsets to avoid the need to allocate and reliably free another array
+    char **strings = (char **) offsets;
+    for (int32_t i = 0; i < offsetsLen; ++i) {
+        strings[i] = offsets[i] == -1 ? NULL : data + offsets[i];
+    }
+
+    char *pathname = strings[0];
+    char **argv = strings + 1;
+    execv(pathname, argv);
+}
+
 int32_t get_errno() {
     return errno;
 }

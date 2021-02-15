@@ -60,7 +60,10 @@ import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
 import static java.lang.Math.addExact;
 import static java.lang.Math.multiplyExact;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -92,7 +95,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -115,9 +117,11 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -1766,6 +1770,57 @@ public final class EmulatedPosixSupport extends PosixResources {
             } catch (IOException e1) {
             }
         }
+    }
+
+    @ExportMessage
+    public void execv(Object pathname, Object[] args) throws PosixException {
+        assert args.length > 0;
+        if (!context.isExecutableAccessAllowed()) {
+            throw posixException(OSErrorEnum.EPERM);
+        }
+        String[] cmd = new String[args.length];
+        // ProcessBuilder does not accept separate executable name, we must overwrite the 0-th
+        // argument
+        cmd[0] = pathToJavaStr(pathname);
+        for (int i = 1; i < cmd.length; ++i) {
+            cmd[i] = pathToJavaStr(args[i]);
+        }
+        try {
+            execvInternal(cmd);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+        throw CompilerDirectives.shouldNotReachHere("Execv must not return normally");
+    }
+
+    @TruffleBoundary
+    private void execvInternal(String[] cmd) throws IOException {
+        TruffleProcessBuilder builder = context.getEnv().newProcessBuilder(cmd);
+        builder.clearEnvironment(true);
+        builder.environment(environ);
+        Process pr = builder.start();
+        // TODO how do env.out()/err() relate to FDs 1, 2? What about stdin?
+        // Also, native execv 'kills' all threads
+        BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+        OutputStream stream = context.getEnv().out();
+        String line;
+        while ((line = bfr.readLine()) != null) {
+            stream.write(line.getBytes());
+            stream.write("\n".getBytes());
+        }
+        BufferedReader stderr = new BufferedReader(new InputStreamReader(pr.getErrorStream()));
+        OutputStream errStream = context.getEnv().err();
+        while ((line = stderr.readLine()) != null) {
+            errStream.write(line.getBytes());
+            errStream.write("\n".getBytes());
+        }
+        try {
+            pr.waitFor();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
+        // TODO python-specific, missing location
+        throw new PythonExitException(null, pr.exitValue());
     }
 
     // ------------------

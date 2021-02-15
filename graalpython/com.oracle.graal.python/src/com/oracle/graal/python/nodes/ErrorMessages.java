@@ -62,6 +62,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_BE_UNICODE = "%s argument %d must be a unicode character, not %p";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
+    public static final String ARG_MUST_NOT_BE_EMPTY = "%s arg %d must not be empty";
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
     public static final String ARG_SHOULD_BE_INT_BYTESLIKE_OBJ = "argument should be integer or bytes-like object, not '%p'";
     public static final String ARG_SHOULD_BE_INT_OR_NONE = "argument should be integer or None, not %p";

@@ -55,22 +55,19 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FspathNode;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.ObjectToOpaquePathNode;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltinsClinicProviders.NewForkExecNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltinsFactory.EnvConversionNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltinsFactory.ProcessArgsConversionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -79,7 +76,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -96,68 +92,12 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PosixSubprocessModuleBuiltinsFactory.getFactories();
-    }
-
-    /**
-     * Helper node that accepts either str or bytes and converts it to a representation specific to
-     * the {@link PosixSupportLibrary} in use. Basically equivalent of
-     * {@code PyUnicode_EncodeFSDefault}.
-     */
-    abstract static class StringOrBytesToOpaquePathNode extends PNodeWithRaise {
-        abstract Object execute(Object obj);
-
-        @Specialization(limit = "1")
-        Object doString(String str,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
-            return checkPath(posixLib.createPathFromString(context.getPosixSupport(), str));
-        }
-
-        @Specialization(limit = "1")
-        Object doPString(PString pstr,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
-            String str = castToJavaStringNode.execute(pstr);
-            return checkPath(posixLib.createPathFromString(context.getPosixSupport(), str));
-        }
-
-        @Specialization(limit = "1")
-        Object doBytes(PBytes bytes,
-                        @Cached ToBytesNode toBytesNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
-            return checkPath(posixLib.createPathFromBytes(context.getPosixSupport(), toBytesNode.execute(bytes)));
-        }
-
-        private Object checkPath(Object path) {
-            if (path == null) {
-                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
-            }
-            return path;
-        }
-    }
-
-    /**
-     * Similar to {@code PyUnicode_FSConverter}, but the actual conversion is delegated to the
-     * {@link PosixSupportLibrary} implementation.
-     */
-    abstract static class ObjectToOpaquePathNode extends Node {
-        abstract Object execute(VirtualFrame frame, Object obj);
-
-        @Specialization
-        Object doIt(VirtualFrame frame, Object obj,
-                        @Cached FspathNode fspathNode,
-                        @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
-            return stringOrBytesToOpaquePathNode.execute(fspathNode.call(frame, obj));
-        }
     }
 
     /**

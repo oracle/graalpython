@@ -280,6 +280,9 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
                     int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException;
 
+    // args.length must be > 0
+    public abstract void execv(Object receiver, Object pathname, Object[] args) throws PosixException;
+
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary

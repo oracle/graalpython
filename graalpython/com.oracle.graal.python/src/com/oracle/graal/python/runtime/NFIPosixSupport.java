@@ -154,7 +154,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getsid("(sint64):sint64"),
         call_ctermid("([sint8]):sint32"),
         call_setenv("([sint8], [sint8], sint32):sint32"),
-        fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32");
+        fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32"),
+        call_execv("([sint8], [sint64], sint32):void");
 
         private final String signature;
 
@@ -943,7 +944,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         // The following strings and string arrays need to be present in the native function:
         // - char** of executable names ('\0'-terminated strings with an extra NULL at the end)
-        // - char** of arguments names ('\0'-terminated strings with an extra NULL at the end)
+        // - char** of arguments ('\0'-terminated strings with an extra NULL at the end)
         // - an optional char** of env variables ('\0'-terminated strings with an extra NULL at the
         // end), must distinguish between NULL (child inherits env) and an empty array (child gets
         // empty env)
@@ -1036,6 +1037,55 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return res;
+    }
+
+    @ExportMessage
+    public void execv(Object pathname, Object[] args,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+
+        // The following strings and string arrays need to be present in the native function:
+        // - char* - the pathname ('\0'-terminated string)
+        // - char** of arguments ('\0'-terminated strings with an extra NULL at the end)
+        // We do this by concatenating all strings (including their terminating '\0' characters)
+        // into one large byte buffer (which becomes 'char *') and pass an additional array of
+        // offsets to mark where the individual strings begin. To prevent memory allocation
+        // in C (and related free()), we reuse this array of integer offsets as an array of
+        // C-strings (char **). For this reason, the array of offsets is allocated as long[].
+        // In the offsets array we mark the places where NULL should be with a special value -1.
+        // - the pathname is always at index 0
+        // - the arguments start at index 1
+
+        // First we calculate the lengths of the offsets array and the string buffer (dataLen).
+        int offsetsLen = 1 + args.length + 1;
+        long pathnameLen = ((Buffer) pathname).length;
+        long dataLen;
+
+        try {
+            // The +1 can overflow only if the buffer contains 2^63-1 bytes, which is impossible
+            // since we are using Java arrays limited to 2^31-1.
+            dataLen = addLengthsOfCStrings(pathnameLen + 1L, args);
+        } catch (OverflowException e) {
+            throw newPosixException(invokeNode, OSErrorEnum.E2BIG.getNumber());
+        }
+
+        // This also guarantees that offsetsLen did not overflow: we add +1 to dataLen for each
+        // '\0', i.e. dataLen >= "number of strings" and offsetsLen == "number of strings" + 1
+        // (1 accounts for the NULL terminating the args array).
+        // Also, dataLen > pathnameLen, so this check makes sure that the cast of pathnameLen to int
+        // below is safe.
+        if (dataLen >= Integer.MAX_VALUE - 1) {
+            throw newPosixException(invokeNode, OSErrorEnum.E2BIG.getNumber());
+        }
+
+        byte[] data = new byte[(int) dataLen];
+        long[] offsets = new long[offsetsLen];
+
+        PythonUtils.arraycopy(((Buffer) pathname).data, 0, data, 0, (int) pathnameLen);
+        long offset = encodeCStringArray(data, pathnameLen + 1L, offsets, 1, args);
+        assert offset == dataLen;
+
+        invokeNode.call(this, PosixNativeFunction.call_execv, wrap(data), wrap(offsets), offsets.length);
+        throw getErrnoAndThrowPosixException(invokeNode);
     }
 
     private static long addLengthsOfCStrings(long prevLen, Object[] src) throws OverflowException {

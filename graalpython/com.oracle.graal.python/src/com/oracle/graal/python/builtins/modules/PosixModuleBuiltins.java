@@ -31,11 +31,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.math.BigInteger;
@@ -58,14 +56,16 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemDynamicNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -117,6 +118,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -126,6 +128,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -379,86 +382,65 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "execv", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @Builtin(name = "execv", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "argv"})
+    @ArgumentClinic(name = "pathname", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @GenerateNodeFactory
-    public abstract static class ExecvNode extends PythonBuiltinNode {
-        @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
+    public abstract static class ExecvNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization
-        Object execute(VirtualFrame frame, PythonModule thisModule, String path, PList args) {
-            return doExecute(frame, thisModule, path, args);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.ExecvNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        Object execute(VirtualFrame frame, PythonModule thisModule, String path, PTuple args) {
-            // in case of execl the PList happens to be in the tuples first entry
-            Object list = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), 0);
-            return doExecute(frame, thisModule, path, list instanceof PList ? (PList) list : args);
+        Object execvArgsList(VirtualFrame frame, PosixPath path, PList argv,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached ObjectToOpaquePathNode toOpaquePathNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode);
+            throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
-        @Specialization(limit = "1")
-        Object executePath(VirtualFrame frame, PythonModule thisModule, Object path, PTuple args,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return execute(frame, thisModule, lib.asPath(path), args);
+        @Specialization
+        Object execvArgsTuple(VirtualFrame frame, PosixPath path, PTuple argv,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached ObjectToOpaquePathNode toOpaquePathNode,
+                        @Cached AuditNode auditNode) {
+            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode);
+            throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
-        @Specialization(limit = "1")
-        Object executePath(VirtualFrame frame, PythonModule thisModule, Object path, PList args,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return doExecute(frame, thisModule, lib.asPath(path), args);
+        @Specialization(guards = {"!isList(argv)", "!isTuple(argv)"})
+        @SuppressWarnings("unused")
+        Object execvInvalidArgs(VirtualFrame frame, PosixPath path, Object argv) {
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");
         }
 
-        Object doExecute(VirtualFrame frame, PythonModule thisModule, String path, PSequence args) {
-            if (!getContext().isExecutableAccessAllowed()) {
-                throw raiseOSError(frame, OSErrorEnum.EPERM);
+        private void execv(VirtualFrame frame, PosixPath path, Object argv, SequenceStorage argvStorage,
+                        PosixSupportLibrary posixLib,
+                        SequenceStorageNodes.ToArrayNode toArrayNode,
+                        ObjectToOpaquePathNode toOpaquePathNode,
+                        SysModuleBuiltins.AuditNode auditNode) {
+            Object[] args = toArrayNode.execute(argvStorage);
+            if (args.length < 1) {
+                throw raise(ValueError, ErrorMessages.ARG_MUST_NOT_BE_EMPTY, "execv()", 2);
             }
+            Object[] opaqueArgs = new Object[args.length];
+            for (int i = 0; i < args.length; ++i) {
+                opaqueArgs[i] = toOpaquePathNode.execute(frame, args[i]);
+            }
+            //TODO ValueError "execv() arg 2 first element cannot be empty"
+
+            auditNode.audit("os.exec", path.originalObject, argv, PNone.NONE);
+
             try {
-                return doExecuteInternal(thisModule, path, args);
-            } catch (Exception e) {
-                throw raiseOSError(frame, e, path);
+                posixLib.execv(getPosixSupport(), path.value, opaqueArgs);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-        }
-
-        @TruffleBoundary
-        Object doExecuteInternal(PythonModule thisModule, String path, PSequence args) throws IOException {
-            int size = args.getSequenceStorage().length();
-            if (size == 0) {
-                throw raise(ValueError, ErrorMessages.ARG_D_MUST_NOT_BE_EMPTY, 2);
-            }
-            String[] cmd = new String[size];
-            // We don't need the path variable because it's already in the array
-            // but I need to process it for CI gate
-            cmd[0] = path;
-            for (int i = 0; i < size; i++) {
-                cmd[i] = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), i).toString();
-            }
-            PDict environ = (PDict) thisModule.getAttribute("environ");
-            ProcessBuilder builder = new ProcessBuilder(cmd);
-            Map<String, String> environment = builder.environment();
-            environ.entries().forEach(entry -> {
-                environment.put(new String(toBytes.execute(entry.key)), new String(toBytes.execute(entry.value)));
-            });
-            Process pr = builder.start();
-            BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-            OutputStream stream = getContext().getEnv().out();
-            String line = "";
-            while ((line = bfr.readLine()) != null) {
-                stream.write(line.getBytes());
-                stream.write("\n".getBytes());
-            }
-            BufferedReader stderr = new BufferedReader(new InputStreamReader(pr.getErrorStream()));
-            OutputStream errStream = getContext().getEnv().err();
-            line = "";
-            while ((line = stderr.readLine()) != null) {
-                errStream.write(line.getBytes());
-                errStream.write("\n".getBytes());
-            }
-            try {
-                pr.waitFor();
-            } catch (InterruptedException e) {
-                throw new IOException(e);
-            }
-            throw new PythonExitException(this, pr.exitValue());
+            throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
     }
 
@@ -2138,6 +2120,61 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PBytes doBytes(PBytes bytes) {
             return bytes;
+        }
+    }
+
+    /**
+     * Helper node that accepts either str or bytes and converts it to a representation specific to
+     * the {@link PosixSupportLibrary} in use. Basically equivalent of
+     * {@code PyUnicode_EncodeFSDefault}.
+     */
+    abstract static class StringOrBytesToOpaquePathNode extends PNodeWithRaise {
+        abstract Object execute(Object obj);
+
+        @Specialization(limit = "1")
+        Object doString(String str,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
+            return checkPath(posixLib.createPathFromString(context.getPosixSupport(), str));
+        }
+
+        @Specialization(limit = "1")
+        Object doPString(PString pstr,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
+            String str = castToJavaStringNode.execute(pstr);
+            return checkPath(posixLib.createPathFromString(context.getPosixSupport(), str));
+        }
+
+        @Specialization(limit = "1")
+        Object doBytes(PBytes bytes,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
+            return checkPath(posixLib.createPathFromBytes(context.getPosixSupport(), toBytesNode.execute(bytes)));
+        }
+
+        private Object checkPath(Object path) {
+            if (path == null) {
+                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            }
+            return path;
+        }
+    }
+
+    /**
+     * Similar to {@code PyUnicode_FSConverter}, but the actual conversion is delegated to the
+     * {@link PosixSupportLibrary} implementation.
+     */
+    abstract static class ObjectToOpaquePathNode extends Node {
+        abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization
+        Object doIt(VirtualFrame frame, Object obj,
+                        @Cached FspathNode fspathNode,
+                        @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
+            return stringOrBytesToOpaquePathNode.execute(fspathNode.call(frame, obj));
         }
     }
 

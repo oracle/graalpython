@@ -722,6 +722,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void execv(Object pathname, Object[] args,
+                       @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("execv", "%s, %s", pathname, args);
+        try {
+            lib.execv(delegate, pathname, args);
+        } catch (PosixException e) {
+            throw logException("execv", e);
+        }
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "createPathFromString", "%s", path);
