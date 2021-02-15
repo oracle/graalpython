@@ -53,6 +53,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -481,6 +482,10 @@ int64_t call_getsid(int64_t pid) {
 
 int32_t call_ctermid(char *buf) {
     return ctermid(buf) == NULL ? -1 : 0;
+}
+
+int32_t call_setenv(char *name, char *value, int overwrite) {
+    return setenv(name, value, overwrite);
 }
 
 int32_t get_errno() {

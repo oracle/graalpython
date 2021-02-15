@@ -153,6 +153,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getppid("():sint64"),
         call_getsid("(sint64):sint64"),
         call_ctermid("([sint8]):sint32"),
+        call_setenv("([sint8], [sint8], sint32):sint32"),
         fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32");
 
         private final String signature;
@@ -927,6 +928,15 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public void setenv(Object name, Object value, boolean overwrite,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_setenv, pathToCString(name), pathToCString(value), overwrite ? 1 : 0);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
@@ -1102,6 +1112,9 @@ public final class NFIPosixSupport extends PosixSupport {
                 return null;
             }
         }
+        // TODO we keep a byte[] provided by the caller, who can potentially change it, making our
+        // check for embedded nulls pointless. Maybe we should copy it and while on it, might as
+        // well add the terminating null character, avoiding the copy we do later in pathToCString.
         return Buffer.wrap(path);
     }
 

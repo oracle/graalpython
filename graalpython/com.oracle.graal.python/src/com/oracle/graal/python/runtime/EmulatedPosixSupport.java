@@ -92,6 +92,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -235,12 +236,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static final int S_IFREG = 0100000;
 
     private final PythonContext context;
+    private final Map<String, String> environ = new HashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
     public EmulatedPosixSupport(PythonContext context) {
         this.context = context;
         setEnv(context.getEnv());
+        environ.putAll(System.getenv());
     }
 
     @ExportMessage
@@ -1588,6 +1591,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public String ctermid() {
         return "/dev/tty";
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public synchronized void setenv(Object name, Object value, boolean overwrite) {
+        if (overwrite || !environ.containsKey(name)) {
+            environ.put((String) name, (String) value);
+        }
     }
 
     @ExportMessage

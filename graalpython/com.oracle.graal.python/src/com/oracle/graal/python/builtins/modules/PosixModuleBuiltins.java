@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
@@ -282,13 +283,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         // fill the environ dictionary with the current environment
         Map<String, String> getenv = System.getenv();
         PDict environ = core.factory().createDict();
+        String pyenvLauncherKey = "__PYVENV_LAUNCHER__";
         for (Entry<String, String> entry : getenv.entrySet()) {
             String value;
-            if ("__PYVENV_LAUNCHER__".equals(entry.getKey())) {
+            if (pyenvLauncherKey.equals(entry.getKey())) {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
                 // executable. It will be honored by packages like "site". So, if it is set, we
                 // overwrite it with our executable to ensure that subprocesses will use us.
                 value = core.getContext().getOption(PythonOptions.Executable);
+
+                try {
+                    PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+                    Object posixSupport = core.getContext().getPosixSupport();
+                    Object k = posixLib.createPathFromString(posixSupport, pyenvLauncherKey);
+                    Object v = posixLib.createPathFromString(posixSupport, value);
+                    posixLib.setenv(posixSupport, k, v, true);
+                } catch (PosixException e) {
+                    // TODO handle error
+                }
             } else {
                 value = entry.getValue();
             }
@@ -315,6 +327,55 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
             return p;
+        }
+    }
+
+    @Builtin(name = "putenv", minNumOfPositionalArgs = 2, parameterNames = {"name", "value"})
+    @ArgumentClinic(name = "name", conversionClass = FsConverterNode.class)
+    @ArgumentClinic(name = "value", conversionClass = FsConverterNode.class)
+    @GenerateNodeFactory
+    public abstract static class PutenvNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.PutenvNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone putenv(VirtualFrame frame, PBytes nameBytes, PBytes valueBytes,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
+            // conversions for emulated backend because the bytes version after fsencode conversion
+            // is subject to sys.audit.
+            byte[] name = toBytesNode.execute(nameBytes);
+            byte[] value = toBytesNode.execute(valueBytes);
+            Object nameOpaque = checkNull(posixLib.createPathFromBytes(getPosixSupport(), name));
+            Object valueOpaque = checkNull(posixLib.createPathFromBytes(getPosixSupport(), value));
+            checkEqualSign(name);
+            auditNode.audit("os.putenv", nameBytes, valueBytes);
+            try {
+                posixLib.setenv(getPosixSupport(), nameOpaque, valueOpaque, true);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        private Object checkNull(Object value) {
+            if (value == null) {
+                throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+            }
+            return value;
+        }
+
+        private void checkEqualSign(byte[] bytes) {
+            for (byte b : bytes) {
+                if (b == '=') {
+                    throw raise(ValueError, ErrorMessages.ILLEGAL_ENVIRONMENT_VARIABLE_NAME);
+                }
+            }
         }
     }
 
@@ -2057,6 +2118,29 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     // ------------------
     // Helpers
 
+    /**
+     * Helper node that accepts either str or bytes and converts it to {@code PBytes}.
+     */
+    abstract static class StringOrBytesToBytesNode extends PythonBuiltinBaseNode {
+        abstract PBytes execute(Object obj);
+
+        @Specialization
+        PBytes doString(String str) {
+            return factory().createBytes(BytesUtils.utf8StringToBytes(str));
+        }
+
+        @Specialization
+        PBytes doPString(PString pstr,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            return doString(castToJavaStringNode.execute(pstr));
+        }
+
+        @Specialization
+        PBytes doBytes(PBytes bytes) {
+            return bytes;
+        }
+    }
+
     abstract static class ConvertToTimespecBaseNode extends PythonBuiltinBaseNode {
         abstract void execute(VirtualFrame frame, Object obj, long[] timespec, int offset);
     }
@@ -2212,6 +2296,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     // ------------------
     // Converters
+
+    public abstract static class FsConverterNode extends ArgumentCastNodeWithRaise {
+        @Specialization
+        PBytes convert(VirtualFrame frame, Object value,
+                        @Cached FspathNode fspathNode,
+                        @Cached StringOrBytesToBytesNode stringOrBytesToBytesNode) {
+            return stringOrBytesToBytesNode.execute(fspathNode.call(frame, value));
+        }
+
+        @ClinicConverterFactory
+        public static FsConverterNode create() {
+            return PosixModuleBuiltinsFactory.FsConverterNodeGen.create();
+        }
+    }
 
     /**
      * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the

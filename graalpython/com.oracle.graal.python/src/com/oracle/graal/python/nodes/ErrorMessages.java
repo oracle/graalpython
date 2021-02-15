@@ -293,6 +293,7 @@ public abstract class ErrorMessages {
     public static final String IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT = "if you give only one argument to maketrans it must be a dict";
     public static final String INVALID_INDEXING_OF_0_DIM_MEMORY = "invalid indexing of 0-dim memory";
     public static final String ILLEGAL_ARG = "illegal argument";
+    public static final String ILLEGAL_ENVIRONMENT_VARIABLE_NAME = "illegal environment variable name";
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
     public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
