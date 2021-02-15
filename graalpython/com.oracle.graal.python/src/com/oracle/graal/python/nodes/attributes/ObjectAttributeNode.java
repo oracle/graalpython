@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -58,7 +59,7 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         try {
             return castNode.execute(key);
         } catch (CannotCastException e) {
-            return key;
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 

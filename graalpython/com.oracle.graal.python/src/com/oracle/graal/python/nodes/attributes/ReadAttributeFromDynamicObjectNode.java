@@ -55,6 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Shape;
 
@@ -71,6 +72,8 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
     }
 
     public abstract Object execute(Object object, Object key);
+
+    public abstract Object execute(Object object, HiddenKey key);
 
     protected static Object getAttribute(DynamicObject object, String key) {
         return DynamicObjectLibrary.getUncached().getOrDefault(object, key, PNone.NO_VALUE);
@@ -101,14 +104,19 @@ public abstract class ReadAttributeFromDynamicObjectNode extends ObjectAttribute
         return value;
     }
 
-    @Specialization(guards = "key == cachedKey", limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = "readFinalAttr")
-    protected Object readDirect(DynamicObject dynamicObject, @SuppressWarnings("unused") String key,
-                    @Cached("key") String cachedKey,
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = "readFinalAttr")
+    protected Object readDirect(DynamicObject dynamicObject, String key,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        return dylib.getOrDefault(dynamicObject, cachedKey, PNone.NO_VALUE);
+        return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
     }
 
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readDirect", "readFinalAttr"})
+    @Specialization(guards = "isHiddenKey(key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected Object readDirectHidden(DynamicObject dynamicObject, Object key,
+                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
+        return dylib.getOrDefault(dynamicObject, key, PNone.NO_VALUE);
+    }
+
+    @Specialization(guards = "!isHiddenKey(key)", replaces = {"readDirect", "readFinalAttr"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object read(DynamicObject dynamicObject, Object key,
                     @Cached CastToJavaStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {

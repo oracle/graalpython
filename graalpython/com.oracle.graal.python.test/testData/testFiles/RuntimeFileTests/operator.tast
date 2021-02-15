@@ -1668,10 +1668,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __mod__
                             StringLiteralNode SourceSection: [3037,3072]`"'%s' object can't b...`
-                            GetAttributeNodeGen SourceSection: [3075,3091]`type(a).__name__`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [3075,3091]`type(a).__name__`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __name__
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2207,10 +2206,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __mod__
                             StringLiteralNode SourceSection: [4162,4211]`"'%s' object cannot ...`
-                            GetAttributeNodeGen SourceSection: [4229,4251]`type(default).__name...`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [4229,4251]`type(default).__name...`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __name__
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2262,10 +2260,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           Identifier: hint
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,hint,Illegal]
-                          GetAttributeNodeGen SourceSection: [4376,4401]`type(obj).__length_h...`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [4376,4401]`type(obj).__length_h...`
+                            GetFixedAttributeNode SourceSection: None
                               Key: __length_hint__
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -2362,10 +2359,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __mod__
                             StringLiteralNode SourceSection: [4632,4673]`'__length_hint__ mus...`
-                            GetAttributeNodeGen SourceSection: [4691,4709]`type(val).__name__`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [4691,4709]`type(val).__name__`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __name__
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2704,10 +2700,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5836,5846]`attrgetter`
                                                 Identifier: attrgetter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [5848,5859]`self._attrs`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [5848,5859]`self._attrs`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _attrs
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2942,18 +2937,16 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Op: __mod__
                                           StringLiteralNode SourceSection: [6084,6095]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [6098,6249]`(self.__class__.__mo...`
-                                            GetAttributeNodeGen SourceSection: [6099,6124]`self.__class__.__mod...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [6099,6124]`self.__class__.__mod...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __module__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [6099,6113]`self.__class__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [6099,6113]`self.__class__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __class__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2961,18 +2954,16 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [6099,6103]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [6156,6183]`self.__class__.__qua...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [6156,6183]`self.__class__.__qua...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __qualname__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [6156,6170]`self.__class__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [6156,6170]`self.__class__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __class__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2992,10 +2983,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6229,6233]`repr`
                                                   Identifier: repr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [6235,6246]`self._attrs`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [6235,6246]`self._attrs`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: _attrs
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3048,10 +3038,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
                                         TupleLiteralNode SourceSection: [6292,6319]`self.__class__, self...`
-                                          GetAttributeNodeGen SourceSection: [6292,6306]`self.__class__`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [6292,6306]`self.__class__`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: __class__
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3059,10 +3048,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadLocalVariableNode SourceSection: [6292,6296]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [6308,6319]`self._attrs`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [6308,6319]`self._attrs`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _attrs
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3525,18 +3513,16 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Op: __mod__
                                           StringLiteralNode SourceSection: [7061,7072]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [7075,7222]`(self.__class__.__mo...`
-                                            GetAttributeNodeGen SourceSection: [7076,7101]`self.__class__.__mod...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [7076,7101]`self.__class__.__mod...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __module__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [7076,7090]`self.__class__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [7076,7090]`self.__class__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __class__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3544,18 +3530,16 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [7076,7080]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [7133,7156]`self.__class__.__nam...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [7133,7156]`self.__class__.__nam...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __name__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [7133,7147]`self.__class__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [7133,7147]`self.__class__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __class__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3575,10 +3559,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [7202,7206]`repr`
                                                   Identifier: repr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [7208,7219]`self._items`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [7208,7219]`self._items`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: _items
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3631,10 +3614,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
                                         TupleLiteralNode SourceSection: [7265,7292]`self.__class__, self...`
-                                          GetAttributeNodeGen SourceSection: [7265,7279]`self.__class__`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7265,7279]`self.__class__`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: __class__
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3642,10 +3624,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadLocalVariableNode SourceSection: [7265,7269]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [7281,7292]`self._items`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7281,7292]`self._items`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _items
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3820,10 +3801,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7857,7867]`isinstance`
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [7868,7878]`self._name`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7868,7878]`self._name`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _name
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3920,10 +3900,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         PythonCallNodeGen SourceSection: [8051,8104]`getattr(obj, self._n...`
                                           CallNodeGen SourceSection: None
                                           PositionalArgumentsNode SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [8077,8087]`self._args`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [8077,8087]`self._args`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _args
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3934,10 +3913,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
                                             ExecuteKeywordArgumentsNode SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [8091,8103]`self._kwargs`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [8091,8103]`self._kwargs`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _kwargs
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3953,10 +3931,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadLocalVariableNode SourceSection: [8059,8062]`obj`
                                               Frame: [1,obj,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [8064,8074]`self._name`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [8064,8074]`self._name`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _name
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -4012,10 +3989,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8146,8150]`repr`
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [8151,8161]`self._name`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [8151,8161]`self._name`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _name
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -4039,10 +4015,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8188,8192]`repr`
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [8194,8204]`self._args`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [8194,8204]`self._args`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _args
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -4138,10 +4113,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             PythonCallNodeGen SourceSection: [8256,8276]`self._kwargs.items()...`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [8256,8268]`self._kwargs`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [8256,8268]`self._kwargs`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: _kwargs
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4160,18 +4134,16 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Op: __mod__
                                           StringLiteralNode SourceSection: [8293,8304]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [8307,8436]`(self.__class__.__mo...`
-                                            GetAttributeNodeGen SourceSection: [8308,8333]`self.__class__.__mod...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [8308,8333]`self.__class__.__mod...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __module__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [8308,8322]`self.__class__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [8308,8322]`self.__class__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __class__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4179,18 +4151,16 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [8308,8312]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [8365,8388]`self.__class__.__nam...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [8365,8388]`self.__class__.__nam...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __name__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [8365,8379]`self.__class__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [8365,8379]`self.__class__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __class__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4248,10 +4218,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                       NotNodeGen SourceSection: [8475,8491]`not self._kwargs`
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [8479,8491]`self._kwargs`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [8479,8491]`self._kwargs`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: _kwargs
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -4265,10 +4234,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,<return_val>,Illegal]
                                           TupleLiteralNode SourceSection: [8512,8554]`self.__class__, (sel...`
-                                            GetAttributeNodeGen SourceSection: [8512,8526]`self.__class__`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [8512,8526]`self.__class__`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __class__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -4280,10 +4248,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __add__
                                               TupleLiteralNode SourceSection: [8528,8541]`(self._name,)`
-                                                GetAttributeNodeGen SourceSection: [8529,8539]`self._name`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [8529,8539]`self._name`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: _name
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4292,10 +4259,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [8544,8554]`self._args`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [8544,8554]`self._args`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _args
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4326,10 +4292,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             TupleLiteralNode SourceSection: [8630,8693]`partial(self.__class...`
                                               PythonCallNodeGen SourceSection: [8630,8681]`partial(self.__class...`
                                                 CallNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [8638,8652]`self.__class__`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [8638,8652]`self.__class__`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: __class__
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4337,10 +4302,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   ReadLocalVariableNode SourceSection: [8638,8642]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [8654,8664]`self._name`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [8654,8664]`self._name`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: _name
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4350,10 +4314,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   ExecuteKeywordArgumentsNode SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [8668,8680]`self._kwargs`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [8668,8680]`self._kwargs`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: _kwargs
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -4364,10 +4327,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [8630,8637]`partial`
                                                   Frame: [1,partial,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [8683,8693]`self._args`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [8683,8693]`self._args`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _args
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4569,10 +4531,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __mod__
                             StringLiteralNode SourceSection: [9020,9055]`"'%s' object can't b...`
-                            GetAttributeNodeGen SourceSection: [9058,9074]`type(a).__name__`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [9058,9074]`type(a).__name__`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __name__
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None

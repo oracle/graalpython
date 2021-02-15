@@ -357,10 +357,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [1999,2012]`type.__dict__`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [1999,2012]`type.__dict__`
+            GetFixedAttributeNode SourceSection: None
               Key: __dict__
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -581,10 +580,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       Identifier: mro
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,mro,Illegal]
-                      GetAttributeNodeGen SourceSection: [2374,2383]`C.__mro__`
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: [2374,2383]`C.__mro__`
+                        GetFixedAttributeNode SourceSection: None
                           Key: __mro__
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -621,10 +619,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       ReadLocalVariableNode SourceSection: [2448,2454]`method`
                                         Frame: [4,method,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [2458,2468]`B.__dict__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [2458,2468]`B.__dict__`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __dict__
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -639,10 +636,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [2489,2515]`B.__dict__[method] i...`
                                           GetItemNodeGen SourceSection: [2489,2507]`B.__dict__[method]`
-                                            GetAttributeNodeGen SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __dict__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -6255,10 +6251,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       Identifier: MAX
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,MAX,Illegal]
-                                      GetAttributeNodeGen SourceSection: [14395,14406]`sys.maxsize`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [14395,14406]`sys.maxsize`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: maxsize
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -8023,10 +8018,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18429,18432]`len`
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [18433,18446]`self._mapping`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [18433,18446]`self._mapping`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _mapping
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -8265,10 +8259,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReadLocalVariableNode SourceSection: [18722,18725]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [18729,18742]`self._mapping`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [18729,18742]`self._mapping`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _mapping
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -8330,10 +8323,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CachedDispatchFirst SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [18787,18800]`self._mapping`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [18787,18800]`self._mapping`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: _mapping
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -8566,10 +8558,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,v,Illegal]
                                           GetItemNodeGen SourceSection: [19053,19071]`self._mapping[key]`
-                                            GetAttributeNodeGen SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _mapping
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8660,10 +8651,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [1,key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             GetItemNodeGen SourceSection: [19263,19281]`self._mapping[key]`
-                                              GetAttributeNodeGen SourceSection: None
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _mapping
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -8681,10 +8671,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [19224,19237]`self._mapping`
-                                        GetAttributeNodeGen SourceSection: [19224,19237]`self._mapping`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [19224,19237]`self._mapping`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: _mapping
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -8835,10 +8824,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [2,v,Illegal]
                                               GetItemNodeGen SourceSection: [19466,19484]`self._mapping[key]`
-                                                GetAttributeNodeGen SourceSection: None
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: _mapping
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -8881,10 +8869,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   BooleanLiteralNode SourceSection: [19549,19553]`True`
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [19435,19448]`self._mapping`
-                                          GetAttributeNodeGen SourceSection: [19435,19448]`self._mapping`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [19435,19448]`self._mapping`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _mapping
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -8940,10 +8927,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         YieldNode SourceSection: [19646,19670]`yield self._mapping[...`
                                           flagSlot: 0
                                           GetItemNodeGen SourceSection: [19652,19670]`self._mapping[key]`
-                                            GetAttributeNodeGen SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _mapping
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8960,10 +8946,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [19619,19632]`self._mapping`
-                                        GetAttributeNodeGen SourceSection: [19619,19632]`self._mapping`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [19619,19632]`self._mapping`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: _mapping
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -9288,10 +9273,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   ReadLocalVariableNode SourceSection: [20500,20507]`default`
                                                     Frame: [2,default,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [20511,20524]`self.__marker`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [20511,20524]`self.__marker`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: _MutableMapping__marker
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None

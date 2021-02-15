@@ -14,18 +14,16 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
           PythonCallUnary SourceSection: [0,23]`@some.path.to.decora...`
             CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
-              GetAttributeNodeGen SourceSection: None
-                GetFixedAttributeNodeGen SourceSection: None
+              GetAttributeNode SourceSection: None
+                GetFixedAttributeNode SourceSection: None
                   Key: to
-                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None
                     CachedDispatchFirst SourceSection: None
-                GetAttributeNodeGen SourceSection: None
-                  GetFixedAttributeNodeGen SourceSection: None
+                GetAttributeNode SourceSection: None
+                  GetFixedAttributeNode SourceSection: None
                     Key: path
-                    CachedDispatchFirst SourceSection: None
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__
                     IsBuiltinClassProfile SourceSection: None

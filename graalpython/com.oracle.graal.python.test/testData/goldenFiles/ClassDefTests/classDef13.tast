@@ -77,10 +77,9 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
             BinaryArithmeticExpression SourceSection: [45,54]`p.x + p.y`
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __add__
-              GetAttributeNodeGen SourceSection: [45,48]`p.x`
-                GetFixedAttributeNodeGen SourceSection: None
+              GetAttributeNode SourceSection: [45,48]`p.x`
+                GetFixedAttributeNode SourceSection: None
                   Key: x
-                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None
@@ -89,10 +88,9 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
                   Identifier: p
                   IsBuiltinClassProfile SourceSection: None
                     CachedDispatchFirst SourceSection: None
-              GetAttributeNodeGen SourceSection: [51,54]`p.y`
-                GetFixedAttributeNodeGen SourceSection: None
+              GetAttributeNode SourceSection: [51,54]`p.y`
+                GetFixedAttributeNode SourceSection: None
                   Key: y
-                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None

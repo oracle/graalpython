@@ -33,10 +33,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
         ListLiteralNode SourceSection: [3151,3180]`[sys.prefix, sys.exe...`
-          GetAttributeNodeGen SourceSection: [3152,3162]`sys.prefix`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [3152,3162]`sys.prefix`
+            GetFixedAttributeNode SourceSection: None
               Key: prefix
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -45,10 +44,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
               Identifier: sys
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [3164,3179]`sys.exec_prefix`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [3164,3179]`sys.exec_prefix`
+            GetFixedAttributeNode SourceSection: None
               Key: exec_prefix
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -116,10 +114,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ExecutePositionalStarargsNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [3558,3565]`os.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [3558,3565]`os.path`
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -136,10 +133,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           PythonCallUnary SourceSection: [3602,3622]`os.path.abspath(dir)...`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              GetAttributeNodeGen SourceSection: [3602,3609]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [3602,3609]`os.path`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -169,10 +165,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           PythonCallUnary SourceSection: [3672,3693]`os.path.normcase(dir...`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              GetAttributeNodeGen SourceSection: [3672,3679]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [3672,3679]`os.path`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -265,10 +260,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     PythonCallUnary SourceSection: [4089,4116]`os.path.abspath(m.__...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [4089,4096]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [4089,4096]`os.path`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -276,10 +270,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4089,4091]`os`
                                             Identifier: os
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [4105,4115]`m.__file__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [4105,4115]`m.__file__`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __file__
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -312,10 +305,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     PythonCallUnary SourceSection: [4227,4256]`os.path.abspath(m.__...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [4227,4234]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [4227,4234]`os.path`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -323,10 +315,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4227,4229]`os`
                                             Identifier: os
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [4243,4255]`m.__cached__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [4243,4255]`m.__cached__`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __cached__
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -358,10 +349,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             PythonCallNodeGen SourceSection: [3810,3830]`sys.modules.values()...`
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [3810,3821]`sys.modules`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [3810,3821]`sys.modules`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: modules
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -492,10 +482,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [4644,4652]`sys.path`
-                          GetAttributeNodeGen SourceSection: [4644,4652]`sys.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [4644,4652]`sys.path`
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -505,10 +494,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [4964,4979]`sys.path[:] = L`
-                      GetAttributeNodeGen SourceSection: None
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: None
+                        GetFixedAttributeNode SourceSection: None
                           Key: path
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -587,10 +575,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     PythonCallUnary SourceSection: [5175,5195]`os.path.exists(item)...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [5175,5182]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [5175,5182]`os.path`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -651,10 +638,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [5137,5145]`sys.path`
-                          GetAttributeNodeGen SourceSection: [5137,5145]`sys.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [5137,5145]`sys.path`
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -757,10 +743,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       PythonCallBinary SourceSection: [5740,5767]`os.path.join(sitedir...`
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [5740,5747]`os.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [5740,5747]`os.path`
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -934,10 +919,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             PythonCallUnary SourceSection: [6235,6254]`os.path.exists(dir)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [6235,6242]`os.path`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [6235,6242]`os.path`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: path
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -956,10 +940,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             PythonCallUnary SourceSection: [6276,6296]`sys.path.append(dir)...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [6276,6284]`sys.path`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [6276,6284]`sys.path`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: path
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -1004,10 +987,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             KeywordArgumentsNodeGen SourceSection: None
                                               ExecuteKeywordArgumentsNode SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [6482,6492]`sys.stderr`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [6482,6492]`sys.stderr`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: stderr
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -1055,10 +1037,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                         KeywordArgumentsNodeGen SourceSection: None
                                                           ExecuteKeywordArgumentsNode SourceSection: None
                                                             KeywordLiteralNode SourceSection: None
-                                                              GetAttributeNodeGen SourceSection: [6701,6711]`sys.stderr`
-                                                                GetFixedAttributeNodeGen SourceSection: None
+                                                              GetAttributeNode SourceSection: [6701,6711]`sys.stderr`
+                                                                GetFixedAttributeNode SourceSection: None
                                                                   Key: stderr
-                                                                  CachedDispatchFirst SourceSection: None
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
@@ -1101,10 +1082,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             KeywordArgumentsNodeGen SourceSection: None
                                               ExecuteKeywordArgumentsNode SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [6771,6781]`sys.stderr`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [6771,6781]`sys.stderr`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: stderr
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -1289,10 +1269,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           PythonCallUnary SourceSection: [7221,7245]`sys.path.append(site...`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              GetAttributeNodeGen SourceSection: [7221,7229]`sys.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [7221,7229]`sys.path`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -1497,18 +1476,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       YesNodeGen SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
                           CachedDispatchFirst SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7943,7965]`sys.flags.no_user_si...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7943,7965]`sys.flags.no_user_si...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: no_user_site
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          GetAttributeNodeGen SourceSection: [7943,7952]`sys.flags`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [7943,7952]`sys.flags`
+                            GetFixedAttributeNode SourceSection: None
                               Key: flags
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -1670,10 +1647,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       PythonCallBinary SourceSection: [8615,8653]`os.environ.get("PYTH...`
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [8615,8625]`os.environ`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [8615,8625]`os.environ`
+                            GetFixedAttributeNode SourceSection: None
                               Key: environ
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -1740,10 +1716,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       PythonCallUnary SourceSection: [8736,8775]`os.path.expanduser(o...`
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [8736,8743]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [8736,8743]`os.path`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1759,10 +1734,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [8755,8762]`os.path`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [8755,8762]`os.path`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: path
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1780,10 +1754,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         BinaryComparisonNodeGen SourceSection: [8784,8799]`os.name == "nt"`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
-                          GetAttributeNodeGen SourceSection: [8784,8791]`os.name`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [8784,8791]`os.name`
+                            GetFixedAttributeNode SourceSection: None
                               Key: name
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -1801,10 +1774,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             PythonCallUnary SourceSection: [8816,8841]`os.environ.get("APPD...`
                               CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8816,8826]`os.environ`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8816,8826]`os.environ`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: environ
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -1840,10 +1812,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           BinaryComparisonNodeGen SourceSection: [8897,8921]`sys.platform == "dar...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
-                            GetAttributeNodeGen SourceSection: [8897,8909]`sys.platform`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [8897,8909]`sys.platform`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: platform
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -1852,10 +1823,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Identifier: sys
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8913,8921]`"darwin"`
-                          GetAttributeNodeGen SourceSection: [8926,8940]`sys._framework`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [8926,8940]`sys._framework`
+                            GetFixedAttributeNode SourceSection: None
                               Key: _framework
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -1878,10 +1848,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadVariableFromFrameNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8966,8969]`"~"`
                             StringLiteralNode SourceSection: [8971,8980]`"Library"`
-                            GetAttributeNodeGen SourceSection: [8982,8996]`sys._framework`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [8982,8996]`sys._framework`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: _framework
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -1894,10 +1863,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Op: __mod__
                               StringLiteralNode SourceSection: [9022,9029]`"%d.%d"`
                               GetItemNodeGen SourceSection: [9032,9052]`sys.version_info[:2]...`
-                                GetAttributeNodeGen SourceSection: None
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: version_info
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -1963,10 +1931,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Identifier: version
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,version,Illegal]
-                      GetAttributeNodeGen SourceSection: [9188,9204]`sys.version_info`
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: [9188,9204]`sys.version_info`
+                        GetFixedAttributeNode SourceSection: None
                           Key: version_info
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -1981,10 +1948,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         BinaryComparisonNodeGen SourceSection: [9213,9228]`os.name == 'nt'`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
-                          GetAttributeNodeGen SourceSection: [9213,9220]`os.name`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [9213,9220]`os.name`
+                            GetFixedAttributeNode SourceSection: None
                               Key: name
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -2028,10 +1994,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           BinaryComparisonNodeGen SourceSection: [9322,9346]`sys.platform == 'dar...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
-                            GetAttributeNodeGen SourceSection: [9322,9334]`sys.platform`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [9322,9334]`sys.platform`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: platform
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2040,10 +2005,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Identifier: sys
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [9338,9346]`'darwin'`
-                          GetAttributeNodeGen SourceSection: [9351,9365]`sys._framework`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [9351,9365]`sys._framework`
+                            GetFixedAttributeNode SourceSection: None
                               Key: _framework
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -2274,10 +2238,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           PythonCallUnary SourceSection: [10575,10599]`os.path.isdir(user_s...`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              GetAttributeNodeGen SourceSection: [10575,10582]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [10575,10582]`os.path`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -2435,10 +2398,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   BinaryComparisonNodeGen SourceSection: [11222,11235]`os.sep == '/'`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __eq__
-                                    GetAttributeNodeGen SourceSection: [11222,11228]`os.sep`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                    GetAttributeNode SourceSection: [11222,11228]`os.sep`
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: sep
-                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -2458,10 +2420,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       PythonCallQuaternary SourceSection: [11269,11431]`os.path.join(prefix,...`
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [11269,11276]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [11269,11276]`os.path`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2478,10 +2439,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Op: __mod__
                                           StringLiteralNode SourceSection: [11337,11350]`"python%d.%d"`
                                           GetItemNodeGen SourceSection: [11353,11373]`sys.version_info[:2]...`
-                                            GetAttributeNodeGen SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: version_info
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2506,10 +2466,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       PythonCallQuaternary SourceSection: [11544,11703]`os.path.join(prefix,...`
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [11544,11551]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [11544,11551]`os.path`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2526,10 +2485,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Op: __mod__
                                           StringLiteralNode SourceSection: [11619,11623]`"%d"`
                                           GetItemNodeGen SourceSection: [11626,11645]`sys.version_info[0]`
-                                            GetAttributeNodeGen SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: version_info
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2561,10 +2519,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       PythonCallTernary SourceSection: [11791,11835]`os.path.join(prefix,...`
                                         CallTernaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [11791,11798]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [11791,11798]`os.path`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2649,10 +2606,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonCallUnary SourceSection: [12008,12030]`os.path.isdir(sitedi...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [12008,12015]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [12008,12015]`os.path`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -2729,10 +2685,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         BinaryComparisonNodeGen SourceSection: [12308,12322]`os.sep == '\\'`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
-                          GetAttributeNodeGen SourceSection: [12308,12314]`os.sep`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [12308,12314]`os.sep`
+                            GetFixedAttributeNode SourceSection: None
                               Key: sep
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -2821,10 +2776,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Identifier: _sitebuiltins
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [12636,12647]`"copyright"`
-                        GetAttributeNodeGen SourceSection: [12649,12662]`sys.copyright`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [12649,12662]`sys.copyright`
+                          GetFixedAttributeNode SourceSection: None
                             Key: copyright
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -2840,10 +2794,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
                           GetItemNodeGen SourceSection: [12671,12687]`sys.platform[:4]`
-                            GetAttributeNodeGen SourceSection: None
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: platform
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2934,10 +2887,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           PythonCallUnary SourceSection: [13265,13293]`os.path.dirname(os._...`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
-                              GetAttributeNodeGen SourceSection: [13265,13272]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [13265,13272]`os.path`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -2945,10 +2897,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13265,13267]`os`
                                   Identifier: os
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            GetAttributeNodeGen SourceSection: [13281,13292]`os.__file__`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [13281,13292]`os.__file__`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __file__
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2978,10 +2929,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonCallBinary SourceSection: [13364,13393]`os.path.join(here, o...`
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [13364,13371]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [13364,13371]`os.path`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -2992,10 +2942,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadLocalVariableNode SourceSection: [13377,13381]`here`
                                   Frame: [2,here,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [13383,13392]`os.pardir`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [13383,13392]`os.pardir`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: pardir
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3006,10 +2955,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadLocalVariableNode SourceSection: [13395,13399]`here`
                                 Frame: [2,here,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              GetAttributeNodeGen SourceSection: [13401,13410]`os.curdir`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [13401,13410]`os.curdir`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: curdir
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -3257,10 +3205,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         PythonCallBinary SourceSection: [15349,15440]`os.path.join(os.path...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [15349,15356]`os.path`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [15349,15356]`os.path`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: path
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3271,10 +3218,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           PythonCallUnary SourceSection: [15362,15385]`os.path.expanduser('...`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [15362,15369]`os.path`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [15362,15369]`os.path`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: path
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3310,10 +3256,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             ReadLocalVariableNode SourceSection: [15571,15577]`atexit`
                                               Frame: [0,atexit,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [15587,15614]`readline.write_histo...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [15587,15614]`readline.write_histo...`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: write_history_file
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3377,10 +3322,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Identifier: env
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,env,Illegal]
-                      GetAttributeNodeGen SourceSection: [15747,15757]`os.environ`
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: [15747,15757]`os.environ`
+                        GetFixedAttributeNode SourceSection: None
                           Key: environ
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -3396,10 +3340,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           BinaryComparisonNodeGen SourceSection: [15765,15789]`sys.platform == 'dar...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
-                            GetAttributeNodeGen SourceSection: [15765,15777]`sys.platform`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [15765,15777]`sys.platform`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: platform
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -3426,10 +3369,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,executable,Illegal]
                         GetItemNodeGen SourceSection: [15845,15878]`os.environ['__PYVENV...`
-                          GetAttributeNodeGen SourceSection: None
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: environ
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -3442,10 +3384,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         Identifier: executable
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,executable,Illegal]
-                        GetAttributeNodeGen SourceSection: [15910,15924]`sys.executable`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [15910,15924]`sys.executable`
+                          GetFixedAttributeNode SourceSection: None
                             Key: executable
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -3457,10 +3398,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       PythonCallUnary SourceSection: [15942,15984]`os.path.split(os.pat...`
                         CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [15942,15949]`os.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [15942,15949]`os.path`
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -3471,10 +3411,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         PythonCallUnary SourceSection: [15956,15983]`os.path.abspath(exec...`
                           CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
-                            GetAttributeNodeGen SourceSection: [15956,15963]`os.path`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [15956,15963]`os.path`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: path
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -3514,10 +3453,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       PythonCallUnary SourceSection: [16003,16027]`os.path.dirname(exe_...`
                         CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [16003,16010]`os.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [16003,16010]`os.path`
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -3579,10 +3517,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       PythonCallUnary SourceSection: [16269,16293]`os.path.isfile(conff...`
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [16269,16276]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [16269,16276]`os.path`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3625,10 +3562,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonCallBinary SourceSection: [16153,16189]`os.path.join(exe_dir...`
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [16153,16160]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [16153,16160]`os.path`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -3645,10 +3581,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonCallBinary SourceSection: [16203,16243]`os.path.join(site_pr...`
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [16203,16210]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [16203,16210]`os.path`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -3882,10 +3817,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Frame: [0,known_paths,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ListLiteralNode SourceSection: [17119,17131]`[sys.prefix]`
-                              GetAttributeNodeGen SourceSection: [17120,17130]`sys.prefix`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [17120,17130]`sys.prefix`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: prefix
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -3914,10 +3848,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [17350,17351]`0`
                                 Value: 0
-                              GetAttributeNodeGen SourceSection: [17353,17363]`sys.prefix`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [17353,17363]`sys.prefix`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: prefix
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -3931,10 +3864,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
                               ListLiteralNode SourceSection: [17402,17414]`[sys.prefix]`
-                                GetAttributeNodeGen SourceSection: [17403,17413]`sys.prefix`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [17403,17413]`sys.prefix`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: prefix
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -4004,10 +3936,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   BinaryComparisonNodeGen SourceSection: [17663,17690]`exc.name == 'sitecus...`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __eq__
-                                    GetAttributeNodeGen SourceSection: [17663,17671]`exc.name`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                    GetAttributeNode SourceSection: [17663,17671]`exc.name`
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: name
-                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -4034,18 +3965,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
-                              GetAttributeNodeGen SourceSection: [17793,17810]`sys.flags.verbose`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [17793,17810]`sys.flags.verbose`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: verbose
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
-                                GetAttributeNodeGen SourceSection: [17793,17802]`sys.flags`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [17793,17802]`sys.flags`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: flags
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -4072,10 +4001,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonCallUnary SourceSection: [17882,18052]`sys.stderr.write(↵  ...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [17882,17892]`sys.stderr`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [17882,17892]`sys.stderr`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: stderr
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -4088,18 +4016,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Op: __mod__
                                   StringLiteralNode SourceSection: [17916,18003]`"Error in sitecustom...`
                                   TupleLiteralNode SourceSection: [18022,18051]`(err.__class__.__nam...`
-                                    GetAttributeNodeGen SourceSection: [18023,18045]`err.__class__.__name...`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                    GetAttributeNode SourceSection: [18023,18045]`err.__class__.__name...`
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: __name__
-                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [18023,18036]`err.__class__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [18023,18036]`err.__class__`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __class__
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -4166,10 +4092,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   BinaryComparisonNodeGen SourceSection: [18240,18267]`exc.name == 'usercus...`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __eq__
-                                    GetAttributeNodeGen SourceSection: [18240,18248]`exc.name`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                    GetAttributeNode SourceSection: [18240,18248]`exc.name`
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: name
-                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -4196,18 +4121,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
-                              GetAttributeNodeGen SourceSection: [18370,18387]`sys.flags.verbose`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [18370,18387]`sys.flags.verbose`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: verbose
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
-                                GetAttributeNodeGen SourceSection: [18370,18379]`sys.flags`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [18370,18379]`sys.flags`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: flags
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -4234,10 +4157,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonCallUnary SourceSection: [18459,18629]`sys.stderr.write(↵  ...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [18459,18469]`sys.stderr`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [18459,18469]`sys.stderr`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: stderr
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -4250,18 +4172,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Op: __mod__
                                   StringLiteralNode SourceSection: [18493,18580]`"Error in usercustom...`
                                   TupleLiteralNode SourceSection: [18599,18628]`(err.__class__.__nam...`
-                                    GetAttributeNodeGen SourceSection: [18600,18622]`err.__class__.__name...`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                    GetAttributeNode SourceSection: [18600,18622]`err.__class__.__name...`
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: __name__
-                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [18600,18613]`err.__class__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [18600,18613]`err.__class__`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __class__
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -4316,10 +4236,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,orig_path,Illegal]
                       GetItemNodeGen SourceSection: [18907,18918]`sys.path[:]`
-                        GetAttributeNodeGen SourceSection: None
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: path
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -4351,10 +4270,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadLocalVariableNode SourceSection: [18961,18970]`orig_path`
                             Frame: [0,orig_path,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [18974,18982]`sys.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [18974,18982]`sys.path`
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -4446,18 +4364,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       NotNodeGen SourceSection: [19407,19429]`not sys.flags.isolat...`
                         IsBuiltinClassProfile SourceSection: None
                           CachedDispatchFirst SourceSection: None
-                        GetAttributeNodeGen SourceSection: [19411,19429]`sys.flags.isolated`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [19411,19429]`sys.flags.isolated`
+                          GetFixedAttributeNode SourceSection: None
                             Key: isolated
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          GetAttributeNodeGen SourceSection: [19411,19420]`sys.flags`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [19411,19420]`sys.flags`
+                            GetFixedAttributeNode SourceSection: None
                               Key: flags
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -4499,18 +4415,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         NotNodeGen SourceSection: [19634,19655]`not sys.flags.no_sit...`
           IsBuiltinClassProfile SourceSection: None
             CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [19638,19655]`sys.flags.no_site`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [19638,19655]`sys.flags.no_site`
+            GetFixedAttributeNode SourceSection: None
               Key: no_site
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
-            GetAttributeNodeGen SourceSection: [19638,19647]`sys.flags`
-              GetFixedAttributeNodeGen SourceSection: None
+            GetAttributeNode SourceSection: [19638,19647]`sys.flags`
+              GetFixedAttributeNode SourceSection: None
                 Key: flags
-                CachedDispatchFirst SourceSection: None
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
                 IsBuiltinClassProfile SourceSection: None
@@ -4562,10 +4476,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,args,Illegal]
                       GetItemNodeGen SourceSection: [20149,20161]`sys.argv[1:]`
-                        GetAttributeNodeGen SourceSection: None
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: argv
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -4636,10 +4549,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20304,20312]`sys.path`
-                              GetAttributeNodeGen SourceSection: [20304,20312]`sys.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [20304,20312]`sys.path`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -4676,10 +4588,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     PythonCallUnary SourceSection: [20444,20468]`os.path.isdir(user_b...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [20444,20451]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [20444,20451]`os.path`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -4714,10 +4625,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     PythonCallUnary SourceSection: [20565,20589]`os.path.isdir(user_s...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [20565,20572]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [20565,20572]`os.path`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -4827,10 +4737,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             PythonCallUnary SourceSection: [20864,20887]`os.pathsep.join(buff...`
                               CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [20864,20874]`os.pathsep`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [20864,20874]`os.pathsep`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: pathsep
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -4930,10 +4839,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 TupleLiteralNode SourceSection: [21178,21203]`(sys.argv[0], os.pat...`
                                   GetItemNodeGen SourceSection: [21179,21190]`sys.argv[0]`
-                                    GetAttributeNodeGen SourceSection: None
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                    GetAttributeNode SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: argv
-                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -4943,10 +4851,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [21188,21189]`0`
                                       Value: 0
-                                  GetAttributeNodeGen SourceSection: [21192,21202]`os.pathsep`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [21192,21202]`os.pathsep`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: pathsep
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
