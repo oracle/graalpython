@@ -1,15 +1,10 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -17,18 +12,26 @@ import java.util.List;
 import java.util.Set;
 
 import javax.crypto.spec.DHParameterSpec;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
+import java.net.Socket;
+import java.security.KeyManagementException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedTrustManager;
+import javax.net.ssl.X509TrustManager;
 
 public final class PSSLContext extends PythonBuiltinObject {
     private final SSLMethod method;
@@ -88,37 +91,28 @@ public final class PSSLContext extends PythonBuiltinObject {
         getKeyStore().setKeyEntry(alias, pk, password, certs);
     }
 
-    void init() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException {
+    void init() throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException {
         TrustManager[] tms = null;
+        KeyManager[] kms = null;
         if (verifyMode == SSLModuleBuiltins.SSL_CERT_NONE) {
-            // TODO: what about optional?
-            tms = new TrustManager[]{new X509TrustManager() {
-                private X509Certificate[] trustedChain;
-
-                public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                }
-
-                public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                    this.trustedChain = chain;
-                }
-
-                public X509Certificate[] getAcceptedIssuers() {
-                    return trustedChain;
-                }
-            }};
+            tms = new TrustManager[]{new CertNoneTrustManager()};
         }
         if (keystore != null && keystore.size() > 0) {
             if (tms == null) {
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                tmf.init(getKeyStore());
+                tmf.init(keystore);
                 tms = tmf.getTrustManagers();
+                if (verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL) {
+                    for (int i = 0; i < tms.length; i++) {
+                        tms[i] = new DelegateTrustManager((X509ExtendedTrustManager) tms[i], true);
+                    }
+                }
             }
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            kmf.init(getKeyStore(), password);
-            context.init(kmf.getKeyManagers(), tms, null);
-        } else {
-            context.init(null, tms, null);
+            kmf.init(keystore, password);
+            kms = kmf.getKeyManagers();
         }
+        context.init(kms, tms, null);
     }
 
     public SSLContext getContext() {
@@ -236,4 +230,86 @@ public final class PSSLContext extends PythonBuiltinObject {
     public String[] computeEnabledProtocols() {
         return SSLModuleBuiltins.getSupportedProtocols().stream().filter(this::allowsProtocol).map(SSLProtocol::getName).toArray(String[]::new);
     }
+    
+    private static class CertNoneTrustManager implements X509TrustManager {
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return new X509Certificate[0];
+        }
+    }
+
+    private static class DelegateTrustManager extends X509ExtendedTrustManager {
+        private final X509ExtendedTrustManager delegate;
+        private final boolean acceptEmptyChain;
+
+        public DelegateTrustManager(X509ExtendedTrustManager delegate, boolean acceptEmptyChain) {
+            this.delegate = delegate;
+            this.acceptEmptyChain = acceptEmptyChain;
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+                return;
+            }
+            delegate.checkClientTrusted(chain, authType);
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String string, Socket socket) throws CertificateException {
+            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+                return;
+            }
+            delegate.checkClientTrusted(chain, string, socket);
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String string, SSLEngine ssle) throws CertificateException {
+            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+                return;
+            }
+            delegate.checkClientTrusted(chain, string, ssle);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+                return;
+            }
+            delegate.checkServerTrusted(chain, authType);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String string, Socket socket) throws CertificateException {
+            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+                return;
+            }
+            delegate.checkServerTrusted(chain, string, socket);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String string, SSLEngine ssle) throws CertificateException {
+            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+                return;
+            }
+            delegate.checkServerTrusted(chain, string, ssle);
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return delegate.getAcceptedIssuers();
+        }
+    }
+
 }
