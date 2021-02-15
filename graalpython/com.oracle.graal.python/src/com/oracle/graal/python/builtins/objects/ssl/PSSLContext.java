@@ -1,27 +1,34 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.crypto.spec.DHParameterSpec;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
-import java.security.KeyManagementException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 public final class PSSLContext extends PythonBuiltinObject {
     private final SSLMethod method;
@@ -134,8 +141,17 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.verifyMode = verifyMode;
     }
 
-    public SSLCipher[] getCiphers() {
-        return ciphers;
+    @TruffleBoundary
+    public List<SSLCipher> computeEnabledCiphers(SSLEngine engine) {
+        // We use the enabled cipher suites to honor JVM's settings
+        Set<String> allowedCiphers = new HashSet<>(Arrays.asList(engine.getEnabledCipherSuites()));
+        List<SSLCipher> enabledCiphers = new ArrayList<>(ciphers.length);
+        for (SSLCipher cipher : ciphers) {
+            if (allowedCiphers.contains(cipher.name())) {
+                enabledCiphers.add(cipher);
+            }
+        }
+        return enabledCiphers;
     }
 
     public void setCiphers(SSLCipher[] ciphers) {

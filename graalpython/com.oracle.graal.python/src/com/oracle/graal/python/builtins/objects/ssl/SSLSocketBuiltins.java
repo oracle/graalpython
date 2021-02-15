@@ -1,9 +1,11 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -19,7 +21,6 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -45,7 +46,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import java.io.IOException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLSocket)
 public class SSLSocketBuiltins extends PythonBuiltins {
@@ -357,11 +357,13 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SharedCiphers extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object get(PSSLSocket socket) {
-            SSLCipher[] ciphers = socket.getContext().getCiphers();
-            Object[] result = new Object[ciphers.length];
-            for (int i = 0; i < ciphers.length; i++) {
-                result[i] = factory().createTuple(new Object[]{ciphers[i].getOpensslName(), ciphers[i].getProtocol(), ciphers[i].getStrengthBits()});
+            List<SSLCipher> ciphers = socket.getContext().computeEnabledCiphers(socket.getEngine());
+            Object[] result = new Object[ciphers.size()];
+            for (int i = 0; i < ciphers.size(); i++) {
+                SSLCipher cipher = ciphers.get(i);
+                result[i] = factory().createTuple(new Object[]{cipher.getOpensslName(), cipher.getProtocol(), cipher.getStrengthBits()});
             }
             return factory().createList(result);
         }

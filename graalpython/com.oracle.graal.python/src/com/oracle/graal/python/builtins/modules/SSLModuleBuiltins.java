@@ -1,11 +1,17 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,7 +21,6 @@ import javax.net.ssl.SSLParameters;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -23,10 +28,8 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.ssl.ALPNHelper;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipher;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipherSelector;
-import com.oracle.graal.python.builtins.objects.ssl.SSLCipherStringMapping;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.ssl.SSLOptions;
@@ -47,11 +50,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 
 @CoreFunctions(defineModule = "_ssl")
 public class SSLModuleBuiltins extends PythonBuiltins {

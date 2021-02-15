@@ -4,6 +4,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getDHParameters;
+import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getPrivateKey;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -34,9 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.crypto.interfaces.DHPrivateKey;
 import javax.crypto.interfaces.DHPublicKey;
@@ -65,9 +66,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getDHParameters;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getPrivateKey;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -142,12 +140,17 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 return context;
             } catch (NoSuchAlgorithmException e) {
                 throw raise(ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, e.getMessage());
+            } catch (KeyManagementException e) {
+                throw raise(SSLError, e);
             }
         }
 
         @TruffleBoundary
-        private static SSLContext createSSLContext(SSLMethod version) throws NoSuchAlgorithmException {
-            return SSLContext.getInstance(version.getJavaId());
+        private static SSLContext createSSLContext(SSLMethod version) throws NoSuchAlgorithmException, KeyManagementException {
+            SSLContext context = SSLContext.getInstance(version.getJavaId());
+            // Pre-init to be able to get default parameters
+            context.init(null, null, null);
+            return context;
         }
 
         @Override
@@ -191,15 +194,9 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 parameters.setEndpointIdentificationAlgorithm("HTTPS");
             }
         }
-        // We use SSLEngine#getEnabledCipherSuites to honor the cipher settings for this JVM
-        Set<String> allowedCiphers = new HashSet<>(Arrays.asList(engine.getEnabledCipherSuites()));
-        List<String> enabledCiphers = new ArrayList<>(context.getCiphers().length);
-        for (SSLCipher cipher : context.getCiphers()) {
-            if (allowedCiphers.contains(cipher.name())) {
-                enabledCiphers.add(cipher.name());
-            }
-        }
-        parameters.setCipherSuites(enabledCiphers.toArray(new String[0]));
+
+        parameters.setCipherSuites(context.computeEnabledCiphers(engine).stream().map(SSLCipher::name).toArray(String[]::new));
+
         if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
             ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());
         }
@@ -394,11 +391,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetCiphersNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         PList getCiphers(PSSLContext self) {
-            SSLCipher[] ciphers = self.getCiphers();
-            Object[] dicts = new Object[ciphers.length];
+            List<SSLCipher> ciphers = self.computeEnabledCiphers(self.getContext().createSSLEngine());
+            Object[] dicts = new Object[ciphers.size()];
             for (int i = 0; i < dicts.length; i++) {
-                dicts[i] = factory().createDict(ciphers[i].asKeywords());
+                dicts[i] = factory().createDict(ciphers.get(i).asKeywords());
             }
             return factory().createList(dicts);
         }
