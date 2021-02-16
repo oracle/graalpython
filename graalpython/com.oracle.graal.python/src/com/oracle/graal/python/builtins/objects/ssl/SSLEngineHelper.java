@@ -2,6 +2,7 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.cert.CertPathBuilderException;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -12,10 +13,9 @@ import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import java.security.cert.CertPathBuilderException;
-import javax.net.ssl.SSLHandshakeException;
 
 public class SSLEngineHelper {
 
@@ -208,7 +208,15 @@ public class SSLEngineHelper {
                 }
                 throw CompilerDirectives.shouldNotReachHere("unhandled SSL status");
             }
-        } catch (SSLHandshakeException e) {
+        } catch (SSLException e) {
+            try {
+                // Attempt to perform the closing handshake. If we would just close the socket, the
+                // peer would have no idea what went wrong. This gives the engine a chance to
+                // communicate the error to the peer.
+                shutdown(node, socket);
+            } catch (PException e1) {
+                // We tried to close cleanly and failed. No big deal.
+            }
             Throwable c = e.getCause();
             Throwable cc = null;
             if (c != null) {
