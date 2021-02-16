@@ -82,18 +82,21 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.BinaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.TernaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.UnaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -306,11 +309,50 @@ public enum SpecialMethodSlot {
     // --------------------------------------------------
     // Initialization and updates of the user classes:
 
+    @TruffleBoundary
+    public static void reinitializeSpecialMethodSlots(PythonManagedClass klass) {
+        reinitializeSpecialMethodSlots((Object) klass);
+    }
+
+    private static void reinitializeSpecialMethodSlots(Object klass) {
+        java.util.Set<PythonAbstractClass> subClasses;
+        if (klass instanceof PythonManagedClass) {
+            PythonManagedClass managedClass = (PythonManagedClass) klass;
+            // specialMethodSlots can be null if the type is just being initialized, for example,
+            // when the initialization calls the "mro" method, which may execute arbitrary code
+            // including setting its __bases__ to something.
+            // TODO: LookupAttributeInMRONode and other places rely on specialMethodSlots being
+            // always initialized, can it happen that some code invoked during type initialization
+            // is going to lookup something in that type's MRO?
+            if (managedClass.specialMethodSlots != null) {
+                Arrays.fill(managedClass.specialMethodSlots, PNone.NO_VALUE);
+                setSpecialMethodSlots(managedClass, GetMroStorageNode.getUncached());
+            }
+            subClasses = managedClass.getSubClasses();
+        } else if (klass instanceof PythonNativeClass) {
+            subClasses = GetSubclassesNode.getUncached().execute(klass);
+        } else {
+            throw new AssertionError(Objects.toString(klass));
+        }
+        for (PythonAbstractClass subClass : subClasses) {
+            reinitializeSpecialMethodSlots(subClass);
+        }
+    }
+
     public static void initializeSpecialMethodSlots(PythonManagedClass klass, GetMroStorageNode getMroStorageNode) {
         Object[] slots = new Object[VALUES.length];
         Arrays.fill(slots, PNone.NO_VALUE);
         klass.specialMethodSlots = slots;
+        setSpecialMethodSlots(klass, getMroStorageNode);
+    }
+
+    private static void setSpecialMethodSlots(PythonManagedClass klass, GetMroStorageNode getMroStorageNode) {
         MroSequenceStorage mro = getMroStorageNode.execute(klass);
+        setSpecialMethodSlots(klass, mro);
+    }
+
+    @TruffleBoundary
+    private static void setSpecialMethodSlots(PythonManagedClass klass, MroSequenceStorage mro) {
         ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncachedForceType();
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);
@@ -326,6 +368,17 @@ public enum SpecialMethodSlot {
     }
 
     @TruffleBoundary
+    public static void fixupSpecialMethodSlot(PythonNativeClass klass, SpecialMethodSlot slot, Object value) {
+        Object newValue = value;
+        if (value == PNone.NO_VALUE) {
+            // We are removing the value: find the new value for the class that is being updated and
+            // proceed with that
+            newValue = LookupAttributeInMRONode.lookupSlow(klass, slot.getName());
+        }
+        fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, null, newValue);
+    }
+
+    @TruffleBoundary
     public static void fixupSpecialMethodSlot(PythonManagedClass klass, SpecialMethodSlot slot, Object value) {
         if (klass.specialMethodSlots == null) {
             // This can happen during type initialization, we'll initialize the slots when the
@@ -336,14 +389,25 @@ public enum SpecialMethodSlot {
         }
 
         Object original = slot.getValue(klass);
-        slot.setValue(klass, value);
-        fixupSpecialMethodInSubClasses(klass, slot, original, value);
+        if (value == original) {
+            return;
+        }
+
+        Object newValue = value;
+        if (value == PNone.NO_VALUE) {
+            // We are removing the value: find the new value for the class that is being updated and
+            // proceed with that
+            newValue = LookupAttributeInMRONode.lookupSlow(klass, slot.getName());
+        }
+
+        slot.setValue(klass, newValue);
+        fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, original, value);
     }
 
+    // Note: originalValue == null means originalValue is not available
     private static void fixupSpecialMethodSlot(PythonManagedClass klass, SpecialMethodSlot slot, Object originalValue, Object newValue) {
-        CompilerAsserts.neverPartOfCompilation();
-        Object current = slot.getValue(klass);
-        if (current != originalValue && originalValue != PNone.NO_VALUE) {
+        Object currentOldValue = slot.getValue(klass);
+        if (originalValue != null && currentOldValue != originalValue && originalValue != PNone.NO_VALUE) {
             // If this slot is set to something that has been inherited from somewhere else, it will
             // not change. The only exception is if we introduced a new method entry into the MRO
             // (i.e., the original slot was empty).
@@ -353,32 +417,42 @@ public enum SpecialMethodSlot {
         // the value was here because it was inherited from the base class where we now overridden
         // that slot. To stay on the safe side, we consult the MRO here.
         MroSequenceStorage mro = GetMroStorageNode.getUncached().execute(klass);
-        Object actualValue = null;
+        Object currentNewValue = PNone.NO_VALUE;
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);
             Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(kls, slot.getName());
             if (value != PNone.NO_VALUE) {
-                actualValue = value;
+                currentNewValue = value;
                 slot.setValue(klass, value);
                 break;
             }
         }
-        assert slot.getValue(klass) != PNone.NO_VALUE;
-        if (actualValue == newValue) {
+        assert newValue == null || newValue == PNone.NO_VALUE || slot.getValue(klass) != PNone.NO_VALUE;
+        if (currentOldValue != currentNewValue) {
             // Something actually changed, fixup subclasses...
-            fixupSpecialMethodInSubClasses(klass, slot, originalValue, newValue);
+            fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, originalValue, newValue);
         } else {
             // We assume no other changes in MRO, so we must have either overridden the slot with
-            // the new value or left it untouched
-            assert current == newValue;
+            // the new value or left it untouched unless the new value is NO_VALUE, in which case we
+            // may pull some other value from other part of the MRO. Additionally, nothing is
+            // certain, if we didn't know the original value
+            assert originalValue == null || newValue == PNone.NO_VALUE || currentOldValue == newValue;
         }
     }
 
-    private static void fixupSpecialMethodInSubClasses(PythonManagedClass klass, SpecialMethodSlot slot, Object originalValue, Object newValue) {
-        for (PythonAbstractClass subClass : klass.getSubClasses()) {
-            if (subClass instanceof PythonManagedClass) {
-                fixupSpecialMethodSlot((PythonManagedClass) subClass, slot, originalValue, newValue);
-            }
+    private static void fixupSpecialMethodSlot(Object klass, SpecialMethodSlot slot, Object originalValue, Object newValue) {
+        if (klass instanceof PythonManagedClass) {
+            fixupSpecialMethodSlot((PythonManagedClass) klass, slot, originalValue, newValue);
+        } else if (klass instanceof PythonNativeClass) {
+            fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, originalValue, newValue);
+        } else {
+            throw new AssertionError(Objects.toString(klass));
+        }
+    }
+
+    private static void fixupSpecialMethodInSubClasses(java.util.Set<PythonAbstractClass> subClasses, SpecialMethodSlot slot, Object originalValue, Object newValue) {
+        for (PythonAbstractClass subClass : subClasses) {
+            fixupSpecialMethodSlot(subClass, slot, originalValue, newValue);
         }
     }
 

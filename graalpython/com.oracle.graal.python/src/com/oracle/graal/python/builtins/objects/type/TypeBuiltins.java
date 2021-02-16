@@ -800,6 +800,7 @@ public class TypeBuiltins extends PythonBuiltins {
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
             cls.setSuperClass(baseClasses);
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(cls);
 
             return PNone.NONE;
         }

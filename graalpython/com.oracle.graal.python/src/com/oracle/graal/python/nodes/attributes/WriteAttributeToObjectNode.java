@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -255,12 +256,47 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     protected abstract static class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
-        @Specialization(guards = "!isHiddenKey(key)")
-        static boolean writeNativeClass(PythonAbstractNativeObject object, Object key, Object value,
+        @Child IsTypeNode isTypeNode;
+        @Child CastToJavaStringNode castKeyNode;
+
+        @Specialization(guards = "!isHiddenKey(keyObj)")
+        boolean writeNativeClass(PythonAbstractNativeObject object, Object keyObj, Object value,
                         @Cached GetTypeMemberNode getNativeDict,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached BranchProfile canBeSpecialSlot,
                         @Cached PRaiseNode raiseNode) {
-            return writeNativeGeneric(object, key, value, getNativeDict.execute(object, NativeMember.TP_DICT), setItemNode, raiseNode);
+            try {
+                return writeNativeGeneric(object, keyObj, value, getNativeDict.execute(object, NativeMember.TP_DICT), setItemNode, raiseNode);
+            } finally {
+                String key = castKey(keyObj);
+                if (SpecialMethodSlot.canBeSpecial(key)) {
+                    canBeSpecialSlot.enter();
+                    SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+                    if (slot != null && ensureIsTypeNode().execute(object)) {
+                        SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
+                    }
+                }
+            }
+        }
+
+        private IsTypeNode ensureIsTypeNode() {
+            if (isTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTypeNode = insert(IsTypeNode.create());
+            }
+            return isTypeNode;
+        }
+
+        private String castKey(Object keyObj) {
+            if (castKeyNode == null) {
+                if (keyObj instanceof String) {
+                    return (String) keyObj;
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    castKeyNode = insert(CastToJavaStringNode.create());
+                }
+            }
+            return castKeyNode.execute(keyObj);
         }
     }
 

@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -52,7 +53,7 @@ import com.oracle.truffle.api.source.SourceSection;
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
-    private AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
+    private final AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
 
     public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, PythonAbstractClass[] baseClasses) {
         super(lang, typeClass, classShape, null, name, baseClasses);
@@ -82,9 +83,10 @@ public final class PythonClass extends PythonManagedClass {
 
     @Override
     @TruffleBoundary
+    @SuppressFBWarnings(value = "UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR")
     public void setAttribute(Object key, Object value) {
         if (slotsFinalAssumption != null) {
-            // slotsFinalAssumption == null can happen during super ctor call
+            // It is OK when slotsFinalAssumption is null during the super ctor call
             invalidateSlotsFinalAssumption();
         }
         super.setAttribute(key, value);
