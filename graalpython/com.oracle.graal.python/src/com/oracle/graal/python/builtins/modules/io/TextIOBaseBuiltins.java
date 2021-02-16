@@ -82,29 +82,32 @@ public class TextIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1)
+    @Builtin(name = READ, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
-        Object read(@SuppressWarnings("unused") Object self) {
+        Object read(Object self, Object args) {
             throw raise(IOUnsupportedOperation, READ);
         }
     }
 
-    @Builtin(name = READLINE, minNumOfPositionalArgs = 1)
+    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
-        Object read(@SuppressWarnings("unused") Object self) {
+        Object read(Object self, Object args) {
             throw raise(IOUnsupportedOperation, READ);
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 1)
+    @Builtin(name = WRITE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
-        Object write(@SuppressWarnings("unused") Object self) {
+        Object write(Object self, Object args) {
             throw raise(IOUnsupportedOperation, WRITE);
         }
     }

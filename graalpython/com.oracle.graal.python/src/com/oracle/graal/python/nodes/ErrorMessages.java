@@ -669,6 +669,9 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
     public static final String CANNOT_INTERN_P = "can't intern %p";
+    public static final String METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = "Method requires a 'bytes' object, got '%p'";
+    public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
+    public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
@@ -722,6 +725,7 @@ public abstract class ErrorMessages {
     public static final String FILE_NOT_OPEN_FOR_S = "File not open for %s";
     public static final String UNBOUNDED_READ_RETURNED_MORE_BYTES = "unbounded read returned more bytes than a Python bytes object can hold";
     public static final String INVALID_MODE_S = "invalid mode: %s";
+    public static final String S_TO_CLOSED_FILE = "%s to closed file";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT = "cannot pickle '%s' object";

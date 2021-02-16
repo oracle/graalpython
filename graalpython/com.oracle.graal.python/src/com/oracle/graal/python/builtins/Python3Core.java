@@ -106,7 +106,12 @@ import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedRandomBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
@@ -392,6 +397,11 @@ public final class Python3Core implements PythonCore {
                         new RawIOBaseBuiltins(),
                         new TextIOBaseBuiltins(),
                         new BufferedReaderBuiltins(),
+                        new BufferedWriterBuiltins(),
+                        new BufferedRandomBuiltins(),
+                        new BufferedReaderMixinBuiltins(),
+                        new BufferedWriterMixinBuiltins(),
+                        new BufferedIOMixinBuiltins(),
                         new FileIOBuiltins(),
 
                         new StringModuleBuiltins(),

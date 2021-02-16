@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.READABLE;
+import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.TELL;
+import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.append;
@@ -49,7 +53,9 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.readahe
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.safeDowncast;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_FIT_P_IN_OFFSET_SIZE;
+import static com.oracle.graal.python.nodes.ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_INVALID_POS;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TO_CLOSED_FILE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -61,7 +67,9 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -74,10 +82,10 @@ public class BufferedIONodes {
 
     abstract static class CheckIsClosedNode extends PNodeWithContext {
 
-        private final String message;
+        private final String method;
 
-        public CheckIsClosedNode(String msg) {
-            this.message = msg;
+        public CheckIsClosedNode(String method) {
+            this.method = method;
         }
 
         public abstract boolean execute(VirtualFrame frame, PBuffered self);
@@ -88,7 +96,7 @@ public class BufferedIONodes {
                         @Cached IsClosedNode isClosedNode,
                         @Cached ConditionProfile isError) {
             if (isError.profile(isClosedNode.execute(frame, self))) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, message);
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, S_TO_CLOSED_FILE, method);
             }
             return false;
         }
@@ -115,10 +123,7 @@ public class BufferedIONodes {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.getBuffer() != null", "self.isFastClosedChecks()"})
         boolean isClosedFileIO(VirtualFrame frame, PBuffered self) {
-            // XXX: self.fastClosedChecks is always `false`, i.e. disabled, until FileIO is
-            // implemented.
-            // TODO: check when FileIO is implemented
-            return true;
+            return self.getFileIORaw().isClosed();
         }
 
         @SuppressWarnings("unused")
@@ -131,12 +136,6 @@ public class BufferedIONodes {
 
     abstract static class CheckIsSeekabledNode extends PNodeWithContext {
 
-        private final String message;
-
-        public CheckIsSeekabledNode(String msg) {
-            this.message = msg;
-        }
-
         public abstract boolean execute(VirtualFrame frame, PBuffered self);
 
         @Specialization
@@ -145,7 +144,7 @@ public class BufferedIONodes {
                         @Cached IsSeekableNode isSeekableNode,
                         @Cached ConditionProfile isError) {
             if (isError.profile(!isSeekableNode.execute(frame, self))) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, message);
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, FILE_OR_STREAM_IS_NOT_SEEKABLE);
             }
             return true;
         }
@@ -160,7 +159,7 @@ public class BufferedIONodes {
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
             assert self.isOK();
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "seekable");
+            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, SEEKABLE);
             return isTrue.isTrue(res, frame);
         }
     }
@@ -178,7 +177,7 @@ public class BufferedIONodes {
         boolean isReadable(VirtualFrame frame, Object raw,
                         @CachedLibrary("raw") PythonObjectLibrary libRaw,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
-            Object res = libRaw.lookupAndCallRegularMethod(raw, frame, "readable");
+            Object res = libRaw.lookupAndCallRegularMethod(raw, frame, READABLE);
             return isTrue.isTrue(res, frame);
         }
 
@@ -189,15 +188,23 @@ public class BufferedIONodes {
 
     abstract static class IsWritableNode extends PNodeWithContext {
 
-        public abstract boolean execute(VirtualFrame frame, PBuffered self);
+        public abstract boolean execute(VirtualFrame frame, Object raw);
+
+        public boolean isBufferWritable(VirtualFrame frame, PBuffered self) {
+            assert self.isOK();
+            return execute(frame, self.getRaw());
+        }
 
         @Specialization(limit = "2")
-        boolean isWritable(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+        boolean isWritable(VirtualFrame frame, Object raw,
+                        @CachedLibrary("raw") PythonObjectLibrary libRaw,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
-            assert self.isOK();
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "writable");
+            Object res = libRaw.lookupAndCallRegularMethod(raw, frame, WRITABLE);
             return isTrue.isTrue(res, frame);
+        }
+
+        public static IsWritableNode create() {
+            return BufferedIONodesFactory.IsWritableNodeGen.create();
         }
     }
 
@@ -218,27 +225,59 @@ public class BufferedIONodes {
         }
     }
 
-    abstract static class RawTellNode extends PNodeWithContext {
+    abstract static class RawTellNode extends PNodeWithRaise {
+
+        protected final boolean ignore;
+
+        public RawTellNode(boolean ignore) {
+            this.ignore = ignore;
+        }
 
         public abstract long execute(VirtualFrame frame, PBuffered self);
+
+        private static long tell(VirtualFrame frame, Object raw,
+                        PythonObjectLibrary libRaw,
+                        AsOffNumberNode asOffNumberNode) {
+            Object res = libRaw.lookupAndCallRegularMethod(raw, frame, TELL);
+            return asOffNumberNode.execute(frame, res, ValueError);
+        }
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_raw_tell
          */
-        @Specialization(limit = "2")
-        static long bufferedRawTell(VirtualFrame frame, PBuffered self,
-                        @Cached PRaiseNode raise,
+        @Specialization(guards = "!ignore", limit = "2")
+        long bufferedRawTell(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
                         @Cached AsOffNumberNode asOffNumberNode,
                         @Cached ConditionProfile isValid) {
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "tell");
-            long n = asOffNumberNode.execute(frame, res, ValueError);
+            long n = tell(frame, self.getRaw(), libRaw, asOffNumberNode);
             if (isValid.profile(n < 0)) {
-                throw raise.raise(OSError, IO_STREAM_INVALID_POS, n);
+                throw raise(OSError, IO_STREAM_INVALID_POS, n);
             }
             self.setAbsPos(n);
             return n;
         }
+
+        @Specialization(guards = "ignore", limit = "2")
+        long bufferedRawTellIgnoreException(VirtualFrame frame, PBuffered self,
+                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached AsOffNumberNode asOffNumberNode) {
+            long n;
+            try {
+                n = tell(frame, self.getRaw(), libRaw, asOffNumberNode);
+            } catch (PException e) {
+                n = -1;
+                // ignore
+                // PyErr_Clear();
+            }
+            self.setAbsPos(n);
+            return n;
+        }
+
+        public static RawTellNode create() {
+            return BufferedIONodesFactory.RawTellNodeGen.create(false);
+        }
+
     }
 
     /**

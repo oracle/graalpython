@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytesLength;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_RETURNED_TOO_MUCH_DATA;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
@@ -53,6 +52,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -94,28 +94,30 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 1)
+    @Builtin(name = READ, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBuiltinNode {
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:bufferediobase_read
          */
+        @SuppressWarnings("unused")
         @Specialization
-        Object read(@SuppressWarnings("unused") Object self) {
+        Object read(Object self, Object args) {
             throw raise(IOUnsupportedOperation, READ);
         }
     }
 
-    @Builtin(name = READ1, minNumOfPositionalArgs = 1)
+    @Builtin(name = READ1, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class Read1Node extends PythonBuiltinNode {
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:bufferediobase_read1
          */
+        @SuppressWarnings("unused")
         @Specialization
-        Object read1(@SuppressWarnings("unused") Object self) {
+        Object read1(Object self, Object args) {
             throw raise(IOUnsupportedOperation, READ1);
         }
     }
@@ -130,12 +132,13 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization(limit = "2")
         Object readinto(VirtualFrame frame, Object self, Object buffer,
+                        @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLength,
                         @CachedLibrary(limit = "2") PythonObjectLibrary asByte,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
                         @Cached ConditionProfile isBuffer,
                         @Cached ConditionProfile oversize,
                         @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
-            int len = getBytesLength(asByte, buffer);
+            int len = getLength.execute(frame, buffer);
             Object data = libSelf.lookupAndCallRegularMethod(self, frame, method(), len);
             if (isBuffer.profile(!asByte.isBuffer(data))) {
                 throw raise(ValueError, S_SHOULD_RETURN_BYTES, "read()");
@@ -150,7 +153,7 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$buffer"})
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, parameterNames = {"$self", ""})
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends ReadIntoGenericNode {
         @Override
@@ -159,7 +162,7 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$buffer"})
+    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, parameterNames = {"$self", ""})
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoGenericNode {
         @Override
@@ -168,15 +171,16 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 1)
+    @Builtin(name = WRITE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBuiltinNode {
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:bufferediobase_write
          */
+        @SuppressWarnings("unused")
         @Specialization
-        Object write(@SuppressWarnings("unused") Object self) {
+        Object write(Object self, Object args) {
             throw raise(IOUnsupportedOperation, WRITE);
         }
     }

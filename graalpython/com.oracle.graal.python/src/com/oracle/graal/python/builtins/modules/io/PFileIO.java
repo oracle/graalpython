@@ -174,7 +174,14 @@ class FD {
 
     public FD(int fd, PythonContext context) {
         this.fd = fd;
-        this.ownFD = new OwnFD(this, fd, context);
+        if (fd > 2) {
+            this.ownFD = new OwnFD(this, fd, context);
+        } else {
+            /*
+             * FD_STDIN(0), FD_STDOUT(1) and FD_STDERR(2) should not be closed using AsyncHandler.
+             */
+            this.ownFD = null;
+        }
     }
 
     public FD(int fd) {

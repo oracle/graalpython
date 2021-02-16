@@ -278,8 +278,9 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = SEEK, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
-        Object seek(@SuppressWarnings("unused") PythonObject self) {
+        Object seek(PythonObject self, Object args) {
             throw unsupported(getRaiseNode(), SEEK);
         }
     }

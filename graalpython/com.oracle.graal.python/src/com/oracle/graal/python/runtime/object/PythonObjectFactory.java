@@ -1004,11 +1004,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(PBuffered.createBufferedReader(clazz, getShape(clazz)));
     }
 
-    public PBuffered createBufferWriter(Object clazz) {
+    public PBuffered createBufferedWriter(Object clazz) {
         return trace(PBuffered.createBufferedWriter(clazz, getShape(clazz)));
     }
 
-    public PBuffered createBufferRandom(Object clazz) {
+    public PBuffered createBufferedRandom(Object clazz) {
         return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
     }
 }

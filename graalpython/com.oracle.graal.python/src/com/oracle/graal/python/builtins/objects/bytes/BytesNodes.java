@@ -43,7 +43,9 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import static com.oracle.graal.python.PythonLanguage.getCore;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.utf8StringToBytes;
+import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_S_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.READ_WRITE_BYTELIKE_OBJ;
@@ -147,7 +149,6 @@ public abstract class BytesNodes {
         static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, PBytesLike bytes) {
             return factory.createByteArray(bytes.getSequenceStorage());
         }
-
     }
 
     @ImportStatic(PythonOptions.class)
@@ -904,6 +905,21 @@ public abstract class BytesNodes {
 
         public static GetByteLengthIfWritableNode createReadIntoArg() {
             return BytesNodesFactory.GetByteLengthIfWritableNodeGen.create("readinto", "argument");
+        }
+    }
+
+    public abstract static class GetBuffer extends PNodeWithRaise {
+
+        public abstract byte[] execute(Object buffer);
+
+        @Specialization(limit = "2")
+        byte[] getBuffer(Object buffer,
+                        @Cached ConditionProfile isBuffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary libBuffer) {
+            if (isBuffer.profile(!libBuffer.isBuffer(buffer))) {
+                throw raise(TypeError, A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, buffer);
+            }
+            return getBytes(libBuffer, buffer);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.util.List;
@@ -59,47 +59,38 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-@CoreFunctions(extendClasses = PBufferedReader)
-public class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
+@CoreFunctions(extendClasses = PBufferedWriter)
+public class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return BufferedReaderBuiltinsFactory.getFactories();
+        return BufferedWriterBuiltinsFactory.getFactories();
     }
 
-    // BufferedReader(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
+    // BufferedWriter(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$raw", "buffer_size"})
-    @ArgumentClinic(name = "buffer_size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE", useDefaultForNone = true)
+    @ArgumentClinic(name = "buffer_size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedWriterBuiltins.DEFAULT_BUFFER_SIZE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends BaseInitNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return BufferedReaderBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
+            return BufferedWriterBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization(guards = "bufferSize > 0", limit = "1")
         public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize,
-                        @Cached IOBaseBuiltins.CheckReadableNode checkReadableNode,
+                        @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
                         @CachedLibrary("raw") PythonObjectLibrary libRaw) {
             self.setOK(false);
             self.setDetached(false);
-            checkReadableNode.call(frame, raw);
+            checkWritableNode.call(frame, raw);
             self.setRaw(raw, isFileIO(self, raw, libSelf, libRaw));
             bufferedInit(frame, self, bufferSize);
-            self.resetRead();
+            self.resetWrite();
+            self.setPos(0);
             self.setOK(true);
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = FLUSH, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class FlushNode extends PythonUnaryWithInitErrorBuiltinNode {
-        @Specialization(guards = "self.isOK()", limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, FLUSH);
         }
     }
 }

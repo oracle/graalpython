@@ -633,11 +633,15 @@ public class FileIOBuiltins extends PythonBuiltins {
             long pos = lib.asJavaLong(posobj, frame);
             try {
                 long res = posixLib.lseek(getPosixSupport(), self.getFD(), pos, whence);
-                self.setSeekable(1);
+                if (self.getSeekable() < 0) {
+                    self.setSeekable(1);
+                }
                 return res;
             } catch (PosixSupportLibrary.PosixException e) {
                 exceptionProfile.enter();
-                self.setSeekable(0);
+                if (self.getSeekable() < 0) {
+                    self.setSeekable(0);
+                }
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -652,25 +656,10 @@ public class FileIOBuiltins extends PythonBuiltins {
     @Builtin(name = TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "!self.isClosed()")
+        @Specialization
         Object tell(VirtualFrame frame, PFileIO self,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile exceptionProfile) {
-            try {
-                long res = posixLib.lseek(getPosixSupport(), self.getFD(), 0, SEEK_CUR);
-                self.setSeekable(1);
-                return res;
-            } catch (PosixSupportLibrary.PosixException e) {
-                self.setSeekable(0);
-                exceptionProfile.enter();
-                throw raiseOSErrorFromPosixException(frame, e);
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "self.isClosed()")
-        Object closedError(PFileIO self) {
-            throw raise(ValueError, IO_CLOSED);
+                        @Cached SeekNode seekNode) {
+            return seekNode.call(frame, self, 0, SEEK_CUR);
         }
     }
 
