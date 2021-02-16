@@ -575,8 +575,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             TruffleFile file = null;
             if (!(cafile instanceof PNone)) {
                 file = toTruffleFile(frame, fileLib, cafile);
-            } else if (!(capath instanceof PNone)) {
-                file = toTruffleFile(frame, pathLib, capath);
+            }
+            TruffleFile path = null;
+            if (!(capath instanceof PNone)) {
+                path = toTruffleFile(frame, pathLib, capath);
             }
 
             try {
@@ -592,16 +594,20 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     }
                 }
 
-                if (file != null) {
+                if (file != null || path != null) {
                     // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
                     List<X509Certificate> certList = new ArrayList<>();
-                    Collection<TruffleFile> files;
-                    if (file.isDirectory()) {
-                        // TODO: if capath is a directory, cpython loads certificates on demand, not
-                        // immediately like we do
-                        files = file.list();
-                    } else {
-                        files = Collections.singleton(file);
+                    Collection<TruffleFile> files = new ArrayList<>();
+                    if (file != null) {
+                        files.add(file);
+                    }
+                    if (path != null && path.isDirectory()) {
+                        // TODO: see SSL_CTX_load_verify_locations
+                        // if capath is a directory, cpython loads certificates on demand
+                        Collection<TruffleFile> fs = path.list();
+                        if (fs != null) {
+                            files.addAll(fs);
+                        }
                     }
                     for (TruffleFile f : files) {
                         try (BufferedReader r = f.newBufferedReader()) {
@@ -627,7 +633,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     X509Certificate[] certs = certList.toArray(new X509Certificate[certList.size()]);
                     for (X509Certificate cert : certs) {
                         // TODO what to use for alias
-                        String alias = file.getAbsoluteFile().getPath() + ":" + cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
+                        String alias = cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
                         self.setCertificateEntry(alias, cert);
                     }
                 }
