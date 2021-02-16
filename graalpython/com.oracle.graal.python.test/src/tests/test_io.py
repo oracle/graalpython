@@ -38,15 +38,7 @@
 # SOFTWARE.
 
 import unittest
-
-# TODO replace this with simple import _io once _IO_Base is renamed to _IOBase
-import _io as _orig_io
-
-class Io:
-    _IOBase = getattr(_orig_io, "_IO_Base", _orig_io._IOBase)
-    UnsupportedOperation = _orig_io.UnsupportedOperation
-
-_io = Io()
+import _io
 
 
 class IOBaseTests(unittest.TestCase):

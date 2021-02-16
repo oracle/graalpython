@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
@@ -51,10 +50,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -93,15 +88,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     protected static boolean isAttrWritable(PythonObject self, Object key) {
-        // TODO remove instanceof checks by unsetting the HAS_SLOTS_BUT_NO_DICT_FLAG flag (i.e. setting isBuiltinWithDict to true in the corresponding PythonBuiltinClassTypes)
-        // PythonClass is tricky - some classes (builtins) should have the flag, other (user classes) should not
-        // The common place where user classes are created is in PythonObjectFactory.createPythonClass - we need to 'unset' the flag there and set it somewhere by default
-        if (isHiddenKey(key)
-                || self instanceof PythonManagedClass   // PythonClass
-                || self instanceof PFunction            // PFunction
-                || self instanceof PDecoratedMethod     // PClassMethod, PStaticMethod
-                || self instanceof PythonModule ||      // PythonModule
-                        self instanceof PBaseException) {       // all exceptions
+        if (isHiddenKey(key)) {
             return true;
         }
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;

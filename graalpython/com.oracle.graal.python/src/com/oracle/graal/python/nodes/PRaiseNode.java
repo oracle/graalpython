@@ -216,14 +216,6 @@ public abstract class PRaiseNode extends Node {
         throw raiseExceptionObject(raisingNode, factory.createBaseException(exceptionType), language);
     }
 
-    @Specialization(guards = "isNoValue(cause)")
-    PException doPythonManagedClass(PythonManagedClass exceptionType, @SuppressWarnings("unused") PNone cause, String format, Object[] arguments,
-                    @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
-        assert format != null;
-        throw raiseExceptionObject(factory.createBaseException(exceptionType, format, arguments), language);
-    }
-
     @Specialization(guards = {"isNoValue(cause)", "isNoValue(format)", "arguments.length > 0"})
     static PException doBuiltinType(Node raisingNode, PythonBuiltinClassType type, @SuppressWarnings("unused") PNone cause, @SuppressWarnings("unused") PNone format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
