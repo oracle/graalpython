@@ -6,6 +6,7 @@ import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertific
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -79,7 +80,9 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         try {
-            SSLParameters supportedSSLParameters = SSLContext.getDefault().getSupportedSSLParameters();
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, null, null);
+            SSLParameters supportedSSLParameters = context.getSupportedSSLParameters();
             List<String> javaSuportedProtocols = Arrays.asList(supportedSSLParameters.getProtocols());
             List<SSLProtocol> protocols = Arrays.stream(SSLProtocol.values()).filter(protocol -> javaSuportedProtocols.contains(protocol.getName())).collect(Collectors.toList());
             // TODO JDK supports it, but we would need to make sure that all the related facilities
@@ -92,8 +95,11 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             }
 
             defaultCiphers = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+        } catch (NoSuchAlgorithmException | KeyManagementException | PException e) {
+            // This module is not essential for the interpreter to function, so don't fail at
+            // startup, let it fail, when it gets used
+            supportedProtocols = new ArrayList<>();
+            defaultCiphers = new SSLCipher[0];
         }
     }
 

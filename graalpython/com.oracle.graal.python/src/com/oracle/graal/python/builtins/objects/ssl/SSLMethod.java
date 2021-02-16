@@ -5,35 +5,28 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public enum SSLMethod {
     SSL2(0, SSLProtocol.SSLv2),
     SSL3(1, SSLProtocol.SSLv3),
-    TLS(2, "TLS"),
+    TLS(2),
     TLS1(3, SSLProtocol.TLSv1),
     TLS1_1(4, SSLProtocol.TLSv1_1),
     TLS1_2(5, SSLProtocol.TLSv1_2),
-    TLS_CLIENT(0x10, "TLS"),
-    TLS_SERVER(0x11, "TLS");
+    TLS_CLIENT(0x10),
+    TLS_SERVER(0x11);
 
     private final int pythonId;
-    private final String javaId;
     private final SSLProtocol singleVersion;
 
     SSLMethod(int pythonId, SSLProtocol singleVersion) {
         this.pythonId = pythonId;
-        this.javaId = singleVersion.getName();
         this.singleVersion = singleVersion;
     }
 
-    SSLMethod(int pythonId, String javaId) {
+    SSLMethod(int pythonId) {
         this.pythonId = pythonId;
-        this.javaId = javaId;
         this.singleVersion = null;
     }
 
     public int getPythonId() {
         return pythonId;
-    }
-
-    public String getJavaId() {
-        return javaId;
     }
 
     public boolean allowsProtocol(SSLProtocol protocol) {

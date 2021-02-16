@@ -126,8 +126,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     checkHostname = false;
                     verifyMode = SSLModuleBuiltins.SSL_CERT_NONE;
                 }
-                SSLContext sslContext = createSSLContext(method);
-                PSSLContext context = factory().createSSLContext(type, method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, sslContext);
+                PSSLContext context = factory().createSSLContext(type, method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, createSSLContext());
                 long options = SSLOptions.DEFAULT_OPTIONS;
                 if (method != SSLMethod.SSL2) {
                     options |= SSLOptions.SSL_OP_NO_SSLv2;
@@ -145,8 +144,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static SSLContext createSSLContext(SSLMethod version) throws NoSuchAlgorithmException, KeyManagementException {
-            SSLContext context = SSLContext.getInstance(version.getJavaId());
+        private static SSLContext createSSLContext() throws NoSuchAlgorithmException, KeyManagementException {
+            SSLContext context = SSLContext.getInstance("TLS");
             // Pre-init to be able to get default parameters
             context.init(null, null, null);
             return context;
