@@ -87,10 +87,6 @@ public class PNodeWithRaise extends PNodeWithContext {
         return getRaiseNode().raise(type, e);
     }
 
-    public final PException raise(PythonBuiltinClassType type) {
-        return getRaiseNode().raise(type);
-    }
-
     public final PException raiseBadInternalCall() {
         return getRaiseNode().raise(PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
