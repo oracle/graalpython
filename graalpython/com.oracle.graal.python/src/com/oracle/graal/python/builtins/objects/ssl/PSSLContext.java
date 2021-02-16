@@ -23,7 +23,6 @@ import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -82,13 +81,13 @@ public final class PSSLContext extends PythonBuiltinObject {
         return method;
     }
 
-    void setCertificateEntry(String alias, Certificate cert) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
-        getKeyStore().setCertificateEntry(alias, cert);
+    void setCertificateEntry(X509Certificate cert) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+        getKeyStore().setCertificateEntry(CertUtils.getAlias(cert), cert);
     }
 
-    void setKeyEntry(String alias, PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+    void setKeyEntry(PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         this.password = password;
-        getKeyStore().setKeyEntry(alias, pk, password, certs);
+        getKeyStore().setKeyEntry(CertUtils.getAlias(pk), pk, password, certs);
     }
 
     void init() throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException {

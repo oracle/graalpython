@@ -632,9 +632,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     }
                     X509Certificate[] certs = certList.toArray(new X509Certificate[certList.size()]);
                     for (X509Certificate cert : certs) {
-                        // TODO what to use for alias
-                        String alias = cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
-                        self.setCertificateEntry(alias, cert);
+                        self.setCertificateEntry(cert);
                     }
                 }
             } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException ex) {
@@ -680,9 +678,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
             X509Certificate[] certs = certList.toArray(new X509Certificate[certList.size()]);
             for (X509Certificate cert : certs) {
-                // TODO what to use for alias
-                String alias = cert.getIssuerX500Principal().getName() + ":" + cert.getSerialNumber();
-                context.setCertificateEntry(alias, cert);
+                context.setCertificateEntry(cert);
             }
         }
 
@@ -692,8 +688,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 Collection<? extends Certificate> col = CertificateFactory.getInstance("X.509").generateCertificates(new ByteArrayInputStream(bytes));
                 for (Certificate cert : col) {
                     X509Certificate x509Cert = (X509Certificate) cert;
-                    String alias = x509Cert.getIssuerX500Principal().getName() + ":" + x509Cert.getSerialNumber();
-                    context.setCertificateEntry(alias, x509Cert);
+                    context.setCertificateEntry(x509Cert);
                 }
             } catch (CertificateException ex) {
                 String msg = ex.getMessage();
@@ -720,8 +715,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             try (BufferedReader certReader = getReader(frame, certfile, lib, "certfile");
                             BufferedReader keyReader = getReader(frame, kf, lib, "keyfile")) {
                 checkPassword(password);
-                // TODO what to use for alias - certfile.toString()
-                return load(self, certReader, keyReader, certfile.toString());
+                return load(self, certReader, keyReader);
             } catch (IOException ex) {
                 throw raise(SSLError, ErrorMessages.SSL_ERROR, ex.getMessage());
             }
@@ -762,7 +756,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object load(PSSLContext self, BufferedReader certReader, BufferedReader keyReader, String alias) {
+        private Object load(PSSLContext self, BufferedReader certReader, BufferedReader keyReader) {
             // TODO add logging
             try {
                 X509Certificate[] certs;
@@ -789,7 +783,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 // TODO only 1. cert?
                 PrivateKey pk = getPrivateKey(this, keyReader, certs[0].getPublicKey().getAlgorithm());
                 checkPrivateKey(this, pk, certs[0]);
-                self.setKeyEntry(alias, pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
+                self.setKeyEntry(pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
             } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | KeyStoreException | CertificateException ex) {
                 throw raise(SSLError, ErrorMessages.SSL_ERROR, ex.getMessage());
             }

@@ -34,15 +34,18 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.SignatureException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
@@ -428,5 +431,23 @@ public final class CertUtils {
             ap.init(Base64.getDecoder().decode(sb.toString()));
             return ap.getParameterSpec(DHParameterSpec.class);
         }
+    }
+
+    @TruffleBoundary
+    static String getAlias(X509Certificate cert) throws NoSuchAlgorithmException, CertificateEncodingException {
+        // TODO what to use for alias
+        return md5(cert.getEncoded());
+    }
+
+    @TruffleBoundary
+    static String getAlias(PrivateKey pk) throws NoSuchAlgorithmException {
+        // TODO what to use for alias
+        return md5(pk.getEncoded());
+    }
+
+    @TruffleBoundary
+    private static String md5(byte[] bytes) throws NoSuchAlgorithmException {
+        byte[] digest = MessageDigest.getInstance("md5").digest(bytes);
+        return new BigInteger(1, digest).toString(16);
     }
 }
