@@ -33,7 +33,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -169,17 +168,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
         SSLEngine engine = context.getContext().createSSLEngine();
         engine.setUseClientMode(!serverMode);
-        List<String> selectedProtocols = new ArrayList<>(SSLModuleBuiltins.supportedProtocols);
-        selectedProtocols.retainAll(Arrays.asList(engine.getSupportedProtocols()));
-        if (context.getMethod().isSingleVersion()) {
-            selectedProtocols.retainAll(Collections.singletonList(context.getMethod().getJavaId()));
-        }
-        for (SSLProtocol protocol : SSLProtocol.values()) {
-            if ((context.getOptions() & protocol.getDisableOption()) != 0) {
-                selectedProtocols.remove(protocol.getName());
-            }
-        }
-        engine.setEnabledProtocols(selectedProtocols.toArray(new String[0]));
+        engine.setEnabledProtocols(context.computeEnabledProtocols());
         SSLParameters parameters = new SSLParameters();
         if (serverHostname != null) {
             try {
@@ -384,6 +373,61 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 default:
                     throw raise(ValueError, ErrorMessages.INVALID_VALUE_FOR_VERIFY_MODE);
             }
+        }
+    }
+
+    static SSLProtocol selectProtocolForMinMax(PNodeWithRaise node, int value) {
+        SSLProtocol selected = null;
+        switch (value) {
+            case SSLProtocol.PROTO_MINIMUM_SUPPORTED:
+                selected = SSLModuleBuiltins.minimumVersion;
+                break;
+            case SSLProtocol.PROTO_MAXIMUM_SUPPORTED:
+                selected = SSLModuleBuiltins.maximumVersion;
+                break;
+            default:
+                for (SSLProtocol protocol : SSLProtocol.values()) {
+                    if (protocol.getId() == value) {
+                        selected = protocol;
+                        break;
+                    }
+                }
+        }
+        if (selected == null) {
+            throw node.raise(ValueError, "Unsupported protocol version 0x%x", value);
+        }
+        return selected;
+    }
+
+    @Builtin(name = "minimum_version", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class MinimumVersionNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static int get(PSSLContext self, @SuppressWarnings("unused") Object none) {
+            return self.getMinimumVersion() != null ? self.getMinimumVersion().getId() : SSLProtocol.PROTO_MINIMUM_SUPPORTED;
+        }
+
+        @Specialization(guards = "!isNoValue(obj)", limit = "3")
+        Object set(PSSLContext self, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            self.setMinimumVersion(selectProtocolForMinMax(this, lib.asSize(obj)));
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "maximum_version", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class MaximumVersionNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static int get(PSSLContext self, @SuppressWarnings("unused") Object none) {
+            return self.getMaximumVersion() != null ? self.getMaximumVersion().getId() : SSLProtocol.PROTO_MAXIMUM_SUPPORTED;
+        }
+
+        @Specialization(guards = "!isNoValue(obj)", limit = "3")
+        Object set(PSSLContext self, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            self.setMaximumVersion(selectProtocolForMinMax(this, lib.asSize(obj)));
+            return PNone.NONE;
         }
     }
 

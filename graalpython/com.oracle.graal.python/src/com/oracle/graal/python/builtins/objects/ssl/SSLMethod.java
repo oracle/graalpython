@@ -3,23 +3,29 @@ package com.oracle.graal.python.builtins.objects.ssl;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public enum SSLMethod {
-    SSL2(0, SSLProtocol.SSLv2.getName(), true),
-    SSL3(1, SSLProtocol.SSLv3.getName(), true),
-    TLS(2, "TLS", false),
-    TLS1(3, SSLProtocol.TLSv1.getName(), true),
-    TLS1_1(4, SSLProtocol.TLSv1_1.getName(), true),
-    TLS1_2(5, SSLProtocol.TLSv1_2.getName(), true),
-    TLS_CLIENT(0x10, "TLS", false),
-    TLS_SERVER(0x11, "TLS", false);
+    SSL2(0, SSLProtocol.SSLv2),
+    SSL3(1, SSLProtocol.SSLv3),
+    TLS(2, "TLS"),
+    TLS1(3, SSLProtocol.TLSv1),
+    TLS1_1(4, SSLProtocol.TLSv1_1),
+    TLS1_2(5, SSLProtocol.TLSv1_2),
+    TLS_CLIENT(0x10, "TLS"),
+    TLS_SERVER(0x11, "TLS");
 
     private final int pythonId;
     private final String javaId;
-    private final boolean singleVersion;
+    private final SSLProtocol singleVersion;
 
-    SSLMethod(int pythonId, String javaId, boolean singleVersion) {
+    SSLMethod(int pythonId, SSLProtocol singleVersion) {
+        this.pythonId = pythonId;
+        this.javaId = singleVersion.getName();
+        this.singleVersion = singleVersion;
+    }
+
+    SSLMethod(int pythonId, String javaId) {
         this.pythonId = pythonId;
         this.javaId = javaId;
-        this.singleVersion = singleVersion;
+        this.singleVersion = null;
     }
 
     public int getPythonId() {
@@ -30,8 +36,8 @@ public enum SSLMethod {
         return javaId;
     }
 
-    public boolean isSingleVersion() {
-        return singleVersion;
+    public boolean allowsProtocol(SSLProtocol protocol) {
+        return singleVersion == null || singleVersion == protocol;
     }
 
     @ExplodeLoop

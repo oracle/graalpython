@@ -57,14 +57,13 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     static final String DEFAULT_CIPHER_STRING = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
 
     public static SSLCipher[] defaultCiphers;
-    public static List<String> supportedProtocols;
+    public static List<SSLProtocol> supportedProtocols;
+    public static SSLProtocol minimumVersion;
+    public static SSLProtocol maximumVersion;
 
     public static final int SSL_CERT_NONE = 0;
     public static final int SSL_CERT_OPTIONAL = 1;
     public static final int SSL_CERT_REQUIRED = 2;
-
-    public static final int PROTO_MINIMUM_SUPPORTED = -2;
-    public static final int PROTO_MAXIMUM_SUPPORTED = -1;
 
     private static final int X509_V_FLAG_CRL_CHECK = 0x4;
     private static final int X509_V_FLAG_CRL_CHECK_ALL = 0x8;
@@ -81,12 +80,16 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         try {
             SSLParameters supportedSSLParameters = SSLContext.getDefault().getSupportedSSLParameters();
-            List<String> protocols = Arrays.stream(SSLProtocol.values()).map(SSLProtocol::getName).collect(Collectors.toList());
-            protocols.retainAll(Arrays.asList(supportedSSLParameters.getProtocols()));
+            List<String> javaSuportedProtocols = Arrays.asList(supportedSSLParameters.getProtocols());
+            List<SSLProtocol> protocols = Arrays.stream(SSLProtocol.values()).filter(protocol -> javaSuportedProtocols.contains(protocol.getName())).collect(Collectors.toList());
             // TODO JDK supports it, but we would need to make sure that all the related facilities
             // work
-            protocols.remove(SSLProtocol.TLSv1_3.getName());
+            protocols.remove(SSLProtocol.TLSv1_3);
             supportedProtocols = Collections.unmodifiableList(protocols);
+            if (!supportedProtocols.isEmpty()) {
+                minimumVersion = supportedProtocols.get(0);
+                maximumVersion = supportedProtocols.get(supportedProtocols.size() - 1);
+            }
 
             defaultCiphers = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
         } catch (NoSuchAlgorithmException e) {
@@ -115,20 +118,19 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("HAS_SNI", true);
         // TODO enable
         module.setAttribute("HAS_ECDH", false);
-        // TODO enable
         module.setAttribute("HAS_NPN", false);
         module.setAttribute("HAS_ALPN", ALPNHelper.hasAlpn());
-        boolean hasSSLv2 = supportedProtocols.contains(SSLProtocol.SSLv2.getName());
+        boolean hasSSLv2 = supportedProtocols.contains(SSLProtocol.SSLv2);
         module.setAttribute("HAS_SSLv2", hasSSLv2);
-        boolean hasSSLv3 = supportedProtocols.contains(SSLProtocol.SSLv3.getName());
+        boolean hasSSLv3 = supportedProtocols.contains(SSLProtocol.SSLv3);
         module.setAttribute("HAS_SSLv3", hasSSLv3);
-        module.setAttribute("HAS_TLSv1", supportedProtocols.contains(SSLProtocol.TLSv1.getName()));
-        module.setAttribute("HAS_TLSv1_1", supportedProtocols.contains(SSLProtocol.TLSv1_1.getName()));
-        module.setAttribute("HAS_TLSv1_2", supportedProtocols.contains(SSLProtocol.TLSv1_2.getName()));
-        module.setAttribute("HAS_TLSv1_3", supportedProtocols.contains(SSLProtocol.TLSv1_3.getName()));
+        module.setAttribute("HAS_TLSv1", supportedProtocols.contains(SSLProtocol.TLSv1));
+        module.setAttribute("HAS_TLSv1_1", supportedProtocols.contains(SSLProtocol.TLSv1_1));
+        module.setAttribute("HAS_TLSv1_2", supportedProtocols.contains(SSLProtocol.TLSv1_2));
+        module.setAttribute("HAS_TLSv1_3", supportedProtocols.contains(SSLProtocol.TLSv1_3));
 
-        module.setAttribute("PROTO_MINIMUM_SUPPORTED", PROTO_MINIMUM_SUPPORTED);
-        module.setAttribute("PROTO_MAXIMUM_SUPPORTED", PROTO_MAXIMUM_SUPPORTED);
+        module.setAttribute("PROTO_MINIMUM_SUPPORTED", SSLProtocol.PROTO_MINIMUM_SUPPORTED);
+        module.setAttribute("PROTO_MAXIMUM_SUPPORTED", SSLProtocol.PROTO_MAXIMUM_SUPPORTED);
         module.setAttribute("PROTO_SSLv3", SSLProtocol.SSLv3.getId());
         module.setAttribute("PROTO_TLSv1", SSLProtocol.TLSv1.getId());
         module.setAttribute("PROTO_TLSv1_1", SSLProtocol.TLSv1_1.getId());

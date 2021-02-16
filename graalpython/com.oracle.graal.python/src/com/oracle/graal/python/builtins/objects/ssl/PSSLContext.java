@@ -38,6 +38,8 @@ public final class PSSLContext extends PythonBuiltinObject {
     private SSLCipher[] ciphers;
     private long options;
     private boolean setDefaultVerifyPaths = false;
+    private SSLProtocol minimumVersion;
+    private SSLProtocol maximumVersion;
 
     private DHParameterSpec dhParameters;
     // TODO: this is part of X509_VERIFY_PARAM, maybe replicate the whole structure
@@ -51,6 +53,8 @@ public final class PSSLContext extends PythonBuiltinObject {
     private String[] alpnProtocols;
 
     private KeyStore keystore;
+
+    private char[] password = PythonUtils.EMPTY_CHAR_ARRAY;
 
     public PSSLContext(Object cls, Shape instanceShape, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {
         super(cls, instanceShape);
@@ -75,8 +79,6 @@ public final class PSSLContext extends PythonBuiltinObject {
     public SSLMethod getMethod() {
         return method;
     }
-
-    private char[] password = PythonUtils.EMPTY_CHAR_ARRAY;
 
     void setCertificateEntry(String alias, Certificate cert) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         getKeyStore().setCertificateEntry(alias, cert);
@@ -205,5 +207,33 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     public void setAlpnProtocols(String[] alpnProtocols) {
         this.alpnProtocols = alpnProtocols;
+    }
+
+    public SSLProtocol getMinimumVersion() {
+        return minimumVersion;
+    }
+
+    public void setMinimumVersion(SSLProtocol minimumVersion) {
+        this.minimumVersion = minimumVersion;
+    }
+
+    public SSLProtocol getMaximumVersion() {
+        return maximumVersion;
+    }
+
+    public void setMaximumVersion(SSLProtocol maximumVersion) {
+        this.maximumVersion = maximumVersion;
+    }
+
+    public boolean allowsProtocol(SSLProtocol protocol) {
+        boolean disabledByOption = (options & protocol.getDisableOption()) == 0;
+        boolean inMinBound = minimumVersion == null || protocol.getId() >= minimumVersion.getId();
+        boolean inMaxBound = maximumVersion == null || protocol.getId() <= maximumVersion.getId();
+        return inMinBound && inMaxBound && disabledByOption && method.allowsProtocol(protocol);
+    }
+
+    @TruffleBoundary
+    public String[] computeEnabledProtocols() {
+        return SSLModuleBuiltins.supportedProtocols.stream().filter(this::allowsProtocol).map(SSLProtocol::getName).toArray(String[]::new);
     }
 }
