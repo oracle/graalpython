@@ -64,8 +64,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.verifyFlags = verifyFlags;
         this.checkHostname = checkHostname;
         this.verifyMode = verifyMode;
-        this.ciphers = SSLModuleBuiltins.defaultCiphers;
-        assert this.ciphers != null;
+        this.ciphers = SSLModuleBuiltins.getDefaultCiphers();
     }
 
     public KeyStore getKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
@@ -234,6 +233,6 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     @TruffleBoundary
     public String[] computeEnabledProtocols() {
-        return SSLModuleBuiltins.supportedProtocols.stream().filter(this::allowsProtocol).map(SSLProtocol::getName).toArray(String[]::new);
+        return SSLModuleBuiltins.getSupportedProtocols().stream().filter(this::allowsProtocol).map(SSLProtocol::getName).toArray(String[]::new);
     }
 }

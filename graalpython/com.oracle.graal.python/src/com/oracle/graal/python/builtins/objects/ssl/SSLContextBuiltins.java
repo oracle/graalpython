@@ -379,10 +379,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
         SSLProtocol selected = null;
         switch (value) {
             case SSLProtocol.PROTO_MINIMUM_SUPPORTED:
-                selected = SSLModuleBuiltins.minimumVersion;
+                selected = SSLModuleBuiltins.getMinimumVersion();
                 break;
             case SSLProtocol.PROTO_MAXIMUM_SUPPORTED:
-                selected = SSLModuleBuiltins.maximumVersion;
+                selected = SSLModuleBuiltins.getMaximumVersion();
                 break;
             default:
                 for (SSLProtocol protocol : SSLProtocol.values()) {

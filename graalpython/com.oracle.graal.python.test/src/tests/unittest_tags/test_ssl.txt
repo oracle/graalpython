@@ -101,6 +101,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_nonblocking_send
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_npn_protocols
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_sslv2
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_sslv3
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_tlsv1
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_tlsv1_1
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_protocol_tlsv1_2
