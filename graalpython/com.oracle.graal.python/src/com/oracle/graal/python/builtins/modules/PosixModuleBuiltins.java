@@ -400,7 +400,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
-        @Specialization(guards = {"!isList(argv)", "!isTuple(argv)"})
+        @Specialization(guards = {"!isList(argv)", "!isPTuple(argv)"})
         @SuppressWarnings("unused")
         Object execvInvalidArgs(VirtualFrame frame, PosixPath path, Object argv) {
             throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");

@@ -94,6 +94,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -243,7 +244,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static final int S_IFREG = 0100000;
 
     private final PythonContext context;
-    private final Map<String, String> environ = new HashMap<>();
+    private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
@@ -1606,9 +1607,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @TruffleBoundary
-    public synchronized void setenv(Object name, Object value, boolean overwrite) {
-        if (overwrite || !environ.containsKey(name)) {
-            environ.put((String) name, (String) value);
+    public void setenv(Object name, Object value, boolean overwrite) {
+        String nameStr = pathToJavaStr(name);
+        String valueStr = pathToJavaStr(value);
+        if (overwrite) {
+            environ.put(nameStr, valueStr);
+        } else {
+            environ.putIfAbsent(nameStr, valueStr);
         }
     }
 
@@ -1619,12 +1624,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
         // TODO there are a few arguments we ignore, we should throw an exception or report a
         // compatibility warning
-
-        if (!context.isExecutableAccessAllowed()) {
-            // TODO is this check relevant to NFI backend as well?
-            // TODO raise an exception instead of returning an invalid pid
-            return -1;
-        }
 
         // TODO do we need to do this check (and the isExecutable() check later)?
         TruffleFile cwdFile = cwd == null ? context.getEnv().getCurrentWorkingDirectory() : getTruffleFile(pathToJavaStr(cwd));
@@ -1782,9 +1781,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void execv(Object pathname, Object[] args) throws PosixException {
         assert args.length > 0;
-        if (!context.isExecutableAccessAllowed()) {
-            throw posixException(OSErrorEnum.EPERM);
-        }
         String[] cmd = new String[args.length];
         // ProcessBuilder does not accept separate executable name, we must overwrite the 0-th
         // argument
@@ -1834,9 +1830,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public int system(Object commandObj) {
         String cmd = pathToJavaStr(commandObj);
-        if (!context.isExecutableAccessAllowed()) {
-            return -1;
-        }
         LOGGER.fine(() -> "os.system: " + cmd);
 
         String[] command;

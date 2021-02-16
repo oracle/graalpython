@@ -233,10 +233,6 @@ public abstract class PGuards {
         return o instanceof PList;
     }
 
-    public static boolean isTuple(Object o) {
-        return o instanceof PTuple;
-    }
-
     public static boolean isObjectStorageIterator(PSequenceIterator iterator) {
         if (!iterator.isPSequence()) {
             return false;
