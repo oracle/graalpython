@@ -205,6 +205,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -2993,6 +2994,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (nativeClassStableAssumption != null) {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") (without MRO) called");
             }
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz));
             return PNone.NONE;
         }
 
@@ -3011,6 +3013,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid MRO object for native type \"" + name + "\"");
             }
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz));
             return PNone.NONE;
         }
     }

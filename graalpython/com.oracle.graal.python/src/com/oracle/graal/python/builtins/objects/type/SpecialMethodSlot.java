@@ -314,7 +314,12 @@ public enum SpecialMethodSlot {
         reinitializeSpecialMethodSlots((Object) klass);
     }
 
-    private static void reinitializeSpecialMethodSlots(Object klass) {
+    @TruffleBoundary
+    public static void reinitializeSpecialMethodSlots(PythonNativeClass klass) {
+        reinitializeSpecialMethodSlots((Object) klass);
+    }
+
+    public static void reinitializeSpecialMethodSlots(Object klass) {
         java.util.Set<PythonAbstractClass> subClasses;
         if (klass instanceof PythonManagedClass) {
             PythonManagedClass managedClass = (PythonManagedClass) klass;
