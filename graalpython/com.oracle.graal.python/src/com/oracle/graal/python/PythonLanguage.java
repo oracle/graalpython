@@ -77,6 +77,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -180,6 +181,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Shape cApiSymbolCache;
     private Shape hpySymbolCache;
 
+    private final ContextThreadLocal<PythonContext.PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
+
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
     }
@@ -228,7 +231,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected PythonContext createContext(Env env) {
         Python3Core newCore = new Python3Core(new PythonParserImpl(env), env.isNativeAccessAllowed());
-        final PythonContext context = new PythonContext(this, env, newCore);
+        final PythonContext context = new PythonContext(this, env, newCore, threadState);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;

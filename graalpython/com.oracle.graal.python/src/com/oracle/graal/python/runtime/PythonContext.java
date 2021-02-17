@@ -97,6 +97,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -113,8 +114,9 @@ public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
-    private static final class PythonThreadState {
-        WeakReference<Thread> owner;
+    public static final class PythonThreadState {
+        private final WeakReference<Thread> owner;
+        private boolean shuttingDown = false;
 
         /*
          * The reference to the last top frame on the Python stack during interop calls. Initially,
@@ -133,23 +135,20 @@ public final class PythonContext {
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
 
-        PythonThreadState() {
-        }
-
-        PythonThreadState(Thread owner) {
+        public PythonThreadState(@SuppressWarnings("unused") PythonContext context, Thread owner) {
             this.owner = new WeakReference<>(owner);
         }
 
+        void shutdown() {
+            shuttingDown = true;
+        }
+
+        boolean isShuttingDown() {
+            return shuttingDown;
+        }
+
         boolean isOwner(Thread thread) {
-            return owner != null && owner.get() == thread;
-        }
-
-        void setOwner(Thread thread) {
-            owner = new WeakReference<>(thread);
-        }
-
-        void clearOwner() {
-            owner = null;
+            return owner.get() == thread;
         }
 
         WeakReference<Thread> getOwner() {
@@ -212,11 +211,8 @@ public final class PythonContext {
 
     @CompilationFinal private TruffleLanguage.Env env;
 
-    /* this will be the single thread state if running single-threaded */
-    private final PythonThreadState singleThreadState = new PythonThreadState();
-
     /* for fast access to the PythonThreadState object by the owning thread */
-    private ThreadLocal<PythonThreadState> threadState = new ThreadLocal<>();
+    private final ContextThreadLocal<PythonThreadState> threadState;
 
     /* map of thread IDs to indices for array 'threadStates' */
     private Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
@@ -257,8 +253,9 @@ public final class PythonContext {
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core, ContextThreadLocal<PythonThreadState> threadState) {
         this.language = language;
+        this.threadState = threadState;
         this.core = core;
         this.env = env;
         this.handler = new AsyncHandler(this);
@@ -959,7 +956,7 @@ public final class PythonContext {
         try {
             globalInterpreterLock.lockInterruptibly();
         } catch (InterruptedException e) {
-            if (threadStateMapping.get(Thread.currentThread()) == null) {
+            if (threadState.get().isShuttingDown()) {
                 // This is a thread being killed during normal context shutdown. This thread
                 // should exit now. This should usually only happen for daemon threads on
                 // context shutdown. This is the equivalent to the logic in pylifecycle.c and
@@ -1077,36 +1074,20 @@ public final class PythonContext {
     }
 
     private PythonThreadState getThreadState() {
-        if (language.singleThreadedAssumption.isValid()) {
-            return singleThreadState;
-        }
-        return getThreadStateMultiThreaded();
-    }
-
-    @TruffleBoundary
-    private PythonThreadState getThreadStateMultiThreaded() {
         PythonThreadState curThreadState = threadState.get();
-        if (curThreadState == null) {
-            // this should happen just the first time the current thread accesses the thread state
-            curThreadState = getThreadStateFullLookup();
-            if (curThreadState != null) {
-                threadState.set(curThreadState);
-            }
-        }
-        if (curThreadState == null || curThreadState.getOwner() == null) {
-            // we're shutting down, and getting into a similar situation as _Py_FatalError_TstateNULL
+        if (curThreadState.isShuttingDown()) {
+            // we're shutting down, just release and die
             if (ownsGil()) {
                 releaseGil();
             }
             throw new PythonThreadKillException();
         }
-        assert curThreadState.isOwner(Thread.currentThread());
         return curThreadState;
     }
 
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
         if (language.singleThreadedAssumption.isValid()) {
-            action.accept(singleThreadState);
+            action.accept(threadState.get());
         } else {
             synchronized (this) {
                 for (PythonThreadState ts : threadStateMapping.values()) {
@@ -1114,11 +1095,6 @@ public final class PythonContext {
                 }
             }
         }
-    }
-
-    @TruffleBoundary
-    private synchronized PythonThreadState getThreadStateFullLookup() {
-        return threadStateMapping.get(Thread.currentThread());
     }
 
     public void setSentinelLockWeakref(WeakReference<PLock> sentinelLock) {
@@ -1132,12 +1108,7 @@ public final class PythonContext {
 
     public synchronized void attachThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
-        if (language.singleThreadedAssumption.isValid()) {
-            singleThreadState.setOwner(thread);
-            threadStateMapping.put(thread, singleThreadState);
-        } else {
-            threadStateMapping.put(thread, new PythonThreadState(thread));
-        }
+        threadStateMapping.put(thread, threadState.get(thread));
     }
 
     public synchronized void disposeThread(Thread thread) {
@@ -1149,7 +1120,7 @@ public final class PythonContext {
             return;
         }
         assert ts.isOwner(thread) : "thread state owner was changed before this thread was disposed!";
-        ts.clearOwner();
+        ts.shutdown();
         threadStateMapping.remove(thread);
         releaseSentinelLock(ts.sentinelLock);
     }
