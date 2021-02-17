@@ -662,6 +662,52 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getuid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getuid", "");
+        return logExit("getuid", "%d", lib.getuid(delegate));
+    }
+
+    @ExportMessage
+    final long getppid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getppid", "");
+        return logExit("getppid", "%d", lib.getuid(delegate));
+    }
+
+    @ExportMessage
+    final long getsid(long pid,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getsid", "%d", pid);
+        try {
+            return logExit("getsid", "%d", lib.getsid(delegate, pid));
+        } catch (PosixException e) {
+            throw logException("getsid", e);
+        }
+    }
+
+    @ExportMessage
+    final String ctermid(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("ctermid", "");
+        try {
+            return logExit("ctermid", "%s", lib.ctermid(delegate));
+        } catch (PosixException e) {
+            throw logException("ctermid", e);
+        }
+    }
+
+    @ExportMessage
+    final void setenv(Object name, Object value, boolean overwrite,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("setenv", "%s, %s, %b", name, value, overwrite);
+        try {
+            lib.setenv(delegate, name, value, overwrite);
+        } catch (PosixException e) {
+            throw logException("setenv", e);
+        }
+    }
+
+    @ExportMessage
     final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
@@ -673,6 +719,24 @@ public class LoggingPosixSupport extends PosixSupport {
         } catch (PosixException e) {
             throw logException("forkExec", e);
         }
+    }
+
+    @ExportMessage
+    final void execv(Object pathname, Object[] args,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("execv", "%s, %s", pathname, args);
+        try {
+            lib.execv(delegate, pathname, args);
+        } catch (PosixException e) {
+            throw logException("execv", e);
+        }
+    }
+
+    @ExportMessage
+    final int system(Object command,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("system", "%s", command);
+        return logExit("system", "%d", lib.system(delegate, command));
     }
 
     @ExportMessage

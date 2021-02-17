@@ -265,8 +265,26 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int wstopsig(Object receiver, int status);
 
+    public abstract long getuid(Object receiver);
+
+    public abstract long getppid(Object receiver);
+
+    public abstract long getsid(Object receiver, long pid) throws PosixException;
+
+    public abstract String ctermid(Object receiver) throws PosixException;
+
+    // note: this leaks memory in nfi backend and is not synchronized
+    // TODO is it worth synchronizing at least all accesses made through PosixSupportLibrary?
+    public abstract void setenv(Object receiver, Object name, Object value, boolean overwrite) throws PosixException;
+
     public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
                     int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException;
+
+    // args.length must be > 0
+    public abstract void execv(Object receiver, Object pathname, Object[] args) throws PosixException;
+
+    // does not throw, because posix does not exactly define the return value
+    public abstract int system(Object receiver, Object command);
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library

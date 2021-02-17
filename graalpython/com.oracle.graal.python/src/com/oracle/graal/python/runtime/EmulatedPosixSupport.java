@@ -60,7 +60,11 @@ import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
 import static java.lang.Math.addExact;
 import static java.lang.Math.multiplyExact;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -87,8 +91,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -114,12 +120,15 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -235,12 +244,18 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static final int S_IFREG = 0100000;
 
     private final PythonContext context;
+    private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
     public EmulatedPosixSupport(PythonContext context) {
         this.context = context;
         setEnv(context.getEnv());
+    }
+
+    @Override
+    public void postInitialize() {
+        environ.putAll(System.getenv());
     }
 
     @ExportMessage
@@ -1562,18 +1577,53 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public long getuid() {
+        String osName = System.getProperty("os.name");
+        if (osName.contains("Linux")) {
+            return new com.sun.security.auth.module.UnixSystem().getUid();
+        }
+        return 1000;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getppid() {
+        throw new UnsupportedPosixFeatureException("Emulated getppid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getsid(long pid) {
+        throw new UnsupportedPosixFeatureException("Emulated getsid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public String ctermid() {
+        return "/dev/tty";
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public void setenv(Object name, Object value, boolean overwrite) {
+        String nameStr = pathToJavaStr(name);
+        String valueStr = pathToJavaStr(value);
+        if (overwrite) {
+            environ.put(nameStr, valueStr);
+        } else {
+            environ.putIfAbsent(nameStr, valueStr);
+        }
+    }
+
+    @ExportMessage
     @TruffleBoundary
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException {
 
         // TODO there are a few arguments we ignore, we should throw an exception or report a
         // compatibility warning
-
-        if (!context.isExecutableAccessAllowed()) {
-            // TODO is this check relevant to NFI backend as well?
-            // TODO raise an exception instead of returning an invalid pid
-            return -1;
-        }
 
         // TODO do we need to do this check (and the isExecutable() check later)?
         TruffleFile cwdFile = cwd == null ? context.getEnv().getCurrentWorkingDirectory() : getTruffleFile(pathToJavaStr(cwd));
@@ -1725,6 +1775,140 @@ public final class EmulatedPosixSupport extends PosixResources {
                 ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
             } catch (IOException e1) {
             }
+        }
+    }
+
+    @ExportMessage
+    public void execv(Object pathname, Object[] args) throws PosixException {
+        assert args.length > 0;
+        String[] cmd = new String[args.length];
+        // ProcessBuilder does not accept separate executable name, we must overwrite the 0-th
+        // argument
+        cmd[0] = pathToJavaStr(pathname);
+        for (int i = 1; i < cmd.length; ++i) {
+            cmd[i] = pathToJavaStr(args[i]);
+        }
+        try {
+            execvInternal(cmd);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+        throw CompilerDirectives.shouldNotReachHere("Execv must not return normally");
+    }
+
+    @TruffleBoundary
+    private void execvInternal(String[] cmd) throws IOException {
+        TruffleProcessBuilder builder = context.getEnv().newProcessBuilder(cmd);
+        builder.clearEnvironment(true);
+        builder.environment(environ);
+        Process pr = builder.start();
+        // TODO how do env.out()/err() relate to FDs 1, 2? What about stdin?
+        // Also, native execv 'kills' all threads
+        BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+        OutputStream stream = context.getEnv().out();
+        String line;
+        while ((line = bfr.readLine()) != null) {
+            stream.write(line.getBytes());
+            stream.write("\n".getBytes());
+        }
+        BufferedReader stderr = new BufferedReader(new InputStreamReader(pr.getErrorStream()));
+        OutputStream errStream = context.getEnv().err();
+        while ((line = stderr.readLine()) != null) {
+            errStream.write(line.getBytes());
+            errStream.write("\n".getBytes());
+        }
+        try {
+            pr.waitFor();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
+        // TODO python-specific, missing location
+        throw new PythonExitException(null, pr.exitValue());
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public int system(Object commandObj) {
+        String cmd = pathToJavaStr(commandObj);
+        LOGGER.fine(() -> "os.system: " + cmd);
+
+        String[] command;
+        String osProperty = System.getProperty("os.name");
+        if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows")) {
+            command = new String[]{"cmd.exe", "/c", cmd};
+        } else {
+            command = new String[]{(environ.getOrDefault("SHELL", "sh")), "-c", cmd};
+        }
+        Env env = context.getEnv();
+        try {
+            TruffleProcessBuilder pb = context.getEnv().newProcessBuilder(command);
+            pb.directory(env.getCurrentWorkingDirectory());
+            PipePump stdout = null, stderr = null;
+            boolean stdsArePipes = !context.getOption(PythonOptions.TerminalIsInteractive);
+            if (stdsArePipes) {
+                pb.redirectInput(Redirect.PIPE);
+                pb.redirectOutput(Redirect.PIPE);
+                pb.redirectError(Redirect.PIPE);
+            } else {
+                pb.inheritIO(true);
+            }
+            Process proc = pb.start();
+            if (stdsArePipes) {
+                proc.getOutputStream().close(); // stdin will be closed
+                stdout = new PipePump(cmd + " [stdout]", proc.getInputStream(), env.out());
+                stderr = new PipePump(cmd + " [stderr]", proc.getErrorStream(), env.err());
+                stdout.start();
+                stderr.start();
+            }
+            int exitStatus = proc.waitFor();
+            if (stdsArePipes) {
+                stdout.finish();
+                stderr.finish();
+            }
+            return exitStatus;
+        } catch (IOException | InterruptedException e) {
+            return -1;
+        }
+    }
+
+    // TODO merge with ProcessWrapper
+    static class PipePump extends Thread {
+        private static final int MAX_READ = 8192;
+        private final InputStream in;
+        private final OutputStream out;
+        private final byte[] buffer;
+        private volatile boolean finish;
+
+        public PipePump(String name, InputStream in, OutputStream out) {
+            this.setName(name);
+            this.in = in;
+            this.out = out;
+            this.buffer = new byte[MAX_READ];
+            this.finish = false;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (!finish || in.available() > 0) {
+                    if (Thread.interrupted()) {
+                        finish = true;
+                    }
+                    int read = in.read(buffer, 0, Math.min(MAX_READ, in.available()));
+                    if (read == -1) {
+                        return;
+                    }
+                    out.write(buffer, 0, read);
+                }
+            } catch (IOException e) {
+            }
+        }
+
+        public void finish() {
+            finish = true;
+            // Make ourselves max priority to flush data out as quickly as possible
+            setPriority(Thread.MAX_PRIORITY);
+            Thread.yield();
         }
     }
 

@@ -89,6 +89,7 @@ public final class NFIPosixSupport extends PosixSupport {
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
     private static final int PATH_MAX = 4096;
+    private static final int L_ctermid = 9;
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
@@ -148,7 +149,14 @@ public final class NFIPosixSupport extends PosixSupport {
         call_wexitstatus("(sint32):sint32"),
         call_wtermsig("(sint32):sint32"),
         call_wstopsig("(sint32):sint32"),
-        fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32");
+        call_getuid("():sint64"),
+        call_getppid("():sint64"),
+        call_getsid("(sint64):sint64"),
+        call_ctermid("([sint8]):sint32"),
+        call_setenv("([sint8], [sint8], sint32):sint32"),
+        fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32"),
+        call_execv("([sint8], [sint64], sint32):void"),
+        call_system("([sint8]):sint32");
 
         private final String signature;
 
@@ -891,13 +899,53 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public long getuid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callLong(this, PosixNativeFunction.call_getuid);
+    }
+
+    @ExportMessage
+    public long getppid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callLong(this, PosixNativeFunction.call_getppid);
+    }
+
+    @ExportMessage
+    public long getsid(long pid,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long res = invokeNode.callLong(this, PosixNativeFunction.call_getsid, pid);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return res;
+    }
+
+    @ExportMessage
+    public String ctermid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        byte[] buf = new byte[L_ctermid];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_ctermid, wrap(buf));
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        // TODO PyUnicode_DecodeFSDefault
+        return cStringToJavaString(buf);
+    }
+
+    @ExportMessage
+    public void setenv(Object name, Object value, boolean overwrite,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_setenv, pathToCString(name), pathToCString(value), overwrite ? 1 : 0);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
 
         // The following strings and string arrays need to be present in the native function:
         // - char** of executable names ('\0'-terminated strings with an extra NULL at the end)
-        // - char** of arguments names ('\0'-terminated strings with an extra NULL at the end)
+        // - char** of arguments ('\0'-terminated strings with an extra NULL at the end)
         // - an optional char** of env variables ('\0'-terminated strings with an extra NULL at the
         // end), must distinguish between NULL (child inherits env) and an empty array (child gets
         // empty env)
@@ -992,6 +1040,61 @@ public final class NFIPosixSupport extends PosixSupport {
         return res;
     }
 
+    @ExportMessage
+    public void execv(Object pathname, Object[] args,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+
+        // The following strings and string arrays need to be present in the native function:
+        // - char* - the pathname ('\0'-terminated string)
+        // - char** of arguments ('\0'-terminated strings with an extra NULL at the end)
+        // We do this by concatenating all strings (including their terminating '\0' characters)
+        // into one large byte buffer (which becomes 'char *') and pass an additional array of
+        // offsets to mark where the individual strings begin. To prevent memory allocation
+        // in C (and related free()), we reuse this array of integer offsets as an array of
+        // C-strings (char **). For this reason, the array of offsets is allocated as long[].
+        // In the offsets array we mark the places where NULL should be with a special value -1.
+        // - the pathname is always at index 0
+        // - the arguments start at index 1
+
+        // First we calculate the lengths of the offsets array and the string buffer (dataLen).
+        int offsetsLen = 1 + args.length + 1;
+        long pathnameLen = ((Buffer) pathname).length;
+        long dataLen;
+
+        try {
+            // The +1 can overflow only if the buffer contains 2^63-1 bytes, which is impossible
+            // since we are using Java arrays limited to 2^31-1.
+            dataLen = addLengthsOfCStrings(pathnameLen + 1L, args);
+        } catch (OverflowException e) {
+            throw newPosixException(invokeNode, OSErrorEnum.E2BIG.getNumber());
+        }
+
+        // This also guarantees that offsetsLen did not overflow: we add +1 to dataLen for each
+        // '\0', i.e. dataLen >= "number of strings" and offsetsLen == "number of strings" + 1
+        // (1 accounts for the NULL terminating the args array).
+        // Also, dataLen > pathnameLen, so this check makes sure that the cast of pathnameLen to int
+        // below is safe.
+        if (dataLen >= Integer.MAX_VALUE - 1) {
+            throw newPosixException(invokeNode, OSErrorEnum.E2BIG.getNumber());
+        }
+
+        byte[] data = new byte[(int) dataLen];
+        long[] offsets = new long[offsetsLen];
+
+        PythonUtils.arraycopy(((Buffer) pathname).data, 0, data, 0, (int) pathnameLen);
+        long offset = encodeCStringArray(data, pathnameLen + 1L, offsets, 1, args);
+        assert offset == dataLen;
+
+        invokeNode.call(this, PosixNativeFunction.call_execv, wrap(data), wrap(offsets), offsets.length);
+        throw getErrnoAndThrowPosixException(invokeNode);
+    }
+
+    @ExportMessage
+    public int system(Object command,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_system, pathToCString(command));
+    }
+
     private static long addLengthsOfCStrings(long prevLen, Object[] src) throws OverflowException {
         long len = prevLen;
         for (Object o : src) {
@@ -1066,6 +1169,9 @@ public final class NFIPosixSupport extends PosixSupport {
                 return null;
             }
         }
+        // TODO we keep a byte[] provided by the caller, who can potentially change it, making our
+        // check for embedded nulls pointless. Maybe we should copy it and while on it, might as
+        // well add the terminating null character, avoiding the copy we do later in pathToCString.
         return Buffer.wrap(path);
     }
 

@@ -53,6 +53,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -465,6 +466,43 @@ int32_t call_wstopsig(int32_t status) {
 
 int32_t call_kill(int64_t pid, int32_t signal) {
     return kill(pid, signal);
+}
+
+int64_t call_getuid() {
+    return getuid();
+}
+
+int64_t call_getppid() {
+    return getppid();
+}
+
+int64_t call_getsid(int64_t pid) {
+    return getsid(pid);
+}
+
+int32_t call_ctermid(char *buf) {
+    return ctermid(buf) == NULL ? -1 : 0;
+}
+
+int32_t call_setenv(char *name, char *value, int overwrite) {
+    return setenv(name, value, overwrite);
+}
+
+// See comment in NFiPosixSupport.execv() for the description of arguments
+void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
+    // We reuse the memory allocated for offsets to avoid the need to allocate and reliably free another array
+    char **strings = (char **) offsets;
+    for (int32_t i = 0; i < offsetsLen; ++i) {
+        strings[i] = offsets[i] == -1 ? NULL : data + offsets[i];
+    }
+
+    char *pathname = strings[0];
+    char **argv = strings + 1;
+    execv(pathname, argv);
+}
+
+int32_t call_system(const char *pathname) {
+    return system(pathname);
 }
 
 int32_t get_errno() {

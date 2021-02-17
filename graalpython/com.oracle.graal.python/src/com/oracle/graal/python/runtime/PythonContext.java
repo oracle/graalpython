@@ -459,6 +459,7 @@ public final class PythonContext {
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
+        posixSupport.postInitialize();
         setupRuntimeInformation(true);
         core.postInitialize();
         importSiteIfForced();
