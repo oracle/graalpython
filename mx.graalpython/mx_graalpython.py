@@ -30,6 +30,7 @@ import glob
 import itertools
 import json
 import os
+import pathlib
 import platform
 import re
 import shlex
@@ -606,20 +607,22 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments
         basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-        jacoco_basedir = "%s-jacoco" % basedir
-        shutil.rmtree(jacoco_basedir, ignore_errors=True)
-        shutil.copytree(basedir, jacoco_basedir, symlinks=True)
-        launcher_path = os.path.join(jacoco_basedir, 'bin', 'graalpython')
-        with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-            lines = launcher.readlines()
-        assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
-        lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
-        with open(launcher_path, 'w') as launcher:
-            launcher.writelines(lines)
-        # jacoco only dumps the data on exit, and when we run all our unittests
-        # at once it generates so much data we run out of heap space
-        for testfile in testfiles:
-            mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
+        launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpython').resolve())
+        launcher_path_bak = launcher_path + ".bak"
+        shutil.copy(launcher_path, launcher_path_bak)
+        try:
+            with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+                lines = launcher.readlines()
+            assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
+            lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
+            with open(launcher_path, 'w') as launcher:
+                launcher.writelines(lines)
+            # jacoco only dumps the data on exit, and when we run all our unittests
+            # at once it generates so much data we run out of heap space
+            for testfile in testfiles:
+                mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
+        finally:
+            shutil.move(launcher_path_bak, launcher_path)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
@@ -1105,7 +1108,8 @@ def update_import_cmd(args):
         mx.abort("overlays repo must be clean")
     overlaybranch = vc.active_branch(overlaydir)
     if overlaybranch == "master":
-        vc.pull(overlaydir)
+        if "--no-pull" not in args:
+            vc.pull(overlaydir)
         vc.set_branch(overlaydir, current_branch, with_remote=False)
         vc.git_command(overlaydir, ["checkout", current_branch], abortOnError=True)
     elif overlaybranch == current_branch:
@@ -1127,7 +1131,7 @@ def update_import_cmd(args):
     # now update all imports
     for name in imports_to_update:
         for idx, suite_py in enumerate(suite_py_files):
-            update_import(name, suite_py, rev=("HEAD" if idx else "origin/master"))
+            update_import(name, suite_py, rev=("HEAD" if (idx or "--no-pull" in args) else "origin/master"))
 
     # copy files we inline from our imports
     shutil.copy(
