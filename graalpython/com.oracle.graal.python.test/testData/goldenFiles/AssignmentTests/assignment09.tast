@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'assignment09'> SourceSection: [0,9]`f().b = 1`
       Expression:
         EmptyNode SourceSection: None
       SideEffect:
-        SetAttributeNode SourceSection: [0,9]`f().b = 1`
+        SetAttributeNodeGen SourceSection: [0,9]`f().b = 1`
           Attribute: b
           PythonCallNodeGen SourceSection: [0,3]`f()`
             CallNodeGen SourceSection: None
@@ -19,4 +19,3 @@ ModuleRootNode Name: <module 'assignment09'> SourceSection: [0,9]`f().b = 1`
                 CachedDispatchFirst SourceSection: None
           IntegerLiteralNode SourceSection: [8,9]`1`
             Value: 1
-          SetAttributeWithClassNodeGen SourceSection: None
