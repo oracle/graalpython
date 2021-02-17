@@ -1,5 +1,7 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.cert.CertPathBuilderException;
@@ -241,6 +243,10 @@ public class SSLEngineHelper {
 
     private static void obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, PSocket socket, int netBufferSize, TimeoutHelper timeoutHelper) throws IOException {
         if (socket != null) {
+            if (socket.getSocket() == null) {
+                // TODO use raiseOsError with ENOTCONN
+                throw node.raise(OSError);
+            }
             // Network input
             networkInboundBIO.ensureWriteCapacity(netBufferSize);
             ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
@@ -266,6 +272,10 @@ public class SSLEngineHelper {
 
     private static void emitOutput(PNodeWithRaise node, MemoryBIO networkOutboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
         if (socket != null && networkOutboundBIO.getPending() > 0) {
+            if (socket.getSocket() == null) {
+                // TODO use raiseOsError with ENOTCONN
+                throw node.raise(OSError);
+            }
             // Network output
             ByteBuffer readBuffer = networkOutboundBIO.getBufferForReading();
             try {
