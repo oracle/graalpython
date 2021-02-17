@@ -20,6 +20,8 @@ import weakref
 import platform
 import sysconfig
 import functools
+from test.support import impl_detail
+
 try:
     import ctypes
 except ImportError:
@@ -4400,6 +4402,7 @@ class ThreadedTests(unittest.TestCase):
                                  'Session refers to a different SSLContext.')
 
 
+@impl_detail("post-handshake auth is not supported on JDK", graalvm=False)
 @unittest.skipUnless(has_tls_version('TLSv1_3'), "Test needs TLS 1.3")
 class TestPostHandshakeAuth(unittest.TestCase):
     def test_pha_setter(self):
