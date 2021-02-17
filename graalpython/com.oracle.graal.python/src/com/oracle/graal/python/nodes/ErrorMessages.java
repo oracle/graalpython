@@ -688,6 +688,8 @@ public abstract class ErrorMessages {
     public static final String BAD_BASE64_DECODE = "[PEM: BAD_BASE64_DECODE] bad base64 decode";
     public static final String NO_CERTIFICATE_OR_CRL_FOUND = "[X509: NO_CERTIFICATE_OR_CRL_FOUND] no certificate or crl found";
     public static final String CERTIFICATE_VERIFY_FAILED = "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: %s";
+    public static final String CONTEXT_DOESNT_SUPPORT_MIN_MAX = "The context's protocol doesn't support modification of highest and lowest version.";
+    public static final String UNSUPPORTED_PROTOCOL_VERSION = "Unsupported protocol version 0x%x";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";

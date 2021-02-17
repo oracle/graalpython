@@ -375,14 +375,17 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
-    static SSLProtocol selectProtocolForMinMax(PNodeWithRaise node, int value) {
+    private static void setMinMaxVersion(PNodeWithRaise node, PSSLContext context, boolean maximum, int value) {
+        if (context.getMethod().isSingleVersion()) {
+            throw node.raise(ValueError, ErrorMessages.CONTEXT_DOESNT_SUPPORT_MIN_MAX);
+        }
         SSLProtocol selected = null;
         switch (value) {
             case SSLProtocol.PROTO_MINIMUM_SUPPORTED:
-                selected = SSLModuleBuiltins.getMinimumVersion();
+                selected = maximum ? SSLModuleBuiltins.getMinimumVersion() : null;
                 break;
             case SSLProtocol.PROTO_MAXIMUM_SUPPORTED:
-                selected = SSLModuleBuiltins.getMaximumVersion();
+                selected = maximum ? null : SSLModuleBuiltins.getMaximumVersion();
                 break;
             default:
                 for (SSLProtocol protocol : SSLProtocol.values()) {
@@ -391,11 +394,15 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         break;
                     }
                 }
+                if (selected == null) {
+                    throw node.raise(ValueError, ErrorMessages.UNSUPPORTED_PROTOCOL_VERSION, value);
+                }
         }
-        if (selected == null) {
-            throw node.raise(ValueError, "Unsupported protocol version 0x%x", value);
+        if (maximum) {
+            context.setMaximumVersion(selected);
+        } else {
+            context.setMinimumVersion(selected);
         }
-        return selected;
     }
 
     @Builtin(name = "minimum_version", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
@@ -409,7 +416,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(obj)", limit = "3")
         Object set(PSSLContext self, Object obj,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            self.setMinimumVersion(selectProtocolForMinMax(this, lib.asSize(obj)));
+            setMinMaxVersion(this, self, false, lib.asSize(obj));
             return PNone.NONE;
         }
     }
@@ -425,7 +432,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(obj)", limit = "3")
         Object set(PSSLContext self, Object obj,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            self.setMaximumVersion(selectProtocolForMinMax(this, lib.asSize(obj)));
+            setMinMaxVersion(this, self, true, lib.asSize(obj));
             return PNone.NONE;
         }
     }

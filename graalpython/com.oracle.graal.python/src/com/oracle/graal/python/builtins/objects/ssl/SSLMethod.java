@@ -33,6 +33,10 @@ public enum SSLMethod {
         return singleVersion == null || singleVersion == protocol;
     }
 
+    public boolean isSingleVersion() {
+        return singleVersion != null;
+    }
+
     @ExplodeLoop
     public static SSLMethod fromPythonId(int pythonId) {
         for (SSLMethod method : SSLMethod.values()) {
