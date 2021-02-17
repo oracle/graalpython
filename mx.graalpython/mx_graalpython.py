@@ -30,6 +30,7 @@ import glob
 import itertools
 import json
 import os
+import pathlib
 import platform
 import re
 import shlex
@@ -606,7 +607,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments
         basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-        launcher_path = os.path.join(basedir, 'bin', 'graalpython')
+        launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpython').resolve())
         launcher_path_bak = launcher_path + ".bak"
         shutil.copy(launcher_path, launcher_path_bak)
         try:
