@@ -128,9 +128,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 }
                 PSSLContext context = factory().createSSLContext(type, method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode, createSSLContext());
                 long options = SSLOptions.DEFAULT_OPTIONS;
-                if (method != SSLMethod.SSL2) {
-                    options |= SSLOptions.SSL_OP_NO_SSLv2;
-                }
                 if (method != SSLMethod.SSL3) {
                     options |= SSLOptions.SSL_OP_NO_SSLv3;
                 }

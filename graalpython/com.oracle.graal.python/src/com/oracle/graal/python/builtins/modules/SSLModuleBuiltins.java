@@ -180,8 +180,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("HAS_ECDH", false);
         module.setAttribute("HAS_NPN", false);
         module.setAttribute("HAS_ALPN", ALPNHelper.hasAlpn());
-        boolean hasSSLv2 = supportedProtocols.contains(SSLProtocol.SSLv2);
-        module.setAttribute("HAS_SSLv2", hasSSLv2);
+        module.setAttribute("HAS_SSLv2", false);
         boolean hasSSLv3 = supportedProtocols.contains(SSLProtocol.SSLv3);
         module.setAttribute("HAS_SSLv3", hasSSLv3);
         module.setAttribute("HAS_TLSv1", supportedProtocols.contains(SSLProtocol.TLSv1));
@@ -197,9 +196,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("PROTO_TLSv1_2", SSLProtocol.TLSv1_2.getId());
         module.setAttribute("PROTO_TLSv1_3", SSLProtocol.TLSv1_3.getId());
 
-        if (hasSSLv2) {
-            module.setAttribute("PROTOCOL_SSLv2", SSLMethod.SSL2.getPythonId());
-        }
         if (hasSSLv3) {
             module.setAttribute("PROTOCOL_SSLv3", SSLMethod.SSL3.getPythonId());
         }

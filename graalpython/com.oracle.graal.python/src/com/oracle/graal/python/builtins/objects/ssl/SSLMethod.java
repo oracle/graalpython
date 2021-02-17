@@ -3,7 +3,6 @@ package com.oracle.graal.python.builtins.objects.ssl;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public enum SSLMethod {
-    SSL2(0, SSLProtocol.SSLv2),
     SSL3(1, SSLProtocol.SSLv3),
     TLS(2),
     TLS1(3, SSLProtocol.TLSv1),

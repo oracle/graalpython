@@ -1,7 +1,6 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 public enum SSLProtocol {
-    SSLv2("SSLv2", -1, SSLOptions.SSL_OP_NO_SSLv2),
     SSLv3("SSLv3", 0x0300, SSLOptions.SSL_OP_NO_SSLv3),
     TLSv1("TLSv1", 0x0301, SSLOptions.SSL_OP_NO_TLSv1),
     TLSv1_1("TLSv1.1", 0x0302, SSLOptions.SSL_OP_NO_TLSv1_1),
