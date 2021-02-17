@@ -335,6 +335,9 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class CipherNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getCipher(PSSLSocket self) {
+            if (!self.isHandshakeComplete()) {
+                return PNone.NONE;
+            }
             SSLCipher cipher = getCipher(self.getEngine());
             if (cipher == null) {
                 return PNone.NONE;
