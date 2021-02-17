@@ -32,15 +32,12 @@ import java.math.BigInteger;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
@@ -54,7 +51,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -231,19 +227,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached ConditionProfile gotState,
-                    @Cached IsBuiltinClassProfile isInt,
-                    @Cached WarnNode warnNode) {
-        if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
-            VirtualFrame frame = null;
-            if (gotState.profile(threadState != null)) {
-                frame = PArguments.frameForCall(threadState);
-            }
-            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                            ErrorMessages.P_RETURNED_NON_P,
-                            this, "__index__", "int", this, "int");
-        }
+    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState) {
         return this;
     }
 
@@ -265,10 +249,9 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public double asJavaDoubleWithState(ThreadState threadState,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+    public double asJavaDoubleWithState(@SuppressWarnings("unused") ThreadState threadState,
                     @Cached CastToJavaDoubleNode castToDouble) {
-        return castToDouble.execute(lib.asIndexWithState(this, threadState));
+        return castToDouble.execute(this);
     }
 
     @SuppressWarnings("static-method")
