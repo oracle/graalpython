@@ -1108,7 +1108,8 @@ def update_import_cmd(args):
         mx.abort("overlays repo must be clean")
     overlaybranch = vc.active_branch(overlaydir)
     if overlaybranch == "master":
-        vc.pull(overlaydir)
+        if "--no-pull" not in args:
+            vc.pull(overlaydir)
         vc.set_branch(overlaydir, current_branch, with_remote=False)
         vc.git_command(overlaydir, ["checkout", current_branch], abortOnError=True)
     elif overlaybranch == current_branch:
@@ -1130,7 +1131,7 @@ def update_import_cmd(args):
     # now update all imports
     for name in imports_to_update:
         for idx, suite_py in enumerate(suite_py_files):
-            update_import(name, suite_py, rev=("HEAD" if idx else "origin/master"))
+            update_import(name, suite_py, rev=("HEAD" if (idx or "--no-pull" in args) else "origin/master"))
 
     # copy files we inline from our imports
     shutil.copy(
