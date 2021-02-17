@@ -96,6 +96,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import java.security.InvalidAlgorithmParameterException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -159,7 +160,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
         try {
             context.init();
-        } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | KeyManagementException ex) {
+        } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | KeyManagementException | InvalidAlgorithmParameterException ex) {
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, ex.toString());
         }
         SSLParameters parameters = new SSLParameters();

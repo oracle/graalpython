@@ -70,8 +70,11 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     public static final int SSL_CERT_OPTIONAL = 1;
     public static final int SSL_CERT_REQUIRED = 2;
 
-    private static final int X509_V_FLAG_CRL_CHECK = 0x4;
-    private static final int X509_V_FLAG_CRL_CHECK_ALL = 0x8;
+    public static final int PROTO_MINIMUM_SUPPORTED = -2;
+    public static final int PROTO_MAXIMUM_SUPPORTED = -1;
+
+    public static final int X509_V_FLAG_CRL_CHECK = 0x4;
+    public static final int X509_V_FLAG_CRL_CHECK_ALL = 0x8;
     private static final int X509_V_FLAG_X509_STRICT = 0x20;
     public static final int X509_V_FLAG_TRUSTED_FIRST = 0x8000;
 

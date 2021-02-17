@@ -15,15 +15,27 @@ import javax.crypto.spec.DHParameterSpec;
 import javax.net.ssl.SSLContext;
 
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
+import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_CRL_CHECK;
+import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_CRL_CHECK_ALL;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.PKIXRevocationChecker;
+import static java.security.cert.PKIXRevocationChecker.Option.NO_FALLBACK;
+import static java.security.cert.PKIXRevocationChecker.Option.ONLY_END_ENTITY;
+import static java.security.cert.PKIXRevocationChecker.Option.PREFER_CRLS;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.util.EnumSet;
+import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
@@ -90,7 +102,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         getKeyStore().setKeyEntry(CertUtils.getAlias(pk), pk, password, certs);
     }
 
-    void init() throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException {
+    void init() throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException, InvalidAlgorithmParameterException {
         TrustManager[] tms = null;
         KeyManager[] kms = null;
         if (verifyMode == SSLModuleBuiltins.SSL_CERT_NONE) {
@@ -98,8 +110,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         }
         if (keystore != null && keystore.size() > 0) {
             if (tms == null) {
-                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                tmf.init(keystore);
+                TrustManagerFactory tmf = getTrustManagerFactory();
                 tms = tmf.getTrustManagers();
                 if (verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL) {
                     for (int i = 0; i < tms.length; i++) {
@@ -112,6 +123,26 @@ public final class PSSLContext extends PythonBuiltinObject {
             kms = kmf.getKeyManagers();
         }
         context.init(kms, tms, null);
+    }
+
+    private TrustManagerFactory getTrustManagerFactory() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, KeyStoreException {
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        boolean crlCheck = (verifyFlags & X509_V_FLAG_CRL_CHECK) != 0;
+        boolean crlCheckAll = (verifyFlags & X509_V_FLAG_CRL_CHECK_ALL) != 0;
+        if (crlCheck || crlCheckAll) {
+            PKIXRevocationChecker rc = (PKIXRevocationChecker) CertPathBuilder.getInstance("PKIX").getRevocationChecker();
+            EnumSet<PKIXRevocationChecker.Option> opt = EnumSet.of(PREFER_CRLS, NO_FALLBACK);
+            if (crlCheck) {
+                opt.add(ONLY_END_ENTITY);
+            }
+            rc.setOptions(opt);
+            PKIXBuilderParameters params = new PKIXBuilderParameters(keystore, new X509CertSelector());
+            params.addCertPathChecker(rc);
+            tmf.init(new CertPathTrustManagerParameters(params));
+        } else {
+            tmf.init(keystore);
+        }
+        return tmf;
     }
 
     public SSLContext getContext() {
