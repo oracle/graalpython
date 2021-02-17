@@ -64,7 +64,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.verifyFlags = verifyFlags;
         this.checkHostname = checkHostname;
         this.verifyMode = verifyMode;
-        this.ciphers = SSLModuleBuiltins.getDefaultCiphers();
+        this.ciphers = SSLModuleBuiltins.defaultCiphers;
     }
 
     public KeyStore getKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {

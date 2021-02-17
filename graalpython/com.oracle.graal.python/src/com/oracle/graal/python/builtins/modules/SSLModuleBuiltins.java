@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -51,17 +53,18 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "_ssl")
 public class SSLModuleBuiltins extends PythonBuiltins {
     // Taken from CPython
     static final String DEFAULT_CIPHER_STRING = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
 
-    private static SSLCipher[] defaultCiphers;
+    private static boolean defaultsInitializedAtRuntime;
     private static List<SSLProtocol> supportedProtocols;
     private static SSLProtocol minimumVersion;
     private static SSLProtocol maximumVersion;
+
+    public static final SSLCipher[] defaultCiphers;
 
     public static final int SSL_CERT_NONE = 0;
     public static final int SSL_CERT_OPTIONAL = 1;
@@ -71,11 +74,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     private static final int X509_V_FLAG_CRL_CHECK_ALL = 0x8;
     private static final int X509_V_FLAG_X509_STRICT = 0x20;
     public static final int X509_V_FLAG_TRUSTED_FIRST = 0x8000;
-
-    public static SSLCipher[] getDefaultCiphers() {
-        assert defaultCiphers != null : "Uninitialized ciphers";
-        return defaultCiphers;
-    }
 
     public static List<SSLProtocol> getSupportedProtocols() {
         assert supportedProtocols != null : "Uninitialized protocols";
@@ -90,37 +88,48 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         return maximumVersion;
     }
 
+    static {
+        SSLCipher[] computed;
+        try {
+            computed = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
+        } catch (PException e) {
+            computed = new SSLCipher[0];
+        }
+        defaultCiphers = computed;
+    }
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SSLModuleBuiltinsFactory.getFactories();
     }
 
     private static synchronized void loadDefaults() {
-        if (supportedProtocols == null) {
-            try {
-                SSLContext context = SSLContext.getInstance("TLS");
-                context.init(null, null, null);
-                List<SSLProtocol> protocols = Arrays.stream(SSLProtocol.values()).filter(protocol -> tryProtocolAvailability(context, protocol)).collect(Collectors.toList());
-                // TODO JDK supports it, but we would need to make sure that all the related facilities
-                // work
-                protocols.remove(SSLProtocol.TLSv1_3);
-                supportedProtocols = Collections.unmodifiableList(protocols);
-                if (!supportedProtocols.isEmpty()) {
-                    minimumVersion = supportedProtocols.get(0);
-                    maximumVersion = supportedProtocols.get(supportedProtocols.size() - 1);
-                }
-
-                defaultCiphers = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
-            } catch (NoSuchAlgorithmException | KeyManagementException | PException e) {
-                // This module is not essential for the interpreter to function, so don't fail at
-                // startup, let it fail, when it gets used
+        if (!defaultsInitializedAtRuntime) {
+            // The values are dependent on system properties, don't bake them into the image
+            if (ImageInfo.inImageBuildtimeCode()) {
                 supportedProtocols = new ArrayList<>();
-                defaultCiphers = new SSLCipher[0];
+            } else {
+                try {
+                    SSLContext context = SSLContext.getInstance("TLS");
+                    context.init(null, null, null);
+                    List<SSLProtocol> protocols = Arrays.stream(SSLProtocol.values()).filter(protocol -> tryProtocolAvailability(context, protocol)).collect(Collectors.toList());
+                    // TODO JDK supports it, but we would need to make sure that all the related
+                    // facilities work
+                    protocols.remove(SSLProtocol.TLSv1_3);
+                    supportedProtocols = Collections.unmodifiableList(protocols);
+                    if (!supportedProtocols.isEmpty()) {
+                        minimumVersion = supportedProtocols.get(0);
+                        maximumVersion = supportedProtocols.get(supportedProtocols.size() - 1);
+                    }
+                } catch (NoSuchAlgorithmException | KeyManagementException | PException e) {
+                    // This module is not essential for the interpreter to function, so don't fail
+                    // at startup, let it fail, when it gets used
+                    supportedProtocols = new ArrayList<>();
+                }
+                defaultsInitializedAtRuntime = true;
             }
         }
     }
-
-
 
     /**
      * JDK reports protocols as supported even if they are disabled and cannot be used. We have to
@@ -151,10 +160,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // Available protocols and ciphers depend on system properties
-            return;
-        }
         loadDefaults();
         PythonModule module = core.lookupBuiltinModule("_ssl");
         PythonObjectFactory factory = PythonObjectFactory.getUncached();

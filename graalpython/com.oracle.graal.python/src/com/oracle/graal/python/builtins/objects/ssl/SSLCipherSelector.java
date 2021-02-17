@@ -38,10 +38,12 @@ public class SSLCipherSelector {
         // of the list (this is not influenced by the parameters). Note CPython doesn't expose
         // any API to manipulate TLSv1.3 ciphersuites, they are just always enabled in this
         // order
-        for (int i = TLS3_CIPHER_SUITES.length - 1; i >= 0; i--) {
-            selected.add(0, TLS3_CIPHER_SUITES[i]);
+        SSLCipher[] result = new SSLCipher[TLS3_CIPHER_SUITES.length + selected.size()];
+        System.arraycopy(TLS3_CIPHER_SUITES, 0, result, 0, TLS3_CIPHER_SUITES.length);
+        for (int i = 0; i < selected.size(); i++) {
+            result[TLS3_CIPHER_SUITES.length + i] = selected.get(i);
         }
-        return selected.toArray(new SSLCipher[0]);
+        return result;
     }
 
     private static void selectCiphersFromList(Node node, String cipherList, List<SSLCipher> selected, Set<SSLCipher> deleted) {
