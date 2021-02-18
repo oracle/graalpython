@@ -56,7 +56,9 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetFunctionKe
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetKeywordDefaultsNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetSignatureNodeGen;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,6 +66,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public abstract class FunctionNodes {
     @GenerateUncached
     public abstract static class GetFunctionDefaultsNode extends PNodeWithContext {
+
         public abstract Object[] execute(PFunction function);
 
         @Specialization(guards = {"self == cachedSelf"}, assumptions = {"singleContextAssumption()", "defaultsStableAssumption"})
@@ -78,25 +81,18 @@ public abstract class FunctionNodes {
         Object[] getDefaults(PFunction self) {
             return self.getDefaults();
         }
-
-        public static GetFunctionDefaultsNode create() {
-            return GetFunctionDefaultsNodeGen.create();
-        }
     }
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
     public abstract static class GetDefaultsNode extends PNodeWithContext {
-        private static Object[] doFunctionInternal(GetFunctionDefaultsNode getFunctionDefaultsNode, PFunction function) {
-            return getFunctionDefaultsNode.execute(function);
-        }
 
         public abstract Object[] execute(Object function);
 
         @Specialization
         Object[] doFunction(PFunction function,
-                        @Cached("create()") GetFunctionDefaultsNode getFunctionDefaultsNode) {
-            return doFunctionInternal(getFunctionDefaultsNode, function);
+                        @Shared("get") @Cached GetFunctionDefaultsNode getFunctionDefaultsNode) {
+            return getFunctionDefaultsNode.execute(function);
         }
 
         @Specialization
@@ -104,16 +100,22 @@ public abstract class FunctionNodes {
             return builtinFunction.getDefaults();
         }
 
-        @Specialization(guards = "!isSameObject(method, method.getFunction())")
-        Object[] doMethod(PMethod method,
-                        @Cached("create()") GetDefaultsNode getDefaultsNode) {
-            return getDefaultsNode.execute(method.getFunction());
+        @Specialization(guards = "isPFunction(function)")
+        Object[] doMethod(@SuppressWarnings("unused") PMethod method,
+                        @Bind("method.getFunction()") Object function,
+                        @Shared("get") @Cached GetFunctionDefaultsNode getFunctionDefaultsNode) {
+            return getFunctionDefaultsNode.execute((PFunction) function);
         }
 
-        @Specialization(guards = "!isSameObject(builtinMethod, builtinMethod.getFunction())")
-        Object[] doBuiltinMethod(PBuiltinMethod builtinMethod,
-                        @Cached("create()") GetDefaultsNode getDefaultsNode) {
-            return getDefaultsNode.execute(builtinMethod.getFunction());
+        @Specialization(guards = "isPBuiltinFunction(method.getFunction())")
+        Object[] doMethod(@SuppressWarnings("unused") PMethod method,
+                        @Bind("method.getFunction()") Object function) {
+            return ((PBuiltinFunction) function).getDefaults();
+        }
+
+        @Specialization
+        Object[] doBuiltinMethod(PBuiltinMethod builtinMethod) {
+            return builtinMethod.getFunction().getDefaults();
         }
 
         public static GetDefaultsNode create() {
@@ -123,6 +125,7 @@ public abstract class FunctionNodes {
 
     @GenerateUncached
     public abstract static class GetFunctionKeywordDefaultsNode extends PNodeWithContext {
+
         public abstract PKeyword[] execute(PFunction function);
 
         @Specialization(guards = {"self == cachedSelf"}, assumptions = {"singleContextAssumption()", "defaultsStableAssumption"})
@@ -137,25 +140,18 @@ public abstract class FunctionNodes {
         PKeyword[] getKwDefaults(PFunction self) {
             return self.getKwDefaults();
         }
-
-        public static GetFunctionKeywordDefaultsNode create() {
-            return GetFunctionKeywordDefaultsNodeGen.create();
-        }
     }
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
     public abstract static class GetKeywordDefaultsNode extends PNodeWithContext {
-        private static PKeyword[] doFunctionInternal(GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode, PFunction function) {
-            return getFunctionKeywordDefaultsNode.execute(function);
-        }
 
         public abstract PKeyword[] execute(Object function);
 
         @Specialization
         PKeyword[] doFunction(PFunction function,
-                        @Cached("create()") GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode) {
-            return doFunctionInternal(getFunctionKeywordDefaultsNode, function);
+                        @Shared("get") @Cached GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode) {
+            return getFunctionKeywordDefaultsNode.execute(function);
         }
 
         @Specialization
@@ -163,16 +159,22 @@ public abstract class FunctionNodes {
             return builtinFunction.getKwDefaults();
         }
 
-        @Specialization(guards = "!isSameObject(method, method.getFunction())")
-        PKeyword[] doMethod(PMethod method,
-                        @Cached("create()") GetKeywordDefaultsNode getKeywordDefaultsNode) {
-            return getKeywordDefaultsNode.execute(method.getFunction());
+        @Specialization(guards = "isPFunction(function)")
+        PKeyword[] doMethod(@SuppressWarnings("unused") PMethod method,
+                        @Bind("method.getFunction()") Object function,
+                        @Shared("get") @Cached GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode) {
+            return getFunctionKeywordDefaultsNode.execute((PFunction) function);
         }
 
-        @Specialization(guards = "!isSameObject(builtinMethod, builtinMethod.getFunction())")
-        PKeyword[] doBuiltinMethod(PBuiltinMethod builtinMethod,
-                        @Cached("create()") GetKeywordDefaultsNode getKeywordDefaultsNode) {
-            return getKeywordDefaultsNode.execute(builtinMethod.getFunction());
+        @Specialization(guards = "isPBuiltinFunction(method.getFunction())")
+        PKeyword[] doMethod(@SuppressWarnings("unused") PMethod method,
+                        @Bind("method.getFunction()") Object function) {
+            return ((PBuiltinFunction) function).getKwDefaults();
+        }
+
+        @Specialization
+        PKeyword[] doBuiltinMethod(PBuiltinMethod builtinMethod) {
+            return builtinMethod.getFunction().getKwDefaults();
         }
 
         public static GetKeywordDefaultsNode create() {
@@ -182,6 +184,7 @@ public abstract class FunctionNodes {
 
     @GenerateUncached
     public abstract static class GetFunctionCodeNode extends PNodeWithContext {
+
         public abstract PCode execute(PFunction function);
 
         @Specialization(guards = {"self == cachedSelf"}, assumptions = {"singleContextAssumption()", "codeStableAssumption"})
@@ -196,26 +199,18 @@ public abstract class FunctionNodes {
         PCode getCodeUncached(PFunction self) {
             return self.getCode();
         }
-
-        public static GetFunctionCodeNode create() {
-            return GetFunctionCodeNodeGen.create();
-        }
     }
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
     public abstract static class GetSignatureNode extends PNodeWithContext {
-        private static Signature doFunctionInternal(GetFunctionCodeNode getFunctionCodeNode, PFunction function) {
-            PCode code = getFunctionCodeNode.execute(function);
-            return code.getSignature();
-        }
 
         public abstract Signature execute(Object function);
 
         @Specialization
         Signature doFunction(PFunction function,
-                        @Cached("create()") GetFunctionCodeNode getFunctionCodeNode) {
-            return doFunctionInternal(getFunctionCodeNode, function);
+                        @Shared("get") @Cached GetFunctionCodeNode getFunctionCodeNode) {
+            return getFunctionCodeNode.execute(function).getSignature();
         }
 
         @Specialization
@@ -223,16 +218,22 @@ public abstract class FunctionNodes {
             return builtinFunction.getSignature();
         }
 
-        @Specialization(guards = "!isSameObject(method, method.getFunction())")
-        Signature doMethod(PMethod method,
-                        @Cached("create()") GetSignatureNode getSignatureNode) {
-            return getSignatureNode.execute(method.getFunction());
+        @Specialization(guards = "isPFunction(function)")
+        Signature doMethod(@SuppressWarnings("unused") PMethod method,
+                        @Bind("method.getFunction()") Object function,
+                        @Shared("get") @Cached GetFunctionCodeNode getFunctionCodeNode) {
+            return getFunctionCodeNode.execute((PFunction) function).getSignature();
         }
 
-        @Specialization(guards = "!isSameObject(builtinMethod, builtinMethod.getFunction())")
-        Signature doBuiltinMethod(PBuiltinMethod builtinMethod,
-                        @Cached("create()") GetSignatureNode getSignatureNode) {
-            return getSignatureNode.execute(builtinMethod.getFunction());
+        @Specialization(guards = "isPBuiltinFunction(method.getFunction())")
+        Signature doMethod(@SuppressWarnings("unused") PMethod method,
+                        @Bind("method.getFunction()") Object function) {
+            return ((PBuiltinFunction) function).getSignature();
+        }
+
+        @Specialization
+        Signature doBuiltinMethod(PBuiltinMethod builtinMethod) {
+            return builtinMethod.getFunction().getSignature();
         }
 
         public static GetSignatureNode create() {
