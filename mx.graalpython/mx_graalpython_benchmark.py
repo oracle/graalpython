@@ -615,7 +615,8 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = self.get_bench_name(benchmarks)
-        arg = self.get_arg(bench_name)
+        arg = self.get_arg(self.runArgs(bm_suite_args), bench_name)
+
         return [
             # warmup curves
             StdOutRule(
@@ -714,9 +715,9 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                 vm_options.append(arg)
             i += 1
 
-        if not (remaining and remaining[0] == "-i"):
+        if not (remaining and "-i" in remaining):
             iterations = DEFAULT_ITERATIONS + self.getExtraIterationCount(DEFAULT_ITERATIONS)
-            remaining = ["-i", str(iterations)] + remaining
+            remaining = ["-i", str(iterations)] + (remaining if remaining else [])
 
         return vm_options, remaining
 
@@ -738,8 +739,8 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
     def get_bench_name(self, benchmarks):
         return os.path.basename(os.path.splitext(benchmarks[0])[0])
 
-    def get_arg(self, bench_name):
-        return " ".join(self._benchmarks[bench_name])
+    def get_arg(self, bmSuiteArgs, bench_name):
+        return " ".join(self._benchmarks[bench_name] + bmSuiteArgs)
 
     def createVmCommandLineArgs(self, benchmarks, bmSuiteArgs):
         if not benchmarks or len(benchmarks) != 1:
@@ -831,8 +832,8 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
     def get_bench_name(self, benchmarks):
         return benchmarks[0]
 
-    def get_arg(self, bench_name):
-        return " ".join(self._benchmarks[bench_name][1:])
+    def get_arg(self, bmSuiteArgs, bench_name):
+        return " ".join(self._benchmarks[bench_name][1:] + bmSuiteArgs)
 
     def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
         vmArgs = self.vmArgs(bmSuiteArgs)
@@ -864,7 +865,8 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
 class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = self.get_bench_name(benchmarks)
-        arg = self.get_arg(bench_name)
+        arg = self.get_arg(bm_suite_args, bench_name)
+
         return [
             # startup (difference between start of VM to end of first iteration)
             StdOutRule(
@@ -942,8 +944,8 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
         bench_args = self._benchmarks[bench_name]
         return vmArgs + jmh_entry + runArgs + [bench_name] + bench_args
 
-    def get_arg(self, bench_name):
-        return " ".join(self._benchmarks[bench_name][1:])
+    def get_arg(self, bmSuiteArgs, bench_name):
+        return " ".join(self._benchmarks[bench_name][1:] + bmSuiteArgs)
 
     @classmethod
     def get_benchmark_suites(cls, benchmarks):
