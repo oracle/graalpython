@@ -45,6 +45,7 @@ import java.security.NoSuchProviderException;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.SignatureException;
+import java.security.cert.CRLException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -82,6 +83,8 @@ public final class CertUtils {
     private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
     private static final String BEGIN_DH_PARAMETERS = "-----BEGIN DH PARAMETERS-----";
     private static final String END_DH_PARAMETERS = "-----END DH PARAMETERS-----";
+    private static final String BEGIN_X509_CRL = "-----BEGIN X509 CRL-----";
+    private static final String END_X509_CRL = "-----END X509 CRL-----";
 
     /**
      * openssl v3_purp.c#check_ca
@@ -322,32 +325,65 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    public static LoadCertError getCertificates(BufferedReader r, List<X509Certificate> result) throws IOException, CertificateException {
-        Base64.Decoder decoder = Base64.getDecoder();
-        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+    public static LoadCertError getCertificates(BufferedReader r, List<Object> result) throws IOException, CertificateException, CRLException {
         boolean sawBegin = false;
-        StringBuilder sb = new StringBuilder(2000);
+        boolean sawBeginCrl = false;
+        StringBuilder certBuilder = new StringBuilder(2000);
+        StringBuilder crlBuilder = new StringBuilder(2000);
         List<String> data = new ArrayList<>();
+        List<String> dataCrl = new ArrayList<>();
         String line;
         while ((line = r.readLine()) != null) {
-            if (sawBegin) {
-                if (line.contains(BEGIN_CERTIFICATE)) {
+            if (sawBegin || sawBeginCrl) {
+                if (line.contains(BEGIN_CERTIFICATE) || line.contains(BEGIN_X509_CRL)) {
                     break;
                 }
                 if (line.contains(END_CERTIFICATE)) {
                     sawBegin = false;
-                    data.add(sb.toString());
-                } else {
-                    sb.append(line);
+                    data.add(certBuilder.toString());
+                } else if (line.contains(END_X509_CRL)) {
+                    sawBeginCrl = false;
+                    dataCrl.add(crlBuilder.toString());
+                } else if (sawBegin) {
+                    certBuilder.append(line);
+                } else if (sawBeginCrl) {
+                    crlBuilder.append(line);
                 }
             } else if (line.contains(BEGIN_CERTIFICATE)) {
                 sawBegin = true;
-                sb.setLength(0);
+                certBuilder.setLength(0);
+            } else if (line.contains(BEGIN_X509_CRL)) {
+                sawBeginCrl = true;
+                crlBuilder.setLength(0);
             }
         }
-        if (sawBegin) {
+        if (sawBegin || sawBeginCrl) {
             return LoadCertError.BEGIN_CERTIFICATE_WITHOUT_END;
         }
+        Base64.Decoder decoder = Base64.getDecoder();
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        List<Object> l = new ArrayList<>();
+        LoadCertError res = add(data, l, decoder, (in) -> factory.generateCertificate(in));
+        if (res != LoadCertError.NO_ERROR) {
+            return res;
+        }
+        res = add(dataCrl, l, decoder, (in) -> factory.generateCRL(in));
+        if (res != LoadCertError.NO_ERROR) {
+            return res;
+        }
+        if (l.isEmpty()) {
+            return LoadCertError.NO_CERT_DATA;
+        }
+        result.addAll(l);
+        return res;
+    }
+
+    @FunctionalInterface
+    private interface F {
+        public Object generate(ByteArrayInputStream t) throws CertificateException, CRLException;
+    }
+
+    private static LoadCertError add(List<String> data, List<Object> result, Base64.Decoder decoder, F f) throws CertificateException, CRLException {
         for (String s : data) {
             if (!s.isEmpty()) {
                 byte[] der;
@@ -360,13 +396,10 @@ public final class CertUtils {
                         return LoadCertError.SOME_BAD_BASE64_DECODE;
                     }
                 }
-                result.add((X509Certificate) factory.generateCertificate(new ByteArrayInputStream(der)));
+                result.add(f.generate(new ByteArrayInputStream(der)));
             } else {
                 return LoadCertError.EMPTY_CERT;
             }
-        }
-        if (result.isEmpty()) {
-            return LoadCertError.NO_CERT_DATA;
         }
         return LoadCertError.NO_ERROR;
     }

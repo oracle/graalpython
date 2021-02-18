@@ -97,6 +97,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.cert.CRLException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -597,7 +598,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
                 if (file != null || path != null) {
                     // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
-                    List<X509Certificate> certList = new ArrayList<>();
                     Collection<TruffleFile> files = new ArrayList<>();
                     if (file != null) {
                         files.add(file);
@@ -610,10 +610,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
                             files.addAll(fs);
                         }
                     }
+                    List<Object> certificates = new ArrayList<>();
                     for (TruffleFile f : files) {
                         try (BufferedReader r = f.newBufferedReader()) {
-                            List<X509Certificate> l = new ArrayList<>();
-                            LoadCertError result = getCertificates(r, l);
+                            LoadCertError result = getCertificates(r, certificates);
                             switch (result) {
                                 case EMPTY_CERT:
                                 case BEGIN_CERTIFICATE_WITHOUT_END:
@@ -628,15 +628,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
                                 default:
                                     assert false : "not handled: " + result;
                             }
-                            certList.addAll(l);
                         }
                     }
-                    X509Certificate[] certs = certList.toArray(new X509Certificate[certList.size()]);
-                    for (X509Certificate cert : certs) {
-                        self.setCertificateEntry(cert);
-                    }
+                    self.setCertificateEntries(certificates);
                 }
-            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException ex) {
+            } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | CRLException ex) {
                 // TODO
                 throw raise(ValueError, ex.getMessage());
             }
@@ -656,13 +652,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
         }
 
-        private void fromString(String dataString, PSSLContext context) throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException {
+        private void fromString(String dataString, PSSLContext context) throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException, CRLException {
             if (dataString.isEmpty()) {
                 throw raise(ValueError, ErrorMessages.EMPTY_CERTIFICATE_DATA);
             }
-            List<X509Certificate> certList = new ArrayList<>();
+            List<Object> certificates = new ArrayList<>();
             try (BufferedReader r = new BufferedReader(new StringReader(dataString))) {
-                LoadCertError result = getCertificates(r, certList);
+                LoadCertError result = getCertificates(r, certificates);
                 switch (result) {
                     case BAD_BASE64_DECODE:
                         throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
@@ -677,20 +673,14 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         assert false : "not handled: " + result;
                 }
             }
-            X509Certificate[] certs = certList.toArray(new X509Certificate[certList.size()]);
-            for (X509Certificate cert : certs) {
-                context.setCertificateEntry(cert);
-            }
+            context.setCertificateEntries(certificates);
         }
 
         private void fromBytesLike(ToByteArrayNode toBytes, Object cadata, PSSLContext context) throws KeyStoreException, IOException, NoSuchAlgorithmException {
             byte[] bytes = toBytes.execute(((PBytesLike) cadata).getSequenceStorage());
             try {
-                Collection<? extends Certificate> col = CertificateFactory.getInstance("X.509").generateCertificates(new ByteArrayInputStream(bytes));
-                for (Certificate cert : col) {
-                    X509Certificate x509Cert = (X509Certificate) cert;
-                    context.setCertificateEntry(x509Cert);
-                }
+                CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+                context.setCertificateEntries(certFactory.generateCertificates(new ByteArrayInputStream(bytes)));
             } catch (CertificateException ex) {
                 String msg = ex.getMessage();
                 if (msg != null) {
@@ -761,8 +751,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
             // TODO add logging
             try {
                 X509Certificate[] certs;
-                List<X509Certificate> certList = new ArrayList<>();
-                LoadCertError result = getCertificates(certReader, certList);
+                List<Object> certificates = new ArrayList<>();
+                LoadCertError result = getCertificates(certReader, certificates);
                 switch (result) {
                     case BAD_BASE64_DECODE:
                     case BEGIN_CERTIFICATE_WITHOUT_END:
@@ -771,7 +761,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     case SOME_BAD_BASE64_DECODE:
                         throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
                     case EMPTY_CERT:
-                        if (certList.isEmpty()) {
+                        if (certificates.isEmpty()) {
                             throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                         }
                         throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_UNKNOWN, ErrorMessages.UNKNOWN_ERROR);
@@ -780,12 +770,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     default:
                         assert false : "not handled: " + result;
                 }
-                certs = certList.toArray(new X509Certificate[certList.size()]);
-                // TODO only 1. cert?
+                certs = certificates.toArray(new X509Certificate[certificates.size()]);
+                // TODO cpython sets that if PK and certs in 1 file,
+                // then the PK has to be the first section
                 PrivateKey pk = getPrivateKey(this, keyReader, certs[0].getPublicKey().getAlgorithm());
                 checkPrivateKey(this, pk, certs[0]);
                 self.setKeyEntry(pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
-            } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | KeyStoreException | CertificateException ex) {
+            } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | KeyStoreException | CertificateException | CRLException ex) {
                 throw raise(SSLError, ErrorMessages.SSL_ERROR, ex.getMessage());
             }
             return PNone.NONE;
@@ -837,6 +828,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    // TODO: are those parameters being used in some way? if not supported, pehaps we should raise
+    // NotImplementedError
     @Builtin(name = "load_dh_params", minNumOfPositionalArgs = 2, parameterNames = {"$self", "filepath"})
     @GenerateNodeFactory
     abstract static class LoadDhParamsNode extends PythonBinaryBuiltinNode {

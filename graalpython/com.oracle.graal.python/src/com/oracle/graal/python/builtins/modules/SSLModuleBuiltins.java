@@ -4,13 +4,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -53,6 +48,12 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.security.cert.CRLException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 
 @CoreFunctions(defineModule = "_ssl")
 public class SSLModuleBuiltins extends PythonBuiltins {
@@ -323,7 +324,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
 
             TruffleFile file = toTruffleFile(frame, lib, path);
-            List<X509Certificate> l = new ArrayList<>();
+            List<Object> l = new ArrayList<>();
             try (BufferedReader r = file.newBufferedReader()) {
                 CertUtils.LoadCertError result = getCertificates(r, l);
                 if (result != CertUtils.LoadCertError.NO_ERROR) {
@@ -332,10 +333,14 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                 if (l.isEmpty()) {
                     throw raise(SSLError, "Error decoding PEM-encoded file");
                 }
-                return CertUtils.decodeCertificate(l.get(0), hlib, factory());
+                Object cert = l.get(0);
+                if (!(cert instanceof X509Certificate)) {
+                    throw raise(SSLError, "Error decoding PEM-encoded file: unexpected type " + cert.getClass().getName());
+                }
+                return CertUtils.decodeCertificate((X509Certificate) l.get(0), hlib, factory());
             } catch (IOException ex) {
                 throw raise(SSLError, "Can't open file: " + ex.toString());
-            } catch (CertificateException ex) {
+            } catch (CertificateException | CRLException ex) {
                 throw raise(SSLError, "Error decoding PEM-encoded file: " + ex.toString());
             }
         }

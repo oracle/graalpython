@@ -7,9 +7,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import javax.crypto.spec.DHParameterSpec;
 import javax.net.ssl.SSLContext;
@@ -27,14 +24,21 @@ import java.security.KeyManagementException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertPathBuilder;
+import java.security.cert.CertStore;
+import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXRevocationChecker;
 import static java.security.cert.PKIXRevocationChecker.Option.NO_FALLBACK;
 import static java.security.cert.PKIXRevocationChecker.Option.ONLY_END_ENTITY;
 import static java.security.cert.PKIXRevocationChecker.Option.PREFER_CRLS;
+import java.security.cert.X509CRL;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -67,6 +71,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     private String[] alpnProtocols;
 
     private KeyStore keystore;
+    private Set<X509CRL> crls = new HashSet<>();
 
     private char[] password = PythonUtils.EMPTY_CHAR_ARRAY;
 
@@ -93,10 +98,25 @@ public final class PSSLContext extends PythonBuiltinObject {
         return method;
     }
 
-    void setCertificateEntry(X509Certificate cert) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
-        getKeyStore().setCertificateEntry(CertUtils.getAlias(cert), cert);
+    void setCertificateEntries(Collection<? extends Object> list) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+        for (Object obj : list) {
+            if (obj instanceof X509Certificate) {
+                X509Certificate cert = (X509Certificate) obj;
+                getKeyStore().setCertificateEntry(CertUtils.getAlias(cert), cert);
+            } else if (obj instanceof X509CRL) {
+                getCRLs().add((X509CRL) obj);
+            } else {
+                throw new IllegalStateException("expected X509Certificate or X509CRL but got " + obj.getClass().getName());
+            }
+        }
+    }   
+    
+    private Set<X509CRL> getCRLs() {
+        if(crls == null) {
+            crls = new HashSet<>();
+        }
+        return crls;
     }
-
     void setKeyEntry(PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         this.password = password;
         getKeyStore().setKeyEntry(CertUtils.getAlias(pk), pk, password, certs);
@@ -138,6 +158,10 @@ public final class PSSLContext extends PythonBuiltinObject {
             rc.setOptions(opt);
             PKIXBuilderParameters params = new PKIXBuilderParameters(keystore, new X509CertSelector());
             params.addCertPathChecker(rc);
+            if (crls != null && !crls.isEmpty()) {
+                CertStore certStores = CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls));
+                params.addCertStore(certStores);
+            }
             tmf.init(new CertPathTrustManagerParameters(params));
         } else {
             tmf.init(keystore);
