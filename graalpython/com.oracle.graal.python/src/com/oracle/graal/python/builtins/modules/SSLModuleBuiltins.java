@@ -113,9 +113,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                     SSLContext context = SSLContext.getInstance("TLS");
                     context.init(null, null, null);
                     List<SSLProtocol> protocols = Arrays.stream(SSLProtocol.values()).filter(protocol -> tryProtocolAvailability(context, protocol)).collect(Collectors.toList());
-                    // TODO JDK supports it, but we would need to make sure that all the related
-                    // facilities work
-                    protocols.remove(SSLProtocol.TLSv1_3);
                     supportedProtocols = Collections.unmodifiableList(protocols);
                     if (!supportedProtocols.isEmpty()) {
                         minimumVersion = supportedProtocols.get(0);
