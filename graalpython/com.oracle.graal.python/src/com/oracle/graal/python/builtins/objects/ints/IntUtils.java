@@ -71,7 +71,7 @@ public final class IntUtils {
         CompilerAsserts.partialEvaluationConstant(size);
         assert dst.length - offset <= size;
         for (int i = 0; i < size; i++) {
-            dst[i] = (byte) ((value >> (8 * i)) & 0xff);
+            dst[offset + i] = (byte) ((value >> (8 * i)) & 0xff);
         }
     }
 
@@ -108,7 +108,7 @@ public final class IntUtils {
         CompilerAsserts.partialEvaluationConstant(size);
         long value = 0L;
         for (int i = size - 1; i >= 0; i--) {
-            value |= ((long) (bytes[i + offset] & 0xff)) << (8 * (size - 1 - i));
+            value |= ((long) (bytes[offset + i] & 0xff)) << (8 * (size - 1 - i));
         }
         return value;
     }

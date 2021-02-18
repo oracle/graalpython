@@ -370,36 +370,45 @@ public final class FloatUtils {
     }
 
     // variations of the _PyFloat_Pack2, _PyFloat_Pack4 and _PyFloat_Pack8
-    public static void floatToBytes(double value, byte[] dst, int offset) {
+    public static void floatToBytes(double value, boolean bigEndian, byte[] dst, int offset) {
         final long bits = Double.doubleToLongBits(value);
         IntUtils.longToByteArray(bits, Double.BYTES, dst, offset);
+        if (bigEndian) {
+            IntUtils.reverse(dst, offset, Double.BYTES);
+        }
     }
 
-    public static byte[] floatToBytes(double value) {
+    public static byte[] floatToBytes(double value, boolean bigEndian) {
         byte[] bytes = new byte[Double.BYTES];
-        floatToBytes(value, bytes, 0);
+        floatToBytes(value, bigEndian, bytes, 0);
         return bytes;
     }
 
-    public static void floatToBytes(float value, byte[] dst, int offset) {
+    public static void floatToBytes(float value, boolean bigEndian, byte[] dst, int offset) {
         final long bits = Float.floatToIntBits(value);
         IntUtils.longToByteArray(bits, Float.BYTES, dst, offset);
+        if (bigEndian) {
+            IntUtils.reverse(dst, offset, Float.BYTES);
+        }
     }
 
-    public static byte[] floatToBytes(float value) {
+    public static byte[] floatToBytes(float value, boolean bigEndian) {
         byte[] bytes = new byte[Float.BYTES];
-        floatToBytes(value, bytes, 0);
+        floatToBytes(value, bigEndian, bytes, 0);
         return bytes;
     }
 
-    public static void halfFloatToBytes(PNodeWithRaise nodeWithRaise, float value, byte[] dst, int offset) {
+    public static void halfFloatToBytes(PNodeWithRaise nodeWithRaise, float value, boolean bigEndian, byte[] dst, int offset) {
         final short bits = floatToShortBits(nodeWithRaise, value);
         IntUtils.longToByteArray(bits, Float.BYTES / 2, dst, offset);
+        if (bigEndian) {
+            IntUtils.reverse(dst, offset, Float.BYTES / 2);
+        }
     }
 
-    public static byte[] halfFloatToBytes(PNodeWithRaise nodeWithRaise, float value) {
+    public static byte[] halfFloatToBytes(PNodeWithRaise nodeWithRaise, float value, boolean bigEdian) {
         byte[] bytes = new byte[Float.BYTES / 2];
-        halfFloatToBytes(nodeWithRaise, value, bytes, 0);
+        halfFloatToBytes(nodeWithRaise, value, bigEdian, bytes, 0);
         return bytes;
     }
 }
