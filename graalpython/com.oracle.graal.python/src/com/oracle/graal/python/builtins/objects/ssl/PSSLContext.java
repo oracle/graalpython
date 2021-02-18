@@ -144,8 +144,9 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     @TruffleBoundary
     public List<SSLCipher> computeEnabledCiphers(SSLEngine engine) {
-        // We use the enabled cipher suites to honor JVM's settings
-        Set<String> allowedCiphers = new HashSet<>(Arrays.asList(engine.getEnabledCipherSuites()));
+        // We use the supported cipher suites to avoid errors, but the JDK provider will do
+        // additional filtering based on the security policy before the communication starts
+        Set<String> allowedCiphers = new HashSet<>(Arrays.asList(engine.getSupportedCipherSuites()));
         List<SSLCipher> enabledCiphers = new ArrayList<>(ciphers.length);
         for (SSLCipher cipher : ciphers) {
             if (allowedCiphers.contains(cipher.name())) {
