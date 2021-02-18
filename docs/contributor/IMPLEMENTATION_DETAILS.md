@@ -199,3 +199,52 @@ this order:
 
 The same applies to `*.dir` files, and the search is independent of the search
 for the `*.patch` file, i.e., multiple versions of `*.patch` may share one `*.dir`.
+
+## The GIL
+
+We always run with a GIL, because C extensions in CPython expect to do so and
+are usually not written to be reentrant. The reason to always have the GIL
+enabled is that when using Python, at least Sulong/LLVM is always available in
+the same context and we cannot know if someone may be using that (or another
+polyglot language or the Java host interop) to start additional threads that
+could call back into Python. This could legitimately happen in C extensions when
+the C extension authors use knowledge of how CPython works to do something
+GIL-less in a C thread that is fine to do on CPython's data structures, but not
+for ours.
+
+Suppose we were running GIL-less until a second thread appears. There is now two
+options: the second thread immediately takes the GIL, but both threads might be
+executing in parallel for a little while before the first thread gets to the
+next safepoint where they try to release and re-acquire the GIL. Option two is
+that we block the second thread on some other semaphore until the first thread
+has acquired the GIL. This scenario may deadlock if the first thread is
+suspended in a blocking syscall. This could be a legitimate use case when
+e.g. one thread is supposed to block on a `select` call that the other thread
+would unblock by operating on the selected resource. Now the second thread
+cannot start to run because it is waiting for the first thread to acquire the
+GIL. To get around this potential deadlock, we would have to "remember" around
+blockig calls that the first thread would have released the GIL before and
+re-acquired it after that point. Since this is equivalent to just releasing and
+re-acquiring the GIL, we might as well always do that.
+
+The implication of this is that we may have to acquire and release the GIL
+around all library messages that may be invoked without already holding the
+GIL. The pattern here is, around every one of those messages:
+
+```
+@ExportMessage xxx(..., @Cached GilNode gil) {
+    boolean mustRelease = gil.acquire();
+    try {
+        ...
+    } finally {
+        gil.release(mustRelease);
+    }
+}
+```
+
+The `GilNode` when used in this pattern ensures that we only release the GIL if
+we acquired it before. The `GilNode` internally uses profiles to ensure that if
+we are always running single threaded or always own the GIL already when we get
+to a specific message we never emit a boundary call to lock and unlock the
+GIL. This implies that we may deopt in some places if, after compiling some
+code, we later start a second thread.
