@@ -1133,6 +1133,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private static Object stringToIntInternal(String num, int base) {
             try {
                 BigInteger bi = asciiToBigInteger(num, base);
+                if (bi == null) {
+                    return null;
+                }
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                     return bi;
                 } else {
@@ -1267,9 +1270,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 base = 10;
             }
 
-            int i = b;
-            while (i < e) {
-                if (str.charAt(i) == '_') {
+            // reject invalid characters without going to BigInteger
+            for (int i = b; i < e; i++) {
+                char c = str.charAt(i);
+                if (c == '_') {
                     if (!acceptUnderscore || i == e - 1) {
                         throw new NumberFormatException("Illegal underscore in int literal");
                     } else {
@@ -1277,8 +1281,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                 } else {
                     acceptUnderscore = true;
+                    if (base <= 10) {
+                        if (c < '0' || c > ('0' - 1 + base)) {
+                            // invalid char
+                            return null;
+                        }
+                    } else {
+                        if (c < '0' || c > '9') {
+                            // not in 0-9, check for a-z/A-Z
+                            if ((c < 'a' || c > ('a' - 11 + base)) && (c < 'A' || c > ('A' - 11 + base))) {
+                                // invalid char
+                                return null;
+                            }
+                        }
+                    }
                 }
-                ++i;
             }
 
             String s = str;
