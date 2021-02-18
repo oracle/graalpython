@@ -1,5 +1,5 @@
 from test.support import (gc_collect, bigmemtest, _2G,
-                          cpython_only, captured_stdout)
+                          cpython_only, captured_stdout, impl_detail)
 import locale
 import re
 import sre_compile
@@ -53,6 +53,7 @@ class ReTests(unittest.TestCase):
             if pos is not None:
                 self.assertEqual(err.pos, pos)
 
+    @impl_detail("buffer locking", graalvm=False)
     def test_keep_buffer(self):
         # See bug 14212
         b = bytearray(b'x')

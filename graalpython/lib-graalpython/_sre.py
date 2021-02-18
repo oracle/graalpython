@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 from mmap import mmap
+from array import array
 
 _mappingproxy = type(type.__dict__)
 
@@ -76,7 +77,7 @@ class _ExecutablePattern:
         self.__compiled_pattern__ = compiled_pattern
         self.__sticky__ = sticky
         self.pattern = compiled_pattern.pattern
-        self.flags = flags
+        self.flags = {name: bool(flags & flag) for flag, name in FLAG_NAMES}
         self.groupCount = 1 + compiled_pattern.groups
         self.groups = _NamedCaptureGroups(compiled_pattern.groupindex)
 
@@ -110,7 +111,7 @@ def fallback_compiler(pattern, flags):
 
     compiled_pattern = _sre_compile(pattern, bit_flags)
 
-    return _ExecutablePattern(compiled_pattern, flags, sticky)
+    return _ExecutablePattern(compiled_pattern, bit_flags, sticky)
 
 def _new_compile(p, flags=0):
     if _with_tregex and isinstance(p, (str, bytes)):
@@ -145,19 +146,19 @@ FLAG_VERBOSE = 64
 FLAG_DEBUG = 128
 FLAG_ASCII = 256
 FLAG_NAMES = [
-    (FLAG_TEMPLATE, "re.TEMPLATE"),
-    (FLAG_IGNORECASE, "re.IGNORECASE"),
-    (FLAG_LOCALE, "re.LOCALE"),
-    (FLAG_MULTILINE, "re.MULTILINE"),
-    (FLAG_DOTALL, "re.DOTALL"),
-    (FLAG_UNICODE, "re.UNICODE"),
-    (FLAG_VERBOSE, "re.VERBOSE"),
-    (FLAG_DEBUG, "re.DEBUG"),
-    (FLAG_ASCII, "re.ASCII"),
+    (FLAG_TEMPLATE, "TEMPLATE"),
+    (FLAG_IGNORECASE, "IGNORECASE"),
+    (FLAG_LOCALE, "LOCALE"),
+    (FLAG_MULTILINE, "MULTILINE"),
+    (FLAG_DOTALL, "DOTALL"),
+    (FLAG_UNICODE, "UNICODE"),
+    (FLAG_VERBOSE, "VERBOSE"),
+    (FLAG_DEBUG, "DEBUG"),
+    (FLAG_ASCII, "ASCII"),
 ]
 
 
-class SRE_Match():
+class Match():
     def __init__(self, pattern, pos, endpos, result, input_str, compiled_regex):
         self.__result = result
         self.__compiled_regex = compiled_regex
@@ -191,10 +192,12 @@ class SRE_Match():
 
     def __groupidx(self, idx):
         try:
-            if isinstance(idx, str):
+            if hasattr(idx, '__index__'):
+                int_idx = int(idx)
+                if 0 <= int_idx < self.__compiled_regex.groupCount:
+                    return int_idx
+            else:
                 return self.__compiled_regex.groups[idx]
-            elif 0 <= idx < self.__compiled_regex.groupCount:
-                return idx
         except Exception:
             pass
         raise IndexError("no such group")
@@ -204,8 +207,10 @@ class SRE_Match():
         start = self.__result.getStart(idxarg)
         if start < 0:
             return default
-        else:
+        elif isinstance(self.__input_str, str):
             return self.__input_str[start:self.__result.getEnd(idxarg)]
+        else:
+            return bytes(self.__input_str[start:self.__result.getEnd(idxarg)])
 
     def groupdict(self, default=None):
         groups = self.__compiled_regex.groups
@@ -220,6 +225,14 @@ class SRE_Match():
     def start(self, groupnum=0):
         idxarg = self.__groupidx(groupnum)
         return self.__result.getStart(idxarg)
+
+    def expand(self, template):
+        import re
+        return re._expand(self.__re, self, template)
+
+    @property
+    def regs(self):
+        return tuple(self.span(i) for i in range(self.__compiled_regex.groupCount))
 
     @property
     def string(self):
@@ -252,7 +265,13 @@ class SRE_Match():
         return lastindex
 
     def __repr__(self):
-        return "<re.Match object; span=%r, match=%r>" % (self.span(), self.group())
+        return "<%s object; span=%r, match=%r>" % (type(self).__name__, self.span(), self.group())
+
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
 
 def _append_end_assert(pattern):
     if isinstance(pattern, str):
@@ -261,18 +280,18 @@ def _append_end_assert(pattern):
         return pattern if pattern.endswith(rb"\Z") else pattern + rb"\Z"
 
 def _is_bytes_like(object):
-    return isinstance(object, (bytes, bytearray, memoryview, mmap))
+    return isinstance(object, (bytes, bytearray, memoryview, array, mmap))
 
-class SRE_Pattern():
+class Pattern():
     def __init__(self, pattern, flags):
         self.__binary = isinstance(pattern, bytes)
         self.pattern = pattern
-        self.flags = flags
+        self.__input_flags = flags
         flags_str = []
-        for char,flag in FLAGS.items():
+        for char, flag in FLAGS.items():
             if flags & flag:
                 flags_str.append(char)
-        self.flags_str = "".join(flags_str)
+        self.__flags_str = "".join(flags_str)
         self.__compiled_regexes = {}
         compiled_regex = self.__tregex_compile(self.pattern)
         self.groups = compiled_regex.groupCount - 1
@@ -282,6 +301,19 @@ class SRE_Pattern():
         else:
             group_names = dir(groups)
             self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
+
+    @property
+    def flags(self):
+        # Flags can be spcified both in the flag argument or inline in the regex. Extract them back from the regex
+        flags = self.__input_flags
+        regex_flags = self.__tregex_compile(self.pattern).flags
+        for flag, name in FLAG_NAMES:
+            try:
+                if regex_flags[name]:
+                    flags |= flag
+            except KeyError:
+                pass
+        return flags
 
     def __check_input_type(self, input):
         if not isinstance(input, str) and not _is_bytes_like(input):
@@ -298,7 +330,7 @@ class SRE_Pattern():
 
     def __tregex_compile(self, pattern, flags=None):
         if flags is None:
-            flags = self.flags_str
+            flags = self.__flags_str
         if (pattern, flags) not in self.__compiled_regexes:
             try:
                 self.__compiled_regexes[(pattern, flags)] = tregex_compile_internal(pattern, flags, fallback_compiler)
@@ -317,7 +349,7 @@ class SRE_Pattern():
         for code, name in FLAG_NAMES:
             if flags & code:
                 flags -= code
-                flag_items.append(name)
+                flag_items.append(f're.{name}')
         if flags != 0:
             flag_items.append("0x%x" % flags)
         if len(flag_items) == 0:
@@ -331,15 +363,21 @@ class SRE_Pattern():
     def __eq__(self, other):
         if self is other:
             return True
-        if type(other) != SRE_Pattern:
+        if type(other) != Pattern:
             return NotImplemented
         return self.pattern == other.pattern and self.flags == other.flags
 
     def __hash__(self):
         return hash(self.pattern) * 31 ^ hash(self.flags)
 
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
+
     def _search(self, pattern, string, pos, endpos, sticky=False):
-        pattern = self.__tregex_compile(pattern, self.flags_str + ("y" if sticky else ""))
+        pattern = self.__tregex_compile(pattern, self.__flags_str + ("y" if sticky else ""))
         input_str = string
         if endpos == -1 or endpos >= len(string):
             endpos = len(string)
@@ -348,7 +386,7 @@ class SRE_Pattern():
             input_str = string[:endpos]
             result = tregex_call_exec(pattern.exec, input_str, min(pos, endpos % len(string) + 1))
         if result.isMatch:
-            return SRE_Match(self, pos, endpos, result, input_str, pattern)
+            return Match(self, pos, endpos, result, input_str, pattern)
         else:
             return None
 
@@ -389,7 +427,7 @@ class SRE_Pattern():
             if not result.isMatch:
                 break
             else:
-                yield SRE_Match(self, pos, endpos, result, string, compiled_regex)
+                yield Match(self, pos, endpos, result, string, compiled_regex)
             no_progress = (result.getStart(0) == result.getEnd(0))
             pos = result.getEnd(0) + no_progress
         return
@@ -411,7 +449,7 @@ class SRE_Pattern():
             elif compiled_regex.groupCount == 2:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
-                matchlist.append(tuple(map(self.__sanitize_out_type, SRE_Match(self, pos, endpos, result, string, compiled_regex).groups())))
+                matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, compiled_regex).groups())))
             no_progress = (result.getStart(0) == result.getEnd(0))
             pos = result.getEnd(0) + no_progress
         return matchlist
@@ -433,11 +471,10 @@ class SRE_Pattern():
             else:
                 literal = b'\\' not in repl
             if not literal:
-                import sre_parse
-                template = sre_parse.parse_template(repl, self)
-
-                def repl(match):
-                    return sre_parse.expand_template(template, match)
+                import re
+                repl = re._subx(self, repl)
+                if not callable(repl):
+                    literal = True
 
         while (count == 0 or n < count) and pos <= len(string):
             match_result = tregex_call_exec(pattern.exec, string, pos)
@@ -450,7 +487,7 @@ class SRE_Pattern():
             if literal:
                 result.append(repl)
             else:
-                _srematch = SRE_Match(self, pos, -1, match_result, string, pattern)
+                _srematch = Match(self, pos, -1, match_result, string, pattern)
                 _repl = repl(_srematch)
                 result.append(_repl)
             pos = end
@@ -492,8 +529,37 @@ class SRE_Pattern():
         result.append(self.__sanitize_out_type(string[collect_pos:]))
         return result
 
+    def scanner(self, string, pos=0, endpos=None):
+        return SREScanner(self, string, pos, endpos)
 
-_t_compile = SRE_Pattern
+
+class SREScanner(object):
+    def __init__(self, pattern, string, start, end):
+        self.pattern = pattern
+        self._string = string
+        self._start = start
+        self._end = end
+
+    def _match_search(self, matcher):
+        if self._start > len(self._string):
+            return None
+        match = matcher(self._string, self._start, self._end)
+        if match is None:
+            self._start += 1
+        else:
+            self._start = match.end()
+            if match.start() == self._start:
+                self._start += 1
+        return match
+
+    def match(self):
+        return self._match_search(self.pattern.match)
+
+    def search(self):
+        return self._match_search(self.pattern.search)
+
+
+_t_compile = Pattern
 
 def compile(pattern, flags, code, groups, groupindex, indexgroup):
     import _cpython_sre
