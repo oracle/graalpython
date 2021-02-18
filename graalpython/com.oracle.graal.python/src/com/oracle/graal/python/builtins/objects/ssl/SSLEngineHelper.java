@@ -8,6 +8,8 @@ import java.security.cert.CertPathBuilderException;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
+import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -70,7 +72,6 @@ public class SSLEngineHelper {
     }
 
     private static void loop(PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, Operation op) {
-        // TODO maybe we need some checks for closed connection etc here?
         MemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
         MemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
         MemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
@@ -91,68 +92,98 @@ public class SSLEngineHelper {
         }
         // Whether we can write directly to targetBuffer
         boolean writeDirectlyToTarget = true;
-        boolean hanshakeComplete = socket.isHandshakeComplete();
-        boolean currentlyWrapping = op != Operation.READ;
+        boolean currentlyWrapping;
         try {
             // Flush output that didn't get written in the last call (for non-blocking)
             emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
             transmissionLoop: while (true) {
+                // If the handshake is not complete, do the operations that it requests
+                // until it completes. This can happen in different situations:
+                // * Initial handshake
+                // * Renegotiation handshake, which can occur at any point in the communication
+                // * Closing handshake. Can be initiated by us (#shutdown), the peer or when an
+                // exception occurred
+                switch (engine.getHandshakeStatus()) {
+                    case NEED_TASK:
+                        socket.setHandshakeComplete(false);
+                        Runnable task;
+                        while ((task = engine.getDelegatedTask()) != null) {
+                            task.run();
+                        }
+                        // Get the next step
+                        continue transmissionLoop;
+                    case NEED_WRAP:
+                        socket.setHandshakeComplete(false);
+                        currentlyWrapping = true;
+                        break;
+                    case NEED_UNWRAP:
+                        socket.setHandshakeComplete(false);
+                        currentlyWrapping = false;
+                        break;
+                    case NOT_HANDSHAKING:
+                        currentlyWrapping = op != Operation.READ;
+                        break;
+                    default:
+                        throw CompilerDirectives.shouldNotReachHere("Unhandled SSL handshake status");
+                }
                 SSLEngineResult result;
                 int netBufferSize = engine.getSession().getPacketBufferSize();
-                if (currentlyWrapping) {
-                    networkOutboundBIO.ensureWriteCapacity(netBufferSize);
-                    ByteBuffer writeBuffer = networkOutboundBIO.getBufferForWriting();
-                    try {
-                        result = engine.wrap(appInput, writeBuffer);
-                    } finally {
-                        networkOutboundBIO.applyWrite(writeBuffer);
+                try {
+                    if (currentlyWrapping) {
+                        result = doWrap(engine, appInput, networkOutboundBIO, netBufferSize);
+                    } else {
+                        result = doUnwrap(engine, networkInboundBIO, targetBuffer, applicationInboundBIO, writeDirectlyToTarget);
                     }
-                } else {
-                    ByteBuffer readBuffer = networkInboundBIO.getBufferForReading();
-                    try {
-                        if (writeDirectlyToTarget) {
-                            result = engine.unwrap(readBuffer, targetBuffer);
-                        } else {
-                            applicationInboundBIO.ensureWriteCapacity(engine.getSession().getApplicationBufferSize());
-                            ByteBuffer writeBuffer = applicationInboundBIO.getBufferForWriting();
-                            try {
-                                result = engine.unwrap(readBuffer, writeBuffer);
-                            } finally {
-                                applicationInboundBIO.applyWrite(writeBuffer);
-                            }
-                            putAsMuchAsPossible(targetBuffer, applicationInboundBIO);
-                        }
-                    } finally {
-                        networkInboundBIO.applyRead(readBuffer);
+                } catch (SSLException e) {
+                    // If a SSL exception occurs, we need to attempt to perform the closing
+                    // handshake in order to let the peer know what went wrong. We raise the
+                    // exception only after the handshake is done or if we get an exception the
+                    // second time
+                    if (socket.hasSavedException()) {
+                        // We already got an exception in the previous iteration/call. Let's give up
+                        // on the closing handshake to avoid going into an infinite loop
+                        throw socket.getAndClearSavedException();
                     }
+                    socket.setException(e);
+                    result = new SSLEngineResult(Status.CLOSED, engine.getHandshakeStatus(), 0, 0);
+                }
+                if (result.getHandshakeStatus() == HandshakeStatus.FINISHED) {
+                    socket.setHandshakeComplete(true);
                 }
                 // Send the network output to socket, if any. If the output is a MemoryBIO, the
                 // output is already in it at this point
                 emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
-                // Decide what we're going to do next
+                // Handle possible closure
+                if (result.getStatus() == Status.CLOSED) {
+                    engine.closeOutbound();
+                }
+                if (engine.isOutboundDone() && engine.isInboundDone()) {
+                    // Closure handshake is done, we can handle the exit conditions now
+                    if (socket.hasSavedException()) {
+                        throw socket.getAndClearSavedException();
+                    }
+                    switch (op) {
+                        case READ:
+                            // Read operation should just return the current output. If it's
+                            // empty, the application will interpret is as EOF, which is what is
+                            // expected
+                            break transmissionLoop;
+                        case SHUTDOWN:
+                            // Shutdown is considered done at this point
+                            break transmissionLoop;
+                        case WRITE:
+                        case HANDSHAKE:
+                            // Write and handshake operations need to fail loudly
+                            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
+                    }
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                // Decide if we need to obtain more data or change the buffer
                 switch (result.getStatus()) {
-                    case CLOSED:
-                        switch (op) {
-                            case READ:
-                                // Read operation should just return empty output signifying EOF.
-                                break transmissionLoop;
-                            case WRITE:
-                            case HANDSHAKE:
-                                // Write and handshake operations need to fail loudly
-                                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
-                            case SHUTDOWN:
-                                if (engine.isInboundDone()) {
-                                    // Closing hanshake complete
-                                    break transmissionLoop;
-                                } else {
-                                    // Closing handshake needs to unwrap
-                                    currentlyWrapping = false;
-                                    continue transmissionLoop;
-                                }
-                        }
-                        throw CompilerDirectives.shouldNotReachHere();
                     case BUFFER_OVERFLOW:
-                        assert !currentlyWrapping;
+                        if (currentlyWrapping) {
+                            throw CompilerDirectives.shouldNotReachHere("Unexpected overflow of network buffer");
+                        }
                         // We are trying to read a packet whose content doesn't fit into the
                         // output buffer. That means we need to read the whole content into a
                         // temporary buffer, then copy as much as we can into the target buffer
@@ -167,78 +198,97 @@ public class SSLEngineHelper {
                         // data.
                         obtainMoreInput(node, networkInboundBIO, pSocket, netBufferSize, timeoutHelper);
                         continue transmissionLoop;
-                    case OK:
-                        // If the handshake is not complete, do the operations that it requests
-                        // until it completes.
-                        // Note that TLS supports renegotiation - the peer can request a new
-                        // handhake at any time, so we need to check this every time and not just in
-                        // the beginning.
-                        switch (result.getHandshakeStatus()) {
-                            case NEED_TASK:
-                                hanshakeComplete = false;
-                                Runnable task;
-                                while ((task = engine.getDelegatedTask()) != null) {
-                                    task.run();
-                                }
-                                continue transmissionLoop;
-                            case NEED_WRAP:
-                                hanshakeComplete = false;
-                                currentlyWrapping = true;
-                                continue transmissionLoop;
-                            case NEED_UNWRAP:
-                                hanshakeComplete = false;
-                                currentlyWrapping = false;
-                                continue transmissionLoop;
-                            case FINISHED:
-                                hanshakeComplete = true;
-                                currentlyWrapping = op != Operation.READ;
-                                continue transmissionLoop;
-                            case NOT_HANDSHAKING:
-                                assert hanshakeComplete;
-                                // Read operation needs to return after a single packet of
-                                // application data has been read.
-                                // Write operation needs to continue until the buffer is empty.
-                                // Shutdown operation needs to continue until the closing handshake
-                                // is complete.
-                                if ((op == Operation.WRITE && appInput.hasRemaining()) || op == Operation.SHUTDOWN) {
-                                    continue transmissionLoop;
-                                } else {
-                                    break transmissionLoop;
-                                }
-                        }
-                        throw CompilerDirectives.shouldNotReachHere("unhandled SSL handshake status");
                 }
-                throw CompilerDirectives.shouldNotReachHere("unhandled SSL status");
+                // Continue handshaking until done
+                if (result.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
+                    continue transmissionLoop;
+                }
+                if (result.getStatus() == Status.OK) {
+                    // At this point, the handshake is complete and the session is not closed.
+                    // Decide what to do about the actual application-level operation
+                    switch (op) {
+                        case READ:
+                            // Read operation needs to return after a single packet of
+                            // application data has been read
+                            break transmissionLoop;
+                        case HANDSHAKE:
+                            // Handshake is done at this point
+                            break transmissionLoop;
+                        case WRITE:
+                            // Write operation needs to continue until the buffer is empty
+                            if (appInput.hasRemaining()) {
+                                continue transmissionLoop;
+                            }
+                            break transmissionLoop;
+                        case SHUTDOWN:
+                            // Continue the closing handshake
+                            continue transmissionLoop;
+                    }
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                throw CompilerDirectives.shouldNotReachHere("Unhandled SSL engine status");
             }
+            // The loop exit - the operation finished (doesn't need more input)
+            if (socket.hasSavedException()) {
+                // We encountered an error during the communication and we temporarily suppressed it
+                // to perform the closing handshake. Now we should process it
+                throw socket.getAndClearSavedException();
+            }
+            assert !appInput.hasRemaining();
+            // The operation finished successfully at this point
         } catch (SSLException e) {
-            try {
-                // Attempt to perform the closing handshake. If we would just close the socket, the
-                // peer would have no idea what went wrong. This gives the engine a chance to
-                // communicate the error to the peer.
-                shutdown(node, socket);
-            } catch (PException e1) {
-                // We tried to close cleanly and failed. No big deal.
-            }
-            Throwable c = e.getCause();
-            Throwable cc = null;
-            if (c != null) {
-                cc = c.getCause();
-            }
-            if (cc instanceof CertPathBuilderException) {
-                // TODO: where else can this be "hidden"?
-                // ... cc instanceof CertificateException || c instanceof CertificateException ?
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
-            }
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
+            throw handleSSLException(node, e);
         } catch (IOException e) {
             // TODO better error handling, distinguish SSL errors and socket errors
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
-        } finally {
-            socket.setHandshakeComplete(hanshakeComplete);
         }
-        assert !appInput.hasRemaining();
         // TODO handle other socket errors (NotYetConnected)
         // TODO handle OOM
+    }
+
+    private static SSLEngineResult doUnwrap(SSLEngine engine, MemoryBIO networkInboundBIO, ByteBuffer targetBuffer, MemoryBIO applicationInboundBIO, boolean writeDirectlyToTarget)
+                    throws SSLException {
+        ByteBuffer readBuffer = networkInboundBIO.getBufferForReading();
+        try {
+            if (writeDirectlyToTarget) {
+                return engine.unwrap(readBuffer, targetBuffer);
+            } else {
+                applicationInboundBIO.ensureWriteCapacity(engine.getSession().getApplicationBufferSize());
+                ByteBuffer writeBuffer = applicationInboundBIO.getBufferForWriting();
+                try {
+                    return engine.unwrap(readBuffer, writeBuffer);
+                } finally {
+                    applicationInboundBIO.applyWrite(writeBuffer);
+                    putAsMuchAsPossible(targetBuffer, applicationInboundBIO);
+                }
+            }
+        } finally {
+            networkInboundBIO.applyRead(readBuffer);
+        }
+    }
+
+    private static SSLEngineResult doWrap(SSLEngine engine, ByteBuffer appInput, MemoryBIO networkOutboundBIO, int netBufferSize) throws SSLException {
+        networkOutboundBIO.ensureWriteCapacity(netBufferSize);
+        ByteBuffer writeBuffer = networkOutboundBIO.getBufferForWriting();
+        try {
+            return engine.wrap(appInput, writeBuffer);
+        } finally {
+            networkOutboundBIO.applyWrite(writeBuffer);
+        }
+    }
+
+    private static PException handleSSLException(PNodeWithRaise node, SSLException e) {
+        Throwable c = e.getCause();
+        Throwable cc = null;
+        if (c != null) {
+            cc = c.getCause();
+        }
+        if (cc instanceof CertPathBuilderException) {
+            // TODO: where else can this be "hidden"?
+            // ... cc instanceof CertificateException || c instanceof CertificateException ?
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
+        }
+        throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
     }
 
     private static void obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, PSocket socket, int netBufferSize, TimeoutHelper timeoutHelper) throws IOException {

@@ -1,6 +1,7 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -17,6 +18,9 @@ public final class PSSLSocket extends PythonBuiltinObject {
     private final MemoryBIO networkInboundBIO;
     private final MemoryBIO networkOutboundBIO;
     private final MemoryBIO applicationInboundBIO = new MemoryBIO();
+    // The connection needs to attempt the closing handshake before throwing the exception, so we
+    // need to store it
+    private SSLException exception;
 
     private boolean handshakeComplete = false;
 
@@ -84,5 +88,19 @@ public final class PSSLSocket extends PythonBuiltinObject {
 
     public void setServerHostname(String serverHostname) {
         this.serverHostname = serverHostname;
+    }
+
+    public boolean hasSavedException() {
+        return exception != null;
+    }
+
+    public SSLException getAndClearSavedException() {
+        SSLException savedException = this.exception;
+        this.exception = null;
+        return savedException;
+    }
+
+    public void setException(SSLException exception) {
+        this.exception = exception;
     }
 }
