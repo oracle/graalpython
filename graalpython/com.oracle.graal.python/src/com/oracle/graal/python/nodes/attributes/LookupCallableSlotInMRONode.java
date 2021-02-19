@@ -63,7 +63,6 @@ import com.oracle.truffle.api.dsl.Specialization;
  */
 @ImportStatic({PythonOptions.class, PythonLanguage.class})
 public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
-    protected static final int CACHE_LIMIT = 3;
 
     protected final SpecialMethodSlot slot;
 
@@ -74,7 +73,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     // Single and multi context:
     // PythonBuiltinClassType: if there is a value for the slot in PythonBuiltinClassType, then we
     // can just cache it even in multi-context case
-    @Specialization(guards = {"klass == cachedKlass", "result != null"}, limit = "CACHE_LIMIT")
+    @Specialization(guards = {"klass == cachedKlass", "result != null"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     Object doBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @SuppressWarnings("unused") @Cached(value = "klass") PythonBuiltinClassType cachedKlass,
                     @Cached(value = "slot.getValue(klass)") Object result) {
@@ -86,14 +85,14 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
     @Specialization(guards = "klass == cachedKlass", //
                     assumptions = {"singleContextAssumption()", "cachedKlass.getSlotsFinalAssumption()"}, //
-                    limit = "CACHE_LIMIT")
+                    limit = "getAttributeAccessInlineCacheMaxDepth()")
     Object doSlotCachedSingleCtx(@SuppressWarnings("unused") PythonClass klass,
                     @SuppressWarnings("unused") @Cached(value = "klass", weak = true) PythonClass cachedKlass,
                     @Cached(value = "slot.getValue(klass)", weak = true) Object result) {
         return result;
     }
 
-    @Specialization(guards = "klass == cachedKlass", assumptions = {"singleContextAssumption()"}, limit = "CACHE_LIMIT")
+    @Specialization(guards = "klass == cachedKlass", assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     Object doBuiltinCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClass klass,
                     @SuppressWarnings("unused") @Cached("klass") PythonBuiltinClass cachedKlass,
                     @Cached("slot.getValue(klass)") Object result) {
@@ -103,7 +102,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     // PythonBuiltinClassType: if the value of the slot is not node factory or None, we must read
     // the slot from the resolved builtin class
     @Specialization(guards = {"klassType == cachedKlassType", "slot.getValue(cachedKlassType) == null"}, //
-                    assumptions = {"singleContextAssumption()"}, limit = "CACHE_LIMIT")
+                    assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     Object doBuiltinTypeCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
                     @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
                     @Cached("slot.getValue(getCore().lookupType(cachedKlassType))") Object value) {
@@ -124,7 +123,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     }
 
     @Specialization(guards = {"klass.getType() == cachedType", "isCacheable(result)"}, //
-                    replaces = "doBuiltinCachedSingleCtx", limit = "CACHE_LIMIT")
+                    replaces = "doBuiltinCachedSingleCtx", limit = "getAttributeAccessInlineCacheMaxDepth()")
     Object doBuiltinCachedMultiCtx(@SuppressWarnings("unused") PythonBuiltinClass klass,
                     @SuppressWarnings("unused") @Cached("klass.getType()") PythonBuiltinClassType cachedType,
                     @Cached("slot.getValue(klass)") Object result) {
@@ -149,7 +148,12 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
     @Specialization(replaces = {"doBuiltinTypeCached", "doBuiltinTypeCachedSingleCtx", "doBuiltinTypeMultiContext"})
     Object doBuiltinTypeGeneric(PythonBuiltinClassType klass) {
-        return slot.getValue(getCore().lookupType(klass));
+        Object result = slot.getValue(klass);
+        if (result != null) {
+            return result;
+        } else {
+            return slot.getValue(getCore().lookupType(klass));
+        }
     }
 
     // Native classes:
