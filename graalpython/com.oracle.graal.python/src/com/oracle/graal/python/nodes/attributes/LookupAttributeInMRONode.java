@@ -104,7 +104,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         }
 
         @Specialization(replaces = "lookupConstantMRO")
-        protected Object lookup(PythonBuiltinClassType klass, Object key,
+        protected Object lookupPBCT(PythonBuiltinClassType klass, Object key,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached CastToJavaStringNode castKeyNode,
                         @Cached BranchProfile canBeSlotProfile,
@@ -113,12 +113,12 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         }
 
         @Specialization(replaces = "lookupConstantMRO")
-        protected static Object lookup(Object klass, Object key,
+        protected static Object lookupGeneric(Object klass, Object key,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached BranchProfile canBeSlotProfile,
                         @Cached CastToJavaStringNode castKeyNode,
                         @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
-            return lookupSlowUseSlots(klass, key, getMroNode, castKeyNode, canBeSlotProfile, readAttrNode);
+            return lookupUsingSlots(klass, key, getMroNode, castKeyNode, canBeSlotProfile, readAttrNode);
         }
 
         public static LookupAttributeInMRONode.Dynamic create() {
@@ -167,8 +167,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     // --------------
     // Helper methods and Specializations that handle PythonBuiltinClassTypes (abbreviated as PBCT):
 
-    protected static Object findAttrUseSlots(PythonCore core, PythonBuiltinClassType klass, Object key) {
-        return findAttrUseSlots(core, klass, key, CastToJavaStringNode.getUncached(), BranchProfile.getUncached(), ReadAttributeFromDynamicObjectNode.getUncached());
+    protected static Object findAttrUseSlotsSlow(PythonCore core, PythonBuiltinClassType klass, String key) {
+        return findAttrUseSlots(core, klass, key, SpecialMethodSlot.findSpecialSlot(key), ReadAttributeFromDynamicObjectNode.getUncached());
     }
 
     protected static Object findAttrUseSlots(PythonCore core, PythonBuiltinClassType klass, Object key, CastToJavaStringNode keyCastNode, BranchProfile canBeSlot,
@@ -208,7 +208,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     protected Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
-                    @Cached("findAttrUseSlots(getCore(), cachedKlass, key)") Object cachedValue) {
+                    @Cached("findAttrUseSlotsSlow(getCore(), cachedKlass, key)") Object cachedValue) {
         return cachedValue;
     }
 
@@ -219,7 +219,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object lookupPBCTCachedMulti(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
-                    @Cached("findAttrUseSlots(getCore(), cachedKlass, key)") Object cachedValue) {
+                    @Cached("findAttrUseSlotsSlow(getCore(), cachedKlass, key)") Object cachedValue) {
         return cachedValue;
     }
 
@@ -367,9 +367,9 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     @Specialization(guards = {"!isPBCT(klass)", "!isSlotLookup(klass)"}, //
                     replaces = {"lookupConstantMROCached", "lookupConstantMRO", "lookupCachedLen"})
     @Megamorphic
-    protected Object lookup(Object klass,
+    protected Object doLookup(Object klass,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-        return lookupSlow(klass, key, ensureGetMroNode(), readAttrNode, skipPythonClasses);
+        return lookup(klass, key, ensureGetMroNode(), readAttrNode, skipPythonClasses);
     }
 
     protected GetMroStorageNode ensureGetMroNode() {
@@ -384,7 +384,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return ensureGetMroNode().execute(clazz);
     }
 
-    public static Object lookupSlowUseSlots(Object klass, Object key, GetMroStorageNode getMroNode, CastToJavaStringNode keyCastNode, BranchProfile canBeSlot,
+    public static Object lookupUsingSlots(Object klass, Object key, GetMroStorageNode getMroNode, CastToJavaStringNode keyCastNode, BranchProfile canBeSlot,
                     ReadAttributeFromObjectNode readAttrNode) {
         try {
             String keyStr = keyCastNode.execute(key);
@@ -397,20 +397,20 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
             }
         } catch (CannotCastException ignore) {
         }
-        return lookupSlow(klass, key, getMroNode, readAttrNode, false);
+        return lookup(klass, key, getMroNode, readAttrNode, false);
     }
 
     @TruffleBoundary
     public static Object lookupSlow(Object klass, Object key) {
-        return lookupSlow(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), false);
+        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), false);
     }
 
     @TruffleBoundary
     public static Object lookupSlowSkipPythonClasses(Object klass, Object key) {
-        return lookupSlow(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
+        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
     }
 
-    private static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
+    private static Object lookup(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
         MroSequenceStorage mro = getMroNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);
