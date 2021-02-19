@@ -499,11 +499,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * If this object can be cached in the AST.
      */
     public static boolean canCache(Object value) {
+        CompilerAsserts.neverPartOfCompilation();
         return value instanceof Long ||
                         value instanceof Integer ||
                         value instanceof Boolean ||
                         value instanceof Double ||
-                        value instanceof PNone;
+                        value instanceof PNone ||
+                        (value instanceof String && ((String) value).length() <= 16);
     }
 
     @Override

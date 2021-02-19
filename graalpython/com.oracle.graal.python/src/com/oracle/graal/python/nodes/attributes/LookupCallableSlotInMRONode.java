@@ -131,18 +131,9 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         return result;
     }
 
-    @Specialization(guards = "isCacheable(result)", replaces = "doBuiltinCachedMultiCtx")
-    Object doBuiltinCacheableGenericMultiCtx(@SuppressWarnings("unused") PythonBuiltinClass klass,
-                    @Bind("slot.getValue(klass)") Object result) {
-        // We want to keep doBuiltinCachedMultiCtx if we encounter some other uncachable result,
-        // that is why this dedicated Specialization to replace it
-        return result;
-    }
-
-    @Specialization(guards = {"!isCacheable(result)"}, replaces = "doBuiltinCachedSingleCtx")
-    Object doBuiltinUncachableMultiCtx(@SuppressWarnings("unused") PythonBuiltinClass klass,
-                    @Bind("slot.getValue(klass)") Object result) {
-        return result;
+    @Specialization(replaces = "doBuiltinCachedSingleCtx")
+    Object doBuiltinUncachableMultiCtx(PythonBuiltinClass klass) {
+        return slot.getValue(klass);
     }
 
     // PythonBuiltinClassType: if the value of the slot is null, we must read the slot from the
