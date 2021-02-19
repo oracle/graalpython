@@ -217,6 +217,7 @@ public class SocketBuiltins extends PythonBuiltins {
             InetSocketAddress socketAddress = new InetSocketAddress((String) hostAndPort[0], (Integer) hostAndPort[1]);
             SocketChannel channel = SocketChannel.open();
             channel.connect(socketAddress);
+            channel.configureBlocking(socket.isBlocking());
             socket.setSocket(channel);
         }
     }
