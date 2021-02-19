@@ -109,14 +109,15 @@ public final class PSSLContext extends PythonBuiltinObject {
                 throw new IllegalStateException("expected X509Certificate or X509CRL but got " + obj.getClass().getName());
             }
         }
-    }   
-    
+    }
+
     private Set<X509CRL> getCRLs() {
-        if(crls == null) {
+        if (crls == null) {
             crls = new HashSet<>();
         }
         return crls;
     }
+
     void setKeyEntry(PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         this.password = password;
         getKeyStore().setKeyEntry(CertUtils.getAlias(pk), pk, password, certs);
@@ -133,9 +134,13 @@ public final class PSSLContext extends PythonBuiltinObject {
                 TrustManagerFactory tmf = getTrustManagerFactory();
                 tms = tmf.getTrustManagers();
                 if (verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL) {
-                    for (int i = 0; i < tms.length; i++) {
-                        tms[i] = new DelegateTrustManager((X509ExtendedTrustManager) tms[i], true);
+                    List<TrustManager> l = new ArrayList<>(tms.length);
+                    for (TrustManager tm : tms) {
+                        if (tm instanceof X509ExtendedTrustManager) {
+                            l.add(new DelegateTrustManager((X509ExtendedTrustManager) tm, true));
+                        }
                     }
+                    tms = l.toArray(new TrustManager[l.size()]);
                 }
             }
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -284,7 +289,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     public String[] computeEnabledProtocols() {
         return SSLModuleBuiltins.getSupportedProtocols().stream().filter(this::allowsProtocol).map(SSLProtocol::getName).toArray(String[]::new);
     }
-    
+
     private static class CertNoneTrustManager implements X509TrustManager {
 
         @Override
@@ -305,16 +310,19 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     private static class DelegateTrustManager extends X509ExtendedTrustManager {
         private final X509ExtendedTrustManager delegate;
-        private final boolean acceptEmptyChain;
+        /*
+         * if in server mode and OPTIONAL, then check certificates only if some provided.
+         */
+        private final boolean certOptional;
 
-        public DelegateTrustManager(X509ExtendedTrustManager delegate, boolean acceptEmptyChain) {
+        public DelegateTrustManager(X509ExtendedTrustManager delegate, boolean certOptional) {
             this.delegate = delegate;
-            this.acceptEmptyChain = acceptEmptyChain;
+            this.certOptional = certOptional;
         }
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+            if (certOptional && (chain == null || chain.length == 0)) {
                 return;
             }
             delegate.checkClientTrusted(chain, authType);
@@ -322,7 +330,7 @@ public final class PSSLContext extends PythonBuiltinObject {
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String string, Socket socket) throws CertificateException {
-            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+            if (certOptional && (chain == null || chain.length == 0)) {
                 return;
             }
             delegate.checkClientTrusted(chain, string, socket);
@@ -330,7 +338,7 @@ public final class PSSLContext extends PythonBuiltinObject {
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String string, SSLEngine ssle) throws CertificateException {
-            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
+            if (certOptional && (chain == null || chain.length == 0)) {
                 return;
             }
             delegate.checkClientTrusted(chain, string, ssle);
@@ -338,25 +346,16 @@ public final class PSSLContext extends PythonBuiltinObject {
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
-                return;
-            }
             delegate.checkServerTrusted(chain, authType);
         }
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String string, Socket socket) throws CertificateException {
-            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
-                return;
-            }
             delegate.checkServerTrusted(chain, string, socket);
         }
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String string, SSLEngine ssle) throws CertificateException {
-            if ((chain == null || chain.length == 0) && acceptEmptyChain) {
-                return;
-            }
             delegate.checkServerTrusted(chain, string, ssle);
         }
 
