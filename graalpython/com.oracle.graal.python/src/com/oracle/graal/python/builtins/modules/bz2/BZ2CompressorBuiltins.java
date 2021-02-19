@@ -53,6 +53,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -86,7 +87,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "compresslevel"})
-    @ArgumentClinic(name = "compresslevel", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "9", useDefaultForNone = true)
+    @ArgumentClinic(name = "compresslevel", conversion = ClinicConversion.Int, defaultValue = "9", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryClinicBuiltinNode {
 
