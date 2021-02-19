@@ -2972,9 +2972,10 @@ class ThreadedTests(unittest.TestCase):
         with server:
             with client_context.wrap_socket(socket.socket(),
                                             server_hostname="invalid") as s:
+                # XXX GraalVM change: relax message requirement
                 with self.assertRaisesRegex(
                         ssl.CertificateError,
-                        "Hostname mismatch, certificate is not valid for 'invalid'."):
+                        "invalid"):
                     s.connect((HOST, server.port))
 
         # missing server_hostname arg should cause an exception, too

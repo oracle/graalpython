@@ -162,10 +162,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         } catch (NoSuchAlgorithmException | KeyStoreException | IOException | CertificateException | UnrecoverableKeyException | KeyManagementException ex) {
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, ex.toString());
         }
-        SSLEngine engine = context.getContext().createSSLEngine();
-        engine.setUseClientMode(!serverMode);
-        engine.setEnabledProtocols(context.computeEnabledProtocols());
         SSLParameters parameters = new SSLParameters();
+        SSLEngine engine;
         if (serverHostname != null) {
             try {
                 parameters.setServerNames(Collections.singletonList(new SNIHostName(serverHostname)));
@@ -178,7 +176,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (context.getCheckHostname()) {
                 parameters.setEndpointIdentificationAlgorithm("HTTPS");
             }
+            engine = context.getContext().createSSLEngine(serverHostname, -1);
+        } else {
+            engine = context.getContext().createSSLEngine();
         }
+        engine.setUseClientMode(!serverMode);
+        engine.setEnabledProtocols(context.computeEnabledProtocols());
 
         parameters.setCipherSuites(context.computeEnabledCiphers(engine).stream().map(SSLCipher::name).toArray(String[]::new));
 

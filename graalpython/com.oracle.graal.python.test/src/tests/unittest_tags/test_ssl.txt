@@ -85,6 +85,7 @@
 *graalpython.lib-python.3.test.test_ssl.TestSSLDebug.test_msg_callback_tls12
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_PROTOCOL_TLS
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_asyncore_server
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_check_hostname
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_compression
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_compression_disabled
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_default_ecdh_curve

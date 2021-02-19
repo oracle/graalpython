@@ -4,7 +4,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.security.cert.CertPathBuilderException;
+import java.security.cert.CertificateException;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -278,12 +278,7 @@ public class SSLEngineHelper {
     }
 
     private static PException handleSSLException(PNodeWithRaise node, SSLException e) {
-        Throwable c = e.getCause();
-        Throwable cc = null;
-        if (c != null) {
-            cc = c.getCause();
-        }
-        if (cc instanceof CertPathBuilderException) {
+        if (e.getCause() instanceof CertificateException) {
             // TODO: where else can this be "hidden"?
             // ... cc instanceof CertificateException || c instanceof CertificateException ?
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
