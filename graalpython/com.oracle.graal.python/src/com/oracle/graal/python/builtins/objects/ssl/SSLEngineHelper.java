@@ -240,7 +240,7 @@ public class SSLEngineHelper {
             throw handleSSLException(node, e);
         } catch (IOException e) {
             // TODO better error handling, distinguish SSL errors and socket errors
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SYSCALL, e.toString());
         }
         // TODO handle other socket errors (NotYetConnected)
         // TODO handle OOM

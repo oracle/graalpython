@@ -1,5 +1,7 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import java.util.IllegalFormatException;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -16,7 +18,6 @@ import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import java.util.IllegalFormatException;
 
 @GenerateUncached
 public abstract class PRaiseSSLErrorNode extends Node {
@@ -31,15 +32,16 @@ public abstract class PRaiseSSLErrorNode extends Node {
     }
 
     @Specialization
-    static PException raise(Node node, SSLErrorCode type, String message, Object[] args,
+    static PException raise(Node node, SSLErrorCode type, String format, Object[] formatArgs,
                     @CachedLanguage PythonLanguage language,
                     @Cached PythonObjectFactory factory,
                     @Cached WriteAttributeToObjectNode writeAttribute) {
-        PBaseException exception = factory.createBaseException(type.getType(), message, args);
+        String message = getFormattedMessage(format, formatArgs);
+        PBaseException exception = factory.createBaseException(type.getType(), factory.createTuple(new Object[]{type.getErrno(), message}));
         writeAttribute.execute(exception, "errno", type.getErrno());
-        writeAttribute.execute(exception, "strerror", getFormattedMessage(message, args));
+        writeAttribute.execute(exception, "strerror", message);
         // TODO properly populate reason/lib attrs, this are dummy values
-        writeAttribute.execute(exception, "reason", getFormattedMessage(message, args));
+        writeAttribute.execute(exception, "reason", message);
         writeAttribute.execute(exception, "library", "[SSL]");
         return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
     }
