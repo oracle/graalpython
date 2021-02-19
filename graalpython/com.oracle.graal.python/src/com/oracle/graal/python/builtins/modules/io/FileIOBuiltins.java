@@ -496,7 +496,8 @@ public class FileIOBuiltins extends PythonBuiltins {
             int bytesRead = 0;
             while (true) {
                 if (bytesRead >= bufsize) {
-                    bufsize = Math.min(SMALLCHUNK, MAX_SIZE - bytesRead);
+                    // see CPython's function 'fileio.c: new_buffersize'
+                    bufsize = bytesRead + Math.max(SMALLCHUNK, bytesRead + 256);
                     if (bufsize <= 0) {
                         throw raise(OverflowError, UNBOUNDED_READ_RETURNED_MORE_BYTES);
                     }
