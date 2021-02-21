@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,40 +40,52 @@
  */
 package com.oracle.graal.python.builtins.modules.lzma;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.CHECK_NONE;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.CHECK_UNKNOWN;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_ALONE;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_AUTO;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_RAW;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.FORMAT_XZ;
+import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.LZMA_JAVA_ERROR;
+import static com.oracle.graal.python.nodes.ErrorMessages.ALREADY_AT_END_OF_STREAM;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
-import java.io.IOException;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMAObject.LZMADecompressor;
+import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PLZMADecompressor)
 public class LZMADecompressorBuiltins extends PythonBuiltins {
@@ -83,59 +95,119 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         return LZMADecompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 2, parameterNames = {"self", "data", "max_length"}, needsFrame = true)
+    @ImportStatic(PGuards.class)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "memlimit", "filters"})
+    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "LZMAModuleBuiltins.FORMAT_AUTO", useDefaultForNone = true)
+    @ArgumentClinic(name = "memlimit", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "PNone.NO_VALUE")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class DecompressNode extends PythonTernaryBuiltinNode {
+    public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {
 
-        @Specialization(guards = "isNoValue(maxLength)")
-        PBytes doBytesLike(PLZMADecompressor self, PBytesLike bytesLike, @SuppressWarnings("unused") PNone maxLength,
-                        @Cached BytesNodes.ToBytesNode toBytesNode) {
-            byte[] decompress;
-            try {
-                decompress = self.decompress(toBytesNode.execute(bytesLike));
-                return factory().createBytes(decompress);
-            } catch (IOException e) {
-                throw raise(OSError, e);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return LZMADecompressorBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = {"!isRaw(format)", "validFormat(format)"})
+        PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, int memlimit, @SuppressWarnings("unused") PNone filters,
+                        @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit) {
+            self.setCheck(format == FORMAT_ALONE ? CHECK_NONE : CHECK_UNKNOWN);
+            self.setFormat(format);
+            self.setMemlimit(memlimit);
+            decompressInit.execute(frame, self, format, memlimit);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isRaw(format)", "validFormat(format)"})
+        PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, @SuppressWarnings("unused") PNone memlimit, PNone filters,
+                        @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit) {
+            return notRaw(frame, self, format, Integer.MAX_VALUE, filters, decompressInit);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"isRaw(format)", "!isPNone(filters)"})
+        PNone raw(VirtualFrame frame, LZMADecompressor self, int format, PNone memlimit, Object filters,
+                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Cached LZMANodes.LZMARawDecompressInit decompressInit) {
+            self.setCheck(CHECK_NONE);
+            decompressInit.execute(frame, self, filters);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isRaw(format)")
+        PNone rawError(LZMADecompressor self, int format, int memlimit, Object filters) {
+            throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_MEM_LIMIT);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isRaw(format)")
+        PNone rawFilterError(LZMADecompressor self, int format, Object memlimit, PNone filters) {
+            throw raise(ValueError, ErrorMessages.MUST_SPECIFY_FILTERS);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isRaw(format)", "!isPNone(filters)"})
+        PNone rawFilterError(LZMADecompressor self, int format, Object memlimit, Object filters) {
+            throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_FILTERS);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!validFormat(format)")
+        PNone invalidFormat(LZMADecompressor self, int format, Object memlimit, Object filters) {
+            throw raise(ValueError, ErrorMessages.INVALID_CONTAINER_FORMAT, format);
+        }
+
+        protected static boolean validFormat(int format) {
+            return format == FORMAT_AUTO ||
+                            format == FORMAT_XZ ||
+                            format == FORMAT_ALONE ||
+                            format == FORMAT_RAW;
+        }
+
+        protected static boolean isRaw(int format) {
+            return format == FORMAT_RAW;
+        }
+    }
+
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 2, parameterNames = {"$self", "$data", "max_length"}, needsFrame = true)
+    @ArgumentClinic(name = "max_length", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class DecompressNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return LZMADecompressorBuiltinsClinicProviders.DecompressNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = {"!self.isEOF()"})
+        PBytes doBytes(LZMADecompressor self, PBytesLike data, int maxLength,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
+            synchronized (self) {
+                byte[] bytes = toBytes.execute(data.getSequenceStorage());
+                int len = lenNode.execute(data.getSequenceStorage());
+                return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
             }
         }
 
-        @Specialization
-        PBytes doBytesLikeWithMaxLengthI(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, int maxLength,
-                        @Cached SequenceNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached CastToByteNode castToByteNode) {
-            int len = lenNode.execute(bytesLike);
-            byte[] compressed = new byte[Math.min(len, maxLength)];
-            for (int i = 0; i < compressed.length; i++) {
-                castToByteNode.execute(frame, getItemNode.execute(frame, bytesLike.getSequenceStorage(), i));
-            }
-
-            try {
-                return factory().createBytes(self.decompress(compressed));
-            } catch (IOException e) {
-                throw raise(OSError, e);
+        @Specialization(guards = {"!self.isEOF()"})
+        PBytes doObject(LZMADecompressor self, Object data, int maxLength,
+                        @Cached BytesNodes.ToBytesNode toBytes,
+                        @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
+            synchronized (self) {
+                byte[] bytes = toBytes.execute(data);
+                int len = bytes.length;
+                return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
             }
         }
 
-        @Specialization(replaces = "doBytesLikeWithMaxLengthI", limit = "getCallSiteInlineCacheMaxDepth()")
-        PBytes doBytesLikeWithMaxLength(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, Object maxLength,
-                        @CachedLibrary("maxLength") PythonObjectLibrary lib,
-                        @Cached SequenceNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached CastToByteNode castToByteNode) {
-            return doBytesLikeWithMaxLengthI(frame, self, bytesLike, lib.asSizeWithState(maxLength, PArguments.getThreadState(frame)), lenNode, getItemNode, castToByteNode);
-        }
-
-        @Fallback
-        PBytes doError(@SuppressWarnings("unused") Object self, Object obj, @SuppressWarnings("unused") Object maxLength) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, obj);
-        }
-
-        @TruffleBoundary
-        private static byte[] addBytes(PLZMACompressor self, byte[] data) throws IOException {
-            self.getLzmaStream().write(data);
-            return self.getBos().toByteArray();
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"self.isEOF()"})
+        Object err(LZMADecompressor self, Object data, int maxLength) {
+            throw raise(EOFError, ALREADY_AT_END_OF_STREAM);
         }
     }
 
@@ -145,8 +217,8 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     abstract static class EofNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        boolean doEof(PLZMADecompressor self) {
-            return self.getEof();
+        boolean doEof(LZMADecompressor self) {
+            return self.isEOF();
         }
 
     }
@@ -157,8 +229,8 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     abstract static class NeedsInputNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        boolean doNeedsInput(PLZMADecompressor self) {
-            return self.isNeedsInput();
+        boolean doNeedsInput(LZMADecompressor self) {
+            return self.needsInput();
         }
 
     }
@@ -169,9 +241,13 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     abstract static class CheckNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        int doCheck(@SuppressWarnings("unused") PLZMADecompressor self) {
-            // TODO implement
-            return LZMAModuleBuiltins.LZMA_CHECK_UNKNOWN;
+        int doCheck(LZMADecompressor.Native self) {
+            return self.getCheck();
+        }
+
+        @Specialization
+        int doCheck(@SuppressWarnings("unused") LZMADecompressor.Java self) {
+            throw raise(SystemError, LZMA_JAVA_ERROR);
         }
 
     }
@@ -182,9 +258,8 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PBytes doUnusedData(@SuppressWarnings("unused") PLZMADecompressor self) {
-            // TODO implement
-            return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+        PBytes doUnusedData(LZMADecompressor self) {
+            return factory().createBytes(self.getUnusedData());
         }
 
     }

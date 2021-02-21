@@ -497,6 +497,10 @@ def build(capi_home):
                                 libname="libbz2support", 
                                 deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
                                 extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
+        build_nativelibsupport(capi_home, 
+                                subdir="lzma", 
+                                libname="liblzmasupport", 
+                                libs=['lzma'])
         build_libpython(capi_home)
         build_builtin_exts(capi_home)
     finally:

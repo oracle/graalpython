@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,54 +40,67 @@
  */
 package com.oracle.graal.python.builtins.modules.lzma;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LZMAError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMACompressor;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PLZMADecompressor;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_CRC32_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_CRC64_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_ID_MAX_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_NONE_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_SHA256_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_UNKNOWN_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_ARMTHUMB_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_ARM_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_DELTA_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_IA64_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_LZMA1_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_LZMA2_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_POWERPC_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_SPARC_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_X86_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FORMAT_ALONE_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FORMAT_AUTO_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FORMAT_RAW_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.FORMAT_XZ_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.MF_BT2_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.MF_BT3_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.MF_BT4_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.MF_HC3_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.MF_HC4_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.MODE_FAST_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.MODE_NORMAL_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.PRESET_DEFAULT_INDEX;
+import static com.oracle.graal.python.runtime.NFILZMASupport.PRESET_EXTREME_INDEX;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.List;
 
-import org.tukaani.xz.ARMOptions;
-import org.tukaani.xz.ARMThumbOptions;
-import org.tukaani.xz.DeltaOptions;
 import org.tukaani.xz.FilterOptions;
-import org.tukaani.xz.IA64Options;
 import org.tukaani.xz.LZMA2Options;
-import org.tukaani.xz.LZMAOutputStream;
-import org.tukaani.xz.PowerPCOptions;
-import org.tukaani.xz.SPARCOptions;
-import org.tukaani.xz.UnsupportedOptionsException;
-import org.tukaani.xz.X86Options;
 import org.tukaani.xz.XZ;
 import org.tukaani.xz.XZOutputStream;
-import org.tukaani.xz.check.Check;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.runtime.NFILZMASupport;
+import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -95,31 +108,70 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-@CoreFunctions(defineModule = "_lzma")
+@CoreFunctions(defineModule = LZMAModuleBuiltins._LZMA)
 public class LZMAModuleBuiltins extends PythonBuiltins {
 
-    // that's only define in the native 'lzma/check.h' header
-    public static final int LZMA_CHECK_ID_MAX = 15;
-    public static final int LZMA_CHECK_UNKNOWN = LZMA_CHECK_ID_MAX + 1;
+    public static final String _LZMA = "_lzma";
+
+    public static final String LZMA_JAVA_ERROR = "This feature is only " +
+                    "supported with native library being loaded. " +
+                    "Please install 'lzma' library in your system.";
+
+    // defined in '_lzmamodule.c'
+    public static final int INITIAL_BUFFER_SIZE = 8192;
+
+    @CompilationFinal public static int CHECK_NONE = XZ.CHECK_NONE;
+    @CompilationFinal public static int CHECK_CRC32 = XZ.CHECK_CRC32;
+    @CompilationFinal public static int CHECK_CRC64 = XZ.CHECK_CRC64;
+    @CompilationFinal public static int CHECK_SHA256 = XZ.CHECK_SHA256;
+    // that's only defined in the native 'lzma/check.h' header
+    @CompilationFinal public static int CHECK_ID_MAX = 15;
+    @CompilationFinal public static int CHECK_UNKNOWN = CHECK_ID_MAX + 1;
+
+    /**
+     * that's defined in the native 'lzma/check.h' header and in the condition of
+     * 
+     * @see XZOutputStream#updateFilters(FilterOptions)
+     */
+    public static final int LZMA_FILTERS_MAX = 4;
+
+    // that's only defined in the native 'lzma/container.h' header
+    public static final int LZMA_TELL_NO_CHECK = 0x01;
+    public static final int LZMA_TELL_ANY_CHECK = 0x04;
+    public static final int LZMA_IGNORE_CHECK = 0x10;
+
+    @CompilationFinal public static long PRESET_DEFAULT = LZMA2Options.PRESET_DEFAULT;
+    @CompilationFinal public static long PRESET_EXTREME = LZMA2Options.PRESET_MAX;
+
+    @CompilationFinal public static int MODE_FAST = LZMA2Options.MODE_FAST;
+    @CompilationFinal public static int MODE_NORMAL = LZMA2Options.MODE_NORMAL;
 
     /*
      * filter options; not exposed by the Java lib, so define manually; they are abstracted anyway
      */
-    private static final int FILTER_LZMA1 = 0x20;
-    private static final int FILTER_LZMA2 = 0x21;
-    private static final int FILTER_DELTA = 0x3;
-    private static final int FILTER_X86 = 0x4;
-    private static final int FILTER_POWERPC = 0x5;
-    private static final int FILTER_IA64 = 0x6;
-    private static final int FILTER_ARM = 0x7;
-    private static final int FILTER_ARMTHUMB = 0x8;
-    private static final int FILTER_SPARC = 0x9;
+    @CompilationFinal(dimensions = 1) public static final long[] FILTERS = {
+                    0x20, // FILTER_LZMA1
+                    0x21, // FILTER_LZMA2
+                    0x03, // FILTER_DELTA
+                    0x04, // FILTER_X86
+                    0x05, // FILTER_POWERPC
+                    0x06, // FILTER_IA64
+                    0x07, // FILTER_ARM
+                    0x08, // FILTER_ARMTHUMB
+                    0x09, // FILTER_SPARC
+    };
+
+    @CompilationFinal public static int MF_HC3 = LZMA2Options.MF_HC4 - 1;
+    @CompilationFinal public static int MF_HC4 = LZMA2Options.MF_HC4;
+    @CompilationFinal public static int MF_BT2 = LZMA2Options.MF_BT4 - 2;
+    @CompilationFinal public static int MF_BT3 = LZMA2Options.MF_BT4 - 1;
+    @CompilationFinal public static int MF_BT4 = LZMA2Options.MF_BT4;
 
     // defined in '_lzmamodule.c'
-    public static final int FORMAT_AUTO = 0;
-    public static final int FORMAT_XZ = 1;
-    public static final int FORMAT_ALONE = 2;
-    public static final int FORMAT_RAW = 3;
+    @CompilationFinal public static int FORMAT_AUTO = 0;
+    @CompilationFinal public static int FORMAT_XZ = 1;
+    @CompilationFinal public static int FORMAT_ALONE = 2;
+    @CompilationFinal public static int FORMAT_RAW = 3;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -128,358 +180,151 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(PythonCore core) {
-        builtinConstants.put("CHECK_NONE", XZ.CHECK_NONE);
-        builtinConstants.put("CHECK_CRC32", XZ.CHECK_CRC32);
-        builtinConstants.put("CHECK_CRC64", XZ.CHECK_CRC64);
-        builtinConstants.put("CHECK_SHA256", XZ.CHECK_SHA256);
-        builtinConstants.put("CHECK_ID_MAX", LZMA_CHECK_ID_MAX);
-
-        // as defined in '_lzmamodule.c'
-        builtinConstants.put("CHECK_UNKNOWN", LZMA_CHECK_UNKNOWN);
-
-        builtinConstants.put("FILTER_LZMA1", FILTER_LZMA1);
-        builtinConstants.put("FILTER_LZMA2", FILTER_LZMA2);
-        builtinConstants.put("FILTER_DELTA", FILTER_DELTA);
-        builtinConstants.put("FILTER_X86", FILTER_X86);
-        builtinConstants.put("FILTER_POWERPC", FILTER_POWERPC);
-        builtinConstants.put("FILTER_IA64", FILTER_IA64);
-        builtinConstants.put("FILTER_ARM", FILTER_ARM);
-        builtinConstants.put("FILTER_ARMTHUMB", FILTER_ARMTHUMB);
-        builtinConstants.put("FILTER_SPARC", FILTER_SPARC);
-
-        builtinConstants.put("FORMAT_AUTO", FORMAT_AUTO);
-        builtinConstants.put("FORMAT_XZ", FORMAT_XZ);
-        builtinConstants.put("FORMAT_ALONE", FORMAT_ALONE);
-        builtinConstants.put("FORMAT_RAW", FORMAT_RAW);
-
-        builtinConstants.put("PRESET_DEFAULT", LZMA2Options.PRESET_DEFAULT);
-        builtinConstants.put("PRESET_EXTREME", LZMA2Options.PRESET_MAX);
-
-        builtinConstants.put("MODE_FAST", LZMA2Options.MODE_FAST);
-        builtinConstants.put("MODE_NORMAL", LZMA2Options.MODE_NORMAL);
-
-        builtinConstants.put("MF_BT2", LZMA2Options.MF_BT4 - 2);
-        builtinConstants.put("MF_BT3", LZMA2Options.MF_BT4 - 1);
-        builtinConstants.put("MF_BT4", LZMA2Options.MF_BT4);
-        builtinConstants.put("MF_HC3", LZMA2Options.MF_HC4 - 1);
-        builtinConstants.put("MF_HC4", LZMA2Options.MF_HC4);
-
         super.initialize(core);
     }
 
-    abstract static class LZMANode extends PythonBuiltinNode {
-
-        @Child private GetItemNode getItemNode;
-        @Child private PythonObjectLibrary castToLongNode;
-        @Child private IsBuiltinClassProfile keyErrorProfile;
-
-        @TruffleBoundary
-        protected static LZMA2Options parseLZMAOptions(int preset) {
-            // the easy one; uses 'preset'
-            LZMA2Options lzmaOptions = null;
-            try {
-                lzmaOptions = new LZMA2Options();
-                lzmaOptions.setPreset(preset);
-            } catch (UnsupportedOptionsException e) {
-                try {
-                    lzmaOptions.setPreset(LZMA2Options.PRESET_MAX);
-                } catch (UnsupportedOptionsException e1) {
-                    throw new IllegalStateException("should not be reached");
-                }
-            }
-            return lzmaOptions;
-        }
-
-        // corresponds to 'parse_filter_chain_spec' in '_lzmamodule.c'
-        protected FilterOptions[] parseFilterChainSpec(VirtualFrame frame, Object filters, PythonObjectLibrary library) {
-            int n = library.lengthWithState(filters, PArguments.getThreadState(frame));
-            FilterOptions[] optionsChain = new FilterOptions[n];
-            for (int i = 0; i < n; i++) {
-                optionsChain[i] = convertLZMAFilter(frame, getItem(frame, filters, i), library);
-            }
-            return optionsChain;
-        }
-
-        // corresponds to 'lzma_filter_converter' in '_lzmamodule.c'
-        private FilterOptions convertLZMAFilter(VirtualFrame frame, Object spec, PythonObjectLibrary library) {
-            if (!isSequence(frame, getContextRef(), spec, library)) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.FILTER_SPEC_MUST_BE_DICT);
-            }
-
-            Object idObj = PNone.NONE;
-            try {
-                idObj = getItem(frame, spec, "id");
-            } catch (PException e) {
-                if (ensureKeyErrorProfile().profileException(e, PythonBuiltinClassType.KeyError)) {
-                    throw raise(ValueError, ErrorMessages.FILTER_SPECIFIER_MUST_HAVE);
-                }
-            }
-
-            int id = asInt(frame, idObj);
-            FilterOptions options = createFilterById(id);
-            if (options == null) {
-                throw raise(ValueError, ErrorMessages.INVALID_FILTER, id);
-            }
-            return options;
-        }
-
-        @TruffleBoundary
-        private static FilterOptions createFilterById(int id) {
-            switch (id) {
-                case FILTER_LZMA1:
-                case FILTER_LZMA2:
-                    return new LZMA2Options();
-                case FILTER_DELTA:
-                    return new DeltaOptions();
-                case FILTER_X86:
-                    return new X86Options();
-                case FILTER_POWERPC:
-                    return new PowerPCOptions();
-                case FILTER_IA64:
-                    return new IA64Options();
-                case FILTER_ARM:
-                    return new ARMOptions();
-                case FILTER_ARMTHUMB:
-                    return new ARMThumbOptions();
-                case FILTER_SPARC:
-                    return new SPARCOptions();
-                default:
-                    return null;
-            }
-        }
-
-        private boolean isSequence(VirtualFrame frame, ContextReference<PythonContext> contextRef, Object obj, PythonObjectLibrary library) {
-            PythonContext context = contextRef.get();
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                return library.isSequence(obj);
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
-            }
-        }
-
-        private Object getItem(VirtualFrame frame, Object receiver, Object key) {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemNode.create());
-            }
-            return getItemNode.executeWith(frame, receiver, key);
-        }
-
-        private IsBuiltinClassProfile ensureKeyErrorProfile() {
-            if (keyErrorProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                keyErrorProfile = insert(IsBuiltinClassProfile.create());
-            }
-            return keyErrorProfile;
-        }
-
-        private int asInt(VirtualFrame frame, Object obj) {
-            if (castToLongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToLongNode = insert(PythonObjectLibrary.getFactory().createDispatched(2));
-            }
-            return castToLongNode.asSizeWithState(obj, PArguments.getThreadState(frame));
-        }
-
-        protected static boolean isNoneOrNoValue(Object obj) {
-            return PGuards.isNone(obj) || PGuards.isNoValue(obj);
-        }
-
+    private static Object as(PythonCore core, int[] a) {
+        return core.getContext().getEnv().asGuestValue(a);
     }
 
-    @Builtin(name = "LZMACompressor", parameterNames = {"cls", "format", "check", "preset", "filters"}, constructsClass = PLZMACompressor)
+    private static Object as(PythonCore core, long[] a) {
+        return core.getContext().getEnv().asGuestValue(a);
+    }
+
+    @Override
+    public void postInitialize(PythonCore c) {
+        super.postInitialize(c);
+        NFILZMASupport lzmaSupport = c.getContext().getNFILZMASupport();
+        PythonModule lzmaModule = c.lookupBuiltinModule(_LZMA);
+        int[] formats = new int[4];
+        int[] checks = new int[6];
+        int[] mfs = new int[5];
+        int[] modes = new int[2];
+        long[] preset = new long[2];
+        if (lzmaSupport.isAvailable()) {
+            try {
+                lzmaSupport.getMarcos(as(c, formats),
+                                as(c, checks), as(c, FILTERS),
+                                as(c, mfs), as(c, modes), as(c, preset));
+                FORMAT_AUTO = formats[FORMAT_AUTO_INDEX];
+                FORMAT_XZ = formats[FORMAT_XZ_INDEX];
+                FORMAT_ALONE = formats[FORMAT_ALONE_INDEX];
+                FORMAT_RAW = formats[FORMAT_RAW_INDEX];
+                CHECK_NONE = checks[CHECK_NONE_INDEX];
+                CHECK_CRC32 = checks[CHECK_CRC32_INDEX];
+                CHECK_CRC64 = checks[CHECK_CRC64_INDEX];
+                CHECK_SHA256 = checks[CHECK_SHA256_INDEX];
+                CHECK_ID_MAX = checks[CHECK_ID_MAX_INDEX];
+                CHECK_UNKNOWN = checks[CHECK_UNKNOWN_INDEX];
+                MF_HC3 = mfs[MF_HC3_INDEX];
+                MF_HC4 = mfs[MF_HC4_INDEX];
+                MF_BT2 = mfs[MF_BT2_INDEX];
+                MF_BT3 = mfs[MF_BT3_INDEX];
+                MF_BT4 = mfs[MF_BT4_INDEX];
+                MODE_FAST = modes[MODE_FAST_INDEX];
+                MODE_NORMAL = modes[MODE_NORMAL_INDEX];
+                PRESET_DEFAULT = preset[PRESET_DEFAULT_INDEX];
+                PRESET_EXTREME = preset[PRESET_EXTREME_INDEX];
+            } catch (NativeLibrary.NativeLibraryCannotBeLoaded e) {
+                lzmaSupport.notAvailable();
+                // ignore and proceed without native lzma support and use the java port.
+            }
+        }
+        lzmaModule.setAttribute("CHECK_NONE", CHECK_NONE);
+        lzmaModule.setAttribute("CHECK_CRC32", CHECK_CRC32);
+        lzmaModule.setAttribute("CHECK_CRC64", CHECK_CRC64);
+        lzmaModule.setAttribute("CHECK_SHA256", CHECK_SHA256);
+        lzmaModule.setAttribute("CHECK_ID_MAX", CHECK_ID_MAX);
+        lzmaModule.setAttribute("CHECK_UNKNOWN", CHECK_UNKNOWN);
+        lzmaModule.setAttribute("FILTER_LZMA1", FILTERS[FILTER_LZMA1_INDEX]);
+        lzmaModule.setAttribute("FILTER_LZMA2", FILTERS[FILTER_LZMA2_INDEX]);
+        lzmaModule.setAttribute("FILTER_DELTA", FILTERS[FILTER_DELTA_INDEX]);
+        lzmaModule.setAttribute("FILTER_X86", FILTERS[FILTER_X86_INDEX]);
+        lzmaModule.setAttribute("FILTER_POWERPC", FILTERS[FILTER_POWERPC_INDEX]);
+        lzmaModule.setAttribute("FILTER_IA64", FILTERS[FILTER_IA64_INDEX]);
+        lzmaModule.setAttribute("FILTER_ARM", FILTERS[FILTER_ARM_INDEX]);
+        lzmaModule.setAttribute("FILTER_ARMTHUMB", FILTERS[FILTER_ARMTHUMB_INDEX]);
+        lzmaModule.setAttribute("FILTER_SPARC", FILTERS[FILTER_SPARC_INDEX]);
+        lzmaModule.setAttribute("FORMAT_AUTO", FORMAT_AUTO);
+        lzmaModule.setAttribute("FORMAT_XZ", FORMAT_XZ);
+        lzmaModule.setAttribute("FORMAT_ALONE", FORMAT_ALONE);
+        lzmaModule.setAttribute("FORMAT_RAW", FORMAT_RAW);
+        lzmaModule.setAttribute("PRESET_DEFAULT", PRESET_DEFAULT);
+        lzmaModule.setAttribute("PRESET_EXTREME", PRESET_EXTREME);
+        lzmaModule.setAttribute("MODE_FAST", MODE_FAST);
+        lzmaModule.setAttribute("MODE_NORMAL", MODE_NORMAL);
+        lzmaModule.setAttribute("MF_BT2", MF_BT2);
+        lzmaModule.setAttribute("MF_BT3", MF_BT3);
+        lzmaModule.setAttribute("MF_BT4", MF_BT4);
+        lzmaModule.setAttribute("MF_HC3", MF_HC3);
+        lzmaModule.setAttribute("MF_HC4", MF_HC4);
+    }
+
+    @Builtin(name = "LZMACompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMACompressor)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class LZMACompressorNode extends LZMANode {
-
-        // as define in '_lzmamodule.c'
-        private static final int INITIAL_BUFFER_SIZE = 8192;
+    abstract static class LZMACompressorNode extends PythonBuiltinNode {
 
         @Specialization
-        PLZMACompressor doCreate(VirtualFrame frame, Object cls, Object formatObj, Object checkObj, Object presetObj, Object filters,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
-
-            int format = FORMAT_XZ;
-            int check = -1;
-            int preset = LZMA2Options.PRESET_DEFAULT;
-
-            if (!isNoneOrNoValue(formatObj)) {
-                format = lib.asSizeWithState(formatObj, PArguments.getThreadState(frame));
-            }
-
-            if (!isNoneOrNoValue(checkObj)) {
-                check = lib.asSizeWithState(checkObj, PArguments.getThreadState(frame));
-            }
-
-            if (format != FORMAT_XZ && check != -1 && check != XZ.CHECK_NONE) {
-                throw raise(ValueError, ErrorMessages.INTEGRITY_CHECKS_ONLY_SUPPORTED_BY);
-            }
-            if (!isNoneOrNoValue(presetObj) && !isNoneOrNoValue(filters)) {
-                throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN);
-            }
-
-            if (!isNoneOrNoValue(presetObj)) {
-                preset = lib.asSizeWithState(presetObj, PArguments.getThreadState(frame));
-            }
-
-            try {
-                ByteArrayOutputStream bos = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE);
-                switch (format) {
-                    case FORMAT_XZ:
-                        if (check == -1) {
-                            check = XZ.CHECK_CRC64;
-                        }
-
-                        XZOutputStream xzOutputStream;
-                        if (isNoneOrNoValue(filters)) {
-                            LZMA2Options lzmaOptions = parseLZMAOptions(preset);
-                            xzOutputStream = createXZOutputStream(check, bos, lzmaOptions);
-                        } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, lib);
-                            xzOutputStream = createXZOutputStream(check, bos, optionsChain);
-                        }
-                        return factory().createLZMACompressor(cls, xzOutputStream, bos);
-
-                    case FORMAT_ALONE:
-                        LZMAOutputStream lzmaOutputStream;
-                        if (isNoneOrNoValue(filters)) {
-                            LZMA2Options lzmaOptions = parseLZMAOptions(preset);
-                            lzmaOutputStream = createLZMAOutputStream(bos, lzmaOptions);
-                        } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, lib);
-                            if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
-                                throw raise(ValueError, ErrorMessages.INVALID_FILTER_CHAIN_FOR_FORMAT);
-                            }
-                            lzmaOutputStream = createLZMAOutputStream(bos, optionsChain);
-                        }
-                        return factory().createLZMACompressor(cls, lzmaOutputStream, bos);
-
-                    case FORMAT_RAW:
-                        if (isNoneOrNoValue(filters)) {
-                            LZMA2Options lzmaOptions = parseLZMAOptions(preset);
-                            lzmaOutputStream = createLZMAOutputStream(bos, lzmaOptions);
-                        } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, lib);
-                            if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
-                                throw raise(ValueError, ErrorMessages.INVALID_FILTER_CHAIN_FOR_FORMAT);
-                            }
-                            lzmaOutputStream = createRawLZMAOutputStream(bos, optionsChain);
-                        }
-                        return factory().createLZMACompressor(cls, lzmaOutputStream, bos);
-
-                    default:
-                        throw raise(ValueError, ErrorMessages.INVALID_CONTAINER_FORMAT, format);
-                }
-            } catch (IOException e) {
-                throw raise(LZMAError, "%m", e);
-            }
-        }
-
-        @TruffleBoundary
-        private static XZOutputStream createXZOutputStream(int check, ByteArrayOutputStream bos, FilterOptions[] optionsChain) throws IOException {
-            return new XZOutputStream(bos, optionsChain, check);
-        }
-
-        @TruffleBoundary
-        private static XZOutputStream createXZOutputStream(int check, ByteArrayOutputStream bos, LZMA2Options lzmaOptions) throws IOException {
-            return new XZOutputStream(bos, lzmaOptions, check);
-        }
-
-        @TruffleBoundary
-        private static LZMAOutputStream createLZMAOutputStream(ByteArrayOutputStream bos, FilterOptions[] optionsChain) throws IOException {
-            return new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], -1);
-        }
-
-        @TruffleBoundary
-        private static LZMAOutputStream createRawLZMAOutputStream(ByteArrayOutputStream bos, FilterOptions[] optionsChain) throws IOException {
-            return new LZMAOutputStream(bos, (LZMA2Options) optionsChain[0], true);
-        }
-
-        @TruffleBoundary
-        private static LZMAOutputStream createLZMAOutputStream(ByteArrayOutputStream bos, LZMA2Options lzmaOptions) throws IOException {
-            return new LZMAOutputStream(bos, lzmaOptions, -1);
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            // data filled in subsequent __init__ call - see LZMACompressorBuiltins.InitNode
+            return factory().createLZMACompressor(cls, ctxt.getNFILZMASupport().isAvailable());
         }
     }
 
-    @Builtin(name = "LZMADecompressor", parameterNames = {"cls", "format", "memlimit", "filters"}, constructsClass = PLZMADecompressor)
+    @Builtin(name = "LZMADecompressor", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PLZMADecompressor)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class LZMADecompressorNode extends LZMANode {
+    abstract static class LZMADecompressorNode extends PythonBuiltinNode {
 
         @Specialization
-        PLZMADecompressor doCreate(VirtualFrame frame, Object cls, Object formatObj, Object memlimitObj, Object filters,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-
-            int format = FORMAT_AUTO;
-            int memlimit = Integer.MAX_VALUE;
-
-            if (!isNoneOrNoValue(formatObj)) {
-                format = lib.asSizeWithState(formatObj, PArguments.getThreadState(frame));
-            }
-
-            if (!isNoneOrNoValue(memlimitObj)) {
-                if (format == FORMAT_RAW) {
-                    throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_MEM_LIMIT);
-                }
-                memlimit = lib.asSizeWithState(memlimitObj, PArguments.getThreadState(frame));
-            }
-
-            if (format == FORMAT_RAW && isNoneOrNoValue(filters)) {
-                throw raise(ValueError, ErrorMessages.MUST_SPECIFY_FILTERS);
-            } else if (format != FORMAT_RAW && !isNoneOrNoValue(filters)) {
-                throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_FILTERS);
-            }
-
-            // this switch is just to validate the 'format' argument
-            switch (format) {
-                case FORMAT_AUTO:
-                case FORMAT_XZ:
-                case FORMAT_ALONE:
-                    return factory().createLZMADecompressor(cls, format, memlimit);
-
-                case FORMAT_RAW:
-                    throw raise(ValueError, ErrorMessages.RAW_FORMAT_NOT_SUPPORTED);
-
-                default:
-                    throw raise(ValueError, ErrorMessages.INVALID_CONTAINER_FORMAT, format);
-            }
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            // data filled in subsequent __init__ call - see LZMADecompressorBuiltins.InitNode
+            return factory().createLZMADecompressor(cls, ctxt.getNFILZMASupport().isAvailable());
         }
     }
 
-    @Builtin(name = "is_check_supported", minNumOfPositionalArgs = 1)
+    @Builtin(name = "is_check_supported", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsCheckSupportedNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
-        @TruffleBoundary
-        static boolean doInt(int checkID) {
-            try {
-                return Check.getInstance(checkID) != null;
-            } catch (UnsupportedOptionsException e) {
-                return false;
-            }
+        @Specialization(limit = "2")
+        static boolean doInt(VirtualFrame frame, Object checkID,
+                        @CachedLibrary("checkID") PythonObjectLibrary toInt,
+                        @Cached LZMANodes.IsCheckSupported isCheckSupported) {
+            return isCheckSupported.execute(toInt.asSizeWithFrame(checkID, ValueError, frame));
         }
-
-        @Specialization
-        static boolean doLong(long checkID) {
-            try {
-                return doInt(PInt.intValueExact(checkID));
-            } catch (OverflowException e) {
-                return false;
-            }
-        }
-
-        @Specialization
-        static boolean doLong(PInt checkID) {
-            try {
-                return doInt(checkID.intValueExact());
-            } catch (OverflowException e) {
-                return false;
-            }
-        }
-
     }
 
+    @Builtin(name = "_encode_filter_properties", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class EncodeFilterPropertiesNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PBytes encode(VirtualFrame frame, Object filter,
+                        @Cached LZMANodes.EncodeFilterProperties encodeFilterProperties) {
+            return factory().createBytes(encodeFilterProperties.execute(frame, filter));
+        }
+    }
+
+    @Builtin(name = "_decode_filter_properties", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class DecodeFilterPropertiesNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        PDict encode(VirtualFrame frame, Object id, Object encodedProps,
+                        @Cached CastToJavaLongLossyNode toLong,
+                        @Cached BytesNodes.ToBytesNode toBytes,
+                        @Cached LZMANodes.DecodeFilterProperties decodeFilterProperties) {
+            byte[] bytes = toBytes.execute(encodedProps);
+            PDict dict = factory().createDict();
+            decodeFilterProperties.execute(frame, toLong.execute(id), bytes, dict);
+            return dict;
+        }
+    }
 }
