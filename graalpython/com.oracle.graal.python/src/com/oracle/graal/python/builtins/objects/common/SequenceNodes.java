@@ -40,13 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
+import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -142,6 +152,53 @@ public abstract class SequenceNodes {
         @CompilerDirectives.TruffleBoundary
         static void doGeneric(PSequence s, SequenceStorage storage) {
             s.setSequenceStorage(storage);
+        }
+    }
+
+    /*
+     * The current implementation of PythonObjectLibrary.isSequences consider any object that has
+     * __LEN__ and __GETITEM__ method a sequence which unintendedly includes dict. The CPython way
+     * of checking sequences is by checking if the tp_as_sequence is set within the type spec.
+     * 
+     * @see cpython/Objects/abstract.c:PySequence_GetItem
+     */
+    public abstract static class CheckIsSequenceNode extends PNodeWithRaise {
+
+        @Child private PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(2);
+
+        public abstract boolean execute(Object seq);
+
+        @Specialization
+        static boolean sequence(@SuppressWarnings("unused") PSequence seq) {
+            return true;
+        }
+
+        @Specialization
+        static boolean mem(@SuppressWarnings("unused") PMemoryView mv) {
+            return true;
+        }
+
+        @Specialization
+        static boolean range(@SuppressWarnings("unused") PRange range) {
+            return true;
+        }
+
+        @Specialization
+        static boolean set(@SuppressWarnings("unused") PSet set) {
+            return true;
+        }
+
+        @Specialization
+        static boolean fset(@SuppressWarnings("unused") PFrozenSet fset) {
+            return true;
+        }
+
+        @Fallback
+        boolean notSeqence(Object obj) {
+            if (lib.isMapping(obj)) {
+                throw raise(TypeError, IS_NOT_A, lib.getLazyPythonClass(obj), "sequence");
+            }
+            throw raise(TypeError, OBJ_DOES_NOT_SUPPORT_INDEXING, lib.getLazyPythonClass(obj));
         }
     }
 }
