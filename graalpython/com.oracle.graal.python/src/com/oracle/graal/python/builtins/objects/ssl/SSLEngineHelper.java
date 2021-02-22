@@ -95,7 +95,7 @@ public class SSLEngineHelper {
         boolean currentlyWrapping;
         try {
             // Flush output that didn't get written in the last call (for non-blocking)
-            emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
+            emitOutputOrRaiseWantWrite(node, networkOutboundBIO, pSocket, timeoutHelper);
             transmissionLoop: while (true) {
                 // If the handshake is not complete, do the operations that it requests
                 // until it completes. This can happen in different situations:
@@ -152,7 +152,7 @@ public class SSLEngineHelper {
                 }
                 // Send the network output to socket, if any. If the output is a MemoryBIO, the
                 // output is already in it at this point
-                emitOutput(node, networkOutboundBIO, pSocket, timeoutHelper);
+                emitOutputOrRaiseWantWrite(node, networkOutboundBIO, pSocket, timeoutHelper);
                 // Handle possible closure
                 if (result.getStatus() == Status.CLOSED) {
                     engine.closeOutbound();
@@ -191,12 +191,18 @@ public class SSLEngineHelper {
                         writeDirectlyToTarget = false;
                         continue transmissionLoop;
                     case BUFFER_UNDERFLOW:
-                        // We need to obtain more input from the socket. This can raise
-                        // SSLWantReadError if the socket is non-blocking and the operation would
-                        // block. If the input is a MemoryBIO, this will raise SSLWantReadError
-                        // because if we reached this point, it means the buffer doesn't have enough
-                        // data.
-                        obtainMoreInput(node, networkInboundBIO, pSocket, netBufferSize, timeoutHelper);
+                        // We need to obtain more input from the socket or MemoryBIO
+                        int readBytes = obtainMoreInput(node, networkInboundBIO, pSocket, netBufferSize, timeoutHelper);
+                        if (readBytes == 0) {
+                            // Non-blocking socket or BIO with not enough input
+                            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+                        } else if (readBytes < 0) {
+                            // We got EOF
+                            if (socket.hasSavedException()) {
+                                throw socket.getAndClearSavedException();
+                            }
+                            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                        }
                         continue transmissionLoop;
                 }
                 // Continue handshaking until done
@@ -286,7 +292,7 @@ public class SSLEngineHelper {
         throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
     }
 
-    private static void obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, PSocket socket, int netBufferSize, TimeoutHelper timeoutHelper) throws IOException {
+    private static int obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, PSocket socket, int netBufferSize, TimeoutHelper timeoutHelper) throws IOException {
         if (socket != null) {
             if (socket.getSocket() == null) {
                 // TODO use raiseOsError with ENOTCONN
@@ -296,26 +302,23 @@ public class SSLEngineHelper {
             networkInboundBIO.ensureWriteCapacity(netBufferSize);
             ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
             try {
-                int readBytes = SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
-                if (readBytes > 0) {
-                    return;
-                } else if (readBytes < 0) {
-                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
-                }
-                // fallthrough to the raise
+                return SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
             } finally {
                 networkInboundBIO.applyWrite(writeBuffer);
             }
         } else if (networkInboundBIO.didWriteEOF()) {
+            // MemoryBIO output with signalled EOF
             // Note this checks didWriteEOF and not isEOF - the fact that we're here means that we
             // consumed as much data as possible to form a TLS packet, but that doesn't have to be
             // all the data in the BIO
-            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+            return -1;
+        } else {
+            // MemoryBIO input, cannot read anything more than what's already there
+            return 0;
         }
-        throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
     }
 
-    private static void emitOutput(PNodeWithRaise node, MemoryBIO networkOutboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
+    private static void emitOutputOrRaiseWantWrite(PNodeWithRaise node, MemoryBIO networkOutboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
         if (socket != null && networkOutboundBIO.getPending() > 0) {
             if (socket.getSocket() == null) {
                 // TODO use raiseOsError with ENOTCONN
