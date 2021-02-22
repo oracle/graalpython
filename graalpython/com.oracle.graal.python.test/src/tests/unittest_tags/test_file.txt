@@ -12,6 +12,7 @@
 *graalpython.lib-python.3.test.test_file.COtherFileTests.testIteration
 *graalpython.lib-python.3.test.test_file.COtherFileTests.testModeStrings
 *graalpython.lib-python.3.test.test_file.COtherFileTests.testSetBufferSize
+*graalpython.lib-python.3.test.test_file.COtherFileTests.testTruncateOnWindows
 *graalpython.lib-python.3.test.test_file.PyAutoFileTests.testAttributes
 *graalpython.lib-python.3.test.test_file.PyAutoFileTests.testErrors
 *graalpython.lib-python.3.test.test_file.PyAutoFileTests.testMethods
