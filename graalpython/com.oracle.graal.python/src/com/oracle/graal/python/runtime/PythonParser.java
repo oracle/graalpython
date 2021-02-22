@@ -134,16 +134,6 @@ public interface PythonParser {
     Node parse(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, Frame currentFrame, String[] arguments);
 
     /**
-     * Check if an expression can be parsed as an identifier
-     */
-    boolean isIdentifier(PythonCore core, String snippet);
-
-    /**
-     * Unescape Python escapes from a Java string
-     */
-    public abstract String unescapeJavaString(PythonCore core, String str);
-
-    /**
      * Runtime exception used to indicate incomplete source code during parsing.
      */
     @ExportLibrary(InteropLibrary.class)

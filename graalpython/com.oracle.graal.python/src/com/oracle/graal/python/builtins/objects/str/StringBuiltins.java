@@ -1950,7 +1950,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class IsIdentifierNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doString(String self) {
-            return getCore().getParser().isIdentifier(getCore(), self);
+            return StringUtils.isIdentifier(self);
         }
 
         @Specialization(replaces = "doString")
