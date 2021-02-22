@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonFileDetector;
@@ -57,7 +56,6 @@ import com.oracle.graal.python.parser.sst.SSTNodeWithScope;
 import com.oracle.graal.python.parser.sst.SSTNodeWithScopeFinder;
 import com.oracle.graal.python.parser.sst.SSTSerializerVisitor;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
-import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
