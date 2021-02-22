@@ -130,6 +130,9 @@ public class SSLEngineHelper {
                     default:
                         throw CompilerDirectives.shouldNotReachHere("Unhandled SSL handshake status");
                 }
+                if (engine.isOutboundDone()) {
+                    currentlyWrapping = false;
+                }
                 SSLEngineResult result;
                 try {
                     if (currentlyWrapping) {
@@ -162,8 +165,7 @@ public class SSLEngineHelper {
                 if (result.getStatus() == Status.CLOSED) {
                     engine.closeOutbound();
                 }
-                if (engine.isOutboundDone() && engine.isInboundDone() ||
-                                result.getStatus() == Status.CLOSED && result.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING) {
+                if (engine.isOutboundDone() && engine.isInboundDone()) {
                     // Closure handshake is done, we can handle the exit conditions now
                     if (socket.hasSavedException()) {
                         throw socket.getAndClearSavedException();
@@ -220,31 +222,36 @@ public class SSLEngineHelper {
                 if (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
                     continue transmissionLoop;
                 }
-                if (result.getStatus() == Status.OK) {
-                    // At this point, the handshake is complete and the session is not closed.
-                    // Decide what to do about the actual application-level operation
-                    switch (op) {
-                        case READ:
-                            // Read operation needs to return after a single packet of
-                            // application data has been read
-                            if (didReadApplicationData) {
-                                break transmissionLoop;
-                            }
-                            continue transmissionLoop;
-                        case HANDSHAKE:
-                            // Handshake is done at this point
-                            break transmissionLoop;
-                        case WRITE:
-                            // Write operation needs to continue until the buffer is empty
-                            if (appInput.hasRemaining()) {
+                switch (result.getStatus()) {
+                    case OK:
+                        // At this point, the handshake is complete and the session is not closed.
+                        // Decide what to do about the actual application-level operation
+                        switch (op) {
+                            case READ:
+                                // Read operation needs to return after a single packet of
+                                // application data has been read
+                                if (didReadApplicationData) {
+                                    break transmissionLoop;
+                                }
                                 continue transmissionLoop;
-                            }
-                            break transmissionLoop;
-                        case SHUTDOWN:
-                            // Continue the closing handshake
-                            continue transmissionLoop;
-                    }
-                    throw CompilerDirectives.shouldNotReachHere();
+                            case HANDSHAKE:
+                                // Handshake is done at this point
+                                break transmissionLoop;
+                            case WRITE:
+                                // Write operation needs to continue until the buffer is empty
+                                if (appInput.hasRemaining()) {
+                                    continue transmissionLoop;
+                                }
+                                break transmissionLoop;
+                            case SHUTDOWN:
+                                // Continue the closing handshake
+                                continue transmissionLoop;
+                        }
+                        throw CompilerDirectives.shouldNotReachHere();
+                    case CLOSED:
+                        // SSLEngine says there's no handshake, but there could still be a response
+                        // to our close waiting to be read
+                        continue transmissionLoop;
                 }
                 throw CompilerDirectives.shouldNotReachHere("Unhandled SSL engine status");
             }
