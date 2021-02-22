@@ -121,4 +121,8 @@ public class MemoryBIO {
     public void writeEOF() {
         this.eofWritten = true;
     }
+
+    public byte getByte(int offset) {
+        return bytes[readPosition + offset];
+    }
 }

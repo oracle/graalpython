@@ -24,6 +24,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public class SSLEngineHelper {
 
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+    private static final int TLS_HEADER_SIZE = 5;
 
     @TruffleBoundary
     public static void write(PNodeWithRaise node, PSSLSocket socket, ByteBuffer input) {
@@ -202,7 +203,7 @@ public class SSLEngineHelper {
                         continue transmissionLoop;
                     case BUFFER_UNDERFLOW:
                         // We need to obtain more input from the socket or MemoryBIO
-                        int readBytes = obtainMoreInput(node, networkInboundBIO, pSocket, engine.getSession().getPacketBufferSize(), timeoutHelper);
+                        int readBytes = obtainMoreInput(node, engine, networkInboundBIO, pSocket, timeoutHelper);
                         if (readBytes == 0) {
                             // Non-blocking socket or BIO with not enough input
                             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
@@ -305,17 +306,40 @@ public class SSLEngineHelper {
         throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
     }
 
-    private static int obtainMoreInput(PNodeWithRaise node, MemoryBIO networkInboundBIO, PSocket socket, int netBufferSize, TimeoutHelper timeoutHelper) throws IOException {
+    private static int obtainMoreInput(PNodeWithRaise node, SSLEngine engine, MemoryBIO networkInboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
         if (socket != null) {
             if (socket.getSocket() == null) {
                 // TODO use raiseOsError with ENOTCONN
                 throw node.raise(OSError);
             }
             // Network input
-            networkInboundBIO.ensureWriteCapacity(netBufferSize);
+            // OpenSSL only reads as much as necessary for given packet. SSLEngine doesn't tell
+            // us how much it expects. The size returned by getPacketBufferSize() is the maximum
+            // expected size, not the actual size. CPython has some situations that rely on not
+            // reading more than the packet, notably after the SSL connection is closed by a proper
+            // closing handshake, the socket can be used for plaintext communication. If we
+            // over-read, we would read that plaintext and it would get discarded. So we try to get
+            // at least the 5 bytes for the header and then determine the packet size from the
+            // header. If the packet is not SSL, the engine should reject it as soon as it gets the
+            // header.
+            int len;
+            if (networkInboundBIO.getPending() >= TLS_HEADER_SIZE) {
+                len = TLS_HEADER_SIZE + ((networkInboundBIO.getByte(3) & 0xFF) << 8) +
+                                (networkInboundBIO.getByte(4) & 0xFF);
+            } else {
+                len = TLS_HEADER_SIZE;
+            }
+            if (networkInboundBIO.getPending() >= len) {
+                // The engine requested more data, but we think we already got enough data.
+                // Don't argue with it and give it what it wants. We give up on having no
+                // read-ahead, but that's better than crashing
+                len = engine.getSession().getPacketBufferSize();
+            }
+            int toRead = len - networkInboundBIO.getPending();
+            networkInboundBIO.ensureWriteCapacity(toRead);
             ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
-            // Avoid too much read-ahead
-            writeBuffer.limit(writeBuffer.position() + netBufferSize);
+            // Avoid reading more that we determined
+            writeBuffer.limit(writeBuffer.position() + toRead);
             try {
                 return SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
             } finally {
