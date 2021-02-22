@@ -93,6 +93,8 @@ public class SSLEngineHelper {
         // Whether we can write directly to targetBuffer
         boolean writeDirectlyToTarget = true;
         boolean currentlyWrapping;
+        boolean didReadApplicationData = false;
+        HandshakeStatus lastStatus;
         try {
             // Flush output that didn't get written in the last call (for non-blocking)
             emitOutputOrRaiseWantWrite(node, networkOutboundBIO, pSocket, timeoutHelper);
@@ -103,7 +105,8 @@ public class SSLEngineHelper {
                 // * Renegotiation handshake, which can occur at any point in the communication
                 // * Closing handshake. Can be initiated by us (#shutdown), the peer or when an
                 // exception occurred
-                switch (engine.getHandshakeStatus()) {
+                lastStatus = engine.getHandshakeStatus();
+                switch (lastStatus) {
                     case NEED_TASK:
                         socket.setHandshakeComplete(false);
                         Runnable task;
@@ -127,12 +130,12 @@ public class SSLEngineHelper {
                         throw CompilerDirectives.shouldNotReachHere("Unhandled SSL handshake status");
                 }
                 SSLEngineResult result;
-                int netBufferSize = engine.getSession().getPacketBufferSize();
                 try {
                     if (currentlyWrapping) {
-                        result = doWrap(engine, appInput, networkOutboundBIO, netBufferSize);
+                        result = doWrap(engine, appInput, networkOutboundBIO, engine.getSession().getPacketBufferSize());
                     } else {
                         result = doUnwrap(engine, networkInboundBIO, targetBuffer, applicationInboundBIO, writeDirectlyToTarget);
+                        didReadApplicationData = result.bytesProduced() > 0;
                     }
                 } catch (SSLException e) {
                     // If a SSL exception occurs, we need to attempt to perform the closing
@@ -145,9 +148,10 @@ public class SSLEngineHelper {
                         throw socket.getAndClearSavedException();
                     }
                     socket.setException(e);
-                    result = new SSLEngineResult(Status.CLOSED, engine.getHandshakeStatus(), 0, 0);
+                    engine.closeOutbound();
+                    continue transmissionLoop;
                 }
-                if (result.getHandshakeStatus() == HandshakeStatus.FINISHED) {
+                if (result.getHandshakeStatus() == HandshakeStatus.FINISHED && !engine.isOutboundDone()) {
                     socket.setHandshakeComplete(true);
                 }
                 // Send the network output to socket, if any. If the output is a MemoryBIO, the
@@ -157,7 +161,8 @@ public class SSLEngineHelper {
                 if (result.getStatus() == Status.CLOSED) {
                     engine.closeOutbound();
                 }
-                if (engine.isOutboundDone() && engine.isInboundDone()) {
+                if (engine.isOutboundDone() && engine.isInboundDone() ||
+                                result.getStatus() == Status.CLOSED && result.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING) {
                     // Closure handshake is done, we can handle the exit conditions now
                     if (socket.hasSavedException()) {
                         throw socket.getAndClearSavedException();
@@ -178,6 +183,11 @@ public class SSLEngineHelper {
                     }
                     throw CompilerDirectives.shouldNotReachHere();
                 }
+                // Try extra hard to converge on the status before doing potentially blocking
+                // operations
+                if (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING && engine.getHandshakeStatus() != lastStatus) {
+                    continue transmissionLoop;
+                }
                 // Decide if we need to obtain more data or change the buffer
                 switch (result.getStatus()) {
                     case BUFFER_OVERFLOW:
@@ -192,7 +202,7 @@ public class SSLEngineHelper {
                         continue transmissionLoop;
                     case BUFFER_UNDERFLOW:
                         // We need to obtain more input from the socket or MemoryBIO
-                        int readBytes = obtainMoreInput(node, networkInboundBIO, pSocket, netBufferSize, timeoutHelper);
+                        int readBytes = obtainMoreInput(node, networkInboundBIO, pSocket, engine.getSession().getPacketBufferSize(), timeoutHelper);
                         if (readBytes == 0) {
                             // Non-blocking socket or BIO with not enough input
                             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
@@ -206,7 +216,7 @@ public class SSLEngineHelper {
                         continue transmissionLoop;
                 }
                 // Continue handshaking until done
-                if (result.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
+                if (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
                     continue transmissionLoop;
                 }
                 if (result.getStatus() == Status.OK) {
@@ -216,7 +226,10 @@ public class SSLEngineHelper {
                         case READ:
                             // Read operation needs to return after a single packet of
                             // application data has been read
-                            break transmissionLoop;
+                            if (didReadApplicationData) {
+                                break transmissionLoop;
+                            }
+                            continue transmissionLoop;
                         case HANDSHAKE:
                             // Handshake is done at this point
                             break transmissionLoop;
@@ -301,6 +314,8 @@ public class SSLEngineHelper {
             // Network input
             networkInboundBIO.ensureWriteCapacity(netBufferSize);
             ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
+            // Avoid too much read-ahead
+            writeBuffer.limit(writeBuffer.position() + netBufferSize);
             try {
                 return SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
             } finally {
