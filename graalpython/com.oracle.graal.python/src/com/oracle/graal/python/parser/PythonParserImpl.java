@@ -387,36 +387,6 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         }
     }
 
-    @Override
-    @TruffleBoundary
-    public boolean isIdentifier(PythonCore core, String snippet) {
-        if (snippet.length() != snippet.trim().length()) {
-            // identifier cannot start or end with any whitspace
-            return false;
-        }
-        Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(snippet));
-        Token t = lexer.nextToken();
-        if (t.getType() == Python3Lexer.NAME) {
-            // the first token is identifier
-            t = lexer.nextToken();
-            if (t.getType() == Python3Lexer.NEWLINE) {
-                // lexer alwayes add new line at the end
-                t = lexer.nextToken();
-                if (t.getType() == Python3Lexer.EOF) {
-                    // now we are sure that this is identifer
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    @Override
-    @TruffleBoundary
-    public String unescapeJavaString(PythonCore core, String str) {
-        return StringUtils.unescapeJavaString(core, str);
-    }
-
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
         try {
             if (e instanceof PException && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.PARSE_ERROR) {
