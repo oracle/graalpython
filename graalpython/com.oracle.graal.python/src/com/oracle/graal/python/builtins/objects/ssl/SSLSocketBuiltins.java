@@ -60,7 +60,9 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class ReadNode extends PythonTernaryClinicBuiltinNode {
         @Specialization(guards = "isNoValue(buffer)")
         Object read(PSSLSocket self, int len, @SuppressWarnings("unused") PNone buffer) {
-            if (len < 0) {
+            if (len == 0) {
+                return factory().createBytes(new byte[0]);
+            } else if (len < 0) {
                 throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
             ByteBuffer output = ByteBuffer.allocate(len);
@@ -80,6 +82,9 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             int bufferLength = len;
             if (len <= 0 || len > storageLength) {
                 bufferLength = storageLength;
+            }
+            if (bufferLength == 0) {
+                return 0;
             }
             ByteBuffer output = ByteBuffer.allocate(bufferLength);
             SSLEngineHelper.read(this, self, output);
