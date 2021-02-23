@@ -155,6 +155,28 @@ class CertTests(unittest.TestCase):
         # TODO test cadata
         # TODO load_DH_params
 
+    def test_load_default_verify_paths(self):
+        env = os.environ
+        certFile = env["SSL_CERT_FILE"] if "SSL_CERT_FILE" in env else None
+        certDir = env["SSL_CERT_DIR"] if "SSL_CERT_DIR" in env else None 
+        try:
+            env["SSL_CERT_DIR"] = "does_not_exit"
+            env["SSL_CERT_FILE"] = "does_not_exit"
+            self.ctx.load_default_certs()
+            env["SSL_CERT_DIR"] = data_file("empty.pem")
+            env["SSL_CERT_FILE"] = data_file("empty.pem")
+            self.ctx.load_default_certs()
+            env["SSL_CERT_DIR"] = data_file("cert_rsa.pem")
+            env["SSL_CERT_FILE"] = data_file("cert_rsa.pem")
+            self.ctx.load_default_certs()
+        except Exception:
+            # load_default_certs reports no errors
+            assert False
+        finally:    
+            if certFile is not None:
+                os.environ["SSL_CERT_FILE"] = certFile
+            if certDir is not None:        
+                os.environ["SSL_CERT_DIR"] = certDir
 
 def get_cipher_list(cipher_string):
     context = ssl.SSLContext()
