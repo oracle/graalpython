@@ -40,14 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
-import static com.oracle.graal.python.builtins.objects.ints.IntUtils.bigIntToByteArray;
-import static com.oracle.graal.python.builtins.objects.ints.IntUtils.longToByteArray;
-import static com.oracle.graal.python.builtins.objects.ints.IntUtils.reverse;
-
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.util.NumericSupport;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class IntNodes {
     // equivalent to _PyLong_Sign
@@ -95,22 +90,18 @@ public final class IntNodes {
         public abstract byte[] execute(Object value, int size, boolean bigEndian);
 
         @Specialization
-        byte[] doLong(long value, int size, boolean bigEndian,
-                        @Cached.Shared("isBigEndianProfile") @Cached ConditionProfile isBigEndianProfile) {
-            final byte[] bytes = longToByteArray(value, size);
-            if (isBigEndianProfile.profile(bigEndian)) {
-                reverse(bytes);
-            }
+        byte[] doLong(long value, int size, boolean bigEndian) {
+            final byte[] bytes = new byte[size];
+            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
+            support.putLong(bytes, 0, value);
             return bytes;
         }
 
         @Specialization
-        byte[] doPInt(PInt value, int size, boolean bigEndian,
-                        @Cached.Shared("isBigEndianProfile") @Cached ConditionProfile isBigEndianProfile) {
-            final byte[] bytes = bigIntToByteArray(value.getValue(), size);
-            if (isBigEndianProfile.profile(bigEndian)) {
-                reverse(bytes);
-            }
+        byte[] doPInt(PInt value, int size, boolean bigEndian) {
+            final byte[] bytes = new byte[size];
+            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
+            support.putBigInteger(bytes, 0, value.getValue(), size);
             return bytes;
         }
     }

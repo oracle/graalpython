@@ -36,8 +36,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
 import struct
+import sys
+
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -116,7 +117,7 @@ def test_pack_unpack():
         for align in alignment:
             _fmt = align + fmt
             result = struct.pack(_fmt, *vals)
-            assert vals == struct.unpack(_fmt, result)
+            assert vals == struct.unpack(_fmt, result), "{} != struct.unpack({}, {})".format(vals, _fmt, result)
             assert struct.calcsize(_fmt) == len(result), "calcsize('{}')={} != len({})={}".format(
                 _fmt, struct.calcsize(_fmt), result, len(result))
 
@@ -168,6 +169,7 @@ def test_pack_large_long():
         assert struct.unpack(fmt, b'\x00' * struct.calcsize(fmt)) == (0,)
         assert struct.pack(fmt, 18446744073709551615) == b'\xff\xff\xff\xff\xff\xff\xff\xff'
         assert struct.unpack(fmt, b'\xff\xff\xff\xff\xff\xff\xff\xff') == (18446744073709551615,)
+
 
 def test_pack_into():
     test_string = b'Reykjavik rocks, eow!'

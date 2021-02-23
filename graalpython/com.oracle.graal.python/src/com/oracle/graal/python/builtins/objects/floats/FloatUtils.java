@@ -40,16 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.FLOAT_TO_LARGE_TO_PACK_WITH_E_FMT;
-import static com.oracle.graal.python.nodes.ErrorMessages.RES_O_O_RANGE;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
-
 import java.math.BigDecimal;
 
-import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.ints.IntUtils;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
@@ -57,11 +49,6 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
  * Contains helper methods for parsing float numbers in float() and complex() constructors.
  */
 public final class FloatUtils {
-    private static final double FLOAT_ROUNDING_SCALE = Math.pow(10, 7);
-    private static final double EPSILON = .0000001;
-    private static final short FP16_INFINITY = (short) 0x7c00;
-    private static final short FP16_NEGATIVE_INFINITY = (short) 0xfc00;
-
     public static int skipAsciiWhitespace(String str, int start, int len) {
         int offset = start;
         while (offset < len && isAsciiSpace(str.charAt(offset))) {
@@ -250,165 +237,5 @@ public final class FloatUtils {
             d = new BigDecimal(substr).doubleValue();
         }
         return d;
-    }
-
-    @SuppressWarnings("unused")
-    public static double floatRoundWithFixedDecimals(float value) {
-        return Math.round(value * FLOAT_ROUNDING_SCALE) / FLOAT_ROUNDING_SCALE;
-    }
-
-    public static boolean equalsWithinRange(double a, double b) {
-        return Math.abs(a - b) < EPSILON;
-    }
-
-    @TruffleBoundary
-    public static short floatToShortBits(PNodeWithRaise nodeWithRaise, float value) {
-        int sign;
-        int e;
-        double f;
-        short bits;
-
-        if (value == 0.0f) {
-            sign = (Math.signum(value) == -1.0f) ? 1 : 0;
-            e = 0;
-            bits = 0;
-        } else if (Float.isInfinite(value)) {
-            sign = (value < 0.0f) ? 1 : 0;
-            e = 0x1f;
-            bits = 0;
-        } else if (Float.isNaN(value)) {
-            sign = (Math.signum(value) == -1.0f) ? 1 : 0;
-            e = 0x1f;
-            bits = 512;
-        } else {
-            sign = (value < 0.0f) ? 1 : 0;
-            float v = (sign == 1) ? -value : value;
-            double[] fraction = MathModuleBuiltins.FrexpNode.frexp(v);
-            f = fraction[0];
-            e = (int) fraction[1];
-
-            if (f < 0.5 || f >= 1.0) {
-                throw nodeWithRaise.raise(SystemError, RES_O_O_RANGE, "frexp()");
-            }
-
-            /* Normalize f to be in the range [1.0, 2.0) */
-            f *= 2.0;
-            e--;
-
-            if (e >= 16) {
-                throw nodeWithRaise.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_E_FMT);
-            } else if (e < -25) {
-                /* |x| < 2**-25. Underflow to zero. */
-                f = 0.0;
-                e = 0;
-            } else if (e < -14) {
-                /* |x| < 2**-14. Gradual underflow */
-                f = Math.scalb(f, 14 + e);
-                e = 0;
-            } else /* if (!(e == 0 && f == 0.0)) */ {
-                e += 15;
-                f -= 1.0; /* Get rid of leading 1 */
-            }
-
-            f *= 1024.0; /* 2**10 */
-            /* Round to even */
-            bits = (short) f; /* Note the truncation */
-            assert bits < 1024;
-            assert e < 31;
-
-            if ((f - bits > 0.5) || ((equalsWithinRange(f - bits, 0.5)) && ((bits & 1) != 0))) {
-                ++bits;
-                if (bits == 1024) {
-                    /* The carry propagated out of a string of 10 1 bits. */
-                    bits = 0;
-                    ++e;
-                    if (e == 31) {
-                        throw nodeWithRaise.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_E_FMT);
-                    }
-                }
-            }
-        }
-
-        bits |= (e << 10) | (sign << 15);
-        return bits;
-    }
-
-    @TruffleBoundary
-    public static float shortBitsToFloat(short bits) {
-        int sign;
-        int e;
-        int f;
-        float value;
-
-        sign = (bits >> 7) & 1;
-        e = (bits & 0x7C00) >> 10;
-        f = bits & 0x03ff;
-
-        if (e == 0x1f) {
-            if (f == 0) {
-                return (sign == 1) ? FP16_NEGATIVE_INFINITY : FP16_INFINITY;
-            } else {
-                return (sign == 1) ? -Float.NaN : Float.NaN;
-            }
-        }
-
-        value = f / 1024.0f;
-
-        if (e == 0) {
-            e = -14;
-        } else {
-            value += 1.0;
-            e -= 15;
-        }
-        value = Math.scalb(value, e);
-
-        if (sign == 1) {
-            value = -value;
-        }
-
-        return value;
-    }
-
-    // variations of the _PyFloat_Pack2, _PyFloat_Pack4 and _PyFloat_Pack8
-    public static void floatToBytes(double value, boolean bigEndian, byte[] dst, int offset) {
-        final long bits = Double.doubleToLongBits(value);
-        IntUtils.longToByteArray(bits, Double.BYTES, dst, offset);
-        if (bigEndian) {
-            IntUtils.reverse(dst, offset, Double.BYTES);
-        }
-    }
-
-    public static byte[] floatToBytes(double value, boolean bigEndian) {
-        byte[] bytes = new byte[Double.BYTES];
-        floatToBytes(value, bigEndian, bytes, 0);
-        return bytes;
-    }
-
-    public static void floatToBytes(float value, boolean bigEndian, byte[] dst, int offset) {
-        final long bits = Float.floatToIntBits(value);
-        IntUtils.longToByteArray(bits, Float.BYTES, dst, offset);
-        if (bigEndian) {
-            IntUtils.reverse(dst, offset, Float.BYTES);
-        }
-    }
-
-    public static byte[] floatToBytes(float value, boolean bigEndian) {
-        byte[] bytes = new byte[Float.BYTES];
-        floatToBytes(value, bigEndian, bytes, 0);
-        return bytes;
-    }
-
-    public static void halfFloatToBytes(PNodeWithRaise nodeWithRaise, float value, boolean bigEndian, byte[] dst, int offset) {
-        final short bits = floatToShortBits(nodeWithRaise, value);
-        IntUtils.longToByteArray(bits, Float.BYTES / 2, dst, offset);
-        if (bigEndian) {
-            IntUtils.reverse(dst, offset, Float.BYTES / 2);
-        }
-    }
-
-    public static byte[] halfFloatToBytes(PNodeWithRaise nodeWithRaise, float value, boolean bigEdian) {
-        byte[] bytes = new byte[Float.BYTES / 2];
-        halfFloatToBytes(nodeWithRaise, value, bigEdian, bytes, 0);
-        return bytes;
     }
 }
