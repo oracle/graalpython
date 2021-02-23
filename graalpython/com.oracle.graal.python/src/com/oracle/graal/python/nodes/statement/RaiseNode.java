@@ -76,7 +76,7 @@ public abstract class RaiseNode extends StatementNode {
 
         // raise * from <class>
         @Specialization(guards = "lib.isLazyPythonClass(causeClass)")
-        static void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object causeClass,
+        static void setCause(VirtualFrame frame, PBaseException exception, Object causeClass,
                         @Cached BranchProfile baseCheckFailedProfile,
                         @Cached ValidExceptionNode validException,
                         @Cached CallNode callConstructor,
@@ -86,7 +86,7 @@ public abstract class RaiseNode extends StatementNode {
                 baseCheckFailedProfile.enter();
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
             }
-            Object cause = callConstructor.execute(causeClass);
+            Object cause = callConstructor.execute(frame, causeClass);
             if (cause instanceof PBaseException) {
                 exception.setCause((PBaseException) cause);
             } else {

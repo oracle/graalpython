@@ -150,7 +150,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class TRegexCallCompile extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object call(Object pattern, Object flags, PFunction fallbackCompiler,
+        Object call(VirtualFrame frame, Object pattern, Object flags, PFunction fallbackCompiler,
                         @Cached BranchProfile potentialSyntaxError,
                         @Cached BranchProfile syntaxError,
                         @Cached BranchProfile unsupportedRegexError,
@@ -167,7 +167,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 if (compiledRegexLib.isNull(compiledRegex)) {
                     unsupportedRegexError.enter();
                     if (context.getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback)) {
-                        return callFallbackCompilerNode.execute(fallbackCompiler, pattern, flags);
+                        return callFallbackCompilerNode.execute(frame, fallbackCompiler, pattern, flags);
                     } else {
                         throw raise(ValueError, "regular expression not supported, no fallback engine present");
                     }

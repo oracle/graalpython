@@ -76,6 +76,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 /**
  * This node makes sure that the current frame has a filled-in PFrame object with a backref
@@ -317,16 +318,17 @@ public abstract class MaterializeFrameNode extends Node {
 
         public abstract void execute(VirtualFrame frame, PFrame pyframe, Frame frameToSync);
 
-        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync)", "frameToSync.getFrameDescriptor() == cachedFd", "cachedSlots.length < 32"}, //
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd", "cachedSlots.length < 32"}, //
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
         @ExplodeLoop
         static void doLocalsStorageCached(PFrame pyFrame, Frame frameToSync,
+                        @Cached("createClassProfile()") ValueProfile frameProfile,
                         @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots) {
             boolean invalidState = false;
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
-            MaterializedFrame target = localsStorage.getFrame();
+            MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
 
             for (int i = 0; i < cachedSlots.length; i++) {
@@ -390,15 +392,16 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync)", "frameToSync.getFrameDescriptor() == cachedFd"}, //
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync, frameProfile)", "frameToSync.getFrameDescriptor() == cachedFd"}, //
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
         static void doLocalsStorageLoop(PFrame pyFrame, Frame frameToSync,
+                        @Cached("createClassProfile()") ValueProfile frameProfile,
                         @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots) {
             boolean invalidState = false;
             LocalsStorage localsStorage = getLocalsStorage(pyFrame);
-            MaterializedFrame target = localsStorage.getFrame();
+            MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
             assert cachedFd == target.getFrameDescriptor();
 
             for (int i = 0; i < cachedSlots.length; i++) {
@@ -462,13 +465,14 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "hasLocalsStorage(pyFrame, frameToSync)", replaces = {"doLocalsStorageCached", "doLocalsStorageLoop"})
-        static void doLocalsStorageUncached(PFrame pyFrame, Frame frameToSync) {
+        @Specialization(guards = "hasLocalsStorage(pyFrame, frameToSync, frameProfile)", replaces = {"doLocalsStorageCached", "doLocalsStorageLoop"})
+        static void doLocalsStorageUncached(PFrame pyFrame, Frame frameToSync,
+                        @Cached("createClassProfile()") ValueProfile frameProfile) {
             FrameDescriptor fd = frameToSync.getFrameDescriptor();
             FrameSlot[] cachedSlots = getSlots(fd);
             try {
                 LocalsStorage localsStorage = getLocalsStorage(pyFrame);
-                MaterializedFrame target = localsStorage.getFrame();
+                MaterializedFrame target = frameProfile.profile(localsStorage.getFrame());
                 assert fd == target.getFrameDescriptor();
 
                 for (int i = 0; i < cachedSlots.length; i++) {
@@ -615,9 +619,10 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "isCustomLocalsObject(pyFrame, frameToSync)")
+        @Specialization(guards = "isCustomLocalsObject(pyFrame, frameToSync, frameProfile)")
         @SuppressWarnings("unused")
-        static void doCustomLocalsObject(PFrame pyFrame, Frame frameToSync) {
+        static void doCustomLocalsObject(PFrame pyFrame, Frame frameToSync,
+                        @Cached("createClassProfile()") ValueProfile frameProfile) {
             // nothing to do; we already worked on the custom object
         }
 
@@ -639,9 +644,9 @@ public abstract class MaterializeFrameNode extends Node {
          * same frame descriptor as the frame to synchronize. That means, the dict represents
          * unmodified set of frame values of the frame to sync.
          */
-        protected static boolean hasLocalsStorage(PFrame pyFrame, Frame frameToSync) {
+        protected static boolean hasLocalsStorage(PFrame pyFrame, Frame frameToSync, ValueProfile frameProfile) {
             Object localsObject = pyFrame.getLocalsDict();
-            return localsObject instanceof PDict && getFd(((PDict) localsObject).getDictStorage()) == frameToSync.getFrameDescriptor();
+            return localsObject instanceof PDict && getFd(((PDict) localsObject).getDictStorage(), frameProfile) == frameToSync.getFrameDescriptor();
         }
 
         protected static boolean isDictWithCustomStorage(PFrame pyFrame) {
@@ -650,17 +655,17 @@ public abstract class MaterializeFrameNode extends Node {
             return PythonObjectLibrary.getUncached().getLazyPythonClass(localsObject) == PythonBuiltinClassType.PDict;
         }
 
-        protected static boolean isCustomLocalsObject(PFrame pyFrame, Frame frameToSync) {
-            return !hasLocalsStorage(pyFrame, frameToSync);
+        protected static boolean isCustomLocalsObject(PFrame pyFrame, Frame frameToSync, ValueProfile frameProfile) {
+            return !hasLocalsStorage(pyFrame, frameToSync, frameProfile);
         }
 
         protected static LocalsStorage getLocalsStorage(PFrame pyFrame) {
             return (LocalsStorage) ((PDict) pyFrame.getLocalsDict()).getDictStorage();
         }
 
-        private static FrameDescriptor getFd(HashingStorage storage) {
+        private static FrameDescriptor getFd(HashingStorage storage, ValueProfile frameProfile) {
             if (storage instanceof LocalsStorage) {
-                return ((LocalsStorage) storage).getFrame().getFrameDescriptor();
+                return frameProfile.profile(((LocalsStorage) storage).getFrame()).getFrameDescriptor();
             }
             return null;
         }

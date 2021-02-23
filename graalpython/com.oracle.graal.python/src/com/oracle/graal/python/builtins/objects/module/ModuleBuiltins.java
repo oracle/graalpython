@@ -159,7 +159,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                 HashingStorage dictStorage = getDictStorageNode.execute((PHashingCollection) dict);
                 Object dirFunc = hashLib.getItem(dictStorage, __DIR__);
                 if (dirFunc != null) {
-                    return callNode.execute(dirFunc);
+                    return callNode.execute(frame, dirFunc);
                 } else {
                     return constructListNode.execute(dict);
                 }
