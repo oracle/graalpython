@@ -1593,7 +1593,9 @@ class ContextTests(unittest.TestCase):
             env["SSL_CERT_DIR"] = CAPATH
             env["SSL_CERT_FILE"] = CERTFILE
             ctx.load_default_certs()
-            self.assertEqual(ctx.cert_store_stats(), {"crl": 0, "x509": 1, "x509_ca": 0})
+            # XXX GraalVM change
+            # graalpython loads CAPATH certificates immediately, cpython on demand 
+            self.assertEqual(ctx.cert_store_stats(), {"crl": 0, "x509": 4, "x509_ca": 3})
 
     @unittest.skipUnless(sys.platform == "win32", "Windows specific")
     @unittest.skipIf(hasattr(sys, "gettotalrefcount"), "Debug build does not share environment between CRTs")

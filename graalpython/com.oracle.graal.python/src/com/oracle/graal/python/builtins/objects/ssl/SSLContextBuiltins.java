@@ -33,7 +33,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -55,12 +54,15 @@ import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -69,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -514,9 +517,58 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetDefaultVerifyPathsNode extends PythonBuiltinNode {
         @Specialization
-        static Object set(PSSLContext self) {
-            self.setDefaultVerifyPaths();
+        Object set(VirtualFrame frame, PSSLContext self,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached("createEnvironLookup()") GetAttributeNode getAttribute,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary environLib,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
+                        @Cached("createCertFileKey()") PBytes certFileKey,
+                        @Cached("createCertDirKey()") PBytes certDirKey) {
+
+            PythonModule posix = getCore().lookupBuiltinModule("posix");
+            PDict environ = (PDict) getAttribute.executeObject(frame, posix);
+            HashingStorage storage = getStorage.execute(environ);
+
+            TruffleFile file = toTruffleFile(lib, environLib.getItem(storage, certFileKey));
+            TruffleFile path = toTruffleFile(lib, environLib.getItem(storage, certDirKey));
+            if (file != null || path != null) {
+                List<Object> certificates = new ArrayList<>();
+                try {
+                    LoadCertError result = CertUtils.loadVerifyLocations(file, path, certificates);
+                    if (result == LoadCertError.NO_ERROR) {
+                        // do not report any errors
+                        self.setCertificateEntries(certificates);
+                    }
+                } catch (NoSuchAlgorithmException | CertificateException | CRLException | IOException | KeyStoreException ex) {
+                    // do not report any errors
+                }
+            }
             return PNone.NONE;
+        }
+
+        protected PBytes createCertFileKey() {
+            return factory().createBytes("SSL_CERT_FILE".getBytes());
+        }
+
+        protected PBytes createCertDirKey() {
+            return factory().createBytes("SSL_CERT_DIR".getBytes());
+        }
+
+        protected GetAttributeNode createEnvironLookup() {
+            return GetAttributeNode.create("environ");
+        }
+
+        private TruffleFile toTruffleFile(PythonObjectLibrary lib, Object path) throws PException {
+            TruffleFile file;
+            try {
+                file = getContext().getEnv().getPublicTruffleFile(lib.asPath(path));
+                if (!file.exists()) {
+                    return null;
+                }
+                return file;
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 
@@ -598,43 +650,27 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
                 if (file != null || path != null) {
                     // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
-                    Collection<TruffleFile> files = new ArrayList<>();
-                    if (file != null) {
-                        files.add(file);
-                    }
-                    if (path != null && path.isDirectory()) {
-                        // TODO: see SSL_CTX_load_verify_locations
-                        // if capath is a directory, cpython loads certificates on demand
-                        Collection<TruffleFile> fs = path.list();
-                        if (fs != null) {
-                            files.addAll(fs);
-                        }
-                    }
                     List<Object> certificates = new ArrayList<>();
-                    for (TruffleFile f : files) {
-                        try (BufferedReader r = f.newBufferedReader()) {
-                            LoadCertError result = getCertificates(r, certificates);
-                            switch (result) {
-                                case EMPTY_CERT:
-                                case BEGIN_CERTIFICATE_WITHOUT_END:
-                                case BAD_BASE64_DECODE:
-                                    throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
-                                case SOME_BAD_BASE64_DECODE:
-                                    throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
-                                case NO_CERT_DATA:
-                                    throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_NO_CERTIFICATE_OR_CRL_FOUND, ErrorMessages.NO_CERTIFICATE_OR_CRL_FOUND);
-                                case NO_ERROR:
-                                    break;
-                                default:
-                                    assert false : "not handled: " + result;
-                            }
-                        }
+                    LoadCertError result = CertUtils.loadVerifyLocations(file, path, certificates);
+                    switch (result) {
+                        case EMPTY_CERT:
+                        case BEGIN_CERTIFICATE_WITHOUT_END:
+                        case BAD_BASE64_DECODE:
+                            throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
+                        case SOME_BAD_BASE64_DECODE:
+                            throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
+                        case NO_CERT_DATA:
+                            throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_NO_CERTIFICATE_OR_CRL_FOUND, ErrorMessages.NO_CERTIFICATE_OR_CRL_FOUND);
+                        case NO_ERROR:
+                            break;
+                        default:
+                            assert false : "not handled: " + result;
                     }
                     self.setCertificateEntries(certificates);
                 }
             } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | CRLException ex) {
                 // TODO
-                throw raise(ValueError, ex.getMessage());
+                throw raise(SSLError, ex.getMessage());
             }
             return PNone.NONE;
         }

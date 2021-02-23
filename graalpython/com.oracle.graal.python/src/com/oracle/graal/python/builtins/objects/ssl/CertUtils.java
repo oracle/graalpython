@@ -28,6 +28,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.nodes.Node;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -322,6 +323,32 @@ public final class CertUtils {
         BEGIN_CERTIFICATE_WITHOUT_END,
         SOME_BAD_BASE64_DECODE,
         BAD_BASE64_DECODE;
+    }
+
+    public static LoadCertError loadVerifyLocations(TruffleFile file, TruffleFile path, List<Object> certificates) throws IOException, CertificateException, CRLException {
+        Collection<TruffleFile> files = new ArrayList<>();
+        if (file != null) {
+            files.add(file);
+        }
+        if (path != null && path.isDirectory()) {
+            // TODO: see SSL_CTX_load_verify_locations
+            // if capath is a directory, cpython loads certificates on demand
+            Collection<TruffleFile> fs = path.list();
+            if (fs != null) {
+                files.addAll(fs);
+            }
+        }
+        List<Object> l = new ArrayList<>();
+        for (TruffleFile f : files) {
+            try (BufferedReader r = f.newBufferedReader()) {
+                LoadCertError result = getCertificates(r, l);
+                if (result != LoadCertError.NO_ERROR) {
+                    return result;
+                }
+            }
+        }
+        certificates.addAll(l);
+        return LoadCertError.NO_ERROR;
     }
 
     @TruffleBoundary

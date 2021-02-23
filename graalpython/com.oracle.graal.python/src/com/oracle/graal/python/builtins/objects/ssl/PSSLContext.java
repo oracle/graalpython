@@ -55,7 +55,6 @@ public final class PSSLContext extends PythonBuiltinObject {
     private int verifyMode;
     private SSLCipher[] ciphers;
     private long options;
-    private boolean setDefaultVerifyPaths = false;
     private SSLProtocol minimumVersion;
     private SSLProtocol maximumVersion;
 
@@ -219,15 +218,6 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     public void setOptions(long options) {
         this.options = options;
-    }
-
-    void setDefaultVerifyPaths() {
-        this.setDefaultVerifyPaths = true;
-    }
-
-    boolean getDefaultVerifyPaths() {
-        // TODO and where should this be used from?
-        return this.setDefaultVerifyPaths;
     }
 
     int getNumTickets() {

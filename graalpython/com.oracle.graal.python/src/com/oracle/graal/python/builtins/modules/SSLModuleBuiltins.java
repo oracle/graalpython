@@ -309,9 +309,11 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetDefaultVerifyPathsNode extends PythonBuiltinNode {
         @Specialization
-        @SuppressWarnings("unused")
-        Object get() {
-            throw raise(NotImplementedError);
+        Object getDefaultPaths() {
+            // there is no default location given by graalpython
+            // in case the env variables SSL_CERT_FILE or SSL_CERT_DIR
+            // are provided, ssl.py#get_default_verify_paths will take care of it
+            return factory().createTuple(new Object[]{"SSL_CERT_FILE", "", "SSL_CERT_DIR", ""});
         }
     }
 
