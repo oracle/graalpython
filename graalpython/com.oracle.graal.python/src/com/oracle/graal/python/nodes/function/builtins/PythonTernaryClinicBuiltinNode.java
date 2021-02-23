@@ -66,15 +66,18 @@ public abstract class PythonTernaryClinicBuiltinNode extends PythonTernaryBuilti
     }
 
     protected Object castWithNode(ArgumentClinicProvider clinic, VirtualFrame frame, int argIndex, Object value) {
+        ArgumentCastNode castNode;
         if (castNodes == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             castNodes = new ArgumentCastNode[3];
         }
-        if (castNodes[argIndex] == null) {
+        castNode = castNodes[argIndex];
+        if (castNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castNodes[argIndex] = insert(clinic.createCastNode(argIndex, this));
+            castNode = insert(clinic.createCastNode(argIndex, this));
+            castNodes[argIndex] = castNode;
         }
-        return castNodes[argIndex].execute(frame, value);
+        return castNode.execute(frame, value);
     }
 
     @Override
