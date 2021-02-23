@@ -107,6 +107,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -314,6 +315,7 @@ public final class PythonContext {
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
+    private AllocationReporter allocationReporter;
 
     /*
      * These maps are used to ensure that each "deserialization" of code in the parser gets a
@@ -339,6 +341,13 @@ public final class PythonContext {
         this.in = env.in();
         this.out = env.out();
         this.err = env.err();
+    }
+
+    public AllocationReporter getAllocationReporter() {
+        if (allocationReporter == null) {
+            return allocationReporter = env.lookup(AllocationReporter.class);
+        }
+        return allocationReporter;
     }
 
     public ThreadGroup getThreadGroup() {
