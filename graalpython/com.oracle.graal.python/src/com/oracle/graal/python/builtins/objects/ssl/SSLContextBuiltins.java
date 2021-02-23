@@ -5,12 +5,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getDHParameters;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getPrivateKey;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +29,6 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.InvalidParameterSpecException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -39,7 +36,6 @@ import java.util.List;
 
 import javax.crypto.interfaces.DHPrivateKey;
 import javax.crypto.interfaces.DHPublicKey;
-import javax.crypto.spec.DHParameterSpec;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -862,28 +858,29 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
-    // TODO: are those parameters being used in some way? if not supported, pehaps we should raise
-    // NotImplementedError
     @Builtin(name = "load_dh_params", minNumOfPositionalArgs = 2, parameterNames = {"$self", "filepath"})
     @GenerateNodeFactory
     abstract static class LoadDhParamsNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @SuppressWarnings("unused")
+	@Specialization
         PNone load(VirtualFrame frame, PSSLContext self, String filepath) {
-            File file = new File(filepath);
-            if (!file.exists()) {
-                throw raiseOSError(frame, OSErrorEnum.ENOENT);
-            }
-            DHParameterSpec dh = null;
-            try {
-                dh = getDHParameters(this, file);
-                if (dh != null) {
-                    self.setDHParameters(dh);
-                }
-            } catch (IOException | NoSuchAlgorithmException | InvalidParameterSpecException ex) {
-                // TODO
-                throw raise(ValueError, "load_dh_params: " + ex.getMessage());
-            }
-            return PNone.NONE;
+            // TODO: not used yet so rather raise error
+            throw raise(NotImplementedError);
+            // File file = new File(filepath);
+            // if (!file.exists()) {
+            // throw raiseOSError(frame, OSErrorEnum.ENOENT);
+            // }
+            // DHParameterSpec dh = null;
+            // try {
+            // dh = getDHParameters(this, file);
+            // if (dh != null) {
+            // self.setDHParameters(dh);
+            // }
+            // } catch (IOException | NoSuchAlgorithmException | InvalidParameterSpecException ex) {
+            // // TODO
+            // throw raise(ValueError, "load_dh_params: " + ex.getMessage());
+            // }
+            // return PNone.NONE;
         }
 
         @Specialization(limit = "3")
