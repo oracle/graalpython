@@ -48,7 +48,7 @@ public abstract class PBaseSet extends PHashingCollection {
     }
 
     @ExportMessage(limit = "1")
-    int lengthWithState(ThreadState state,
+    int lengthWithState(@SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("this.getDictStorage()") HashingStorageLibrary lib) {
         return lib.length(storage);
     }

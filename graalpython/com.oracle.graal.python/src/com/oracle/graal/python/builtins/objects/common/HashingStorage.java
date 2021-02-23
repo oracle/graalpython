@@ -329,7 +329,7 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public boolean equalsWithState(HashingStorage other, ThreadState state,
+    public boolean equalsWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
         if (this == other) {
             return true;
@@ -408,7 +408,7 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public int compareEntriesWithState(HashingStorage other, ThreadState state,
+    public int compareEntriesWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Cached TestKeyValueEqual testNode) {
         if (this == other) {

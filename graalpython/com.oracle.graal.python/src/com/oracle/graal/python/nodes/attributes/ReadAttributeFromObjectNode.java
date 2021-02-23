@@ -146,8 +146,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     "!isHiddenKey(key)",
                     "dict != null"
     }, replaces = "readFromBuiltinModuleDict")
-    protected static Object readFromDict(PythonObject object, Object key,
-                    @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
+    protected static Object readFromDict(@SuppressWarnings("unused") PythonObject object, Object key,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
                     @Bind("lib.getDict(object)") PDict dict,
                     @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
         Object value = hlib.getItem(dict.getDictStorage(), key);

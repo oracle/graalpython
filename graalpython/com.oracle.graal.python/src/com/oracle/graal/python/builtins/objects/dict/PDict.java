@@ -113,7 +113,7 @@ public final class PDict extends PHashingCollection {
         @Specialization(guards = {
                         "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupDict)"
         }, limit = "1")
-        static int doBuiltin(PDict self, ThreadState state,
+        static int doBuiltin(PDict self, @SuppressWarnings("unused") ThreadState state,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary storageLib,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
