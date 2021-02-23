@@ -98,7 +98,6 @@ class CertTests(unittest.TestCase):
         self.check_load_cert_chain_error(certfile="empty.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="empty_cert.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="empty_cert_at_begin.pem", errno=9, strerror="[SSL] PEM lib")
-        self.check_load_cert_chain_error(certfile="empty_cert_at_end.pem", errno=0, strerror="unknown error")
 
         self.check_load_cert_chain_error(certfile="broken_cert_double_begin.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="broken_cert_only_begin.pem", errno=9, strerror="[SSL] PEM lib")

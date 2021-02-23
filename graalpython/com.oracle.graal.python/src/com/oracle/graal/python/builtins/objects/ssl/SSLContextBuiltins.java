@@ -629,6 +629,9 @@ public class SSLContextBuiltins extends PythonBuiltins {
             TruffleFile file = null;
             if (!(cafile instanceof PNone)) {
                 file = toTruffleFile(frame, fileLib, cafile);
+                if (!file.exists()) {
+                    throw raiseOSError(frame, OSErrorEnum.ENOENT);
+                }
             }
             TruffleFile path = null;
             if (!(capath instanceof PNone)) {
@@ -656,7 +659,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         case EMPTY_CERT:
                         case BEGIN_CERTIFICATE_WITHOUT_END:
                         case BAD_BASE64_DECODE:
-                            throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
                         case SOME_BAD_BASE64_DECODE:
                             throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
                         case NO_CERT_DATA:
@@ -676,13 +678,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         private TruffleFile toTruffleFile(VirtualFrame frame, PythonObjectLibrary lib, Object fileObject) throws PException {
-            TruffleFile file;
             try {
-                file = getContext().getEnv().getPublicTruffleFile(lib.asPath(fileObject));
-                if (!file.exists()) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOENT);
-                }
-                return file;
+                return getContext().getEnv().getPublicTruffleFile(lib.asPath(fileObject));
             } catch (Exception e) {
                 throw raiseOSError(frame, e);
             }
@@ -697,9 +694,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 LoadCertError result = getCertificates(r, certificates);
                 switch (result) {
                     case BAD_BASE64_DECODE:
-                        throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
                     case EMPTY_CERT:
-                        throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_UNKNOWN, ErrorMessages.UNKNOWN_ERROR);
+                        throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
                     case BEGIN_CERTIFICATE_WITHOUT_END:
                     case NO_CERT_DATA:
                         throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
@@ -738,6 +734,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object certfile, Object keyfile, Object password,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+            if (!PGuards.isString(certfile) && !PGuards.isBytes(certfile)) {
+                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "certfile");
+            }
+            if (!(keyfile instanceof PNone) && !PGuards.isString(keyfile) && !PGuards.isBytes(keyfile)) {
+                throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "keyfile");
+            }
             Object kf = keyfile instanceof PNone ? certfile : keyfile;
             try (BufferedReader certReader = getReader(frame, certfile, lib, "certfile");
                             BufferedReader keyReader = getReader(frame, kf, lib, "keyfile")) {
@@ -793,14 +795,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     case BAD_BASE64_DECODE:
                     case BEGIN_CERTIFICATE_WITHOUT_END:
                     case NO_CERT_DATA:
+                    case EMPTY_CERT:
                         throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                     case SOME_BAD_BASE64_DECODE:
                         throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
-                    case EMPTY_CERT:
-                        if (certificates.isEmpty()) {
-                            throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
-                        }
-                        throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_UNKNOWN, ErrorMessages.UNKNOWN_ERROR);
                     case NO_ERROR:
                         break;
                     default:
