@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.WrapVoidPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateTimeMode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -162,6 +163,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -978,13 +980,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(object)));
         }
 
-        protected static boolean isPyDateTime(PythonObject object, GetClassNode getClassNode, GetNameNode getNameNode) {
-            return "datetime".equals(getNameNode.execute(getClassNode.execute(object)));
-        }
-
         protected static boolean isPyDateTimeCAPIType(String className) {
             return "PyDateTime_CAPI".equals(className);
 
+        }
+
+        protected static DateTimeMode getDateTimeMode(PythonObject object, GetClassNode getClassNode, GetNameNode getNameNode) {
+            return PyDateTimeMRNode.getModeFromTypeName(getNameNode.execute(getClassNode.execute(object)));
         }
 
         @Specialization(guards = "isPyDateTimeCAPI(object, getClassNode, getNameNode)", limit = "1")
@@ -996,12 +998,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getAttrNode.execute(getClassNode.execute(object), key));
         }
 
-        @Specialization(guards = "isPyDateTime(object, getClassNode, getNameNode)", limit = "1")
+        @Specialization(guards = "mode != null", limit = "1")
         static Object doDatetimeData(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("getNameNode") @Cached @SuppressWarnings("unused") GetNameNode getNameNode,
                         @Shared("getClassNode") @Cached @SuppressWarnings("unused") GetClassNode getClassNode,
+                        @Bind("getDateTimeMode(object, getClassNode, getNameNode)") DateTimeMode mode,
                         @Cached PyDateTimeMRNode pyDateTimeMRNode) {
-            return pyDateTimeMRNode.execute(object, key);
+            return pyDateTimeMRNode.execute(object, key, mode);
         }
 
         @Specialization(guards = "eq(F_LINENO, key)")
