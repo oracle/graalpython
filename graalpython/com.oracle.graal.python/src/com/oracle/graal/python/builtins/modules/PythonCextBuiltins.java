@@ -1491,7 +1491,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleFrameNewNode extends PythonBuiltinNode {
         @Specialization
         Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
-            return factory().createPFrame(threadState, code, globals, locals);
+            Object frameLocals;
+            if (locals == null || PGuards.isPNone(locals)) {
+                frameLocals = factory().createDict();
+            } else {
+                frameLocals = locals;
+            }
+            return factory().createPFrame(threadState, code, globals, frameLocals);
         }
     }
 
