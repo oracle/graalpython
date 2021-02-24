@@ -44,6 +44,7 @@ package com.oracle.graal.python.util;
 import java.net.URL;
 import java.util.Arrays;
 
+@SuppressWarnings("all")
 public class IPAddressUtil {
     private final static int INADDR4SZ = 4;
     private final static int INADDR16SZ = 16;
