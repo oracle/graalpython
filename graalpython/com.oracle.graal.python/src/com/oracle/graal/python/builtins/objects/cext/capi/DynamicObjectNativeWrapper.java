@@ -1024,13 +1024,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         // TODO fallback guard
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) throws UnknownIdentifierException {
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
+                        @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
             if (nativeWrapper.isMemberReadable(key)) {
                 logGeneric(key);
-                return lib.getItem(nativeWrapper.getNativeMemberStore(), key);
+                DynamicObjectStorage nativeMemberStore = nativeWrapper.getNativeMemberStore();
+                if (nativeMemberStore != null) {
+                    return lib.getItem(nativeMemberStore, key);
+                }
+                return toSulongNode.execute(getNativeNullNode.execute());
             }
             throw UnknownIdentifierException.create(key);
         }
