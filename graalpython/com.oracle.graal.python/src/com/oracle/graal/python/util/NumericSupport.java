@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -38,7 +39,7 @@ public final class NumericSupport {
     }
 
     @ExplodeLoop
-    static void reverse(byte[] buffer, int offset, int numBytes) {
+    private static void reverse(byte[] buffer, int offset, int numBytes) {
         CompilerAsserts.partialEvaluationConstant(numBytes);
         assert offset + numBytes <= buffer.length : "cannot reverse byte array, offset + numBytes exceeds byte array length";
         int a, b;
@@ -196,37 +197,37 @@ public final class NumericSupport {
         support.putLong(buffer, index, value);
     }
 
-    @ExplodeLoop
-    private static long getLongInternal(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException {
-        CompilerAsserts.partialEvaluationConstant(numBytes);
-        long value = 0L;
-        for (int i = 0; i < numBytes; i++) {
-            value |= ((long) (buffer[i + index] & 0xFF)) << (Byte.SIZE * (numBytes - 1 - i));
-        }
-        return value;
-    }
-
     public long getLong(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException {
-        assert numBytes <= buffer.length - index;
-        if (reversed) {
-            reverse(buffer, index, numBytes);
-        }
-        return getLongInternal(buffer, index, numBytes);
-    }
-
-    @ExplodeLoop
-    private static void putLongInternal(byte[] buffer, int index, long value, int numBytes) throws IndexOutOfBoundsException {
-        CompilerAsserts.partialEvaluationConstant(numBytes);
-        for (int i = 0; i < numBytes; i++) {
-            buffer[i + index] = (byte) ((value >> (Byte.SIZE * (numBytes - 1 - i))) & 0xFF);
+        switch (numBytes) {
+            case 1:
+                return getByte(buffer, index);
+            case 2:
+                return getShort(buffer, index);
+            case 4:
+                return getInt(buffer, index);
+            case 8:
+                return getLong(buffer, index);
+            default:
+                throw CompilerDirectives.shouldNotReachHere("number of bytes must be 1,2,4 or 8");
         }
     }
 
     public void putLong(byte[] buffer, int index, long value, int numBytes) throws IndexOutOfBoundsException {
-        assert numBytes <= buffer.length - index;
-        putLongInternal(buffer, index, value, numBytes);
-        if (reversed) {
-            reverse(buffer, index, numBytes);
+        switch (numBytes) {
+            case 1:
+                putByte(buffer, index, (byte) value);
+                break;
+            case 2:
+                putShort(buffer, index, (short) value);
+                break;
+            case 4:
+                putInt(buffer, index, (int) value);
+                break;
+            case 8:
+                putLong(buffer, index, value);
+                break;
+            default:
+                throw CompilerDirectives.shouldNotReachHere("number of bytes must be 1,2,4 or 8");
         }
     }
 
@@ -291,7 +292,7 @@ public final class NumericSupport {
             case 8:
                 return getDouble(buffer, index);
             default:
-                throw new IllegalStateException("number of bytes must be 2,4 or 8");
+                throw CompilerDirectives.shouldNotReachHere("number of bytes must be 2,4 or 8");
         }
     }
 
@@ -307,7 +308,7 @@ public final class NumericSupport {
                 putDouble(buffer, index, value);
                 break;
             default:
-                throw new IllegalStateException("number of bytes must be 2,4 or 8");
+                throw CompilerDirectives.shouldNotReachHere("number of bytes must be 2,4 or 8");
         }
     }
 }
