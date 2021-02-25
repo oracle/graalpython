@@ -66,8 +66,9 @@ public @interface ArgumentClinic {
 
     /**
      * The string should contain valid Java constant value expression, for example, {@code true}, or
-     * {@code \"some string\"}. You may have to update the annotation processor to include import of
-     * necessary packages or use fully qualified names.
+     * {@code \"some string\"}. Another supported value is an identifier of a static field inside
+     * the annotated class. For anything else, you may have to update the annotation processor to
+     * include import of necessary packages or use fully qualified names.
      */
     String defaultValue() default "";
 
@@ -122,10 +123,21 @@ public @interface ArgumentClinic {
          */
         Int,
         /**
-         * Corresponds to CPython's {@code Py_ssize_t} converter. Supports {@link #defaultValue()},
-         * and {@link #useDefaultForNone()}.
+         * Corresponds to CPython's {@code long} converter ("L"/"l" for old style conversions).
+         * Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
+         */
+        Long,
+        /**
+         * Corresponds to CPython's {@code Py_ssize_t} converter, except that it converts the result
+         * into Java integer. Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */
         Index,
+        /**
+         * Roughly corresponds to CPython's legacy "n" converter: calls the __index__ and then
+         * converts it to Java long. Supports {@link #defaultValue()}, and
+         * {@link #useDefaultForNone()}.
+         */
+        LongIndex,
         /**
          * Corresponds to CPython's {@code slice_index} converter. Supports {@link #defaultValue()},
          * and {@link #useDefaultForNone()}.

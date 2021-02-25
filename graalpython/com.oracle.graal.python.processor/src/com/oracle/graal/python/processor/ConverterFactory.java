@@ -94,9 +94,11 @@ public class ConverterFactory {
     private static ConverterFactory[] BuiltinString;
     private static ConverterFactory[] BuiltinStringWithDefaultValue;
     private static ConverterFactory[] BuiltinInt;
+    private static ConverterFactory[] BuiltinLong;
     private static ConverterFactory[] BuiltinCodePoint;
     private static ConverterFactory[] BuiltinBuffer;
     private static ConverterFactory[] BuiltinIndex;
+    private static ConverterFactory[] BuiltinLongIndex;
     private static ConverterFactory[] BuiltinSliceIndex;
     private static ConverterFactory[] BuiltinNone;
     private static ConverterFactory[] BuiltinDouble;
@@ -127,6 +129,8 @@ public class ConverterFactory {
                 return annotation.defaultValue().isEmpty() ? BuiltinString : BuiltinStringWithDefaultValue;
             case Int:
                 return BuiltinInt;
+            case Long:
+                return BuiltinLong;
             case Double:
                 return BuiltinDouble;
             case CodePoint:
@@ -135,6 +139,8 @@ public class ConverterFactory {
                 return BuiltinBuffer;
             case Index:
                 return BuiltinIndex;
+            case LongIndex:
+                return BuiltinLongIndex;
             case SliceIndex:
                 return BuiltinSliceIndex;
             case None:
@@ -209,10 +215,12 @@ public class ConverterFactory {
         BuiltinString = forBuiltin(elementUtils, "JavaStringConverterNode");
         BuiltinStringWithDefaultValue = forBuiltin(elementUtils, "JavaStringConverterWithDefaultValueNode");
         BuiltinInt = forBuiltin(elementUtils, "JavaIntConversionNode");
+        BuiltinLong = forBuiltin(elementUtils, "JavaLongConversionNode");
         BuiltinDouble = forBuiltin(elementUtils, "JavaDoubleConversionNode");
         BuiltinCodePoint = forBuiltin(elementUtils, "CodePointConversionNode");
         BuiltinBuffer = forBuiltin(elementUtils, "BufferConversionNode");
         BuiltinIndex = forBuiltin(elementUtils, "IndexConversionNode");
+        BuiltinLongIndex = forBuiltin(elementUtils, "LongIndexConverterNode");
         BuiltinSliceIndex = forBuiltin(elementUtils, "SliceIndexConversionNode");
         BuiltinNone = forBuiltin(elementUtils, "DefaultValueNode");
     }
