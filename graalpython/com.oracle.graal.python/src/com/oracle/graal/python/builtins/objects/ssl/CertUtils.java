@@ -388,8 +388,6 @@ public final class CertUtils {
             files.add(file);
         }
         if (path != null && path.isDirectory()) {
-            // TODO: see SSL_CTX_load_verify_locations
-            // if capath is a directory, cpython loads certificates on demand
             Collection<TruffleFile> fs = path.list();
             if (fs != null) {
                 files.addAll(fs);
@@ -509,7 +507,6 @@ public final class CertUtils {
             }
         }
         if (begin || sb.length() == 0) {
-            // TODO: append any additional info? original msg is e.g. "[SSL] PEM lib (_ssl.c:3991)"
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
 

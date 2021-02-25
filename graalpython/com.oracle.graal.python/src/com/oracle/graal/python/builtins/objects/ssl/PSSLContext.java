@@ -59,7 +59,6 @@ public final class PSSLContext extends PythonBuiltinObject {
     private SSLProtocol maximumVersion;
 
     private DHParameterSpec dhParameters;
-    // TODO: this is part of X509_VERIFY_PARAM, maybe replicate the whole structure
     private int verifyFlags;
 
     // number of TLS v1.3 session tickets

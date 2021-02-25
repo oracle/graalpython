@@ -597,8 +597,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 }
                 return factory().createDict(new PKeyword[]{new PKeyword("x509", x509), new PKeyword("crl", crl), new PKeyword("x509_ca", ca)});
             } catch (Exception ex) {
-                // TODO
-                throw raise(ValueError, "cert_store_stats " + ex.toString());
+                throw raise(SSLError, "cert_store_stats " + ex.toString());
             }
         }
     }
@@ -667,7 +666,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     self.setCertificateEntries(certificates);
                 }
             } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | CRLException ex) {
-                // TODO
                 throw raise(SSLError, ex.getMessage());
             }
             return PNone.NONE;
@@ -877,8 +875,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             // self.setDHParameters(dh);
             // }
             // } catch (IOException | NoSuchAlgorithmException | InvalidParameterSpecException ex) {
-            // // TODO
-            // throw raise(ValueError, "load_dh_params: " + ex.getMessage());
+            // throw raise(SQLError, ex.getMessage());
             // }
             // return PNone.NONE;
         }
