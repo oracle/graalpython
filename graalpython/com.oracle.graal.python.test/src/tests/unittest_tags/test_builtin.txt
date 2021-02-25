@@ -60,6 +60,7 @@
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_tty
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_tty_non_ascii
 *graalpython.lib-python.3.test.test_builtin.PtyTests.test_input_tty_non_ascii_unicode_errors
+*graalpython.lib-python.3.test.test_builtin.ShutdownTest.test_cleanup
 *graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_breakpoint
 *graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_breakpoint_with_args_and_keywords
 *graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_breakpoint_with_breakpointhook_reset
