@@ -176,7 +176,43 @@ class CertTests(unittest.TestCase):
                 os.environ["SSL_CERT_FILE"] = certFile
             if certDir is not None:        
                 os.environ["SSL_CERT_DIR"] = certDir
+    
+    def test_verify_error(self):        
+        hostname = 'localhost'
+        SIGNED_CERTFILE = data_file("signed_cert.pem")
 
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(SIGNED_CERTFILE)
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+        c_in = ssl.MemoryBIO()
+        c_out = ssl.MemoryBIO()
+        s_in = ssl.MemoryBIO()
+        s_out = ssl.MemoryBIO()
+        client = context.wrap_bio(c_in, c_out, server_hostname=hostname)
+        server = server_context.wrap_bio(s_in, s_out, server_side=True)
+
+        try:
+            for _ in range(5):
+                try:
+                    client.do_handshake()
+                except ssl.SSLWantReadError:
+                    pass
+                if c_out.pending:
+                    s_in.write(c_out.read())
+                try:
+                    server.do_handshake()
+                except ssl.SSLWantReadError:
+                    pass
+                if s_out.pending:
+                    c_in.write(s_out.read())
+        except ssl.SSLCertVerificationError as e:
+            self.assertIsNotNone(e.verify_code)
+            self.assertIsNotNone(e.verify_message)
+        else:
+            assert False
+        
 def get_cipher_list(cipher_string):
     context = ssl.SSLContext()
     context.set_ciphers(cipher_string)

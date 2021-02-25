@@ -5,6 +5,7 @@ import java.util.IllegalFormatException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -43,6 +44,13 @@ public abstract class PRaiseSSLErrorNode extends Node {
         // TODO properly populate reason/lib attrs, this are dummy values
         writeAttribute.execute(exception, "reason", message);
         writeAttribute.execute(exception, "library", "[SSL]");
+        if (type == ERROR_CERT_VERIFICATION) {
+            // not trying to be 100% correct,
+            // use code = 1 (X509_V_ERR_UNSPECIFIED) and msg from jdk exception instead
+            // see openssl x509_txt.c#X509_verify_cert_error_string
+            writeAttribute.execute(exception, "verify_code", 1);
+            writeAttribute.execute(exception, "verify_message", message);
+        }
         return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
     }
 
