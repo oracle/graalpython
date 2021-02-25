@@ -98,6 +98,12 @@ public final class NFIPosixSupport extends PosixSupport {
     private enum PosixNativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
+        read_byte("(pointer, sint64):sint8"),
+        read_bytes("(pointer, [sint8], sint64, sint32):void"),
+        write_bytes("(pointer, [sint8], sint64, sint32):void"),
+        call_mmap("(sint64, sint32, sint32, sint32, sint64):pointer"),
+        call_munmap("(pointer, sint64):sint32"),
+        call_msync("(pointer, sint64, sint64):void"),
         call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint32):sint32"),
@@ -201,7 +207,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         public long callLong(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
             try {
-                return ensureResultInterop().asLong(call(posix, function, args));
+                return getResultInterop().asLong(call(posix, function, args));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -209,7 +215,15 @@ public final class NFIPosixSupport extends PosixSupport {
 
         public int callInt(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
             try {
-                return ensureResultInterop().asInt(call(posix, function, args));
+                return getResultInterop().asInt(call(posix, function, args));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        public byte callByte(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
+            try {
+                return getResultInterop().asByte(call(posix, function, args));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -270,7 +284,7 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
 
-        private InteropLibrary ensureResultInterop() {
+        public InteropLibrary getResultInterop() {
             if (resultInterop == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 resultInterop = insert(InteropLibrary.getFactory().createDispatched(2));
@@ -1122,6 +1136,56 @@ public final class NFIPosixSupport extends PosixSupport {
         offsets[startPos + src.length] = -1;        // this will become NULL in C (the char* array
         // needs to be terminated by a NULL)
         return offset;
+    }
+
+    @ExportMessage
+    public Object mmap(long length, int prot, int flags, int fd, long offset,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        Object address = invokeNode.call(this, PosixNativeFunction.call_mmap, length, prot, flags, fd, offset);
+        try {
+            InteropLibrary interop = invokeNode.getResultInterop();
+            if (interop.fitsInInt(address) &&
+                            interop.asInt(address) == 0) {
+                throw newPosixException(invokeNode, getErrno(invokeNode));
+            }
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+        return address;
+    }
+
+    @ExportMessage
+    public byte mmapReadByte(Object mmap, long index,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callByte(this, PosixNativeFunction.read_byte, mmap, index);
+    }
+
+    @ExportMessage
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        invokeNode.call(this, PosixNativeFunction.read_bytes, mmap, wrap(bytes), index, length);
+        return length;
+    }
+
+    @ExportMessage
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        invokeNode.call(this, PosixNativeFunction.write_bytes, mmap, wrap(bytes), index, length);
+    }
+
+    @ExportMessage
+    public void mmapFlush(Object mmap, long offset, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        invokeNode.call(this, PosixNativeFunction.call_msync, mmap, offset, length);
+    }
+
+    @ExportMessage
+    public void mmapUnmap(Object mmap, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_munmap, mmap, length);
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
     }
 
     // ------------------

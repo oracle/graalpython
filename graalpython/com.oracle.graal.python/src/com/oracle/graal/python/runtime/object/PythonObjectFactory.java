@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.object;
 import java.io.ByteArrayOutputStream;
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
-import java.nio.channels.SeekableByteChannel;
 import java.util.concurrent.Semaphore;
 
 import org.graalvm.collections.EconomicMap;
@@ -960,12 +959,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(getLanguage()), dirEntryData, path));
     }
 
-    public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {
-        return trace(new PMMap(PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMMap.getInstanceShape(getLanguage()), channel, length, offset));
-    }
-
-    public PMMap createMMap(Object clazz, SeekableByteChannel channel, long length, long offset) {
-        return trace(new PMMap(clazz, getShape(clazz), channel, length, offset));
+    public PMMap createMMap(Object clazz, Object mmapHandle, int fd, long length, int access) {
+        return trace(new PMMap(clazz, getShape(clazz), mmapHandle, fd, length, access));
     }
 
     public BZ2Object.BZ2Compressor createBZ2Compressor(Object clazz) {

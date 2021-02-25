@@ -256,9 +256,12 @@ public class PosixResources extends PosixSupport {
     @TruffleBoundary
     private void dupFD(int fd1, int fd2) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd1, null);
+        String path = filePaths.get(fd1);
         if (channelWrapper != null) {
+            assert path != null;
             channelWrapper.cnt += 1;
             files.put(fd2, channelWrapper);
+            filePaths.put(fd2, path);
         }
     }
 

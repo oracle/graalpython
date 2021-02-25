@@ -62,6 +62,7 @@
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <sys/file.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 
@@ -503,6 +504,37 @@ void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
 
 int32_t call_system(const char *pathname) {
     return system(pathname);
+}
+
+void *call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
+    void *result = mmap(NULL, length, prot, flags, fd, offset);
+    return result == MAP_FAILED ? 0 : result;
+}
+
+int32_t call_munmap(void* address, int64_t length) {
+    return munmap(address, length);
+}
+
+void call_msync(void* address, int64_t offset, int64_t length) {
+    // TODO: can be generalized to also accept different flags,
+    // but MS_SYNC and such seem to be defined to different values across systems
+    msync(address + offset, length, MS_SYNC);
+}
+
+int8_t read_byte(int8_t *address, int64_t index) {
+    return address[index];
+}
+
+void write_bytes(int8_t *address, int8_t* buffer, int64_t index, int32_t length) {
+    for (int64_t i = 0; i < length; ++i) {
+        address[index + i] = buffer[i];
+    }
+}
+
+void read_bytes(int8_t *address, int8_t* buffer, int64_t index, int32_t length) {
+    for (int64_t i = 0; i < length; ++i) {
+        buffer[i] = address[index + i];
+    }
 }
 
 int32_t get_errno() {
