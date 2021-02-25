@@ -231,19 +231,76 @@ public final class CertUtils {
                 if (altName.size() == 2 && altName.get(0) instanceof Integer) {
                     int type = (Integer) altName.get(0);
                     Object value = altName.get(1);
+                    String stringValue;
+                    if (value instanceof String) {
+                        stringValue = (String) value;
+                    } else {
+                        stringValue = "<unsupported>";
+                    }
                     switch (type) {
+			// see openssl v3_alc.#i2v_GENERAL_NAME()
+                        case 0:
+                            tuples.add(factory.createTuple(new Object[]{"othername", stringValue}));
+                            break;
+                        case 1:
+                            tuples.add(factory.createTuple(new Object[]{"email", stringValue}));
+                            break;
                         case 2:
-                            tuples.add(factory.createTuple(new Object[]{"DNS", value}));
+                            tuples.add(factory.createTuple(new Object[]{"DNS", stringValue}));
+                            break;
+                        case 3:
+                            tuples.add(factory.createTuple(new Object[]{"X400Name", stringValue}));
+                            break;
+                        case 4:
+                            tuples.add(factory.createTuple(new Object[]{"DirName", parseDirName(stringValue, factory)}));
+                            break;
+                        case 5:
+                            tuples.add(factory.createTuple(new Object[]{"EdiPartyName", stringValue}));
+                            break;
+                        case 6:
+                            tuples.add(factory.createTuple(new Object[]{"URI", stringValue}));
+                            break;
+                        case 7:
+                            tuples.add(factory.createTuple(new Object[]{"IP Address", stringValue}));
+                            break;
+                        case 8:
+                            tuples.add(factory.createTuple(new Object[]{"Registered ID", stringValue}));
                             break;
                         default:
-                            // TODO other types
                             continue;
                     }
                 }
             }
-            return factory.createTuple(tuples.toArray(new Object[0]));
+            return factory.createTuple(tuples.toArray(new Object[tuples.size()]));
         }
         return null;
+    }
+
+    private static final String[] DIR_NAME_NAMES = {"countryName", "localityName", "organizationName", "commonName"};
+
+    private static PTuple parseDirName(String value, PythonObjectFactory factory) {
+        String[] split = value.split(",");
+        String[] values = new String[4];
+        for (String s : split) {
+            s = s.trim();
+            if (s.startsWith("C=")) {
+                values[0] = s.substring(2);
+            } else if (s.startsWith("L=")) {
+                values[1] = s.substring(2);
+            } else if (s.startsWith("O=")) {
+                values[2] = s.substring(2);
+            } else if (s.startsWith("CN=")) {
+                values[3] = s.substring(3);
+            }
+        }
+        List<PTuple> tuples = new ArrayList<>(4);
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == null) {
+                break;
+            }
+            addTuple(factory, tuples, DIR_NAME_NAMES[i], values[i]);
+        }
+        return factory.createTuple(tuples.toArray(new Object[tuples.size()]));
     }
 
     @TruffleBoundary
@@ -470,7 +527,6 @@ public final class CertUtils {
     @TruffleBoundary
     static DHParameterSpec getDHParameters(Node node, File file) throws IOException, NoSuchAlgorithmException, InvalidParameterSpecException {
         try (BufferedReader r = new BufferedReader(new FileReader(file))) {
-            // TODO: test me!
             String line;
             boolean begin = false;
             StringBuilder sb = new StringBuilder();
