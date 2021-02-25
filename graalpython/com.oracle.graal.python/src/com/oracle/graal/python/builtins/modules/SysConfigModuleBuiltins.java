@@ -86,10 +86,10 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetConfigVarsNode extends PythonBuiltinNode {
         @Specialization
+        @SuppressWarnings("unchecked")
         PDict select(PythonModule self,
-                @SuppressWarnings("unused") Object[] arguments,
-                @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            @SuppressWarnings("unchecked")
+                        @SuppressWarnings("unused") Object[] arguments,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
             EconomicMap<String, Object> configOptions = (EconomicMap<String, Object>) readNode.execute(self, CONFIG_OPTIONS);
             return factory().createDict(configOptions);
         }
