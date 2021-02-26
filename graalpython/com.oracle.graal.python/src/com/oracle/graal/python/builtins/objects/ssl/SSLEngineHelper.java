@@ -306,8 +306,6 @@ public class SSLEngineHelper {
 
     private static PException handleSSLException(PNodeWithRaise node, SSLException e) {
         if (e.getCause() instanceof CertificateException) {
-            // TODO: where else can this be "hidden"?
-            // ... cc instanceof CertificateException || c instanceof CertificateException ?
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
         }
         throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
