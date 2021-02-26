@@ -526,15 +526,11 @@ int8_t read_byte(int8_t *address, int64_t index) {
 }
 
 void write_bytes(int8_t *address, int8_t* buffer, int64_t index, int32_t length) {
-    for (int64_t i = 0; i < length; ++i) {
-        address[index + i] = buffer[i];
-    }
+    memcpy(address + index, buffer, length);
 }
 
 void read_bytes(int8_t *address, int8_t* buffer, int64_t index, int32_t length) {
-    for (int64_t i = 0; i < length; ++i) {
-        buffer[i] = address[index + i];
-    }
+    memcpy(buffer, address + index, length);
 }
 
 int32_t get_errno() {

@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_COPY;
 import static com.oracle.graal.python.builtins.objects.mmap.PMMap.ACCESS_READ;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_CHANGED_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.MMAP_INDEX_OUT_OF_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.READ_BYTE_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
@@ -188,6 +189,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
     private static byte[] readBytes(PythonBuiltinBaseNode node, VirtualFrame frame, PMMap self, PosixSupportLibrary posixLib, long pos, int len) {
         try {
+            assert pos + len <= self.getLength();
             byte[] buffer = new byte[len];
             posixLib.mmapReadBytes(node.getPosixSupport(), self.getPosixSupportHandle(), pos, buffer, buffer.length);
             return buffer;
@@ -385,6 +387,9 @@ public class MMapBuiltins extends PythonBuiltins {
         @Specialization
         int readByte(VirtualFrame frame, PMMap self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib) {
+            if (self.getPos() >= self.getLength()) {
+                throw raise(PythonBuiltinClassType.ValueError, READ_BYTE_OUT_OF_RANGE);
+            }
             try {
                 byte res = posixSupportLib.mmapReadByte(getPosixSupport(), self.getPosixSupportHandle(), self.getPos());
                 self.setPos(self.getPos() + 1);

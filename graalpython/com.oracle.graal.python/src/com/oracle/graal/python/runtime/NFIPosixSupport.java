@@ -1138,6 +1138,16 @@ public final class NFIPosixSupport extends PosixSupport {
         return offset;
     }
 
+    private static final class MMapHandle {
+        private final Object pointer;
+        private final long length;
+
+        public MMapHandle(Object pointer, long length) {
+            this.pointer = pointer;
+            this.length = length;
+        }
+    }
+
     @ExportMessage
     public Object mmap(long length, int prot, int flags, int fd, long offset,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
@@ -1151,40 +1161,67 @@ public final class NFIPosixSupport extends PosixSupport {
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
-        return address;
+        return new MMapHandle(address, length);
     }
 
     @ExportMessage
     public byte mmapReadByte(Object mmap, long index,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        return invokeNode.callByte(this, PosixNativeFunction.read_byte, mmap, index);
+        MMapHandle handle = (MMapHandle) mmap;
+        if (index < 0 || index >= handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IndexOutOfBoundsException();
+        }
+        return invokeNode.callByte(this, PosixNativeFunction.read_byte, handle.pointer, index);
     }
 
     @ExportMessage
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        invokeNode.call(this, PosixNativeFunction.read_bytes, mmap, wrap(bytes), index, length);
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, index, length);
+        invokeNode.call(this, PosixNativeFunction.read_bytes, handle.pointer, wrap(bytes), index, length);
         return length;
     }
 
     @ExportMessage
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        invokeNode.call(this, PosixNativeFunction.write_bytes, mmap, wrap(bytes), index, length);
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, index, length);
+        invokeNode.call(this, PosixNativeFunction.write_bytes, handle.pointer, wrap(bytes), index, length);
     }
 
     @ExportMessage
     public void mmapFlush(Object mmap, long offset, long length,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        invokeNode.call(this, PosixNativeFunction.call_msync, mmap, offset, length);
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, offset, length);
+        invokeNode.call(this, PosixNativeFunction.call_msync, handle.pointer, offset, length);
     }
 
     @ExportMessage
     public void mmapUnmap(Object mmap, long length,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_munmap, mmap, length);
+        MMapHandle handle = (MMapHandle) mmap;
+        if (length != handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalArgumentException();
+        }
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_munmap, handle.pointer, length);
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    private static void checkIndexAndLen(MMapHandle handle, long index, long length) {
+        if (length < 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalArgumentException();
+        }
+        if (index < 0 || index + length > handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IndexOutOfBoundsException();
         }
     }
 

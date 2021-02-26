@@ -746,7 +746,6 @@ public class LoggingPosixSupport extends PosixSupport {
         logEnter("mmapWriteBytes", "%s, %d, %d", mmap, index, length);
         try {
             lib.mmapWriteBytes(delegate, mmap, index, bytes, length);
-            logExit("mmapWriteBytes", "%s", "void");
         } catch (PosixException e) {
             throw logException("mmapWriteBytes", e);
         }
@@ -769,10 +768,9 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     public void mmapFlush(Object mmap, long offset, long length,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("mmapFlush", "%s %d %d", mmap, offset, length);
+        logEnter("mmapFlush", "%s, %d, %d", mmap, offset, length);
         try {
             lib.mmapFlush(delegate, mmap, offset, length);
-            logExit("mmapFlush", "%s", "void");
         } catch (PosixException e) {
             throw logException("mmapFlush", e);
         }
@@ -795,7 +793,6 @@ public class LoggingPosixSupport extends PosixSupport {
         logEnter("mmapUnmap", "%s %d", mmap, length);
         try {
             lib.mmapUnmap(delegate, mmap, length);
-            logExit("mmapUnmap", "%s", "void");
         } catch (PosixException e) {
             throw logException("mmapUnmap", e);
         }
