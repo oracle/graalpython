@@ -62,8 +62,10 @@ class CertTests(unittest.TestCase):
             else:
                 self.ctx.load_cert_chain(data_file(certfile), data_file(keyfile))
         except err as e:
-            self.assertEqual(e.errno, errno)
-            self.assertIn(strerror, e.strerror)
+            if errno != -1:
+                self.assertEqual(e.errno, errno)
+            if strerror is not None:    
+                self.assertIn(strerror, e.strerror)
             self.assertIsInstance(type(e), type(err))
         else:
             assert False
@@ -75,8 +77,10 @@ class CertTests(unittest.TestCase):
             else:
                 self.ctx.load_verify_locations(data_file(cafile), data_file(capath))
         except err as e:
-            self.assertEqual(e.errno, errno)
-            self.assertIn(strerror, e.strerror)
+            if errno != -1:
+                self.assertEqual(e.errno, errno)
+            if strerror is not None:    
+                self.assertIn(strerror, e.strerror)
             self.assertIsInstance(type(e), type(err))
         else:
             assert False
@@ -98,6 +102,7 @@ class CertTests(unittest.TestCase):
         self.check_load_cert_chain_error(certfile="empty.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="empty_cert.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="empty_cert_at_begin.pem", errno=9, strerror="[SSL] PEM lib")
+        self.check_load_cert_chain_error(certfile="empty_cert_at_end.pem")
 
         self.check_load_cert_chain_error(certfile="broken_cert_double_begin.pem", errno=9, strerror="[SSL] PEM lib")
         self.check_load_cert_chain_error(certfile="broken_cert_only_begin.pem", errno=9, strerror="[SSL] PEM lib")
@@ -117,6 +122,7 @@ class CertTests(unittest.TestCase):
         self.check_load_cert_chain_error(certfile="cert_rsa.pem", keyfile="broken_pk_no_end.pem", errno=9, strerror="[SSL] PEM lib")
 
         self.check_load_cert_chain_error(certfile="cert_rsa2.pem", keyfile="pk_rsa.pem", errno=116, strerror="[X509: KEY_VALUES_MISMATCH] key values mismatch")        
+        self.check_load_cert_chain_error(certfile="cert_rsa2.pem", keyfile="pk_ecc.pem")        
 
     def test_load_verify_locations(self):
         self.ctx.load_verify_locations(data_file("cert_rsa.pem"))
