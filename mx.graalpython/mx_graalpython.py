@@ -704,8 +704,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py"])
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py"])
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"])
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
