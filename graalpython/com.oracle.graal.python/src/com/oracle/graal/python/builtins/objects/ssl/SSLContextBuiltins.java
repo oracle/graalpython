@@ -5,7 +5,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getPrivateKey;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -22,20 +21,12 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.DSAPrivateKey;
-import java.security.interfaces.DSAPublicKey;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
-import javax.crypto.interfaces.DHPrivateKey;
-import javax.crypto.interfaces.DHPublicKey;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -94,7 +85,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.cert.CRLException;
 
@@ -782,6 +772,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         private Object load(PSSLContext self, BufferedReader certReader, BufferedReader keyReader) {
             // TODO add logging
             try {
+                // if keyReader and certReader are from the same file, key is expected to come first
+                byte[] pkBytes = CertUtils.getEncodedPrivateKey(this, keyReader);
                 X509Certificate[] certs;
                 List<Object> certificates = new ArrayList<>();
                 LoadCertError result = getCertificates(certReader, certificates);
@@ -799,48 +791,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         assert false : "not handled: " + result;
                 }
                 certs = certificates.toArray(new X509Certificate[certificates.size()]);
-                // TODO cpython sets that if PK and certs in 1 file,
-                // then the PK has to be the first section
-                PrivateKey pk = getPrivateKey(this, keyReader, certs[0].getPublicKey().getAlgorithm());
-                checkPrivateKey(this, pk, certs[0]);
+                PrivateKey pk = CertUtils.createPrivateKey(this, pkBytes, certs[0].getPublicKey());
                 self.setKeyEntry(pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
-            } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | KeyStoreException | CertificateException | CRLException ex) {
+            } catch (InvalidKeySpecException | IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | CRLException ex) {
                 throw raise(SSLError, ErrorMessages.SSL_ERROR, ex.getMessage());
             }
             return PNone.NONE;
-        }
-
-        private static void checkPrivateKey(Node node, PrivateKey pk, X509Certificate cert) throws PException {
-            if (!pk.getAlgorithm().equals(cert.getPublicKey().getAlgorithm())) {
-                // TODO correct err code
-                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_TYPE_MISMATCH, ErrorMessages.KEY_TYPE_MISMATCH);
-            }
-            if (pk instanceof RSAPrivateKey) {
-                RSAPrivateKey privKey = (RSAPrivateKey) pk;
-                RSAPublicKey pubKey = (RSAPublicKey) cert.getPublicKey();
-                if (!privKey.getModulus().equals(pubKey.getModulus())) {
-                    // TODO: only modulus?
-                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
-                }
-            } else if (pk instanceof ECPrivateKey) {
-                ECPrivateKey privKey = (ECPrivateKey) pk;
-                ECPublicKey pubKey = (ECPublicKey) cert.getPublicKey();
-                if (!privKey.getParams().equals(pubKey.getParams())) {
-                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
-                }
-            } else if (pk instanceof DHPrivateKey) {
-                DHPrivateKey privKey = (DHPrivateKey) pk;
-                DHPublicKey pubKey = (DHPublicKey) cert.getPublicKey();
-                if (!privKey.getParams().equals(pubKey.getParams())) {
-                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
-                }
-            } else if (pk instanceof DSAPrivateKey) {
-                DSAPrivateKey privKey = (DSAPrivateKey) pk;
-                DSAPublicKey pubKey = (DSAPublicKey) cert.getPublicKey();
-                if (!privKey.getParams().equals(pubKey.getParams())) {
-                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
-                }
-            }
         }
 
         private TruffleFile toTruffleFile(VirtualFrame frame, String path) throws PException {

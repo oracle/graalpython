@@ -26,6 +26,7 @@ import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISS
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -45,6 +46,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Principal;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.cert.CRLException;
 import java.security.cert.CertificateEncodingException;
@@ -52,6 +54,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -63,6 +71,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import javax.crypto.interfaces.DHPrivateKey;
+import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
 import sun.security.provider.certpath.OCSP;
 import sun.security.util.DerValue;
@@ -490,7 +500,7 @@ public final class CertUtils {
      * Returns the first private key found
      */
     @TruffleBoundary
-    static PrivateKey getPrivateKey(Node node, BufferedReader r, String alg) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+    static byte[] getEncodedPrivateKey(Node node, BufferedReader r) throws IOException {
         boolean begin = false;
         StringBuilder sb = new StringBuilder();
         String line;
@@ -510,15 +520,48 @@ public final class CertUtils {
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
 
-        byte[] bytes;
         try {
-            bytes = Base64.getDecoder().decode(sb.toString());
+            return Base64.getDecoder().decode(sb.toString());
         } catch (IllegalArgumentException e) {
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
+    }
+
+    @TruffleBoundary
+    static PrivateKey createPrivateKey(Node node, byte[] bytes, PublicKey publicKey) throws NoSuchAlgorithmException, InvalidKeySpecException {
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
-        KeyFactory factory = KeyFactory.getInstance(alg);
-        return factory.generatePrivate(spec);
+        KeyFactory factory = KeyFactory.getInstance(publicKey.getAlgorithm());
+        PrivateKey privateKey = factory.generatePrivate(spec);
+        checkPrivateKey(node, privateKey, publicKey);
+        return privateKey;
+    }
+
+    private static void checkPrivateKey(Node node, PrivateKey privateKey, PublicKey publicKey) {
+        if (privateKey instanceof RSAPrivateKey) {
+            RSAPrivateKey privKey = (RSAPrivateKey) privateKey;
+            RSAPublicKey pubKey = (RSAPublicKey) publicKey;	    
+            if (!privKey.getModulus().equals(pubKey.getModulus())) {
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+            }
+        } else if (privateKey instanceof DSAPrivateKey) {
+            DSAPrivateKey privKey = (DSAPrivateKey) privateKey;
+            DSAPublicKey pubKey = (DSAPublicKey) publicKey;
+            if (!privKey.getParams().equals(pubKey.getParams())) {
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+            }
+        } else if (privateKey instanceof ECPrivateKey) {
+            ECPrivateKey privKey = (ECPrivateKey) privateKey;
+            ECPublicKey pubKey = (ECPublicKey) publicKey;
+            if (!privKey.getParams().equals(pubKey.getParams())) {
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+            }
+        } else if (privateKey instanceof DHPrivateKey) {
+            DHPrivateKey privKey = (DHPrivateKey) privateKey;
+            DHPublicKey pubKey = (DHPublicKey) publicKey;
+            if (!privKey.getParams().equals(pubKey.getParams())) {
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+            }
+        }
     }
 
     @TruffleBoundary
