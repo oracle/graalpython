@@ -464,29 +464,32 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NumTicketsNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
-        static int get(PSSLContext self, @SuppressWarnings("unused") PNone value) {
-            return self.getNumTickets();
+        int get(PSSLContext self, PNone value) {
+            // not used yet so rather raise error
+            throw raise(NotImplementedError);
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "1")
-        Object set(VirtualFrame frame, PSSLContext self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
-                        @Cached CastToJavaLongExactNode castToLong) {
-            int num;
-            try {
-                num = (int) castToLong.execute(lib.asIndexWithFrame(value, frame));
-            } catch (CannotCastException cannotCastException) {
-                throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
-            }
-            if (num < 0) {
-                throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "value");
-            }
-            if (self.getMethod() != SSLMethod.TLS_SERVER) {
-                throw raise(ValueError, ErrorMessages.SSL_CTX_NOT_SERVER_CONTEXT);
-            }
-            self.setNumTickets(num);
-            return PNone.NONE;
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isNoValue(value)")
+        Object set(VirtualFrame frame, PSSLContext self, Object value) {
+            // not used yet so rather raise error
+            throw raise(NotImplementedError);
+            // int num;
+            // try {
+            // num = (int) castToLong.execute(lib.asIndexWithFrame(value, frame));
+            // } catch (CannotCastException cannotCastException) {
+            // throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
+            // }
+            // if (num < 0) {
+            // throw raise(ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "value");
+            // }
+            // if (self.getMethod() != SSLMethod.TLS_SERVER) {
+            // throw raise(ValueError, ErrorMessages.SSL_CTX_NOT_SERVER_CONTEXT);
+            // }
+            // self.setNumTickets(num);
+            // return PNone.NONE;
         }
     }
 
@@ -818,7 +821,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         PNone load(VirtualFrame frame, PSSLContext self, String filepath) {
-            // TODO: not used yet so rather raise error
+            // not used yet so rather raise error
             throw raise(NotImplementedError);
             // File file = new File(filepath);
             // if (!file.exists()) {

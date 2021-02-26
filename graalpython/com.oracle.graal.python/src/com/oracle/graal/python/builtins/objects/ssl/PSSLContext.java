@@ -61,11 +61,6 @@ public final class PSSLContext extends PythonBuiltinObject {
     private DHParameterSpec dhParameters;
     private int verifyFlags;
 
-    // number of TLS v1.3 session tickets
-    // TODO can this be set in java?
-    // TODO '2' is openssl default, but should we return it even though it might not be right?
-    private int numTickets = 2;
-
     private String[] alpnProtocols;
 
     private KeyStore keystore;
@@ -217,14 +212,6 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     public void setOptions(long options) {
         this.options = options;
-    }
-
-    int getNumTickets() {
-        return this.numTickets;
-    }
-
-    void setNumTickets(int numTickets) {
-        this.numTickets = numTickets;
     }
 
     void setDHParameters(DHParameterSpec dh) {
