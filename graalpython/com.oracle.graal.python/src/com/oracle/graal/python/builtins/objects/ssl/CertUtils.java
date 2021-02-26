@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -71,6 +72,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.logging.Level;
 import javax.crypto.interfaces.DHPrivateKey;
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
@@ -248,7 +250,7 @@ public final class CertUtils {
                         stringValue = "<unsupported>";
                     }
                     switch (type) {
-			// see openssl v3_alc.#i2v_GENERAL_NAME()
+                        // see openssl v3_alc.#i2v_GENERAL_NAME()
                         case 0:
                             tuples.add(factory.createTuple(new Object[]{"othername", stringValue}));
                             break;
@@ -325,7 +327,7 @@ public final class CertUtils {
                 cdpe = new CRLDistributionPointsExtension(false, bytes);
             } catch (IOException ex) {
                 // just ignore
-                // TODO log at least?
+                LOGGER.log(Level.FINER, "", ex);
                 return null;
             }
             List<DistributionPoint> points = cdpe.get("points");
@@ -539,7 +541,7 @@ public final class CertUtils {
     private static void checkPrivateKey(Node node, PrivateKey privateKey, PublicKey publicKey) {
         if (privateKey instanceof RSAPrivateKey) {
             RSAPrivateKey privKey = (RSAPrivateKey) privateKey;
-            RSAPublicKey pubKey = (RSAPublicKey) publicKey;	    
+            RSAPublicKey pubKey = (RSAPublicKey) publicKey;
             if (!privKey.getModulus().equals(pubKey.getModulus())) {
                 throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
             }

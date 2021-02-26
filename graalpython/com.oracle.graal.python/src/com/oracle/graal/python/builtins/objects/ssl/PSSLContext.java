@@ -8,10 +8,10 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import javax.crypto.spec.DHParameterSpec;
 import javax.net.ssl.SSLContext;
 
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
+import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_CRL_CHECK;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_CRL_CHECK_ALL;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -39,6 +39,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -58,7 +59,6 @@ public final class PSSLContext extends PythonBuiltinObject {
     private SSLProtocol minimumVersion;
     private SSLProtocol maximumVersion;
 
-    private DHParameterSpec dhParameters;
     private int verifyFlags;
 
     private String[] alpnProtocols;
@@ -77,6 +77,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         this.checkHostname = checkHostname;
         this.verifyMode = verifyMode;
         this.ciphers = SSLModuleBuiltins.defaultCiphers;
+        LOGGER.fine(() -> String.format("PSSLContext() method: %s, verifyMode: %d, verifyFlags: %d, checkHostname: %b", method, verifyMode, verifyFlags, checkHostname));
     }
 
     public KeyStore getKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
@@ -121,12 +122,14 @@ public final class PSSLContext extends PythonBuiltinObject {
         KeyManager[] kms = null;
         if (verifyMode == SSLModuleBuiltins.SSL_CERT_NONE) {
             tms = new TrustManager[]{new CertNoneTrustManager()};
+            LOGGER.fine("PSSLContext.init() using SSL_CERT_NONE TrustManager");
         }
         if (keystore != null && keystore.size() > 0) {
             if (tms == null) {
                 TrustManagerFactory tmf = getTrustManagerFactory();
                 tms = tmf.getTrustManagers();
                 if (verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL) {
+                    LOGGER.fine("PSSLContext.init() using SSL_CERT_OPTIONAL TrustManager");
                     List<TrustManager> l = new ArrayList<>(tms.length);
                     for (TrustManager tm : tms) {
                         if (tm instanceof X509ExtendedTrustManager) {
@@ -147,6 +150,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         boolean crlCheck = (verifyFlags & X509_V_FLAG_CRL_CHECK) != 0;
         boolean crlCheckAll = (verifyFlags & X509_V_FLAG_CRL_CHECK_ALL) != 0;
+        LOGGER.fine(() -> String.format("PSSLContext.getTrustManagerFactory() crlCheck: %b, crlCheckAll: %b", crlCheck, crlCheckAll));
         if (crlCheck || crlCheckAll) {
             PKIXRevocationChecker rc = (PKIXRevocationChecker) CertPathBuilder.getInstance("PKIX").getRevocationChecker();
             EnumSet<PKIXRevocationChecker.Option> opt = EnumSet.of(PREFER_CRLS, NO_FALLBACK);
@@ -159,6 +163,7 @@ public final class PSSLContext extends PythonBuiltinObject {
             if (crls != null && !crls.isEmpty()) {
                 CertStore certStores = CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls));
                 params.addCertStore(certStores);
+                LOGGER.fine("PSSLContext.getTrustManagerFactory() adding crls");
             }
             tmf.init(new CertPathTrustManagerParameters(params));
         } else {
@@ -176,6 +181,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     public void setCheckHostname(boolean checkHostname) {
+        LOGGER.fine(() -> String.format("PSSLContext.setCheckHostname: %b", checkHostname));
         this.checkHostname = checkHostname;
     }
 
@@ -185,6 +191,7 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     void setVerifyMode(int verifyMode) {
         assert verifyMode == SSLModuleBuiltins.SSL_CERT_NONE || verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL || verifyMode == SSLModuleBuiltins.SSL_CERT_REQUIRED;
+        LOGGER.fine(() -> String.format("PSSLContext.setVerifyMode: %d", verifyMode));
         this.verifyMode = verifyMode;
     }
 
@@ -203,6 +210,12 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     public void setCiphers(SSLCipher[] ciphers) {
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("PSSLContext.setCiphers:");
+            for (SSLCipher c : ciphers) {
+                LOGGER.fine(String.format("\t", c));
+            }
+        }
         this.ciphers = ciphers;
     }
 
@@ -211,15 +224,8 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     public void setOptions(long options) {
+        LOGGER.fine(() -> String.format("PSSLContext.setOptions: %d", options));
         this.options = options;
-    }
-
-    void setDHParameters(DHParameterSpec dh) {
-        this.dhParameters = dh;
-    }
-
-    DHParameterSpec getDHParameters() {
-        return dhParameters;
     }
 
     int getVerifyFlags() {
@@ -227,6 +233,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     void setVerifyFlags(int flags) {
+        LOGGER.fine(() -> String.format("PSSLContext.setVerifyFlags: %d", flags));
         this.verifyFlags = flags;
     }
 
@@ -235,6 +242,12 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     public void setAlpnProtocols(String[] alpnProtocols) {
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("PSSLContext.setAlpnProtocols:");
+            for (String p : alpnProtocols) {
+                LOGGER.fine(String.format("\t", p));
+            }
+        }
         this.alpnProtocols = alpnProtocols;
     }
 
@@ -243,6 +256,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     public void setMinimumVersion(SSLProtocol minimumVersion) {
+        LOGGER.fine(() -> String.format("PSSLContext.setMinimumVersion: %s", minimumVersion));
         this.minimumVersion = minimumVersion;
     }
 
@@ -251,6 +265,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     public void setMaximumVersion(SSLProtocol maximumVersion) {
+        LOGGER.fine(() -> String.format("PSSLContext.setMaximumVersion: %s", maximumVersion));
         this.maximumVersion = maximumVersion;
     }
 

@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
+import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -87,6 +88,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.cert.CRLException;
+import java.util.logging.Level;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -521,15 +523,19 @@ public class SSLContextBuiltins extends PythonBuiltins {
             TruffleFile file = toTruffleFile(lib, environLib.getItem(storage, certFileKey));
             TruffleFile path = toTruffleFile(lib, environLib.getItem(storage, certDirKey));
             if (file != null || path != null) {
+                LOGGER.fine(() -> String.format("set_default_verify_paths file: %s. path: %s", file != null ? file.getPath() : "None", path != null ? path.getPath() : "None"));
                 List<Object> certificates = new ArrayList<>();
                 try {
                     LoadCertError result = CertUtils.loadVerifyLocations(file, path, certificates);
                     if (result == LoadCertError.NO_ERROR) {
-                        // do not report any errors
                         self.setCertificateEntries(certificates);
+                    } else {
+                        // do not raise any errors
+                        LOGGER.finer(() -> String.format("set_default_verify_paths loadVerifyLocations returned %s", result));
                     }
                 } catch (NoSuchAlgorithmException | CertificateException | CRLException | IOException | KeyStoreException ex) {
-                    // do not report any errors
+		    // do not raise any errors
+                    LOGGER.log(Level.FINER, "", ex);
                 }
             }
             return PNone.NONE;
@@ -614,16 +620,20 @@ public class SSLContextBuiltins extends PythonBuiltins {
             if (!(capath instanceof PNone) && !PGuards.isString(capath) && !PGuards.isBytes(capath)) {
                 throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "capath");
             }
-            TruffleFile file = null;
+            final TruffleFile file;
             if (!(cafile instanceof PNone)) {
                 file = toTruffleFile(frame, fileLib, cafile);
                 if (!file.exists()) {
                     throw raiseOSError(frame, OSErrorEnum.ENOENT);
                 }
+            } else {
+                file = null;
             }
-            TruffleFile path = null;
+            final TruffleFile path;
             if (!(capath instanceof PNone)) {
                 path = toTruffleFile(frame, pathLib, capath);
+            } else {
+                path = null;
             }
 
             try {
@@ -640,6 +650,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 }
 
                 if (file != null || path != null) {
+                    LOGGER.fine(() -> String.format("LoadVerifyLocationsNode cafile: %s, capath: %s", file != null ? file.getPath() : "None", path != null ? path.getPath() : "None"));
                     // https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_load_verify_locations.html
                     List<Object> certificates = new ArrayList<>();
                     LoadCertError result = CertUtils.loadVerifyLocations(file, path, certificates);
@@ -766,7 +777,9 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
         private BufferedReader getReader(VirtualFrame frame, Object obj, PythonObjectLibrary lib, String arg) throws IOException {
             try {
-                return toTruffleFile(frame, lib.asPath(obj)).newBufferedReader();
+                TruffleFile file = toTruffleFile(frame, lib.asPath(obj));
+                LOGGER.fine(() -> String.format("load_cert_chain %s:%s", arg, file.getPath()));
+                return file.newBufferedReader();
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, arg);
             }
