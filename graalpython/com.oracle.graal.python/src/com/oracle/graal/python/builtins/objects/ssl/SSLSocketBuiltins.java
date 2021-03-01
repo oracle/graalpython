@@ -288,7 +288,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    return CertUtils.decodeCertificate((X509Certificate) certificate, factory());
+                    return CertUtils.decodeCertificate((X509Certificate) certificate);
                 } catch (CertificateParsingException e) {
                     return factory().createDict();
                 } catch (IOException ex) {

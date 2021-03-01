@@ -1,21 +1,13 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.ASN1_EMAIL;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.ASN1_EMAILADDRESS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CA_ISSUERS;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_COMMON_NAME;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_COUNTRY_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CRL_DISTRIBUTION_POINTS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_ISSUER;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_LOCALITY_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_NOT_AFTER;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_NOT_BEFORE;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_OCSP;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_ORGANIZATIONAL_UNIT_NAME;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_ORGANIZATION_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SERIAL_NUMBER;
-import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_STATE_OR_PROVICE_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SUBJECT;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_SUBJECT_ALT_NAME;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_VERSION;
@@ -36,7 +28,6 @@ import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
@@ -60,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -89,7 +81,6 @@ import sun.security.x509.GeneralName;
 import sun.security.x509.GeneralNameInterface;
 import sun.security.x509.GeneralNames;
 import sun.security.x509.URIName;
-import sun.security.x509.X500Name;
 
 public final class CertUtils {
 
@@ -130,32 +121,24 @@ public final class CertUtils {
     /**
      * _ssl.c#_decode_certificate
      */
-    public static PDict decodeCertificate(X509Certificate cert, PythonObjectFactory factory) throws IOException, CertificateParsingException {
+    @TruffleBoundary
+    public static PDict decodeCertificate(X509Certificate cert) throws IOException, CertificateParsingException {
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
         HashingStorageLibrary hlib = HashingStorageLibrary.getUncached();
         storage = setItem(hlib, storage, JAVA_X509_OCSP, parseOCSP(cert, factory));
         storage = setItem(hlib, storage, JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
-        storage = setItem(hlib, storage, JAVA_X509_ISSUER, parseX500Name(getIssuerDN(cert), factory));
+        storage = setItem(hlib, storage, JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerDN().getName(), factory));
         storage = setItem(hlib, storage, JAVA_X509_NOT_AFTER, getNotAfter(cert));
         storage = setItem(hlib, storage, JAVA_X509_NOT_BEFORE, getNotBefore(cert));
         storage = setItem(hlib, storage, JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
         storage = setItem(hlib, storage, JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
-        storage = setItem(hlib, storage, JAVA_X509_SUBJECT, parseX500Name(getSubjectDN(cert), factory));
+        storage = setItem(hlib, storage, JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectDN().getName(), factory));
         storage = setItem(hlib, storage, JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
         storage = setItem(hlib, storage, JAVA_X509_VERSION, getVersion(cert));
         dict.setDictStorage(storage);
         return dict;
-    }
-
-    @TruffleBoundary
-    private static Principal getSubjectDN(X509Certificate cert) {
-        return cert.getSubjectDN();
-    }
-
-    @TruffleBoundary
-    private static Principal getIssuerDN(X509Certificate cert) {
-        return cert.getIssuerDN();
     }
 
     private static HashingStorage setItem(HashingStorageLibrary hlib, HashingStorage storage, String key, Object value) {
@@ -207,43 +190,19 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static PTuple parseX500Name(Principal p, PythonObjectFactory factory) throws IOException {
-        if (p instanceof X500Name) {
-            X500Name dn = (X500Name) p;
-            List<PTuple> result = new ArrayList<>(6);
-            addTuple(factory, result, JAVA_X509_COUNTRY_NAME, dn.getCountry());
-            addTuple(factory, result, JAVA_X509_STATE_OR_PROVICE_NAME, dn.getState());
-            addTuple(factory, result, JAVA_X509_LOCALITY_NAME, dn.getLocality());
-            addTuple(factory, result, JAVA_X509_ORGANIZATION_NAME, dn.getOrganization());
-            addTuple(factory, result, JAVA_X509_ORGANIZATIONAL_UNIT_NAME, dn.getOrganizationalUnit());
-            addTuple(factory, result, JAVA_X509_COMMON_NAME, dn.getCommonName());
-            parseAndAddName(dn.getName(), result, factory, ASN1_EMAIL, ASN1_EMAILADDRESS);
-            return factory.createTuple(result.toArray(new PTuple[result.size()]));
-        }
-        return null;
-    }
-
-    @TruffleBoundary
-    private static void parseAndAddName(String name, List<PTuple> result, PythonObjectFactory factory, String... fields) {
+    private static PTuple createTupleForX509Name(String name, PythonObjectFactory factory) {
+        List<PTuple> result = new ArrayList<>();
         for (String component : name.split(",")) {
             String[] kv = component.split("=");
             if (kv.length == 2) {
-                for (String f : fields) {
-                    if (f.equals(kv[0].trim())) {
-                        addTuple(factory, result, ASN1Helper.translateKeyToPython(kv[0].trim()), kv[1].trim());
-                        break;
-                    }
-                }
+                PTuple innerTuple = factory.createTuple(new String[]{ASN1Helper.translateKeyToPython(kv[0].trim()), kv[1].trim()});
+                result.add(factory.createTuple(new Object[]{innerTuple}));
             }
         }
-    }
-
-    private static void addTuple(PythonObjectFactory factory, List<PTuple> tuples, String... s) {
-        assert s.length == 2;
-        if (s[1] == null || s[1].isEmpty()) {
-            return;
-        }
-        tuples.add(factory.createTuple(new Object[]{factory.createTuple(s)}));
+        // The String form is in the LDAP format, where the elements are in reverse order from what
+        // was in the certificate
+        Collections.reverse(result);
+        return factory.createTuple(result.toArray(new Object[0]));
     }
 
     @TruffleBoundary
@@ -276,7 +235,7 @@ public final class CertUtils {
                             tuples.add(factory.createTuple(new Object[]{"X400Name", stringValue}));
                             break;
                         case 4:
-                            tuples.add(factory.createTuple(new Object[]{"DirName", parseDirName(stringValue, factory)}));
+                            tuples.add(factory.createTuple(new Object[]{"DirName", createTupleForX509Name(stringValue, factory)}));
                             break;
                         case 5:
                             tuples.add(factory.createTuple(new Object[]{"EdiPartyName", stringValue}));
@@ -298,33 +257,6 @@ public final class CertUtils {
             return factory.createTuple(tuples.toArray(new Object[tuples.size()]));
         }
         return null;
-    }
-
-    private static final String[] DIR_NAME_NAMES = {"countryName", "localityName", "organizationName", "commonName"};
-
-    private static PTuple parseDirName(String value, PythonObjectFactory factory) {
-        String[] split = value.split(",");
-        String[] values = new String[4];
-        for (String s : split) {
-            s = s.trim();
-            if (s.startsWith("C=")) {
-                values[0] = s.substring(2);
-            } else if (s.startsWith("L=")) {
-                values[1] = s.substring(2);
-            } else if (s.startsWith("O=")) {
-                values[2] = s.substring(2);
-            } else if (s.startsWith("CN=")) {
-                values[3] = s.substring(3);
-            }
-        }
-        List<PTuple> tuples = new ArrayList<>(4);
-        for (int i = 0; i < values.length; i++) {
-            if (values[i] == null) {
-                break;
-            }
-            addTuple(factory, tuples, DIR_NAME_NAMES[i], values[i]);
-        }
-        return factory.createTuple(tuples.toArray(new Object[tuples.size()]));
     }
 
     @TruffleBoundary
