@@ -484,22 +484,25 @@ class BasicSocketTests(unittest.TestCase):
                    (('emailAddress', 'python-dev@python.org'),))
         self.assertEqual(p['subject'], subject)
         self.assertEqual(p['issuer'], subject)
-        # TODO XXX GraalVM change - can't deal with null bytes in subjectAltName
-        # if ssl._OPENSSL_API_VERSION >= (0, 9, 8):
-        #     san = (('DNS', 'altnull.python.org\x00example.com'),
-        #            ('email', 'null@python.org\x00user@example.org'),
-        #            ('URI', 'http://null.python.org\x00http://example.org'),
-        #            ('IP Address', '192.0.2.1'),
-        #            ('IP Address', '2001:DB8:0:0:0:0:0:1'))
-        # else:
-        #     # OpenSSL 0.9.7 doesn't support IPv6 addresses in subjectAltName
-        #     san = (('DNS', 'altnull.python.org\x00example.com'),
-        #            ('email', 'null@python.org\x00user@example.org'),
-        #            ('URI', 'http://null.python.org\x00http://example.org'),
-        #            ('IP Address', '192.0.2.1'),
-        #            ('IP Address', '<invalid>'))
-
-        # self.assertEqual(p['subjectAltName'], san)
+        if ssl._OPENSSL_API_VERSION >= (0, 9, 8):
+            san = (('DNS', 'altnull.python.org\x00example.com'),
+                   ('email', 'null@python.org\x00user@example.org'),
+                   ('URI', 'http://null.python.org\x00http://example.org'),
+                   ('IP Address', '192.0.2.1'),
+                   ('IP Address', '2001:DB8:0:0:0:0:0:1'))
+        else:
+            # OpenSSL 0.9.7 doesn't support IPv6 addresses in subjectAltName
+            san = (('DNS', 'altnull.python.org\x00example.com'),
+                   ('email', 'null@python.org\x00user@example.org'),
+                   ('URI', 'http://null.python.org\x00http://example.org'),
+                   ('IP Address', '192.0.2.1'),
+                   ('IP Address', '<invalid>'))
+        # XXX GraalVM change - accept no SAN as passing
+        # CVE-2013-4238 was caused by python discarding the part of SAN after the null byte.
+        # JDK rejects the invalid SAN completely (it validates it as a URI), so we don't report any SAN.
+        # Therefore, we're not vulnerable to the CVE.
+        if 'subjectAltName' in p:
+            self.assertEqual(p['subjectAltName'], san)
 
     def test_parse_all_sans(self):
         p = ssl._ssl._test_decode_cert(ALLSANFILE)
