@@ -64,7 +64,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     private String[] alpnProtocols;
 
     private KeyStore keystore;
-    private Set<X509CRL> crls = new HashSet<>();
+    private Set<X509CRL> crls;
 
     private char[] password = PythonUtils.EMPTY_CHAR_ARRAY;
 
@@ -80,6 +80,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         LOGGER.fine(() -> String.format("PSSLContext() method: %s, verifyMode: %d, verifyFlags: %d, checkHostname: %b", method, verifyMode, verifyFlags, checkHostname));
     }
 
+    @TruffleBoundary
     public KeyStore getKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         if (keystore == null) {
             keystore = KeyStore.getInstance("JKS");
@@ -92,6 +93,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         return method;
     }
 
+    @TruffleBoundary
     void setCertificateEntries(Collection<? extends Object> list) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         for (Object obj : list) {
             if (obj instanceof X509Certificate) {
@@ -105,6 +107,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         }
     }
 
+    @TruffleBoundary
     private Set<X509CRL> getCRLs() {
         if (crls == null) {
             crls = new HashSet<>();
@@ -213,7 +216,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine("PSSLContext.setCiphers:");
             for (SSLCipher c : ciphers) {
-                LOGGER.fine(String.format("\t", c));
+                LOGGER.fine(() -> String.format("\t", c));
             }
         }
         this.ciphers = ciphers;
@@ -245,7 +248,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine("PSSLContext.setAlpnProtocols:");
             for (String p : alpnProtocols) {
-                LOGGER.fine(String.format("\t", p));
+                LOGGER.fine(() -> String.format("\t", p));
             }
         }
         this.alpnProtocols = alpnProtocols;

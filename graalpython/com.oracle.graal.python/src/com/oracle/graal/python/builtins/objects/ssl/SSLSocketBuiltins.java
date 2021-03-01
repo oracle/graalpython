@@ -24,7 +24,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -37,6 +36,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -65,10 +65,10 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             } else if (len < 0) {
                 throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
-            ByteBuffer output = ByteBuffer.allocate(len);
+            ByteBuffer output = PythonUtils.allocateByteBuffer(len);
             SSLEngineHelper.read(this, self, output);
             output.flip();
-            return factory().createBytes(output.array(), output.limit());
+            return factory().createBytes(PythonUtils.getBufferArray(output), output.limit());
         }
 
         @Specialization
@@ -86,7 +86,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             if (bufferLength == 0) {
                 return 0;
             }
-            ByteBuffer output = ByteBuffer.allocate(bufferLength);
+            ByteBuffer output = PythonUtils.allocateByteBuffer(bufferLength);
             SSLEngineHelper.read(this, self, output);
             output.flip();
             for (int i = 0; i < output.limit(); i++) {
@@ -119,7 +119,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             try {
                 byte[] bytes = bufferLib.getBufferBytes(buffer);
                 int length = bufferLib.getBufferLength(buffer);
-                ByteBuffer input = ByteBuffer.wrap(bytes, 0, length);
+                ByteBuffer input = PythonUtils.wrapByteBuffer(bytes);
                 SSLEngineHelper.write(this, self, input);
                 return length;
             } catch (UnsupportedMessageException e) {
@@ -272,19 +272,18 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!der")
-        PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
+        PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der) {
             if (!self.isHandshakeComplete()) {
                 throw raise(ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
             }
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    return CertUtils.decodeCertificate((X509Certificate) certificate, hlib, factory());
+                    return CertUtils.decodeCertificate((X509Certificate) certificate, factory());
                 } catch (CertificateParsingException e) {
                     return factory().createDict();
                 } catch (IOException ex) {
-                    throw raise(SSLError, ex.toString());
+                    throw raise(SSLError, ex);
                 }
             }
             return factory().createDict();

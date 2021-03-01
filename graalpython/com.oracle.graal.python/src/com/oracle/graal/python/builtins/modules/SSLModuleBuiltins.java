@@ -3,14 +3,11 @@ package com.oracle.graal.python.builtins.modules;
 import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
-import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -21,7 +18,6 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -43,6 +39,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -56,6 +53,8 @@ import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @CoreFunctions(defineModule = "_ssl")
 public class SSLModuleBuiltins extends PythonBuiltins {
@@ -327,13 +326,15 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class DecodeCertNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "2")
         Object decode(VirtualFrame frame, Object path,
-                        @CachedLibrary("path") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary hlib) {
+                        @CachedLibrary("path") PythonObjectLibrary lib) {
+            return decode(toTruffleFile(frame, lib, path));
+        }
 
-            TruffleFile file = toTruffleFile(frame, lib, path);
+        @TruffleBoundary
+        private Object decode(TruffleFile file) throws PException {
             List<Object> l = new ArrayList<>();
             try (BufferedReader r = file.newBufferedReader()) {
-                CertUtils.LoadCertError result = getCertificates(r, l);
+                CertUtils.LoadCertError result = CertUtils.getCertificates(r, l);
                 if (result != CertUtils.LoadCertError.NO_ERROR) {
                     throw raise(SSLError, "Error decoding PEM-encoded file: " + result);
                 }
@@ -344,7 +345,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                 if (!(cert instanceof X509Certificate)) {
                     throw raise(SSLError, "Error decoding PEM-encoded file: unexpected type " + cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate((X509Certificate) l.get(0), hlib, factory());
+                return CertUtils.decodeCertificate((X509Certificate) l.get(0), factory());
             } catch (IOException ex) {
                 throw raise(SSLError, "Can't open file: " + ex.toString());
             } catch (CertificateException | CRLException ex) {

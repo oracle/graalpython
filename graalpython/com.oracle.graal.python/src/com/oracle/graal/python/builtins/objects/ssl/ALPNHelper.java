@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -29,6 +30,7 @@ public class ALPNHelper {
         return setApplicationProtocols != null;
     }
 
+    @TruffleBoundary
     public static void setApplicationProtocols(SSLParameters parameters, String[] protocols) {
         try {
             setApplicationProtocols.invoke(parameters, (Object) protocols);
@@ -37,6 +39,7 @@ public class ALPNHelper {
         }
     }
 
+    @TruffleBoundary
     public static String getApplicationProtocol(SSLEngine engine) {
         try {
             return (String) getApplicationProtocol.invoke(engine);

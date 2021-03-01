@@ -32,6 +32,16 @@ public abstract class PRaiseSSLErrorNode extends Node {
         return PRaiseSSLErrorNodeGen.getUncached().execute(node, type, message, args);
     }
 
+    public static PException raiseUncached(Node node, SSLErrorCode type, Exception e) {
+        return raiseUncached(node, type, getMessage(e));
+    }
+
+    @TruffleBoundary
+    private static String getMessage(Exception e) {
+        String msg = e.getMessage();
+        return msg != null ? msg : e.getClass().getSimpleName();
+    }
+
     @Specialization
     static PException raise(Node node, SSLErrorCode type, String format, Object[] formatArgs,
                     @CachedLanguage PythonLanguage language,

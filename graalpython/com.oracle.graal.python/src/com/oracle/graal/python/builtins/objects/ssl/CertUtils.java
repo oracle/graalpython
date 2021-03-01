@@ -27,7 +27,6 @@ import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISS
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -127,21 +126,32 @@ public final class CertUtils {
     /**
      * _ssl.c#_decode_certificate
      */
-    public static PDict decodeCertificate(X509Certificate cert, HashingStorageLibrary hlib, PythonObjectFactory factory) throws IOException, CertificateParsingException {
+    public static PDict decodeCertificate(X509Certificate cert, PythonObjectFactory factory) throws IOException, CertificateParsingException {
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
+        HashingStorageLibrary hlib = HashingStorageLibrary.getUncached();
         storage = setItem(hlib, storage, JAVA_X509_OCSP, parseOCSP(cert, factory));
         storage = setItem(hlib, storage, JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
-        storage = setItem(hlib, storage, JAVA_X509_ISSUER, parseX500Name(cert.getIssuerDN(), factory));
+        storage = setItem(hlib, storage, JAVA_X509_ISSUER, parseX500Name(getIssuerDN(cert), factory));
         storage = setItem(hlib, storage, JAVA_X509_NOT_AFTER, getNotAfter(cert));
         storage = setItem(hlib, storage, JAVA_X509_NOT_BEFORE, getNotBefore(cert));
         storage = setItem(hlib, storage, JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
         storage = setItem(hlib, storage, JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
-        storage = setItem(hlib, storage, JAVA_X509_SUBJECT, parseX500Name(cert.getSubjectDN(), factory));
+        storage = setItem(hlib, storage, JAVA_X509_SUBJECT, parseX500Name(getSubjectDN(cert), factory));
         storage = setItem(hlib, storage, JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
         storage = setItem(hlib, storage, JAVA_X509_VERSION, getVersion(cert));
         dict.setDictStorage(storage);
         return dict;
+    }
+
+    @TruffleBoundary
+    private static Principal getSubjectDN(X509Certificate cert) {
+        return cert.getSubjectDN();
+    }
+
+    @TruffleBoundary
+    private static Principal getIssuerDN(X509Certificate cert) {
+        return cert.getIssuerDN();
     }
 
     private static HashingStorage setItem(HashingStorageLibrary hlib, HashingStorage storage, String key, Object value) {
@@ -250,7 +260,7 @@ public final class CertUtils {
                         stringValue = "<unsupported>";
                     }
                     switch (type) {
-                        // see openssl v3_alc.#i2v_GENERAL_NAME()
+                        // see openssl v3_alt.c#i2v_GENERAL_NAME()
                         case 0:
                             tuples.add(factory.createTuple(new Object[]{"othername", stringValue}));
                             break;
@@ -394,6 +404,7 @@ public final class CertUtils {
         BAD_BASE64_DECODE;
     }
 
+    @TruffleBoundary
     public static LoadCertError loadVerifyLocations(TruffleFile file, TruffleFile path, List<Object> certificates) throws IOException, CertificateException, CRLException {
         Collection<TruffleFile> files = new ArrayList<>();
         if (file != null) {
@@ -530,7 +541,8 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    static PrivateKey createPrivateKey(Node node, byte[] bytes, PublicKey publicKey) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    static PrivateKey createPrivateKey(Node node, byte[] bytes, X509Certificate cert) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        PublicKey publicKey = cert.getPublicKey();
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(bytes);
         KeyFactory factory = KeyFactory.getInstance(publicKey.getAlgorithm());
         PrivateKey privateKey = factory.generatePrivate(spec);
@@ -589,6 +601,11 @@ public final class CertUtils {
             ap.init(Base64.getDecoder().decode(sb.toString()));
             return ap.getParameterSpec(DHParameterSpec.class);
         }
+    }
+
+    @TruffleBoundary
+    static Collection<? extends Object> generateCertificates(byte[] bytes) throws CertificateException {
+        return CertificateFactory.getInstance("X.509").generateCertificates(new ByteArrayInputStream(bytes));
     }
 
     @TruffleBoundary
