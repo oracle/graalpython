@@ -459,7 +459,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     continue errfdsCheck;
                 }
             }
-            compatibilityIgnored("POSIX emultaion layer doesn't support waiting on exceptional conditions in select()");
+            compatibilityIgnored("POSIX emulation layer doesn't support waiting on exceptional conditions in select()");
             break;
         }
 
@@ -988,7 +988,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             // best effort
             canonical = file.getAbsoluteFile();
         }
-        return context.getResources().getInodeId(canonical.getPath());
+        return getInodeId(canonical.getPath());
     }
 
     @TruffleBoundary(allowInlining = true)

@@ -137,7 +137,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raise(OSError);
                 }
                 PSocket newSocket = factory().createSocket(socket.getFamily(), socket.getType(), socket.getProto());
-                int fd = getContext().getResources().openSocket(newSocket);
+                int fd = getContext().getResources().openSocket(newSocket, getContext());
                 newSocket.setFileno(fd);
                 newSocket.setSocket(acceptSocket);
                 SocketUtils.setBlocking(newSocket, socket.isBlocking());
@@ -178,6 +178,10 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object close(PSocket socket) {
+            if (!socket.isOpen()) {
+                return PNone.NONE;
+            }
+
             if (socket.getSocket() != null) {
                 try {
                     socket.getSocket().close();
@@ -191,7 +195,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
             }
-            getContext().getResources().close(socket.getFileno());
+            getContext().getResources().closeSocket(socket, getContext());
             return PNone.NONE;
         }
     }

@@ -262,7 +262,7 @@ public final class PythonContext {
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
-    private PosixResources resources;
+    private EmulatedPosixSupport resources;
     private final AsyncHandler handler;
     private final AsyncHandler.SharedFinalizer sharedFinalizer;
 
@@ -583,11 +583,11 @@ public final class PythonContext {
                 } else if (ImageInfo.inImageRuntimeCode()) {
                     NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
                     result = new ImageBuildtimePosixSupport(nativePosixSupport, null);
-                    resources = new PosixResources();
+                    resources = new EmulatedPosixSupport(this);
                     resources.setEnv(env);
                 } else {
                     result = new NFIPosixSupport(this, option);
-                    resources = new PosixResources();
+                    resources = new EmulatedPosixSupport(this);
                     resources.setEnv(env);
                 }
                 break;
@@ -926,7 +926,7 @@ public final class PythonContext {
         return getEnv().isHostLookupAllowed() || getEnv().isNativeAccessAllowed();
     }
 
-    public PosixResources getResources() {
+    public EmulatedPosixSupport getResources() {
         return resources;
     }
 
