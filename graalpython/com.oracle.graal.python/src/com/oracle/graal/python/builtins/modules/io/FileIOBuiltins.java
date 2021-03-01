@@ -356,6 +356,12 @@ public class FileIOBuiltins extends PythonBuiltins {
                         throw raise(ValueError, OPENER_RETURNED_D, self.getFD());
                     }
                 }
+                try {
+                    posixLib.setInheritable(getPosixSupport(), self.getFD(), false);
+                } catch (PosixSupportLibrary.PosixException e) {
+                    exceptionProfile.enter();
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
                 fdIsOwn = true;
             }
             self.setBlksize(DEFAULT_BUFFER_SIZE);

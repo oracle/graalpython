@@ -220,7 +220,10 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     @ExportMessage
     final void setInheritable(int fd, boolean inheritable,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInImageBuildtime();
+        if (ImageInfo.inImageBuildtimeCode()) {
+            PosixSupportLibrary.getUncached().setInheritable(emulatedPosixSupport, fd, inheritable);
+            return;
+        }
         nativeLib.setInheritable(nativePosixSupport, fd, inheritable);
     }
 
