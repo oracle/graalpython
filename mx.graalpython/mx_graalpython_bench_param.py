@@ -52,6 +52,7 @@ ITER_25 = ['-i', '25']
 ITER_20 = ['-i', '20']
 ITER_15 = ['-i', '15']
 ITER_10 = ['-i', '10']
+WARMUP_2 = ['-w', '2']
 
 MICRO_BENCHMARKS = {
     'arith-binop': ITER_10 + ['5'],
@@ -101,6 +102,52 @@ MICRO_BENCHMARKS = {
     'tuple-indexing-from-literal': ITER_10 + ['10000000'],
 }
 
+MICRO_BENCHMARKS_SMALL = {
+    'arith-modulo-sized': ITER_10 + WARMUP_2 + ['1'],
+    'attribute-access-polymorphic': ITER_10 + WARMUP_2 + ['20'],
+    'attribute-access': ITER_10 + WARMUP_2 + ['100'],
+    'attribute-access-super': ITER_10 + WARMUP_2 + ['100'],
+    'attribute-bool': ITER_10 + WARMUP_2 + ['10'],
+    'boolean-logic-sized': ITER_10 + WARMUP_2 + ['10'],
+    'builtin-len-tuple-sized': ITER_10 + WARMUP_2 + ['10_000_000'],
+    'builtin-len': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'class-access': ITER_15 + WARMUP_2 + ['100'],
+    'call-method-polymorphic': ITER_10 + WARMUP_2 + ['10'],
+    'for-range': ITER_10 + WARMUP_2 + WARMUP_2 + ['100'],
+    'function-call-sized': ITER_10 + WARMUP_2 + ['10_000_000'],
+    'generator-expression-sized': ITER_10 + WARMUP_2 + ['3000', '500'],
+    'generator-notaligned-sized': ITER_10 + WARMUP_2 + ['3000', '500'],
+    'generator-sized': ITER_10 + WARMUP_2 + ['3000', '500'],
+    'genexp-builtin-call-sized': ITER_10 + WARMUP_2 + ['3000', '500'],
+    'list-comp': ITER_10 + WARMUP_2 + ['100'],
+    'list-indexing': ITER_10 + WARMUP_2 + ['10_000'],
+    'list-indexing-from-constructor': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'list-indexing-from-literal': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'list-iterating-explicit': ITER_10 + WARMUP_2 + ['100_000'],
+    'list-iterating': ITER_10 + WARMUP_2 + ['100_000'],
+    'list-iterating-obj-sized': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'list-constructions-sized': ITER_10 + WARMUP_2 + ['1_000'],
+    'dict-getitem-sized': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'math-sqrt': ITER_10 + WARMUP_2 + ['100_000_000'],
+    'object-allocate': ITER_10 + WARMUP_2 + ['100'],
+    'object-layout-change': ITER_10 + WARMUP_2 + ['10_000'],
+    'special-add-int-sized': ITER_10 + WARMUP_2 + ['1_000'],
+    'special-add-sized': ITER_10 + WARMUP_2 + ['1_000'],
+    'special-len': ITER_10 + WARMUP_2 + ['5'],
+    'member-access': ITER_10 + WARMUP_2 + ['10'],
+    'magic-bool-sized': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'magic-iter': ITER_10 + WARMUP_2 + ['250000'],
+    'call-classmethod-sized': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'mmap-anonymous-sized': ITER_10 + WARMUP_2 + ['1_000'],
+    'mmap-file': ITER_10 + WARMUP_2 + ['100'],
+    'generate-functions-sized': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'try-except-simple': ITER_10 + WARMUP_2 + ['10_000_000'],
+    'try-except-store-simple': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'try-except-store-two-types': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'try-except-two-types': ITER_10 + WARMUP_2 + ['1_000_000'],
+    'tuple-indexing-from-constructor': ITER_10 + WARMUP_2 + ['100_000'],
+    'tuple-indexing-from-literal': ITER_10 + WARMUP_2 + ['1_000_000'],
+}
 
 def _pickling_benchmarks(module='pickle'):
     return {
@@ -179,6 +226,15 @@ MESO_BENCHMARKS = {
 }
 
 
+MESO_BENCHMARKS_SMALL = {
+    'pads-eratosthenes': ITER_10 + WARMUP_2 + ['2000'],
+    'richards3': ITER_10 + WARMUP_2 + ['2'],
+    'chaos': ITER_10 + WARMUP_2 + ['2'],
+    'image-magix': ITER_10 + WARMUP_2 + ['100'],
+    'raytrace-simple': ITER_10 + WARMUP_2 + ['110', '110'],
+}
+
+
 MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
 }
@@ -242,6 +298,8 @@ BENCHMARKS = {
     "meso": [PATH_MESO, MESO_BENCHMARKS],
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
     "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
+    "micro-small": [PATH_MICRO, MICRO_BENCHMARKS_SMALL],
+    "meso-small": [PATH_MESO, MESO_BENCHMARKS_SMALL],
 }
 
 WARMUP_BENCHMARKS = {

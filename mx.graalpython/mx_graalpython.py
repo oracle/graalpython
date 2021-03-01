@@ -27,7 +27,6 @@ from __future__ import print_function
 import contextlib
 import datetime
 import glob
-import itertools
 import json
 import os
 import pathlib
@@ -35,6 +34,8 @@ import platform
 import re
 import shlex
 import shutil
+
+import itertools
 import sys
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
@@ -57,12 +58,14 @@ import mx_urlrewrites
 import mx_graalpython_bisect
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS
-from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, GraalPythonVm, \
+from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
+    GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
     CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
-    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, PythonParserBenchmarkSuite
-
+    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, PythonParserBenchmarkSuite, \
+    CONFIGURATION_INTERPRETER, CONFIGURATION_INTERPRETER_MULTI, CONFIGURATION_NATIVE_INTERPRETER, \
+    CONFIGURATION_NATIVE_INTERPRETER_MULTI
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -1490,8 +1493,14 @@ def _register_vms(namespace):
 
     # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER, extra_polyglot_args=[
+        '--experimental-options', '--engine.Compilation=false'
+    ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context', '--engine.Compilation=false'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI_TIER, extra_polyglot_args=[
         '--experimental-options', '--engine.MultiTier=true',
@@ -1501,11 +1510,16 @@ def _register_vms(namespace):
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
     ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER, extra_polyglot_args=[
+        '--experimental-options', '--engine.Compilation=false']), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context', '--llvm.managed',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context', '--engine.Compilation=false',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI_TIER, extra_polyglot_args=[
         '--experimental-options', '--engine.MultiTier=true',
