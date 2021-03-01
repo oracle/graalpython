@@ -174,7 +174,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
         engine.setUseClientMode(!serverMode);
         engine.setEnabledProtocols(context.computeEnabledProtocols());
 
-        parameters.setCipherSuites(context.computeEnabledCiphers(engine).stream().map(SSLCipher::name).toArray(String[]::new));
+        List<SSLCipher> enabledCiphers = context.computeEnabledCiphers(engine);
+        String[] enabledCipherNames = new String[enabledCiphers.size()];
+        for (int i = 0; i < enabledCiphers.size(); i++) {
+            enabledCipherNames[i] = enabledCiphers.get(i).name();
+        }
+        parameters.setCipherSuites(enabledCipherNames);
 
         if (ALPNHelper.hasAlpn() && context.getAlpnProtocols() != null) {
             ALPNHelper.setApplicationProtocols(parameters, context.getAlpnProtocols());

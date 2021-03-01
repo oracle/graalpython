@@ -281,7 +281,15 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     @TruffleBoundary
     public String[] computeEnabledProtocols() {
-        return SSLModuleBuiltins.getSupportedProtocols().stream().filter(this::allowsProtocol).map(SSLProtocol::getName).toArray(String[]::new);
+        List<SSLProtocol> supportedProtocols = SSLModuleBuiltins.getSupportedProtocols();
+        List<String> list = new ArrayList<>(supportedProtocols.size());
+        for (SSLProtocol protocol : supportedProtocols) {
+            if (allowsProtocol(protocol)) {
+                String name = protocol.getName();
+                list.add(name);
+            }
+        }
+        return list.toArray(new String[0]);
     }
 
     private static class CertNoneTrustManager implements X509TrustManager {

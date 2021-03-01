@@ -11,10 +11,8 @@ import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -117,7 +115,12 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                 try {
                     SSLContext context = SSLContext.getInstance("TLS");
                     context.init(null, null, null);
-                    List<SSLProtocol> protocols = Arrays.stream(SSLProtocol.values()).filter(protocol -> tryProtocolAvailability(context, protocol)).collect(Collectors.toList());
+                    List<SSLProtocol> protocols = new ArrayList<>(SSLProtocol.values().length);
+                    for (SSLProtocol protocol : SSLProtocol.values()) {
+                        if (tryProtocolAvailability(context, protocol)) {
+                            protocols.add(protocol);
+                        }
+                    }
                     supportedProtocols = Collections.unmodifiableList(protocols);
                     if (!supportedProtocols.isEmpty()) {
                         minimumVersion = supportedProtocols.get(0);
@@ -178,7 +181,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute("CERT_REQUIRED", SSL_CERT_REQUIRED);
 
         module.setAttribute("HAS_SNI", true);
-        // TODO enable
+        // We have ECDH ciphers, but we don't yet expose the methods that let you pick the curve
         module.setAttribute("HAS_ECDH", false);
         module.setAttribute("HAS_NPN", false);
         module.setAttribute("HAS_ALPN", ALPNHelper.hasAlpn());
