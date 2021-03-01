@@ -89,7 +89,7 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int S_IFLNK = 0120000; /* Symbolic link. */
     public static final int S_IFSOCK = 0140000; /* Socket. */
 
-    public static final int MAP_ANONYMOUS = getPythonOSName().equals(PLATFORM_DARWIN) ? 0x10 : 0x20;
+    public static final int MAP_ANONYMOUS = getPythonOSName().equals(PLATFORM_DARWIN) ? 4096 : 0x20;
 
     // Constants for accessing the fields of the fstat result:
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
