@@ -1,19 +1,27 @@
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CRLException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -47,14 +55,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.security.cert.CRLException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 @CoreFunctions(defineModule = "_ssl")
 public class SSLModuleBuiltins extends PythonBuiltins {
@@ -74,9 +74,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     public static final int SSL_CERT_NONE = 0;
     public static final int SSL_CERT_OPTIONAL = 1;
     public static final int SSL_CERT_REQUIRED = 2;
-
-    public static final int PROTO_MINIMUM_SUPPORTED = -2;
-    public static final int PROTO_MAXIMUM_SUPPORTED = -1;
 
     public static final int X509_V_FLAG_CRL_CHECK = 0x4;
     public static final int X509_V_FLAG_CRL_CHECK_ALL = 0x8;
@@ -138,7 +135,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
 
     /**
      * JDK reports protocols as supported even if they are disabled and cannot be used. We have to
-     * atempt a handshake to truly know if the protocol is available.
+     * attempt a handshake to truly know if the protocol is available.
      */
     private static boolean tryProtocolAvailability(SSLContext context, SSLProtocol protocol) {
         String[] protocols = {protocol.getName()};

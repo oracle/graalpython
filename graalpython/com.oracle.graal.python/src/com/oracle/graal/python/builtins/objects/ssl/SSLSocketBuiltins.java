@@ -228,13 +228,11 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class SessionNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         static Object get(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object none) {
-            // TODO
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(obj)")
         Object set(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object obj) {
-            // TODO
             throw raise(NotImplementedError);
         }
     }
@@ -244,7 +242,6 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     abstract static class SessionReusedNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(@SuppressWarnings("unused") PSSLSocket self) {
-            // TODO
             return false;
         }
     }

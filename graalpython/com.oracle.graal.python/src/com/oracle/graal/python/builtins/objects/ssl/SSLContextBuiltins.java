@@ -9,12 +9,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CRLException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -83,8 +85,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.cert.CRLException;
 import java.util.logging.Level;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
@@ -133,6 +133,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static SSLContext createSSLContext() throws NoSuchAlgorithmException, KeyManagementException {
             SSLContext context = SSLContext.getInstance("TLS");
+            // Disable automatic client session caching, because CPython doesn't do that
+            context.getClientSessionContext().setSessionCacheSize(0);
             // Pre-init to be able to get default parameters
             context.init(null, null, null);
             return context;
@@ -145,7 +147,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    // TODO session
     static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
         try {
             context.init();
@@ -546,7 +547,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return factory().createBytes("SSL_CERT_DIR".getBytes());
         }
 
-        protected GetAttributeNode createEnvironLookup() {
+        protected static GetAttributeNode createEnvironLookup() {
             return GetAttributeNode.create("environ");
         }
 
