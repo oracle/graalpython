@@ -1152,14 +1152,8 @@ public final class NFIPosixSupport extends PosixSupport {
     public Object mmap(long length, int prot, int flags, int fd, long offset,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         Object address = invokeNode.call(this, PosixNativeFunction.call_mmap, length, prot, flags, fd, offset);
-        try {
-            InteropLibrary interop = invokeNode.getResultInterop();
-            if (interop.fitsInInt(address) &&
-                            interop.asInt(address) == 0) {
-                throw newPosixException(invokeNode, getErrno(invokeNode));
-            }
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
+        if (invokeNode.getResultInterop().isNull(address)) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return new MMapHandle(address, length);
     }

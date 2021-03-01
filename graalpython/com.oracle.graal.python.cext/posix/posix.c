@@ -508,7 +508,7 @@ int32_t call_system(const char *pathname) {
 
 void *call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
     void *result = mmap(NULL, length, prot, flags, fd, offset);
-    return result == MAP_FAILED ? 0 : result;
+    return result == MAP_FAILED ? NULL : result;
 }
 
 int32_t call_munmap(void* address, int64_t length) {
