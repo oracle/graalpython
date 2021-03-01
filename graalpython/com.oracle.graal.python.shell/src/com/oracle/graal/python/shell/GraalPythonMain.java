@@ -563,6 +563,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
         contextBuilder.option("python.CheckHashPycsMode", checkHashPycsMode);
 
+        if (getContextOptionIfSetViaCommandLine("python.PosixModuleBackend") == null && getContextOptionIfSetViaCommandLine("PosixModuleBackend") == null) {
+            // TODO find a proper way to force emulated backend in llvm.managed mode
+            if (getClass() == GraalPythonMain.class) {
+                contextBuilder.option("python.PosixModuleBackend", "native");
+            }
+        }
+
         if (multiContext) {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
         }

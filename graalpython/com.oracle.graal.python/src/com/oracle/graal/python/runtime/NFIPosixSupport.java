@@ -298,23 +298,21 @@ public final class NFIPosixSupport extends PosixSupport {
     private volatile Object nfiLibrary;
     private final AtomicReferenceArray<Object> cachedFunctions;
 
-    private NFIPosixSupport(PythonContext context, String nfiBackend) {
+    public NFIPosixSupport(PythonContext context, String nfiBackend) {
+        assert nfiBackend.equals("native") || nfiBackend.equals("llvm");
         this.context = context;
         this.nfiBackend = nfiBackend;
         this.cachedFunctions = new AtomicReferenceArray<>(PosixNativeFunction.values().length);
     }
 
-    public static NFIPosixSupport createNative(PythonContext context) {
-        return new NFIPosixSupport(context, "native");
-    }
-
-    public static NFIPosixSupport createLLVM(PythonContext context) {
-        return new NFIPosixSupport(context, "llvm");
-    }
-
     @ExportMessage
     public String getBackend() {
         return nfiBackend;
+    }
+
+    @Override
+    public void setEnv(Env env) {
+        // TODO check that env does not attempt to redirect std streams
     }
 
     @ExportMessage

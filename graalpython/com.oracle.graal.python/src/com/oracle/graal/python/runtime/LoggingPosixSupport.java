@@ -91,6 +91,7 @@ public class LoggingPosixSupport extends PosixSupport {
 
     public LoggingPosixSupport(PosixSupport delegate) {
         this.delegate = delegate;
+        LOGGER.log(Level.INFO, "Using " + delegate.getClass());
     }
 
     public static boolean isEnabled() {
@@ -100,6 +101,11 @@ public class LoggingPosixSupport extends PosixSupport {
     @Override
     public void setEnv(Env env) {
         delegate.setEnv(env);
+    }
+
+    @Override
+    public void postInitialize() {
+        delegate.postInitialize();
     }
 
     @ExportMessage
@@ -239,7 +245,7 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("select", "%s %s %s %d %d", readfds, writefds, errorfds, timeout.getSeconds(), timeout.getMicroseconds());
+        logEnter("select", "%s %s %s %s", readfds, writefds, errorfds, timeout);
         try {
             return logExit("select", "%s", lib.select(delegate, readfds, writefds, errorfds, timeout));
         } catch (PosixException e) {
@@ -878,6 +884,10 @@ public class LoggingPosixSupport extends PosixSupport {
         if (arg instanceof Buffer) {
             Buffer b = (Buffer) arg;
             return "Buffer{" + asString(b.data, 0, (int) b.length) + "}";
+        }
+        if (arg instanceof Timeval) {
+            Timeval t = (Timeval) arg;
+            return "Timeval{" + t.getSeconds() + ", " + t.getMicroseconds() + "}";
         }
         if (arg instanceof byte[]) {
             byte[] bytes = (byte[]) arg;

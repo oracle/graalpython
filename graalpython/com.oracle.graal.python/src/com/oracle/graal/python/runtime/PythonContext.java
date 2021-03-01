@@ -456,6 +456,8 @@ public final class PythonContext {
         core.postInitialize();
         if (!ImageInfo.inImageBuildtimeCode()) {
             importSiteIfForced();
+        } else if (posixSupport instanceof ImageBuildtimePosixSupport) {
+            ((ImageBuildtimePosixSupport) posixSupport).checkLeakingResources();
         }
     }
 
@@ -563,25 +565,34 @@ public final class PythonContext {
     private void initalizePosixSupport() {
         String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
         PosixSupport result;
+        // The resources field will be removed once all posix builtins go through PosixSupport
         switch (option) {
             case "java":
-                result = new EmulatedPosixSupport(this);
+                result = resources = new EmulatedPosixSupport(this);
                 break;
             case "native":
-                result = NFIPosixSupport.createNative(this);
-                break;
             case "llvm":
-                result = NFIPosixSupport.createLLVM(this);
+                // TODO this condition will be moved into a factory method in NFIPosixBackend
+                // for now it's here because we still need to expose the emulated backend as
+                // 'resources'
+                if (ImageInfo.inImageBuildtimeCode()) {
+                    EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
+                    NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                    result = new ImageBuildtimePosixSupport(nativePosixSupport, emulatedPosixSupport);
+                    resources = emulatedPosixSupport;
+                } else if (ImageInfo.inImageRuntimeCode()) {
+                    NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                    result = new ImageBuildtimePosixSupport(nativePosixSupport, null);
+                    resources = new PosixResources();
+                    resources.setEnv(env);
+                } else {
+                    result = new NFIPosixSupport(this, option);
+                    resources = new PosixResources();
+                    resources.setEnv(env);
+                }
                 break;
             default:
                 throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
-        }
-        // The resources field will be removed once all posix builtins go through PosixSupport
-        if (result instanceof PosixResources) {
-            resources = (PosixResources) result;
-        } else {
-            resources = new PosixResources();
-            resources.setEnv(env);
         }
         if (LoggingPosixSupport.isEnabled()) {
             posixSupport = new LoggingPosixSupport(result);
