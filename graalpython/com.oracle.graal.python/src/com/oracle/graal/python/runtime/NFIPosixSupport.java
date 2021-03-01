@@ -645,6 +645,13 @@ public final class NFIPosixSupport extends PosixSupport {
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
+        // TODO we don;t need to do this more than once
+        try {
+            TruffleFile truffleFile = context.getEnv().getInternalTruffleFile(".").getAbsoluteFile();
+            context.getEnv().setCurrentWorkingDirectory(truffleFile);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Unable to change Truffle working directory", e);
+        }
     }
 
     @ExportMessage
