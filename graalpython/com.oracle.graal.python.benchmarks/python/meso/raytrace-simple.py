@@ -367,3 +367,6 @@ def _main(width=400, height=400):
 
 def __benchmark__(*args):
     _main(*args)
+
+def java_embedded_bench_entrypoint(width=400, height=400):
+    _main(int(width), int(height))

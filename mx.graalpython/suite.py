@@ -301,6 +301,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python",
                 "sdk:GRAAL_SDK",
+                "sdk:LAUNCHER_COMMON",
                 "mx:JMH_1_21"
             ],
             "jacoco": "exclude",

@@ -275,3 +275,7 @@ def main(iterations=10, w=1000, h=1200):
 
 def __benchmark__(iterations=10):
     main(iterations)
+
+def java_embedded_bench_entrypoint(iterations=2):
+    __setup__(int(iterations))
+    main(int(iterations))

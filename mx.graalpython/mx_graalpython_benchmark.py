@@ -27,13 +27,13 @@ import os
 import re
 import subprocess
 from abc import ABCMeta, abstractproperty, abstractmethod
+from contextlib import contextmanager
 from os.path import join
 
 import mx
 import mx_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
-from contextlib import contextmanager
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -56,6 +56,7 @@ VM_NAME_JYTHON = "jython"
 VM_NAME_GRAALPYTHON_SVM = "graalpython-svm"
 GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
+
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
 CONFIGURATION_INTERPRETER = "interpreter"
@@ -69,6 +70,12 @@ CONFIGURATION_NATIVE_MULTI = "native-multi"
 CONFIGURATION_NATIVE_MULTI_TIER = "native-multi-tier"
 CONFIGURATION_SANDBOXED = "sandboxed"
 CONFIGURATION_SANDBOXED_MULTI = "sandboxed-multi"
+
+PYTHON_JAVA_EMBEDDING_VM_REGISTRY_NAME = "PythonJavaDriver"
+CONFIGURATION_JAVA_EMBEDDING_MULTI = "java-driver-multi-default"
+CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED = "java-driver-multi-shared"
+CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI = "java-driver-interpreter-multi"
+CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED = "java-driver-interpreter-multi-shared"
 
 DEFAULT_ITERATIONS = 10
 
@@ -308,10 +315,10 @@ class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
         return VM_NAME_JYTHON
 
 
-class GraalPythonVm(GuestVm):
+class GraalPythonVmBase(GuestVm):
     def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
                  host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
-        super(GraalPythonVm, self).__init__(host_vm=host_vm)
+        super(GraalPythonVmBase, self).__init__(host_vm=host_vm)
         self._config_name = config_name
         self._distributions = distributions
         self._cp_suffix = cp_suffix
@@ -323,22 +330,30 @@ class GraalPythonVm(GuestVm):
     def hosting_registry(self):
         return java_vm_registry
 
+    def launcher_class(self):
+        raise NotImplementedError()
+
+    def run_in_graalvm(self, cwd, args, extra_polyglot_args, host_vm):
+        raise NotImplementedError()
+
+    def get_extra_polyglot_args(self):
+        raise NotImplementedError()
+
+    def get_classpath(self):
+        cp = []
+        if self._cp_prefix:
+            cp.append(self._cp_prefix)
+        if self._cp_suffix:
+            cp.append(self._cp_suffix)
+        return cp
+
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
-        extra_polyglot_args = ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
+        extra_polyglot_args = self.get_extra_polyglot_args()
 
         host_vm = self.host_vm()
         if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
-            with environ(self._env or {}):
-                cp = []
-                if self._cp_prefix:
-                    cp.append(self._cp_prefix)
-                if self._cp_suffix:
-                    cp.append(self._cp_suffix)
-                if len(cp) > 0:
-                    extra_polyglot_args.append("--vm.classpath="+":".join(cp))
-
-                return host_vm.run_launcher('graalpython', extra_polyglot_args + args, cwd)
+            return self.run_in_graalvm(cwd, args, extra_polyglot_args, host_vm)
 
         # Otherwise, we're running from the source tree
         truffle_options = [
@@ -365,7 +380,7 @@ class GraalPythonVm(GuestVm):
             vm_args += self._extra_vm_args
         vm_args += [
             "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
-            "com.oracle.graal.python.shell.GraalPythonMain"
+            self.launcher_class(),
         ]
         for a in args[:]:
             if a.startswith("-D") or a.startswith("-XX"):
@@ -391,12 +406,69 @@ class GraalPythonVm(GuestVm):
                               env=self._env)
 
 
+class GraalPythonVm(GraalPythonVmBase):
+    def __init__(self, config_name=CONFIGURATION_DEFAULT, distributions=None, cp_suffix=None, cp_prefix=None,
+                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
+        super(GraalPythonVm, self).__init__(config_name=config_name, cp_suffix=cp_suffix, distributions=distributions,
+                                            cp_prefix=cp_prefix, host_vm=host_vm, extra_vm_args=extra_vm_args,
+                                            extra_polyglot_args=extra_polyglot_args, env=env)
+
+    def launcher_class(self):
+        return 'com.oracle.graal.python.shell.GraalPythonMain'
+
+    def run_in_graalvm(self, cwd, args, extra_polyglot_args, host_vm):
+        with environ(self._env or {}):
+            cp = self.get_classpath()
+            if len(cp) > 0:
+                extra_polyglot_args.append("--vm.classpath=" + ":".join(cp))
+            return host_vm.run_launcher('graalpython', extra_polyglot_args + args, cwd)
+
+    def get_extra_polyglot_args(self):
+        return ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
+
+
+class GraalPythonJavaDriverVm(GraalPythonVmBase):
+    def __init__(self, config_name=CONFIGURATION_DEFAULT, cp_suffix=None, distributions=None, cp_prefix=None,
+                 host_vm=None, extra_vm_args=None, extra_polyglot_args=None, env=None):
+        super(GraalPythonJavaDriverVm, self).__init__(config_name=config_name, cp_suffix=cp_suffix,
+                                                      distributions=['GRAALPYTHON_BENCH'] if not distributions else distributions,
+                                                      cp_prefix=cp_prefix, host_vm=host_vm, extra_vm_args=extra_vm_args,
+                                                      extra_polyglot_args=extra_polyglot_args, env=env)
+
+    def launcher_class(self):
+        return 'com.oracle.graal.python.benchmarks.JavaBenchmarkDriver'
+
+    def run_in_graalvm(self, cwd, args, extra_polyglot_args, host_vm):
+        # In GraalVM we run the Java benchmarks driver like one would run any other Java application
+        # that embeds GraalPython on GraalVM. We need to add the dependencies on class path, and since
+        # we use run_java, we need to do some output postprocessing that normally run_launcher would do
+        with environ(self._env or {}):
+            cp = self.get_classpath()
+            jhm = mx.dependency("mx:JMH_1_21")
+            cp_deps = [
+                mx.distribution('GRAALPYTHON_BENCH', fatalIfMissing=True),
+                jhm,
+                mx.dependency("sdk:LAUNCHER_COMMON")
+            ] + jhm.deps
+            cp += [x.classpath_repr() for x in cp_deps]
+            java_args = ['-cp', ':'.join(cp)] + [self.launcher_class()]
+            out = mx.TeeOutputCapture(mx.OutputCapture())
+            code = host_vm.run_java(java_args + extra_polyglot_args + args, cwd=cwd, out=out, err=out)
+            out = out.underlying.data
+            dims = host_vm.dimensions(cwd, args, code, out)
+            return code, out, dims
+
+    def get_extra_polyglot_args(self):
+        return ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # the benchmark definition
 #
 # ----------------------------------------------------------------------------------------------------------------------
 python_vm_registry = mx_benchmark.VmRegistry(PYTHON_VM_REGISTRY_NAME, known_host_registries=[java_vm_registry])
+python_java_embedding_vm_registry = mx_benchmark.VmRegistry(PYTHON_JAVA_EMBEDDING_VM_REGISTRY_NAME, known_host_registries=[java_vm_registry])
 
 class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, benchmarks):
@@ -681,6 +753,44 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
 
     def get_vm_registry(self):
         return python_vm_registry
+
+    @classmethod
+    def get_benchmark_suites(cls, benchmarks):
+        assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: [path, {bench: args, ... }], ...}"
+        return [cls(suite_name, suite_info[0], suite_info[1])
+                for suite_name, suite_info in benchmarks.items()]
+
+
+class PythonJavaEmbeddingBenchmarkSuite(PythonBaseBenchmarkSuite):
+    def __init__(self, name, bench_path, benchmarks):
+        super(PythonJavaEmbeddingBenchmarkSuite, self).__init__(name, benchmarks)
+        self._bench_path = bench_path
+
+    def get_vm_registry(self):
+        return python_java_embedding_vm_registry
+
+    def get_bench_name(self, benchmarks):
+        return os.path.basename(os.path.splitext(benchmarks[0])[0])
+
+    def get_arg(self, bench_name):
+        # returns arguments with which the benchmark was running for the results reporting
+        return " ".join(self._benchmarks[bench_name])
+
+    def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        benchmark = benchmarks[0]
+
+        vm_args = self.add_graph_dump_option(bmSuiteArgs, benchmark)
+        vm_args += self.vmArgs(bmSuiteArgs)
+
+        run_args = self.runArgs(bmSuiteArgs)
+        if "-i" not in run_args:
+            # if not passed explicitly by the user, use the default args for this benchmark
+            run_args += self._benchmarks[benchmark]
+
+        # adds default -i value if missing and splits to VM options and args for the harness
+        vm_options, run_args = self.postprocess_run_args(run_args)
+
+        return vm_options + vm_args + ['-path', self._bench_path] + [benchmark] + run_args
 
     @classmethod
     def get_benchmark_suites(cls, benchmarks):
