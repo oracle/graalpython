@@ -433,6 +433,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached BranchProfile notMemoryview,
                         @Cached BranchProfile notBuffer,
                         @Cached BranchProfile notMmap,
+                        @Cached LookupNativeMemberInMRONode lookupTpAsBufferNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
             PythonBuiltinClass pBytes = context.getCore().lookupType(PythonBuiltinClassType.PBytes);
@@ -460,8 +461,16 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return new PyBufferProcsWrapper(pMmap);
             }
             notMmap.enter();
-            // NULL pointer
-            return toSulongNode.execute(getNativeNullNode.execute());
+            /*
+             * Managed classes don't store PyBufferProcs objects and so there is no attribute. This
+             * is why we use managedMemberName == "".
+             */
+            Object result = lookupTpAsBufferNode.execute(object, NativeMember.TP_AS_BUFFER, "");
+            if (result == PNone.NO_VALUE) {
+                // NULL pointer
+                return toSulongNode.execute(getNativeNullNode.execute());
+            }
+            return toSulongNode.execute(result);
         }
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
