@@ -249,16 +249,16 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             return (PDict) getDictNode.execute(getContext().getCore().lookupBuiltinModule("sys"));
         }
 
-        private PDict getGlobalsDict(Object globals) {
+        private Object getGlobalsDict(Object globals) {
             if (globals instanceof PDict) {
-                return (PDict) globals;
+                return globals;
             }
             if (getDictNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
                 getDictNode = insert(GetDictNode.create());
             }
-            return (PDict) getDictNode.execute(globals);
+            return getDictNode.execute(globals);
         }
 
         private PFrame getCallerFrame(VirtualFrame frame, int stackLevel) {
@@ -710,7 +710,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 lineno[0] = 1;
             } else {
                 globals = getGlobalsDict(f.getGlobals());
-                if (globals == null) {
+                if (globals == null || globals instanceof PNone) {
                     globals = getSysDict();
                 }
                 lineno[0] = f.getLine();
