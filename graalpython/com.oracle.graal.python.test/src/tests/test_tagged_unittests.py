@@ -84,7 +84,7 @@ def make_test_function(working_test):
             cmd.append("--inspect")
         if "-debug-java" in sys.argv:
             cmd.append("-debug-java")
-        cmd += ["-S", RUNNER]
+        cmd += [RUNNER]
         for testpattern in working_test[1]:
             cmd.extend(["-k", testpattern])
         print("Running test:", working_test[0])
@@ -201,7 +201,7 @@ def main():
                 # (there will be one even if everything succeeds) filter out possible false-passes caused by
                 # the tests catching all exceptions somewhere
                 cmd += ['--experimental-options', '--python.CatchAllExceptions']
-            cmd += ["-S", RUNNER, "-v"]
+            cmd += [RUNNER, "-v"]
             tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
             if retag and repeat == 0:
                 test_selectors = []

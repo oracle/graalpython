@@ -351,7 +351,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static void print(String string) {
-        System.out.println(string);
+        System.err.println(string);
     }
 
     private static String getLauncherExecName() {
