@@ -1,9 +1,6 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.ASN1_EMAIL;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.ASN1_EMAILADDRESS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CA_ISSUERS;
@@ -25,12 +22,7 @@ import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_AUTHORITY_INFO_ACCESS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISSUERS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.nodes.Node;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -65,16 +57,28 @@ import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Base64;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.logging.Level;
+
 import javax.crypto.interfaces.DHPrivateKey;
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
+
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.nodes.Node;
+
 import sun.security.provider.certpath.OCSP;
 import sun.security.util.DerValue;
 import sun.security.x509.AccessDescription;
@@ -221,7 +225,6 @@ public final class CertUtils {
 
     @TruffleBoundary
     private static void parseAndAddName(String name, List<PTuple> result, PythonObjectFactory factory, String... fields) {
-        List<PTuple> tuples = new ArrayList<>(16);
         for (String component : name.split(",")) {
             String[] kv = component.split("=");
             if (kv.length == 2) {
@@ -233,7 +236,6 @@ public final class CertUtils {
                 }
             }
         }
-        result.addAll(tuples);
     }
 
     private static void addTuple(PythonObjectFactory factory, List<PTuple> tuples, String... s) {
@@ -401,7 +403,7 @@ public final class CertUtils {
         EMPTY_CERT,
         BEGIN_CERTIFICATE_WITHOUT_END,
         SOME_BAD_BASE64_DECODE,
-        BAD_BASE64_DECODE;
+        BAD_BASE64_DECODE
     }
 
     @TruffleBoundary
@@ -411,10 +413,9 @@ public final class CertUtils {
             files.add(file);
         }
         if (path != null && path.isDirectory()) {
-            Collection<TruffleFile> fs = path.list();
-            if (fs != null) {
-                files.addAll(fs);
-            }
+            // TODO: see SSL_CTX_load_verify_locations
+            // if capath is a directory, cpython loads certificates on demand
+            files.addAll(path.list());
         }
         List<Object> l = new ArrayList<>();
         for (TruffleFile f : files) {
@@ -468,11 +469,11 @@ public final class CertUtils {
         Base64.Decoder decoder = Base64.getDecoder();
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
         List<Object> l = new ArrayList<>();
-        LoadCertError res = add(data, l, decoder, (in) -> factory.generateCertificate(in));
+        LoadCertError res = add(data, l, decoder, factory::generateCertificate);
         if (res != LoadCertError.NO_ERROR) {
             return res;
         }
-        res = add(dataCrl, l, decoder, (in) -> factory.generateCRL(in));
+        res = add(dataCrl, l, decoder, factory::generateCRL);
         if (res != LoadCertError.NO_ERROR) {
             return res;
         }
@@ -485,7 +486,7 @@ public final class CertUtils {
 
     @FunctionalInterface
     private interface F {
-        public Object generate(ByteArrayInputStream t) throws CertificateException, CRLException;
+        Object generate(ByteArrayInputStream t) throws CertificateException, CRLException;
     }
 
     private static LoadCertError add(List<String> data, List<Object> result, Base64.Decoder decoder, F f) throws CertificateException, CRLException {
@@ -604,7 +605,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    static Collection<? extends Object> generateCertificates(byte[] bytes) throws CertificateException {
+    static Collection<?> generateCertificates(byte[] bytes) throws CertificateException {
         return CertificateFactory.getInstance("X.509").generateCertificates(new ByteArrayInputStream(bytes));
     }
 
