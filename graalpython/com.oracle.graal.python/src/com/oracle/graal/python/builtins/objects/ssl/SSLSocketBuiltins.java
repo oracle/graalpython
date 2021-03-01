@@ -24,6 +24,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -65,10 +66,8 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             } else if (len < 0) {
                 throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
-            ByteBuffer output = PythonUtils.allocateByteBuffer(len);
-            SSLEngineHelper.read(this, self, output);
-            output.flip();
-            return factory().createBytes(PythonUtils.getBufferArray(output), output.limit());
+            ByteBuffer output = doRead(self, len);
+            return factory().createBytes(PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
         }
 
         @Specialization
@@ -86,22 +85,34 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             if (bufferLength == 0) {
                 return 0;
             }
-            ByteBuffer output = PythonUtils.allocateByteBuffer(bufferLength);
-            SSLEngineHelper.read(this, self, output);
-            output.flip();
-            for (int i = 0; i < output.limit(); i++) {
-                setItemScalarNode.execute(storage, i, output.get(i));
+            ByteBuffer output = doRead(self, bufferLength);
+            int readBytes = PythonUtils.getBufferRemaining(output);
+            byte[] array = PythonUtils.getBufferArray(output);
+            for (int i = 0; i < readBytes; i++) {
+                setItemScalarNode.execute(storage, i, array[i]);
             }
-            return output.limit();
+            return readBytes;
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        Object errorBytes(PSSLSocket self, int len, PBytes bytes) {
+            throw raise(TypeError, "read() argument 2 must be read-write bytes-like object, not bytes");
         }
 
         // TODO arrays, memoryview
-        // TODO proper error for bytes
-
         @Fallback
         @SuppressWarnings("unused")
         Object error(Object self, Object len, Object buffer) {
             throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
+        }
+
+        @TruffleBoundary
+        private ByteBuffer doRead(PSSLSocket self, int bufferLength) {
+            ByteBuffer output = ByteBuffer.allocate(bufferLength);
+            SSLEngineHelper.read(this, self, output);
+            output.flip();
+            return output;
         }
 
         @Override
@@ -119,7 +130,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             try {
                 byte[] bytes = bufferLib.getBufferBytes(buffer);
                 int length = bufferLib.getBufferLength(buffer);
-                ByteBuffer input = PythonUtils.wrapByteBuffer(bytes);
+                ByteBuffer input = PythonUtils.wrapByteBuffer(bytes, 0, length);
                 SSLEngineHelper.write(this, self, input);
                 return length;
             } catch (UnsupportedMessageException e) {
@@ -233,6 +244,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(obj)")
         Object set(@SuppressWarnings("unused") PSSLSocket self, @SuppressWarnings("unused") Object obj) {
+            // JDK API doesn't support setting session ID
             throw raise(NotImplementedError);
         }
     }
@@ -318,10 +330,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object getChannelBinding(PSSLSocket self, String sbType) {
-            if ("tls-unique".equals(sbType)) {
-                // JDK doesn't have an API to access what we need. Bouncycastle could provide this
-                throw raise(NotImplementedError);
-            }
+            // JDK doesn't have an API to access what we need. BouncyCastle could provide this
             throw raise(ValueError, ErrorMessages.S_CHANNEL_BINDING_NOT_IMPLEMENTED, sbType);
         }
 
