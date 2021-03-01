@@ -206,6 +206,21 @@ def test_getitem():
     assert m[slice(-10, 100)] == b'\x02\x03\x04\x05\x06\x07\x08\t\n\x0b'
 
 
+def test_readline():
+    m = mmap.mmap(-1, 9)
+    for i in range(0, 9):
+        m[i] = i
+    m[4] = b'\n'[0]
+    assert m.readline() == b'\x00\x01\x02\x03\n'
+    assert m.readline() == b'\x05\x06\x07\x08'
+
+    m = mmap.mmap(-1, 1024 + 3)
+    m[1024] = b'\n'[0]
+    m[1025] = b'a'[0]
+    m[1026] = b'b'[0]
+    assert m.readline() == (b'\x00' * 1024) + b'\n'
+    assert m.readline() == b'ab'
+
 
 def test_main():
     #run_unittest(MmapTests, LargeMmapTests)

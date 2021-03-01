@@ -457,24 +457,22 @@ public class MMapBuiltins extends PythonBuiltins {
             // small buffer
             ByteSequenceStorage res = new ByteSequenceStorage(16);
             byte[] buffer = new byte[BUFFER_SIZE];
-            long pos = self.getPos();
             int nread;
-            outer: while (pos < self.getLength()) {
+            outer: while (self.getPos() < self.getLength()) {
                 try {
-                    nread = posixLib.mmapReadBytes(getPosixSupport(), self.getPosixSupportHandle(), pos, buffer, buffer.length);
+                    nread = posixLib.mmapReadBytes(getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), buffer, (int) Math.min(self.getRemaining(), buffer.length));
                 } catch (PosixException e) {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
                 for (int i = 0; i < nread; i++) {
                     byte b = buffer[i];
-                    if (b != '\n') {
-                        appendNode.execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
-                    } else {
-                        self.setPos(pos + i - 1);
+                    appendNode.execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
+                    if (b == '\n') {
+                        self.setPos(self.getPos() + i + 1);
                         break outer;
                     }
                 }
-                pos += nread;
+                self.setPos(self.getPos() + nread);
             }
             return factory().createBytes(res);
         }
