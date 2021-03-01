@@ -199,7 +199,7 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
 
     struct timeval timeout = {timeoutSec, timeoutUsec};
 
-    int result = select(nfds, &readfdsSet, &writefdsSet, &errfdsSet, timeoutSec > 0 ? &timeout : NULL);
+    int result = select(nfds, &readfdsSet, &writefdsSet, &errfdsSet, timeoutSec >= 0 ? &timeout : NULL);
 
     // fill in the output parameter
     fill_select_result(readfds, readfdsLen, &readfdsSet, selected, 0);
