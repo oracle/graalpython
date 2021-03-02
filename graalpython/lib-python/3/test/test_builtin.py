@@ -1989,6 +1989,7 @@ class TestSorted(unittest.TestCase):
 
 class ShutdownTest(unittest.TestCase):
 
+    @impl_detail("finalization", graalvm=False)
     def test_cleanup(self):
         # Issue #19255: builtins are still available at shutdown
         code = """if 1:

@@ -609,6 +609,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         PBytes run(PInt magicNumber, PBytesLike source) {
             return run(magicNumber.longValue(), source);
         }
+
+        @Specialization
+        PBytes run(int magicNumber, PBytesLike source) {
+            return run((long) magicNumber, source);
+        }
     }
 
     @Builtin(name = "_fix_co_filename", minNumOfPositionalArgs = 2)

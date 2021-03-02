@@ -351,7 +351,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static void print(String string) {
-        System.out.println(string);
+        System.err.println(string);
     }
 
     private static String getLauncherExecName() {
@@ -703,7 +703,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void printHelp(OptionCategory maxCategory) {
-        print("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
+        System.out.println("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
                         "-B     : this disables writing .py[co] files on import\n" +
                         "-c cmd : program passed in as string (terminates option list)\n" +
