@@ -351,7 +351,9 @@ public class PosixResources extends PosixSupport {
                 try {
                     PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
                     if (nativeFdForSockets == -1) {
-                        nativeFdForSockets = posixLib.pipe(posixSupport)[0];
+                        int[] fds = posixLib.pipe(posixSupport);
+                        posixLib.close(posixSupport, fds[1]);
+                        nativeFdForSockets = fds[0];
                     }
                     fd = posixLib.dup(posixSupport, nativeFdForSockets);
                 } catch (PosixException e) {
@@ -366,6 +368,10 @@ public class PosixResources extends PosixSupport {
     @TruffleBoundary
     public void closeSocket(PSocket socket, PythonContext context) {
         int fd = socket.getFileno();
+        if (fd < 0) {
+            return;
+        }
+        socket.setFileno(-1);
         close(fd);
         Object posixSupport = context.getPosixSupport();
         if (posixSupport != this) {

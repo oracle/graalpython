@@ -178,10 +178,6 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object close(PSocket socket) {
-            if (!socket.isOpen()) {
-                return PNone.NONE;
-            }
-
             if (socket.getSocket() != null) {
                 try {
                     socket.getSocket().close();
