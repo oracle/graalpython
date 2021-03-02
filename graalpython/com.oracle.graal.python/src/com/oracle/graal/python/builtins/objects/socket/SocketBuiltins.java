@@ -692,7 +692,9 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class SockDetachNode extends PythonUnaryBuiltinNode {
         @Specialization
         int detach(PSocket socket) {
-            return socket.getFileno();
+            int fd = socket.getFileno();
+            socket.setFileno(-1);
+            return fd;
         }
     }
 
