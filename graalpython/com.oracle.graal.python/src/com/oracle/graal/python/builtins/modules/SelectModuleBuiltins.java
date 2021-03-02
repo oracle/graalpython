@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_VALUE_NAN;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT_TO;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.FD_SETSIZE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
@@ -177,7 +179,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return factory().createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
-        private static ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary sequenceLib, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
+        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary sequenceLib, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
                         FastConstructListNode constructListNode, PosixResources resources) {
             PArguments.ThreadState threadState = PArguments.getThreadState(frame);
             // We cannot assume any size of those two arrays, because the sequence may change as a
@@ -191,6 +193,9 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                 Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
                 objects.add(pythonObject);
                 int fd = itemLib.asFileDescriptorWithState(pythonObject, threadState);
+                if (fd >= FD_SETSIZE) {
+                    throw raise(ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
+                }
                 fds.add(fd);
                 containsSocket |= resources.isSocket(fd);
             }
