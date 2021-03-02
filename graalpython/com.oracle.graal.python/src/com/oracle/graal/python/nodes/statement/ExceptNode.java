@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
@@ -94,9 +95,23 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         throw ExceptionHandledException.INSTANCE;
     }
 
-    public boolean matchesException(VirtualFrame frame, Throwable e) {
+    public boolean matchesPException(VirtualFrame frame, PException e) {
         if (exceptType == null) {
-            return e instanceof PException; // foreign exceptions must be caught explicitly
+            return true;
+        }
+        return getMatchNode().executeMatch(frame, e, exceptType.execute(frame));
+    }
+
+    public boolean matchesTruffleException(@SuppressWarnings("unused") VirtualFrame frame, AbstractTruffleException e) {
+        assert !(e instanceof PException);
+        // TODO: (tfel) should we allow catching with the meta-object of arbitrary truffle exceptions?
+        return exceptType == null;
+    }
+
+    public boolean matchesHostException(VirtualFrame frame, Throwable e) {
+        assert !(e instanceof AbstractTruffleException);
+        if (exceptType == null) {
+            return false; // host exceptions must be matched explicitly
         }
         return getMatchNode().executeMatch(frame, e, exceptType.execute(frame));
     }

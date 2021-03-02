@@ -47,6 +47,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.interop.ArityException;
@@ -66,6 +67,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private StatementNode orelse;
+    @Child private InteropLibrary excLib;
 
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
 
@@ -87,22 +89,31 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
-            if (!catchException(frame, ex)) {
+            if (!catchPException(frame, ex)) {
                 throw ex;
             }
             return;
+        } catch (AbstractTruffleException e) {
+            if (excLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excLib = insert(InteropLibrary.getFactory().createDispatched(3));
+            }
+            if (excLib.isException(e) && catchTruffleException(frame, e)) {
+                return;
+            }
+            throw e;
         } catch (ControlFlowException e) {
             throw e;
         } catch (Exception | StackOverflowError | AssertionError e) {
             if (shouldCatchJavaExceptions() && getContext().getEnv().isHostException(e)) {
-                boolean handled = catchException(frame, e);
+                boolean handled = catchHostException(frame, e);
                 if (handled) {
                     return;
                 }
             }
             PException pe = wrapJavaExceptionIfApplicable(e);
             if (pe != null) {
-                boolean handled = catchException(frame, pe);
+                boolean handled = catchPException(frame, pe);
                 if (handled) {
                     return;
                 } else {
@@ -115,17 +126,14 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    private boolean catchException(VirtualFrame frame, Throwable exception) {
+    private boolean catchPException(VirtualFrame frame, PException exception) {
         try {
             for (ExceptNode exceptNode : exceptNodes) {
-                if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
+                if (everMatched.profile(exceptNode.matchesPException(frame, exception))) {
                     tryChainPreexistingException(frame, exception);
                     ExceptionState exceptionState = saveExceptionState(frame);
-                    if (exception instanceof PException) {
-                        PException pException = (PException) exception;
-                        pException.setCatchingFrameReference(frame, this);
-                        SetCaughtExceptionNode.execute(frame, pException);
-                    }
+                    exception.setCatchingFrameReference(frame, this);
+                    SetCaughtExceptionNode.execute(frame, exception);
                     try {
                         exceptNode.executeExcept(frame, exception);
                     } finally {
@@ -144,6 +152,62 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                 throw e;
             }
             tryChainExceptionFromHandler(handlerException, exception);
+            throw handlerException.getExceptionForReraise();
+        }
+        return false;
+    }
+
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
+    private boolean catchTruffleException(VirtualFrame frame, AbstractTruffleException exception) {
+        assert !(exception instanceof PException);
+        try {
+            for (ExceptNode exceptNode : exceptNodes) {
+                if (everMatched.profile(exceptNode.matchesTruffleException(frame, exception))) {
+                    ExceptionState exceptionState = saveExceptionState(frame);
+                    try {
+                        exceptNode.executeExcept(frame, exception);
+                    } finally {
+                        restoreExceptionState(frame, exceptionState);
+                    }
+                }
+            }
+        } catch (ExceptionHandledException eh) {
+            return true;
+        } catch (PException handlerException) {
+            throw handlerException;
+        } catch (Exception | StackOverflowError | AssertionError e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
+            throw handlerException.getExceptionForReraise();
+        }
+        return false;
+    }
+
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
+    private boolean catchHostException(VirtualFrame frame, Throwable exception) {
+        assert !(exception instanceof AbstractTruffleException);
+        try {
+            for (ExceptNode exceptNode : exceptNodes) {
+                if (everMatched.profile(exceptNode.matchesHostException(frame, exception))) {
+                    ExceptionState exceptionState = saveExceptionState(frame);
+                    try {
+                        exceptNode.executeExcept(frame, exception);
+                    } finally {
+                        restoreExceptionState(frame, exceptionState);
+                    }
+                }
+            }
+        } catch (ExceptionHandledException eh) {
+            return true;
+        } catch (PException handlerException) {
+            throw handlerException;
+        } catch (Exception | StackOverflowError | AssertionError e) {
+            PException handlerException = wrapJavaExceptionIfApplicable(e);
+            if (handlerException == null) {
+                throw e;
+            }
             throw handlerException.getExceptionForReraise();
         }
         return false;
