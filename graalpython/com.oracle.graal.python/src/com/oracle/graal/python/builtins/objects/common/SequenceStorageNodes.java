@@ -1981,7 +1981,7 @@ public abstract class SequenceStorageNodes {
             return lenNode;
         }
 
-        private static final boolean shortCutFalse(int llen, int rlen, BinCmpOp op) {
+        private static final boolean testingEqualsWithDifferingLengths(int llen, int rlen, BinCmpOp op) {
             // shortcut: if the lengths differ, the lists differ.
             CompilerAsserts.compilationConstant(op);
             if (op == Eq.INSTANCE) {
@@ -2002,7 +2002,7 @@ public abstract class SequenceStorageNodes {
         boolean doBoolStorage(BoolSequenceStorage left, BoolSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (shortCutFalse(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2019,7 +2019,7 @@ public abstract class SequenceStorageNodes {
         boolean doByteStorage(ByteSequenceStorage left, ByteSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (shortCutFalse(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2036,7 +2036,7 @@ public abstract class SequenceStorageNodes {
         boolean doIntStorage(IntSequenceStorage left, IntSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (shortCutFalse(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2053,7 +2053,7 @@ public abstract class SequenceStorageNodes {
         boolean doLongStorage(LongSequenceStorage left, LongSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (shortCutFalse(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2070,7 +2070,7 @@ public abstract class SequenceStorageNodes {
         boolean doDoubleStorage(DoubleSequenceStorage left, DoubleSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (shortCutFalse(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2089,7 +2089,7 @@ public abstract class SequenceStorageNodes {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             int llen = getLenNode().execute(left);
             int rlen = getLenNode().execute(right);
-            if (shortCutFalse(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
                 return false;
             }
             ThreadState state;
