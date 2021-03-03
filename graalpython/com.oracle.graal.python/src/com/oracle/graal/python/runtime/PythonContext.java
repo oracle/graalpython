@@ -586,6 +586,10 @@ public final class PythonContext {
                     resources = new EmulatedPosixSupport(this);
                     resources.setEnv(env);
                 } else {
+                    if (!getOption(PythonOptions.RunViaLauncher)) {
+                        writeWarning("Native Posix backend is not fully supported when embedding. For example, standard I/O always uses file " +
+                                        "descriptors 0, 1 and 2 regardless of stream redirection specified in Truffle environment");
+                    }
                     result = new NFIPosixSupport(this, option);
                     resources = new EmulatedPosixSupport(this);
                     resources.setEnv(env);

@@ -305,14 +305,27 @@ public final class NFIPosixSupport extends PosixSupport {
         this.cachedFunctions = new AtomicReferenceArray<>(PosixNativeFunction.values().length);
     }
 
+    @Override
+    public void setEnv(Env env) {
+        // Java NIO (and TruffleFile) do not expect/support changing native working directory since
+        // it is inherently thread-unsafe operation. It is not defined how NIO behaves when native
+        // cwd changes, thus we need to prevent TruffleFile from resolving relative paths using
+        // NIO by setting Truffle cwd to a know value. This cannot be done lazily in chdir() because
+        // native cwd is global, but Truffle cwd is per context.
+        // TruffleFile will be unaware of the real working directory and keep resolving against the
+        // original working directory. This should not matter since we do not use TruffleFile for
+        // ordinary I/O when using NFI backend.
+        try {
+            TruffleFile truffleFile = context.getEnv().getInternalTruffleFile(".").getAbsoluteFile();
+            context.getEnv().setCurrentWorkingDirectory(truffleFile);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Unable to change Truffle working directory", e);
+        }
+    }
+
     @ExportMessage
     public String getBackend() {
         return nfiBackend;
-    }
-
-    @Override
-    public void setEnv(Env env) {
-        // TODO check that env does not attempt to redirect std streams
     }
 
     @ExportMessage
@@ -644,13 +657,6 @@ public final class NFIPosixSupport extends PosixSupport {
         int result = invokeNode.callInt(this, PosixNativeFunction.call_chdir, pathToCString(path));
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
-        }
-        // TODO we don;t need to do this more than once
-        try {
-            TruffleFile truffleFile = context.getEnv().getInternalTruffleFile(".").getAbsoluteFile();
-            context.getEnv().setCurrentWorkingDirectory(truffleFile);
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Unable to change Truffle working directory", e);
         }
     }
 
