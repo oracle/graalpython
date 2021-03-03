@@ -187,7 +187,6 @@ public class PythonProvider implements LanguageProvider {
             "timezone", DATETIME_TIMEZONE, "import datetime; datetime.timezone(datetime.timedelta(hours=2))",
             "type:builtin", type(OBJECT, false), "object",
             "type:user", type(OBJECT, false), "class type_user():\n    pass\ntype_user",
-            "type:native", NON_INSTANTIABLE_TYPE, "import _cpython_sre, sre_constants; type(_cpython_sre.compile(r'', 32, [sre_constants.INFO, 4, 0, 0, 0, sre_constants.SUCCESS], 0, {}, (None,)))",
             // TODO remove '*args' from following value constructors once this is fixed in Truffle TCK
             "lambda:id", lambda(ANY, ANY), "lambda x, *args: x",
             "lambda:+1", lambda(NUMBER, NUMBER), "lambda x, *args: x + 1",
@@ -230,7 +229,7 @@ public class PythonProvider implements LanguageProvider {
 
         addExpressionSnippet(context, snippets, "/", "lambda x, y: x / y", NUMBER, PDivByZeroVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(iterable(ANY), iterator(ANY), array(ANY)));
+        addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY)));
 
         addExpressionSnippet(context, snippets, "==", "lambda x, y: x == y", BOOLEAN, ANY, ANY);
         addExpressionSnippet(context, snippets, "!=", "lambda x, y: x != y", BOOLEAN, ANY, ANY);
