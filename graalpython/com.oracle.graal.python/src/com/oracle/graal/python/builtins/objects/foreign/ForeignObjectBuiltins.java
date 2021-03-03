@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
@@ -49,6 +50,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -110,10 +112,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.StopIterationException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public class ForeignObjectBuiltins extends PythonBuiltins {
@@ -160,15 +164,16 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         public long len(Object self,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-
             try {
                 if (lib.hasArrayElements(self)) {
                     return lib.getArraySize(self);
+                } else if (lib.isIterator(self) || lib.hasIterator(self)) {
+                    return 0; // a value signifying it has a length, but it's unknown
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
-            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, "__len__");
+            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __LEN__);
         }
     }
 
@@ -537,6 +542,28 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         static Object doForeignArray(Object iterable,
                         @CachedLibrary("iterable") PythonObjectLibrary lib) {
             return lib.getIterator(iterable);
+        }
+    }
+
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object doForeignArray(Object iterator,
+                        @Cached ConditionProfile notIterator,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("iterator") InteropLibrary lib) {
+            if (notIterator.profile(lib.isIterator(iterator))) {
+                try {
+                    return lib.getIteratorNextElement(iterator);
+                } catch (UnsupportedMessageException | StopIterationException e) {
+                    assert (e instanceof StopIterationException) : "iterator claimed to be iterator but wasn't";
+                    throw raiseNode.raise(StopIteration);
+                }
+            } else {
+                throw raiseNode.raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __NEXT__);
+            }
         }
     }
 
