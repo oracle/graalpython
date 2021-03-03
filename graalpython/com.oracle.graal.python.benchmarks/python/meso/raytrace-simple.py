@@ -365,5 +365,5 @@ def _main(width=400, height=400):
     s.addObject(Halfspace(Point(0,0,0), Vector.UP), CheckerboardSurface())
     s.render(c)
 
-def __benchmark__():
-    _main()
+def __benchmark__(*args):
+    _main(*args)

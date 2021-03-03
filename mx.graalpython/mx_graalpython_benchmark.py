@@ -58,7 +58,11 @@ GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
+CONFIGURATION_INTERPRETER = "interpreter"
+CONFIGURATION_NATIVE_INTERPRETER = "native-interpreter"
 CONFIGURATION_DEFAULT_MULTI = "default-multi"
+CONFIGURATION_INTERPRETER_MULTI = "interpreter-multi"
+CONFIGURATION_NATIVE_INTERPRETER_MULTI = "native-interpreter-multi"
 CONFIGURATION_DEFAULT_MULTI_TIER = "default-multi-tier"
 CONFIGURATION_NATIVE = "native"
 CONFIGURATION_NATIVE_MULTI = "native-multi"
@@ -334,7 +338,7 @@ class GraalPythonVm(GuestVm):
                 if len(cp) > 0:
                     extra_polyglot_args.append("--vm.classpath="+":".join(cp))
 
-                return host_vm.run_lang('graalpython', extra_polyglot_args + args, cwd)
+                return host_vm.run_launcher('graalpython', extra_polyglot_args + args, cwd)
 
         # Otherwise, we're running from the source tree
         truffle_options = [
@@ -790,7 +794,7 @@ class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=to
         if mx.suite("tools", fatalIfMissing=False):
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
-            dists.append('SULONG')
+            dists.append('SULONG_NATIVE')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
