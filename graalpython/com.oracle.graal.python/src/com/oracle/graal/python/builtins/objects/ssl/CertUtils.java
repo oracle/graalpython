@@ -192,7 +192,8 @@ public final class CertUtils {
     @TruffleBoundary
     private static String getSerialNumber(X509Certificate x509Certificate) {
         String sn = x509Certificate.getSerialNumber().toString(16).toUpperCase();
-        return sn.length() == 1 ? "0" + sn : sn;
+        // i2a_ASN1_INTEGER pads the number to have even number of digits
+        return sn.length() % 2 == 0 ? sn : '0' + sn;
     }
 
     @TruffleBoundary
