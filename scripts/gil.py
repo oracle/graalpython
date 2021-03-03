@@ -213,7 +213,8 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
             if add:
                 messages, shared = get_messages(source, PTRN_MESSAGE)
                 if len(messages) > 0:
-                    if sum(map(lambda m: 0 if m.is_with_gil else 1, messages)) == 0:
+                    # if sum(map(lambda m: 0 if m.is_with_gil else 1, messages)) == 0:
+                    if 'GilNode gil' in source:
                         print("[skipping] {}".format(java_file))
                         continue
 
