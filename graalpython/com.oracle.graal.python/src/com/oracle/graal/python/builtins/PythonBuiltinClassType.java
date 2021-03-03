@@ -243,13 +243,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SocketTimeout("timeout", "_socket", Flags.EXCEPTION),
     BinasciiError("Error", "binascii", Flags.EXCEPTION),
     BinasciiIncomplete("Incomplete", "binascii", Flags.EXCEPTION),
-    SSLError("SSLError", "_ssl"),
-    SSLZeroReturnError("SSLZeroReturnError", "_ssl"),
-    SSLWantReadError("SSLWantReadError", "_ssl"),
-    SSLWantWriteError("SSLWantWriteError", "_ssl"),
-    SSLSyscallError("SSLSyscallError", "_ssl"),
-    SSLEOFError("SSLEOFError", "_ssl"),
-    SSLCertVerificationError("SSLCertVerificationError", "_ssl"),
+    SSLError("SSLError", "_ssl", Flags.EXCEPTION),
+    SSLZeroReturnError("SSLZeroReturnError", "_ssl", Flags.EXCEPTION),
+    SSLWantReadError("SSLWantReadError", "_ssl", Flags.EXCEPTION),
+    SSLWantWriteError("SSLWantWriteError", "_ssl", Flags.EXCEPTION),
+    SSLSyscallError("SSLSyscallError", "_ssl", Flags.EXCEPTION),
+    SSLEOFError("SSLEOFError", "_ssl", Flags.EXCEPTION),
+    SSLCertVerificationError("SSLCertVerificationError", "_ssl", Flags.EXCEPTION),
 
     // todo: all OS errors
 
