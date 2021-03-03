@@ -134,7 +134,7 @@ MICRO_BENCHMARKS_SMALL = {
     'object-layout-change': ITER_6 + WARMUP_2 + ['10_000'],
     'special-add-int-sized': ITER_6 + WARMUP_2 + ['1_000'],
     'special-add-sized': ITER_6 + WARMUP_2 + ['1_000'],
-    'special-len': ITER_6 + WARMUP_2 + ['5'],
+    'special-len': ITER_6 + WARMUP_2 + ['1', '1_000'],
     'member-access': ITER_6 + WARMUP_2 + ['10'],
     'magic-bool-sized': ITER_6 + WARMUP_2 + ['1_000_000'],
     'magic-iter': ITER_6 + WARMUP_2 + ['250000'],
@@ -142,12 +142,12 @@ MICRO_BENCHMARKS_SMALL = {
     'mmap-anonymous-sized': ITER_6 + WARMUP_2 + ['1_000'],
     'mmap-file': ITER_6 + WARMUP_2 + ['100'],
     'generate-functions-sized': ITER_6 + WARMUP_2 + ['1_000_000'],
-    'try-except-simple': ITER_6 + WARMUP_2 + ['10_000_000'],
-    'try-except-store-simple': ITER_6 + WARMUP_2 + ['1_000_000'],
+    'try-except-simple': ITER_6 + WARMUP_2 + ['2_500_000'],
+    'try-except-store-simple': ITER_6 + WARMUP_2 + ['2_000_000'],
     'try-except-store-two-types': ITER_6 + WARMUP_2 + ['1_000_000'],
     'try-except-two-types': ITER_6 + WARMUP_2 + ['1_000_000'],
-    'tuple-indexing-from-constructor': ITER_6 + WARMUP_2 + ['100_000'],
-    'tuple-indexing-from-literal': ITER_6 + WARMUP_2 + ['1_000_000'],
+    'tuple-indexing-from-constructor': ITER_6 + WARMUP_2 + ['250_000'],
+    'tuple-indexing-from-literal': ITER_6 + WARMUP_2 + ['400_000'],
 }
 
 def _pickling_benchmarks(module='pickle'):
