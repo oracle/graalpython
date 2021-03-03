@@ -1925,8 +1925,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         private final long offset;
 
         public MMapHandle(SeekableByteChannel channel, long offset) {
-            this.channel = channel;
+            setChannel(channel);
             this.offset = offset;
+        }
+
+        @TruffleBoundary
+        private void setChannel(SeekableByteChannel channel) {
+            // this.channel = channel;
         }
 
         @Override
