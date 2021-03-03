@@ -79,6 +79,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_TP_DICTOFFSET("get_tp_dictoffset"),
     FUN_GET_TP_BASICSIZE("get_tp_basicsize"),
     FUN_GET_TP_ITEMSIZE("get_tp_itemsize"),
+    FUN_GET_TP_AS_BUFFER("get_tp_as_buffer"),
     FUN_GET_BYTE_ARRAY_TYPE_ID("get_byte_array_typeid"),
     FUN_GET_PTR_ARRAY_TYPE_ID("get_ptr_array_typeid"),
     FUN_PTR_COMPARE("truffle_ptr_compare"),
