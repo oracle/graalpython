@@ -29,7 +29,10 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -106,7 +109,12 @@ public final class PMethod extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
-        return hash();
+    protected long hashWithState(@SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return hash();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 }
