@@ -199,6 +199,16 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "is_type", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsTypeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isType(Object object) {
+            Env env = getContext().getEnv();
+            return env.isHostObject(object) && env.asHostObject(object) instanceof Class<?>;
+        }
+    }
+
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
