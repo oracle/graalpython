@@ -191,12 +191,21 @@ def add_import(source, shared=False):
     return source[:end] + gil_import + cached_import + shared_import + source[end:]
 
 
-def main(sources, add=True, dry_run=True, check_style=True, single_source=False, source_filter=None):
-    files = set(glob.glob("{}**/*.java".format(sources), recursive=True))
+def file_names_filter(f_name, names):
+    names = names.split(",")
+    for n in names:
+        if n in f_name:
+            return True
+    return False
+
+
+def main(sources, add=True, dry_run=True, check_style=True, single_source=False, source_filter=None,
+         ignore_filter=None):
+    files = glob.glob("{}**/*.java".format(sources), recursive=True)
+    if ignore_filter:
+        files = list(filter(lambda f: not file_names_filter(f, ignore_filter), files))
     if source_filter:
-        files = list(filter(lambda f: source_filter in f, files))
-    if single_source:
-        files = files[0:1]
+        files = list(filter(lambda f: file_names_filter(f, source_filter), files))
 
     for java_file in files:
         with open(java_file, 'r+') as SRC:
@@ -230,6 +239,8 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
                     else:
                         SRC.seek(0)
                         SRC.write(source_with_gil)
+                        if single_source:
+                            break
             else:
                 print("removal of the GIL not yet supported")
                 return
@@ -246,9 +257,10 @@ if __name__ == '__main__':
     parser.add_argument("--remove", help="remove the GIL", action="store_true")
     parser.add_argument("--no_style", help="do not run the style checker", action="store_true")
     parser.add_argument("--single", help="stop after modifying the first source", action="store_true")
-    parser.add_argument("--filter", type=str, help="filter for source name")
+    parser.add_argument("--filter", type=str, help="filter for source name(s) (comma separated)")
+    parser.add_argument("--ignore", type=str, help="ignore filter for source name(s) (comma separated)")
     parser.add_argument("sources", type=str, help="location of sources")
     args = parser.parse_args()
 
     main(args.sources, add=not args.remove, dry_run=args.dry_run, check_style=not args.no_style,
-         single_source=args.single, source_filter=args.filter)
+         single_source=args.single, source_filter=args.filter, ignore_filter=args.ignore)
