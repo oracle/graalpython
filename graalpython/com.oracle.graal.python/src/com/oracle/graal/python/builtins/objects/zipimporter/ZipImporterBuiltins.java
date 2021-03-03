@@ -254,7 +254,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                                 // no PK\003\004 found -> not a correct zip file
                                 throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
                             }
-                            zis = new ZipInputStream(locis); // and create new ZipInput stream from this
+                            zis = new ZipInputStream(locis); // and create new ZipInput stream from
+                                                             // this
                             // location
                             ZipEntry entry;
 
@@ -278,17 +279,19 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                                 }
 
                                 PTuple tuple = factory().createTuple(new Object[]{
-                                                    tfile.getPath() + getContext().getEnv().getFileNameSeparator() + entry.getName(),
-                                                    // for our implementation currently we don't need these
-                                                    // these properties to store there. Keeping them for
-                                                    // compatibility.
-                                                    entry.getMethod(),
-                                                    lastZipEntryCSize = entry.getCompressedSize(),
-                                                    entry.getSize(),
-                                                    entry.getLastModifiedTime().toMillis(),
-                                                    entry.getCrc(),
-                                                    // store the entry position for faster reading content
-                                                    lastZipEntryPos = zipEntryPos
+                                                tfile.getPath() + getContext().getEnv().getFileNameSeparator() + entry.getName(),
+                                                // for our implementation currently we don't need
+                                                // these
+                                                // these properties to store there. Keeping them for
+                                                // compatibility.
+                                                entry.getMethod(),
+                                                lastZipEntryCSize = entry.getCompressedSize(),
+                                                entry.getSize(),
+                                                entry.getLastModifiedTime().toMillis(),
+                                                entry.getCrc(),
+                                                // store the entry position for faster reading
+                                                // content
+                                                lastZipEntryPos = zipEntryPos
                                 });
                                 filesDict.setItem(entry.getName(), tuple);
                                 // count local file header from the last zipentry
