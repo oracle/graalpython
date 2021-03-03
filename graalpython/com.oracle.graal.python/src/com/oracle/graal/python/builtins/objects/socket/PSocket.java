@@ -109,6 +109,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
     private SocketChannel socket;
 
     private ServerSocketChannel serverSocket;
+
     private boolean blocking = true;
 
     private HashMap<Object, Object> options;
