@@ -73,8 +73,6 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewN
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReduceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReprNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
@@ -188,7 +186,6 @@ public class StructSequence {
         klass.setAttribute("n_sequence_fields", desc.inSequence);
         klass.setAttribute("n_fields", desc.fieldNames.length);
         klass.setAttribute("n_unnamed_fields", unnamedFields);
-        SpecialMethodSlot.initializeSpecialMethodSlots(klass, GetMroStorageNode.getUncached());
     }
 
     private static void createMember(PythonCore core, PythonBuiltinClass klass, String name, String doc, int idx) {

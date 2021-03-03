@@ -90,11 +90,15 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.BinaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.TernaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.UnaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -106,9 +110,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 /**
  * Subset of special methods that is cached in {@link PythonManagedClass} and
@@ -206,13 +213,6 @@ public enum SpecialMethodSlot {
         if (klass instanceof PythonClass) {
             ((PythonClass) klass).invalidateSlotsFinalAssumption();
         }
-    }
-
-    private void setInitialValue(PythonManagedClass klass, Object value) {
-        // For builtin classes, we should see these updates only during initialization
-        assert !PythonLanguage.getContext().isInitialized() || !(klass instanceof PythonBuiltinClass) ||
-                        ((PythonBuiltinClass) klass).getType().getSpecialMethodSlots() == null;
-        klass.specialMethodSlots[ordinal()] = value;
     }
 
     // --------------------------------------------------
@@ -330,8 +330,8 @@ public enum SpecialMethodSlot {
             // always initialized, can it happen that some code invoked during type initialization
             // is going to lookup something in that type's MRO?
             if (managedClass.specialMethodSlots != null) {
-                Arrays.fill(managedClass.specialMethodSlots, PNone.NO_VALUE);
-                setSpecialMethodSlots(managedClass, GetMroStorageNode.getUncached());
+                managedClass.specialMethodSlots = null;
+                initializeSpecialMethodSlots(managedClass, GetMroStorageNode.getUncached());
             }
             subClasses = managedClass.getSubClasses();
         } else if (klass instanceof PythonNativeClass) {
@@ -345,29 +345,117 @@ public enum SpecialMethodSlot {
     }
 
     public static void initializeSpecialMethodSlots(PythonManagedClass klass, GetMroStorageNode getMroStorageNode) {
-        Object[] slots = new Object[VALUES.length];
-        Arrays.fill(slots, PNone.NO_VALUE);
-        klass.specialMethodSlots = slots;
-        setSpecialMethodSlots(klass, getMroStorageNode);
-    }
-
-    private static void setSpecialMethodSlots(PythonManagedClass klass, GetMroStorageNode getMroStorageNode) {
         MroSequenceStorage mro = getMroStorageNode.execute(klass);
-        setSpecialMethodSlots(klass, mro);
+        klass.specialMethodSlots = initializeSpecialMethodsSlots(klass, mro);
     }
 
     @TruffleBoundary
-    private static void setSpecialMethodSlots(PythonManagedClass klass, MroSequenceStorage mro) {
-        ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncachedForceType();
-        for (int i = 0; i < mro.length(); i++) {
-            Object kls = mro.getItemNormalized(i);
-            for (SpecialMethodSlot slot : VALUES) {
-                if (slot.getValue(klass) == PNone.NO_VALUE) {
-                    Object value = readNode.execute(kls, slot.getName());
-                    if (value != PNone.NO_VALUE) {
-                        slot.setInitialValue(klass, value);
+    private static Object[] initializeSpecialMethodsSlots(PythonManagedClass klass, MroSequenceStorage mro) {
+        // Note: the classes in MRO may not have their special slots initialized, which is
+        // pathological case that can happen if MRO is fiddled with during MRO computation
+
+        // Fast-path: If MRO(klass) == (A, B, C, ...) and A == klass and MRO(B) == (B, C, ...), then
+        // we can just "extend" the slots of B with the new overrides in A. This fast-path seem to
+        // handle large majority of the situations
+        if (mro.length() >= 2 && klass.getBaseClasses().length <= 1) {
+            PythonAbstractClass firstType = mro.getItemNormalized(0);
+            PythonAbstractClass secondType = mro.getItemNormalized(1);
+            if (firstType == klass && PythonManagedClass.isInstance(secondType)) {
+                PythonManagedClass managedBase = PythonManagedClass.cast(secondType);
+                if (managedBase.specialMethodSlots != null) {
+                    if (isMroSubtype(mro, managedBase)) {
+                        Object[] result = PythonUtils.arrayCopyOf(managedBase.specialMethodSlots, managedBase.specialMethodSlots.length);
+                        setSlotsFromManaged(result, klass);
+                        return result;
                     }
                 }
+            }
+        }
+
+        // Deal with this pathological case
+        if (mro.length() == 0) {
+            Object[] slots = new Object[VALUES.length];
+            Arrays.fill(slots, PNone.NO_VALUE);
+            return slots;
+        }
+
+        // Check the last klass in MRO and use copy its slots for the beginning (if available)
+        // In most cases this will be `object`, which contains most of the slots
+        Object[] slots = null;
+        PythonAbstractClass lastType = mro.getItemNormalized(mro.length() - 1);
+        boolean slotsInitializedFromLast = false;
+        if (PythonManagedClass.isInstance(lastType)) {
+            PythonManagedClass lastClass = PythonManagedClass.cast(lastType);
+            if (lastClass.specialMethodSlots != null) {
+                slots = PythonUtils.arrayCopyOf(lastClass.specialMethodSlots, lastClass.specialMethodSlots.length);
+                slotsInitializedFromLast = true;
+            }
+        }
+        if (!slotsInitializedFromLast) {
+            slots = new Object[VALUES.length];
+            Arrays.fill(slots, PNone.NO_VALUE);
+        }
+
+        // Traverse MRO in reverse order overriding the initial slots values if we find new override
+        int skip = slotsInitializedFromLast ? 1 : 0;
+        for (int i = mro.length() - skip - 1; i >= 0; i--) {
+            PythonAbstractClass base = mro.getItemNormalized(i);
+            if (PythonManagedClass.isInstance(base)) {
+                setSlotsFromManaged(slots, PythonManagedClass.cast(base));
+            } else {
+                setSlotsFromGeneric(slots, base);
+            }
+        }
+        return slots;
+    }
+
+    private static boolean isMroSubtype(MroSequenceStorage superTypeMro, PythonManagedClass subType) {
+        if (subType instanceof PythonBuiltinClass && ((PythonBuiltinClass) subType).getType() == PythonBuiltinClassType.PythonObject) {
+            // object is subclass of everything
+            return true;
+        }
+        MroSequenceStorage subTypeMro = GetMroStorageNode.getUncached().execute(subType);
+        boolean isMroSubtype = subTypeMro.length() == superTypeMro.length() - 1;
+        if (isMroSubtype) {
+            for (int i = 0; i < subTypeMro.length(); i++) {
+                if (superTypeMro.getItemNormalized(i + 1) != subTypeMro.getItemNormalized(i)) {
+                    isMroSubtype = false;
+                    break;
+                }
+            }
+        }
+        return isMroSubtype;
+    }
+
+    private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source) {
+        PDict dict = PythonObjectLibrary.getUncached().getDict(source);
+        if (dict == null) {
+            DynamicObject storage = source.getStorage();
+            DynamicObjectLibrary domLib = DynamicObjectLibrary.getFactory().getUncached(storage);
+            for (SpecialMethodSlot slot : VALUES) {
+                final Object value = domLib.getOrDefault(source, slot.getName(), PNone.NO_VALUE);
+                if (value != PNone.NO_VALUE) {
+                    slots[slot.ordinal()] = value;
+                }
+            }
+        } else {
+            HashingStorage storage = dict.getDictStorage();
+            HashingStorageLibrary hlib = HashingStorageLibrary.getFactory().getUncached(storage);
+            for (SpecialMethodSlot slot : VALUES) {
+                final Object value = hlib.getItem(storage, slot.getName());
+                if (value != null) {
+                    slots[slot.ordinal()] = value;
+                }
+            }
+        }
+    }
+
+    private static void setSlotsFromGeneric(Object[] slots, PythonAbstractClass base) {
+        ReadAttributeFromObjectNode readAttNode = ReadAttributeFromObjectNode.getUncachedForceType();
+        for (SpecialMethodSlot slot : VALUES) {
+            Object value = readAttNode.execute(base, slot.getName());
+            if (value != PNone.NO_VALUE) {
+                slots[slot.ordinal()] = value;
             }
         }
     }
