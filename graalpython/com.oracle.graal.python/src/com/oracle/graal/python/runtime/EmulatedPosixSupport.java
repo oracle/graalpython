@@ -2023,7 +2023,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         // we create a new channel, the file may be closed but the mmap object should still work
         SeekableByteChannel fileChannel;
         try {
-            fileChannel = file.newByteChannel(options);
+            fileChannel = newByteChannel(file, options);
             position(fileChannel, offset);
             return new MMapHandle(fileChannel, offset);
         } catch (IOException e) {
@@ -2031,6 +2031,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    @TruffleBoundary
     private static Set<StandardOpenOption> mmapProtToOptions(int prot) {
         HashSet<StandardOpenOption> options = new HashSet<>();
         if ((prot & PROT_READ) != 0) {
@@ -2043,6 +2044,11 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw new UnsupportedPosixFeatureException("mmap: flag PROT_EXEC is not supported");
         }
         return options;
+    }
+
+    @TruffleBoundary
+    private static SeekableByteChannel newByteChannel(TruffleFile file, Set<StandardOpenOption> options) throws IOException {
+        return file.newByteChannel(options);
     }
 
     @ExportMessage
@@ -2137,12 +2143,17 @@ public final class EmulatedPosixSupport extends PosixResources {
         MMapHandle handle = (MMapHandle) mmap;
         if (handle.channel != null) {
             try {
-                handle.channel.close();
+                closeChannel(handle.channel);
             } catch (IOException e) {
                 throw posixException(OSErrorEnum.fromException(e));
             }
             handle.channel = null;
         }
+    }
+
+    @TruffleBoundary
+    private static void closeChannel(Channel ch) throws IOException {
+        ch.close();
     }
 
     @TruffleBoundary
