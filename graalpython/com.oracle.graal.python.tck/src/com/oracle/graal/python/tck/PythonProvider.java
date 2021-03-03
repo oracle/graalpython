@@ -94,7 +94,6 @@ public class PythonProvider implements LanguageProvider {
     private static final TypeDescriptor DICT = dict(ANY, ANY);
     private static final TypeDescriptor LIST = list(ANY);
     private static final TypeDescriptor TUPLE = tuple(ANY);
-    private static final TypeDescriptor NON_INSTANTIABLE_TYPE = intersection(OBJECT, META_OBJECT);
     private static final TypeDescriptor DATETIME_DATE = intersection(OBJECT, DATE);
     private static final TypeDescriptor DATETIME_TIME = intersection(OBJECT, TIME);
     private static final TypeDescriptor DATETIME_DATETIME = intersection(OBJECT, DATE, TIME);
@@ -103,7 +102,7 @@ public class PythonProvider implements LanguageProvider {
     private static final TypeDescriptor BASE_EXCEPTION = intersection(OBJECT, EXCEPTION);
 
     private static final TypeDescriptor type(TypeDescriptor instance, boolean varargs, TypeDescriptor... params) {
-        return intersection(OBJECT, instantiable(instance, varargs, params), META_OBJECT);
+        return intersection(OBJECT, instantiable(instance, varargs, params), executable(instance, varargs, params), META_OBJECT);
     }
 
     private static final TypeDescriptor list(TypeDescriptor componentType) {
@@ -219,13 +218,10 @@ public class PythonProvider implements LanguageProvider {
 
         // @formatter:off
         addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
-        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", array(ANY), PNoListCoercionVerifier.INSTANCE, array(ANY), array(ANY));
+        addExpressionSnippet(context, snippets, "+ str", "lambda x, y: x + y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "+ list", "lambda x, y: x + y", array(ANY), PNoListCoercionVerifier.INSTANCE, array(ANY), array(ANY));
 
         addExpressionSnippet(context, snippets, "-", "lambda x, y: x - y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
-
-        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
-        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(LIST, STRING, STR), PSequenceMultiplicationVerifier.INSTANCE, array(ANY), union(BOOLEAN, NUMBER));
-        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(LIST, STRING, STR), PSequenceMultiplicationVerifier.INSTANCE, union(BOOLEAN, NUMBER), array(ANY));
 
         addExpressionSnippet(context, snippets, "/", "lambda x, y: x / y", NUMBER, PDivByZeroVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
@@ -238,7 +234,7 @@ public class PythonProvider implements LanguageProvider {
         addExpressionSnippet(context, snippets, "<", "lambda x, y: x < y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
         addExpressionSnippet(context, snippets, "<=", "lambda x, y: x <= y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, OBJECT, META_OBJECT);
+        addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
         addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
         // @formatter:on
         return snippets;
@@ -267,7 +263,7 @@ public class PythonProvider implements LanguageProvider {
         addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
                                                       "    for x in l:\n" +
                                                       "        return x\n\n" +
-                                                      "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY)));
+                                                      "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY), STRING));
 
         // any exception honours the finally block, but non-exception cannot be raised
         addStatementSnippet(context, snippets, "try-finally", "def gen_tryfinally(exc):\n" +
@@ -345,87 +341,6 @@ public class PythonProvider implements LanguageProvider {
     private abstract static class PResultVerifier implements ResultVerifier {
     }
 
-    private static class PSequenceMultiplicationVerifier extends PResultVerifier {
-
-        public void accept(SnippetRun snippetRun) throws PolyglotException {
-            List<? extends Value> parameters = snippetRun.getParameters();
-            assert parameters.size() == 2;
-
-            Value par0 = parameters.get(0);
-            Value par1 = parameters.get(1);
-
-            // Just restrict 'number' to integer value space
-            if (isSequence(par0) && isNumber(par1)) {
-                if (!hasMemoryError(snippetRun)) {
-                    if (isInteger(par1) || isNegativeNumber(par1)) {
-                        ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-                    } else {
-                        if (snippetRun.getException() == null) {
-                            throw new AssertionError("<sequence> * <non-integer> should give an error.");
-                        }
-                    }
-                }
-            } else if (isNumber(par0) && isSequence(par1)) {
-                if (!hasMemoryError(snippetRun)) {
-                    if (isInteger(par0) || isNegativeNumber(par0)) {
-                        ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-                    } else {
-                        if (snippetRun.getException() == null) {
-                            throw new AssertionError("<non-integer> * <sequence> should give an error.");
-                        }
-                    }
-                }
-            } else if (isNumber(par0) && isMapping(par1) || isNumber(par1) && isMapping(par0)) {
-                if (snippetRun.getException() != null) {
-                    throw new AssertionError("Multipliation with mapping should give an error.");
-                }
-            } else if (isSequence(par0) && isSequence(par1)) {
-                if (snippetRun.getException() == null) {
-                    throw new AssertionError("<sequence> * <sequence> should give an error.");
-                } else {
-                    throw snippetRun.getException();
-                }
-            } else if (!(isNumber(par0) && isScalarVector(par1) || isScalarVector(par0) && isNumber(par1))) {
-                ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-            }
-        }
-
-        protected static boolean isScalarVector(Value val) {
-            return isNumber(val) && val.hasArrayElements() && val.getArraySize() == 1 && !isMapping(val);
-        }
-
-        protected static boolean isNumber(Value par0) {
-            return par0.isNumber() || par0.isBoolean();
-        }
-
-        protected static boolean isNegativeNumber(Value par0) {
-            return par0.isNumber() && par0.fitsInLong() && par0.asLong() < 0L;
-        }
-
-        protected static boolean isSequence(Value par0) {
-            return !isNumber(par0) && (par0.isString() || (par0.hasArrayElements() && !isMapping(par0)));
-        }
-
-        protected static boolean isMapping(Value par0) {
-            return par0.hasMembers() && par0.getMetaObject().toString().contains("dict");
-        }
-
-        private static boolean hasMemoryError(SnippetRun snippetRun) {
-            PolyglotException exception = snippetRun.getException();
-            if (exception != null && exception.isGuestException()) {
-                return "MemoryError".equals(exception.getMessage()) || exception.getMessage().contains("OverflowError");
-            }
-            return false;
-        }
-
-        private static boolean isInteger(Value par0) {
-            return (par0.isNumber() && par0.fitsInInt() || par0.isBoolean());
-        }
-
-        private static final PSequenceMultiplicationVerifier INSTANCE = new PSequenceMultiplicationVerifier();
-
-    }
-
     /**
      * Only accepts exact matches of types.
      */
@@ -453,35 +368,6 @@ public class PythonProvider implements LanguageProvider {
     }
 
     /**
-     * Foreign objects may be array-ish and boxed (e.g. if they have just one element). In this
-     * case, we still treat them as arrays.
-     */
-    private static class PNoArrayVerifier extends PResultVerifier {
-
-        public void accept(SnippetRun snippetRun) throws PolyglotException {
-            List<? extends Value> parameters = snippetRun.getParameters();
-            assert parameters.size() == 2;
-
-            Value par0 = parameters.get(0);
-            Value par1 = parameters.get(1);
-
-            if (isNumber(par0) && isNumber(par1)) {
-                if (!(par0.hasArrayElements() || par1.hasArrayElements())) {
-                    ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-                }
-            } else {
-                ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-            }
-        }
-
-        private static boolean isNumber(Value val) {
-            return val.isNumber() || val.isBoolean();
-        }
-
-        private static final PNoArrayVerifier INSTANCE = new PNoArrayVerifier();
-    }
-
-    /**
      * Only accepts exact matches of types.
      */
     private static class PDivByZeroVerifier extends PResultVerifier {
@@ -501,41 +387,4 @@ public class PythonProvider implements LanguageProvider {
 
         private static final PDivByZeroVerifier INSTANCE = new PDivByZeroVerifier();
     }
-
-    /**
-     * Only accepts exact matches of types.
-     */
-    private static class PDictMemberVerifier extends PResultVerifier {
-
-        private final String[] expectedMembers;
-        private final String[] unexpectedMembers;
-
-        public PDictMemberVerifier(String[] expectedMembers, String[] unexpectedMembers) {
-            this.expectedMembers = expectedMembers;
-            this.unexpectedMembers = unexpectedMembers;
-        }
-
-        public void accept(SnippetRun snippetRun) throws PolyglotException {
-            ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-
-            Value result = snippetRun.getResult();
-            if (result.hasMembers()) {
-                for (String expectedMember : expectedMembers) {
-                    if (!result.hasMember(expectedMember)) {
-                        throw new AssertionError("Expected member missing: " + expectedMember);
-                    }
-                }
-                for (String unexpectedMember : unexpectedMembers) {
-                    if (result.hasMember(unexpectedMember)) {
-                        throw new AssertionError("Unexpected member present: " + unexpectedMember);
-                    }
-                }
-            }
-        }
-    }
-
-    private static String[] arr(String... strings) {
-        return strings;
-    }
-
 }
