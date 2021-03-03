@@ -144,8 +144,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [6538,6657]`if heap:↵        ret...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [6541,6545]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -323,8 +321,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                   FunctionBodyNode SourceSection: [7380,7486]`if heap and heap[0] ...`
                     IfNode SourceSection: [7380,7475]`if heap and heap[0] ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [7383,7406]`heap and heap[0] < i...`
                           ReadLocalVariableNode SourceSection: [7383,7387]`heap`
                             Frame: [0,heap,Illegal]
@@ -342,8 +338,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [1,item,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       BlockNode SourceSection: None
                         DestructuringAssignmentNodeGen SourceSection: [7416,7445]`item, heap[0] = heap...`
                           TupleLiteralNode SourceSection: [7432,7445]`heap[0], item`
@@ -535,8 +529,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [8161,8284]`if heap:↵        ret...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [8164,8168]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -821,8 +813,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [9046,9060]`pos > startpos`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __gt__
@@ -864,8 +854,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               IfNode SourceSection: [9138,9247]`if newitem < parent:...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [9141,9157]`newitem < parent`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __lt__
@@ -1001,8 +989,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [11553,11570]`childpos < endpos`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __lt__
@@ -1027,8 +1013,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Value: 1
                             IfNode SourceSection: [11662,11801]`if rightpos < endpos...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 AndNode SourceSection: [11665,11722]`rightpos < endpos an...`
                                   BinaryComparisonNodeGen SourceSection: [11665,11682]`rightpos < endpos`
                                     LookupAndCallBinaryNodeGen SourceSection: None
@@ -1040,8 +1024,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Frame: [2,endpos,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   NotNodeGen SourceSection: [11687,11722]`not heap[childpos] <...`
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     BinaryComparisonNodeGen SourceSection: [11691,11722]`heap[childpos] < hea...`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __lt__
@@ -1060,8 +1042,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [6,rightpos,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: [11736,11755]`childpos = rightpos`
                                 Identifier: childpos
                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1199,8 +1179,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [12283,12297]`pos > startpos`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __gt__
@@ -1242,8 +1220,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               IfNode SourceSection: [12375,12484]`if parent < newitem:...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [12378,12394]`parent < newitem`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __lt__
@@ -1379,8 +1355,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [12761,12778]`childpos < endpos`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __lt__
@@ -1405,8 +1379,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Value: 1
                             IfNode SourceSection: [12869,13007]`if rightpos < endpos...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 AndNode SourceSection: [12872,12929]`rightpos < endpos an...`
                                   BinaryComparisonNodeGen SourceSection: [12872,12889]`rightpos < endpos`
                                     LookupAndCallBinaryNodeGen SourceSection: None
@@ -1418,8 +1390,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Frame: [2,endpos,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   NotNodeGen SourceSection: [12894,12929]`not heap[rightpos] <...`
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     BinaryComparisonNodeGen SourceSection: [12898,12929]`heap[rightpos] < hea...`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __lt__
@@ -1438,8 +1408,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [5,childpos,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: [12943,12962]`childpos = rightpos`
                                 Identifier: childpos
                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1573,8 +1541,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [14006,14271]`if reverse:↵        ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [14009,14016]`reverse`
                           Frame: [2,reverse,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1637,8 +1603,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                     GeneratorIfNode SourceSection: [14271,15131]`if key is None:↵    ...`
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [14274,14285]`key is None`
                           ReadGeneratorFrameVariableNode SourceSection: [14274,14277]`key`
                             Frame: [1,key,Illegal]
@@ -1842,8 +1806,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       BooleanLiteralNode SourceSection: [14597,14601]`True`
                                     GeneratorAccessNode SourceSection: None
                                   BlockNode SourceSection: None
@@ -1864,8 +1826,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 GeneratorAccessNode SourceSection: None
                               GeneratorAccessNode SourceSection: None
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               BinaryComparisonNodeGen SourceSection: [14546,14556]`len(h) > 1`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __gt__
@@ -1884,8 +1844,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         GeneratorIfNode SourceSection: [14946,15119]`if h:↵            # ...`
                           GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [14949,14950]`h`
                               Frame: [3,h,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2215,8 +2173,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BooleanLiteralNode SourceSection: [15435,15439]`True`
                                 GeneratorAccessNode SourceSection: None
                               BlockNode SourceSection: None
@@ -2237,8 +2193,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             GeneratorAccessNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [15392,15402]`len(h) > 1`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
@@ -2257,8 +2211,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                     GeneratorIfNode SourceSection: [15713,18959]`if h:↵        key_va...`
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [15716,15717]`h`
                           Frame: [3,h,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -2431,8 +2383,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                   FunctionBodyNode SourceSection: [19152,20824]`if n == 1:↵        i...`
                     IfNode SourceSection: [19152,19467]`if n == 1:↵        i...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [19155,19161]`n == 1`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
@@ -2465,8 +2415,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [19227,19368]`if key is None:↵    ...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: [19230,19241]`key is None`
                               ReadLocalCellNodeGen SourceSection: [19230,19233]`key`
                                 ReadLocalVariableNode SourceSection: None
@@ -2525,8 +2473,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [14,<return_val>,Illegal]
                             TernaryIfNode SourceSection: [19375,19413]`[] if result is sent...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 IsExpressionNodeGen SourceSection: [19381,19399]`result is sentinel`
                                   ReadLocalVariableNode SourceSection: [19381,19387]`result`
                                     Frame: [5,result,Illegal]
@@ -2569,8 +2515,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [19572,19687]`if n >= size:↵      ...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [19575,19584]`n >= size`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __ge__
@@ -2613,8 +2557,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           BlockNode SourceSection: None
                     IfNode SourceSection: [19687,20351]`if key is None:↵    ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [19690,19701]`key is None`
                           ReadLocalCellNodeGen SourceSection: [19690,19693]`key`
                             ReadLocalVariableNode SourceSection: None
@@ -2737,8 +2679,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [19914,19963]`if not result:↵     ...`
                           NotNodeGen SourceSection: [19917,19927]`not result`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [19921,19927]`result`
                               Frame: [5,result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2797,8 +2737,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [11,elem,Illegal]
                               IfNode SourceSection: [20105,20247]`if elem < top:↵     ...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [20108,20118]`elem < top`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __lt__
@@ -3087,8 +3025,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [20444,20485]`if not result:↵     ...`
                       NotNodeGen SourceSection: [20447,20457]`not result`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [20451,20457]`result`
                           Frame: [5,result,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -3162,8 +3098,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [20629,20762]`if k < top:↵        ...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 BinaryComparisonNodeGen SourceSection: [20632,20639]`k < top`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __lt__
@@ -3406,8 +3340,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                   FunctionBodyNode SourceSection: [21031,22626]`if n == 1:↵        i...`
                     IfNode SourceSection: [21031,21346]`if n == 1:↵        i...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [21034,21040]`n == 1`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
@@ -3440,8 +3372,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [21106,21247]`if key is None:↵    ...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: [21109,21120]`key is None`
                               ReadLocalCellNodeGen SourceSection: [21109,21112]`key`
                                 ReadLocalVariableNode SourceSection: None
@@ -3500,8 +3430,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Frame: [14,<return_val>,Illegal]
                             TernaryIfNode SourceSection: [21254,21292]`[] if result is sent...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 IsExpressionNodeGen SourceSection: [21260,21278]`result is sentinel`
                                   ReadLocalVariableNode SourceSection: [21260,21266]`result`
                                     Frame: [5,result,Illegal]
@@ -3544,8 +3472,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [21451,21580]`if n >= size:↵      ...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [21454,21463]`n >= size`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __ge__
@@ -3590,8 +3516,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           BlockNode SourceSection: None
                     IfNode SourceSection: [21580,22142]`if key is None:↵    ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [21583,21594]`key is None`
                           ReadLocalCellNodeGen SourceSection: [21583,21586]`key`
                             ReadLocalVariableNode SourceSection: None
@@ -3721,8 +3645,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [21702,21751]`if not result:↵     ...`
                           NotNodeGen SourceSection: [21705,21715]`not result`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [21709,21715]`result`
                               Frame: [5,result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3784,8 +3706,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [11,elem,Illegal]
                               IfNode SourceSection: [21884,22026]`if top < elem:↵     ...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [21887,21897]`top < elem`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __lt__
@@ -4086,8 +4006,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [22243,22284]`if not result:↵     ...`
                       NotNodeGen SourceSection: [22246,22256]`not result`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [22250,22256]`result`
                           Frame: [5,result,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4164,8 +4082,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [22419,22552]`if top < k:↵        ...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 BinaryComparisonNodeGen SourceSection: [22422,22429]`top < k`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __lt__
@@ -4442,8 +4358,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
         SideEffect:
           IfNode SourceSection: [22940,23017]`if __name__ == "__ma...`
             YesNodeGen SourceSection: None
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               BinaryComparisonNodeGen SourceSection: [22943,22965]`__name__ == "__main_...`
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __eq__

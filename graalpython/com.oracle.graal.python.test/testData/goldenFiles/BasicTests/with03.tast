@@ -52,8 +52,6 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,35]`def fn():↵  with 
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]

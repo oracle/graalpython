@@ -37,8 +37,6 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
                 GeneratorIfNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     BinaryArithmeticExpression SourceSection: [32,37]`x % 3`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __mod__

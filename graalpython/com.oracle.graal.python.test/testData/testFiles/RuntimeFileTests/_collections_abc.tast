@@ -608,14 +608,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       Frame: [3,B,Illegal]
                                 IfNode SourceSection: [2445,2589]`if method in B.__dic...`
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ContainsNodeGen SourceSection: [2448,2468]`method in B.__dict__...`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __contains__
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                       ReadLocalVariableNode SourceSection: [2448,2454]`method`
                                         Frame: [4,method,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -632,8 +628,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   BlockNode SourceSection: None
                                     IfNode SourceSection: [2486,2575]`if B.__dict__[method...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [2489,2515]`B.__dict__[method] i...`
                                           GetItemNodeGen SourceSection: [2489,2507]`B.__dict__[method]`
                                             GetAttributeNode SourceSection: None
@@ -842,8 +836,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [2823,2921]`if cls is Hashable:↵...`
                                       IfNode SourceSection: [2823,2900]`if cls is Hashable:↵...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [2826,2841]`cls is Hashable`
                                             ReadLocalVariableNode SourceSection: [2826,2829]`cls`
                                               Frame: [0,cls,Illegal]
@@ -1048,8 +1040,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [3100,3200]`if cls is Awaitable:...`
                                       IfNode SourceSection: [3100,3179]`if cls is Awaitable:...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [3103,3119]`cls is Awaitable`
                                             ReadLocalVariableNode SourceSection: [3103,3106]`cls`
                                               Frame: [0,cls,Illegal]
@@ -1274,8 +1264,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [3633,3811]`if val is None:↵    ...`
                                       IfNode SourceSection: [3633,3734]`if val is None:↵    ...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [3636,3647]`val is None`
                                             ReadLocalVariableNode SourceSection: [3636,3639]`val`
                                               Frame: [2,val,Illegal]
@@ -1284,8 +1272,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [3661,3714]`if tb is None:↵     ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               IsExpressionNodeGen SourceSection: [3664,3674]`tb is None`
                                                 ReadLocalVariableNode SourceSection: [3664,3666]`tb`
                                                   Frame: [3,tb,Illegal]
@@ -1309,8 +1295,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [3734,3802]`if tb is not None:↵ ...`
                                         NotNodeGen SourceSection: [3737,3751]`tb is not None`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3737,3739]`tb`
                                               Frame: [3,tb,Illegal]
@@ -1463,8 +1447,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [4150,4276]`if cls is Coroutine:...`
                                       IfNode SourceSection: [4150,4255]`if cls is Coroutine:...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [4153,4169]`cls is Coroutine`
                                             ReadLocalVariableNode SourceSection: [4153,4156]`cls`
                                               Frame: [0,cls,Illegal]
@@ -1677,8 +1659,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [4508,4612]`if cls is AsyncItera...`
                                       IfNode SourceSection: [4508,4591]`if cls is AsyncItera...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [4511,4531]`cls is AsyncIterable...`
                                             ReadLocalVariableNode SourceSection: [4511,4514]`cls`
                                               Frame: [0,cls,Illegal]
@@ -1925,8 +1905,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [4941,5058]`if cls is AsyncItera...`
                                       IfNode SourceSection: [4941,5037]`if cls is AsyncItera...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [4944,4964]`cls is AsyncIterator...`
                                             ReadLocalVariableNode SourceSection: [4944,4947]`cls`
                                               Frame: [0,cls,Illegal]
@@ -2196,8 +2174,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [5752,5930]`if val is None:↵    ...`
                                       IfNode SourceSection: [5752,5853]`if val is None:↵    ...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [5755,5766]`val is None`
                                             ReadLocalVariableNode SourceSection: [5755,5758]`val`
                                               Frame: [2,val,Illegal]
@@ -2206,8 +2182,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [5780,5833]`if tb is None:↵     ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               IsExpressionNodeGen SourceSection: [5783,5793]`tb is None`
                                                 ReadLocalVariableNode SourceSection: [5783,5785]`tb`
                                                   Frame: [3,tb,Illegal]
@@ -2231,8 +2205,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [5853,5921]`if tb is not None:↵ ...`
                                         NotNodeGen SourceSection: [5856,5870]`tb is not None`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [5856,5858]`tb`
                                               Frame: [3,tb,Illegal]
@@ -2385,8 +2357,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [6301,6482]`if cls is AsyncGener...`
                                       IfNode SourceSection: [6301,6461]`if cls is AsyncGener...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [6304,6325]`cls is AsyncGenerato...`
                                             ReadLocalVariableNode SourceSection: [6304,6307]`cls`
                                               Frame: [0,cls,Illegal]
@@ -2536,8 +2506,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ObjectLiteralNode SourceSection: [6667,6671]`None`
                                             GeneratorAccessNode SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           BooleanLiteralNode SourceSection: [6642,6647]`False`
                                         GeneratorAccessNode SourceSection: None
                                       BlockNode SourceSection: None
@@ -2609,8 +2577,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [6732,6830]`if cls is Iterable:↵...`
                                       IfNode SourceSection: [6732,6809]`if cls is Iterable:↵...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [6735,6750]`cls is Iterable`
                                             ReadLocalVariableNode SourceSection: [6735,6738]`cls`
                                               Frame: [0,cls,Illegal]
@@ -2857,8 +2823,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [7143,7253]`if cls is Iterator:↵...`
                                       IfNode SourceSection: [7143,7232]`if cls is Iterator:↵...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [7146,7161]`cls is Iterator`
                                             ReadLocalVariableNode SourceSection: [7146,7149]`cls`
                                               Frame: [0,cls,Illegal]
@@ -3151,8 +3115,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ObjectLiteralNode SourceSection: [7889,7893]`None`
                                             GeneratorAccessNode SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           BooleanLiteralNode SourceSection: [7864,7869]`False`
                                         GeneratorAccessNode SourceSection: None
                                       BlockNode SourceSection: None
@@ -3224,8 +3186,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [7954,8070]`if cls is Reversible...`
                                       IfNode SourceSection: [7954,8049]`if cls is Reversible...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [7957,7974]`cls is Reversible`
                                             ReadLocalVariableNode SourceSection: [7957,7960]`cls`
                                               Frame: [0,cls,Illegal]
@@ -3495,8 +3455,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [8667,8845]`if val is None:↵    ...`
                                       IfNode SourceSection: [8667,8768]`if val is None:↵    ...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [8670,8681]`val is None`
                                             ReadLocalVariableNode SourceSection: [8670,8673]`val`
                                               Frame: [2,val,Illegal]
@@ -3505,8 +3463,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [8695,8748]`if tb is None:↵     ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               IsExpressionNodeGen SourceSection: [8698,8708]`tb is None`
                                                 ReadLocalVariableNode SourceSection: [8698,8700]`tb`
                                                   Frame: [3,tb,Illegal]
@@ -3530,8 +3486,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [8768,8836]`if tb is not None:↵ ...`
                                         NotNodeGen SourceSection: [8771,8785]`tb is not None`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [8771,8773]`tb`
                                               Frame: [3,tb,Illegal]
@@ -3684,8 +3638,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [9184,9355]`if cls is Generator:...`
                                       IfNode SourceSection: [9184,9334]`if cls is Generator:...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [9187,9203]`cls is Generator`
                                             ReadLocalVariableNode SourceSection: [9187,9190]`cls`
                                               Frame: [0,cls,Illegal]
@@ -3896,8 +3848,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [9562,9656]`if cls is Sized:↵   ...`
                                       IfNode SourceSection: [9562,9635]`if cls is Sized:↵   ...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [9565,9577]`cls is Sized`
                                             ReadLocalVariableNode SourceSection: [9565,9568]`cls`
                                               Frame: [0,cls,Illegal]
@@ -4105,8 +4055,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [9848,9951]`if cls is Container:...`
                                       IfNode SourceSection: [9848,9930]`if cls is Container:...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [9851,9867]`cls is Container`
                                             ReadLocalVariableNode SourceSection: [9851,9854]`cls`
                                               Frame: [0,cls,Illegal]
@@ -4251,8 +4199,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [10079,10207]`if cls is Collection...`
                                       IfNode SourceSection: [10079,10186]`if cls is Collection...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [10082,10099]`cls is Collection`
                                             ReadLocalVariableNode SourceSection: [10082,10085]`cls`
                                               Frame: [0,cls,Illegal]
@@ -4474,8 +4420,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     FunctionBodyNode SourceSection: [10405,10503]`if cls is Callable:↵...`
                                       IfNode SourceSection: [10405,10482]`if cls is Callable:↵...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [10408,10423]`cls is Callable`
                                             ReadLocalVariableNode SourceSection: [10408,10411]`cls`
                                               Frame: [0,cls,Illegal]
@@ -4617,8 +4561,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [10960,11193]`if not isinstance(ot...`
                                     IfNode SourceSection: [10960,11033]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [10963,10989]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [10967,10989]`isinstance(other, Se...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10967,10977]`isinstance`
@@ -4641,8 +4583,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11033,11093]`if len(self) > len(o...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [11036,11058]`len(self) > len(othe...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -4679,14 +4619,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,elem,Illegal]
                                           IfNode SourceSection: [11123,11182]`if elem not in other...`
                                             NotNodeGen SourceSection: [11126,11143]`elem not in other`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ContainsNodeGen SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [11126,11130]`elem`
                                                   Frame: [2,elem,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4759,8 +4695,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [11232,11357]`if not isinstance(ot...`
                                     IfNode SourceSection: [11232,11305]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [11235,11261]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [11239,11261]`isinstance(other, Se...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11239,11249]`isinstance`
@@ -4816,8 +4750,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4866,8 +4798,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [11396,11521]`if not isinstance(ot...`
                                     IfNode SourceSection: [11396,11469]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [11399,11425]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [11403,11425]`isinstance(other, Se...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11403,11413]`isinstance`
@@ -4923,8 +4853,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4973,8 +4901,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [11560,11793]`if not isinstance(ot...`
                                     IfNode SourceSection: [11560,11633]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [11563,11589]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [11567,11589]`isinstance(other, Se...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11567,11577]`isinstance`
@@ -4997,8 +4923,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11633,11693]`if len(self) < len(o...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [11636,11658]`len(self) < len(othe...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __lt__
@@ -5035,14 +4959,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,elem,Illegal]
                                           IfNode SourceSection: [11724,11782]`if elem not in self:...`
                                             NotNodeGen SourceSection: [11727,11743]`elem not in self`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ContainsNodeGen SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [11727,11731]`elem`
                                                   Frame: [2,elem,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5115,8 +5035,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [11832,11958]`if not isinstance(ot...`
                                     IfNode SourceSection: [11832,11905]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [11835,11861]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [11839,11861]`isinstance(other, Se...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11839,11849]`isinstance`
@@ -5172,8 +5090,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5293,8 +5209,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [12275,12422]`if not isinstance(ot...`
                                     IfNode SourceSection: [12275,12353]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [12278,12309]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [12282,12309]`isinstance(other, It...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12282,12292]`isinstance`
@@ -5354,14 +5268,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         ContainsNodeGen SourceSection: [12408,12421]`value in self`
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __contains__
                                                           YesNodeGen SourceSection: None
-                                                            IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
                                                           ReadGeneratorFrameVariableNode SourceSection: [12408,12413]`value`
                                                             Frame: [0,value,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5472,14 +5382,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,value,Illegal]
                                           IfNode SourceSection: [12581,12636]`if value in self:↵  ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ContainsNodeGen SourceSection: [12584,12597]`value in self`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [12584,12589]`value`
                                                   Frame: [2,value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5552,8 +5458,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [12686,12851]`if not isinstance(ot...`
                                     IfNode SourceSection: [12686,12764]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [12689,12720]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [12693,12720]`isinstance(other, It...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12693,12703]`isinstance`
@@ -5729,8 +5633,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [12913,13193]`if not isinstance(ot...`
                                     IfNode SourceSection: [12913,13085]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [12916,12942]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [12920,12942]`isinstance(other, Se...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12920,12930]`isinstance`
@@ -5747,8 +5649,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [12956,13042]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [12959,12990]`not isinstance(other...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [12963,12990]`isinstance(other, It...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12963,12973]`isinstance`
@@ -5825,17 +5725,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         NotNodeGen SourceSection: [13174,13192]`value not in other`
-                                                          IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
                                                           ContainsNodeGen SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __contains__
                                                             YesNodeGen SourceSection: None
-                                                              IsBuiltinClassProfile SourceSection: None
-                                                                CachedDispatchFirst SourceSection: None
                                                             ReadGeneratorFrameVariableNode SourceSection: [13174,13179]`value`
                                                               Frame: [0,value,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5925,8 +5819,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [13234,13514]`if not isinstance(ot...`
                                     IfNode SourceSection: [13234,13406]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [13237,13263]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [13241,13263]`isinstance(other, Se...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13241,13251]`isinstance`
@@ -5941,8 +5833,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [13277,13363]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [13280,13311]`not isinstance(other...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [13284,13311]`isinstance(other, It...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [13284,13294]`isinstance`
@@ -6018,17 +5908,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         NotNodeGen SourceSection: [13496,13513]`value not in self`
-                                                          IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
                                                           ContainsNodeGen SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __contains__
                                                             YesNodeGen SourceSection: None
-                                                              IsBuiltinClassProfile SourceSection: None
-                                                                CachedDispatchFirst SourceSection: None
                                                             ReadGeneratorFrameVariableNode SourceSection: [13496,13501]`value`
                                                               Frame: [0,value,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -6117,8 +6001,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [13554,13764]`if not isinstance(ot...`
                                     IfNode SourceSection: [13554,13726]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [13557,13583]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [13561,13583]`isinstance(other, Se...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13561,13571]`isinstance`
@@ -6133,8 +6015,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [13597,13683]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [13600,13631]`not isinstance(other...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [13604,13631]`isinstance(other, It...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [13604,13614]`isinstance`
@@ -6421,8 +6301,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         ObjectLiteralNode SourceSection: None
                                     IfNode SourceSection: [14697,14743]`if h > MAX:↵        ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [14700,14707]`h > MAX`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -6452,8 +6330,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [14743,14789]`if h == -1:↵        ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [14746,14753]`h == -1`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __eq__
@@ -6718,14 +6594,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [15643,15726]`if value not in self...`
                                     IfNode SourceSection: [15643,15707]`if value not in self...`
                                       NotNodeGen SourceSection: [15646,15663]`value not in self`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ContainsNodeGen SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [15646,15651]`value`
                                             Frame: [1,value,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -6889,8 +6761,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WhileNode SourceSection: None
                                             WhileRepeatingNode SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BooleanLiteralNode SourceSection: [16116,16120]`True`
                                               ExpressionStatementNode SourceSection: [16138,16148]`self.pop()`
                                                 PythonCallNodeGen SourceSection: [16138,16148]`self.pop()`
@@ -7115,8 +6985,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [16444,16763]`if it is self:↵     ...`
                                     IfNode SourceSection: [16444,16752]`if it is self:↵     ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [16447,16457]`it is self`
                                           ReadLocalVariableNode SourceSection: [16447,16449]`it`
                                             Frame: [1,it,Illegal]
@@ -7134,8 +7002,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [16510,16595]`if not isinstance(it...`
                                           NotNodeGen SourceSection: [16513,16536]`not isinstance(it, S...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [16517,16536]`isinstance(it, Set)`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [16517,16527]`isinstance`
@@ -7171,14 +7037,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     Frame: [2,value,Illegal]
                                               IfNode SourceSection: [16628,16752]`if value in self:↵  ...`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   ContainsNodeGen SourceSection: [16631,16644]`value in self`
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __contains__
                                                     YesNodeGen SourceSection: None
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [16631,16636]`value`
                                                       Frame: [2,value,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -7266,8 +7128,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [16801,16939]`if it is self:↵     ...`
                                     IfNode SourceSection: [16801,16928]`if it is self:↵     ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [16804,16814]`it is self`
                                           ReadLocalVariableNode SourceSection: [16804,16806]`it`
                                             Frame: [1,it,Illegal]
@@ -7794,8 +7654,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [18084,18209]`if not isinstance(ot...`
                                     IfNode SourceSection: [18084,18161]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [18087,18117]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [18091,18117]`isinstance(other, Ma...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18091,18101]`isinstance`
@@ -8254,8 +8112,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [18722,18725]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -8604,8 +8460,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [3,value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [7,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8839,8 +8693,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             IfNode SourceSection: [19497,19562]`if v is value or v =...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 OrNode SourceSection: [19500,19524]`v is value or v == v...`
                                                   IsExpressionNodeGen SourceSection: [19500,19510]`v is value`
                                                     ReadLocalVariableNode SourceSection: [19500,19501]`v`
@@ -8859,8 +8711,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       Frame: [1,value,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                               FrameReturnNode SourceSection: [19542,19553]`return True`
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <return_val>
@@ -9267,8 +9117,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           BlockNode SourceSection: None
                                             IfNode SourceSection: [20497,20560]`if default is self._...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 IsExpressionNodeGen SourceSection: [20500,20524]`default is self.__ma...`
                                                   ReadLocalVariableNode SourceSection: [20500,20507]`default`
                                                     Frame: [2,default,Illegal]
@@ -9456,8 +9304,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WhileNode SourceSection: None
                                             WhileRepeatingNode SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BooleanLiteralNode SourceSection: [21107,21111]`True`
                                               ExpressionStatementNode SourceSection: [21129,21143]`self.popitem()`
                                                 PythonCallNodeGen SourceSection: [21129,21143]`self.popitem()`
@@ -9522,8 +9368,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [21572,22342]`if not args:↵       ...`
                                     IfNode SourceSection: [21572,21720]`if not args:↵       ...`
                                       NotNodeGen SourceSection: [21575,21583]`not args`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [21579,21583]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -9564,8 +9408,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [21747,21888]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [21750,21763]`len(args) > 1`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -9601,8 +9443,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [21888,22275]`if args:↵           ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [21891,21895]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -9619,8 +9459,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Value: 0
                                         IfNode SourceSection: [21937,22275]`if isinstance(other,...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [21940,21966]`isinstance(other, Ma...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21940,21950]`isinstance`
@@ -9661,8 +9499,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             BlockNode SourceSection: None
                                           IfNode SourceSection: [22057,22275]`elif hasattr(other, ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               PythonCallBinary SourceSection: [22062,22084]`hasattr(other, "keys...`
                                                 CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [22062,22069]`hasattr`
@@ -10090,8 +9926,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   ObjectLiteralNode SourceSection: None
                                               GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               BooleanLiteralNode SourceSection: [22993,22997]`True`
                                             GeneratorAccessNode SourceSection: None
                                           BlockNode SourceSection: None
@@ -10169,8 +10003,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,v,Illegal]
                                           IfNode SourceSection: [23191,23256]`if v is value or v =...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               OrNode SourceSection: [23194,23218]`v is value or v == v...`
                                                 IsExpressionNodeGen SourceSection: [23194,23204]`v is value`
                                                   ReadLocalVariableNode SourceSection: [23194,23195]`v`
@@ -10189,8 +10021,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     Frame: [1,value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                             FrameReturnNode SourceSection: [23236,23247]`return True`
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <return_val>
@@ -10361,12 +10191,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   FunctionBodyNode SourceSection: [23671,24099]`if start is not None...`
                                     IfNode SourceSection: [23671,23761]`if start is not None...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         AndNode SourceSection: [23674,23705]`start is not None an...`
                                           NotNodeGen SourceSection: [23674,23691]`start is not None`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [23674,23679]`start`
                                                 Frame: [2,start,Illegal]
@@ -10381,8 +10207,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             IntegerLiteralNode SourceSection: [23704,23705]`0`
                                               Value: 0
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [23719,23752]`start = max(len(self...`
                                         Identifier: start
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -10411,12 +10235,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [23761,23834]`if stop is not None ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         AndNode SourceSection: [23764,23793]`stop is not None and...`
                                           NotNodeGen SourceSection: [23764,23780]`stop is not None`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [23764,23768]`stop`
                                                 Frame: [3,stop,Illegal]
@@ -10431,8 +10251,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             IntegerLiteralNode SourceSection: [23792,23793]`0`
                                               Value: 0
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [23807,23824]`stop += len(self)`
                                         Identifier: stop
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -10462,8 +10280,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       WhileNode SourceSection: None
                                         WhileRepeatingNode SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             OrNode SourceSection: [23858,23882]`stop is None or i < ...`
                                               IsExpressionNodeGen SourceSection: [23858,23870]`stop is None`
                                                 ReadLocalVariableNode SourceSection: [23858,23862]`stop`
@@ -10480,8 +10296,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [3,stop,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                           BlockNode SourceSection: None
                                             TryFinallyNode SourceSection: [23896,24068]`try:↵               ...`
                                               TryExceptNode SourceSection: None
@@ -10499,8 +10313,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   IfNode SourceSection: [23945,24015]`if v is value or v =...`
                                                     YesNodeGen SourceSection: None
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
                                                       OrNode SourceSection: [23948,23972]`v is value or v == v...`
                                                         IsExpressionNodeGen SourceSection: [23948,23958]`v is value`
                                                           ReadLocalVariableNode SourceSection: [23948,23949]`v`
@@ -10519,8 +10331,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                             Frame: [1,value,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                         YesNodeGen SourceSection: None
-                                                          IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
                                                     FrameReturnNode SourceSection: [23994,24002]`return i`
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <return_val>
@@ -10636,8 +10446,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         OrNode SourceSection: [24244,24268]`v is value or v == v...`
                                                           IsExpressionNodeGen SourceSection: [24244,24254]`v is value`
                                                             ReadGeneratorFrameVariableNode SourceSection: [24244,24245]`v`
@@ -10660,8 +10468,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ReadFromCellNodeGen SourceSection: None
                                                           YesNodeGen SourceSection: None
-                                                            IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
                                                       ExpressionStatementNode SourceSection: [24225,24226]`1`
                                                         YieldNode SourceSection: [24225,24226]`1`
                                                           flagSlot: 0
@@ -11187,8 +10993,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           WhileNode SourceSection: None
                                             WhileRepeatingNode SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BooleanLiteralNode SourceSection: [25370,25374]`True`
                                               ExpressionStatementNode SourceSection: [25392,25402]`self.pop()`
                                                 PythonCallNodeGen SourceSection: [25392,25402]`self.pop()`

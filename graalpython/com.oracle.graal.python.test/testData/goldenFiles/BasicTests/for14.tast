@@ -59,14 +59,10 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                         Frame: [1,s2,Illegal]
                                   IfNode SourceSection: [88,142]`if candidate in s2[1...`
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ContainsNodeGen SourceSection: [91,110]`candidate in s2[1:]`
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __contains__
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [91,100]`candidate`
                                           Identifier: candidate
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

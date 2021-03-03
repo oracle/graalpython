@@ -27,8 +27,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
             CallUnaryMethodNodeGen SourceSection: None
             CallQuaternaryMethodNodeGen SourceSection: None
             YesNodeGen SourceSection: None
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             GetClassNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: a
@@ -44,6 +42,4 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
           CallUnaryMethodNodeGen SourceSection: None
           CallQuaternaryMethodNodeGen SourceSection: None
           YesNodeGen SourceSection: None
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
           GetClassNodeGen SourceSection: None

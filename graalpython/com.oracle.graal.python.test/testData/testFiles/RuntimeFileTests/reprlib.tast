@@ -176,14 +176,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                 IfNode SourceSection: [470,539]`if key in repr_runni...`
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     ContainsNodeGen SourceSection: [473,492]`key in repr_running`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __contains__
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [473,476]`key`
                                                         Frame: [1,key,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -653,14 +649,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [1648,1752]`if ' ' in typename:↵...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ContainsNodeGen SourceSection: [1651,1666]`' ' in typename`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           StringLiteralNode SourceSection: [1651,1654]`' '`
                                           ReadLocalVariableNode SourceSection: [1658,1666]`typename`
                                             Frame: [3,typename,Illegal]
@@ -690,8 +682,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [1752,1920]`if hasattr(self, 're...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [1755,1788]`hasattr(self, 'repr_...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [1755,1762]`hasattr`
@@ -848,8 +838,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [2015,2360]`if level <= 0 and n:...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         AndNode SourceSection: [2018,2034]`level <= 0 and n`
                                           BinaryComparisonNodeGen SourceSection: [2018,2028]`level <= 0`
                                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -863,8 +851,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [7,n,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [2048,2057]`s = '...'`
                                         Identifier: s
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -984,8 +970,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               PythonObjectFactoryNodeGen SourceSection: None
                                         IfNode SourceSection: [2224,2261]`if n > maxiter:  pie...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             BinaryComparisonNodeGen SourceSection: [2227,2238]`n > maxiter`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __gt__
@@ -1017,8 +1001,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [2308,2351]`if n == 1 and trail:...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             AndNode SourceSection: [2311,2327]`n == 1 and trail`
                                               BinaryComparisonNodeGen SourceSection: [2311,2317]`n == 1`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
@@ -1032,8 +1014,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 Frame: [6,trail,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [2330,2351]`right = trail + righ...`
                                             Identifier: right
                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1288,8 +1268,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                   FunctionBodyNode SourceSection: [2657,2832]`if not x:↵          ...`
                                     IfNode SourceSection: [2657,2721]`if not x:↵          ...`
                                       NotNodeGen SourceSection: [2660,2665]`not x`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [2664,2665]`x`
                                           Frame: [1,x,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1417,8 +1395,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                   FunctionBodyNode SourceSection: [2876,3012]`if not x:↵          ...`
                                     IfNode SourceSection: [2876,2921]`if not x:↵          ...`
                                       NotNodeGen SourceSection: [2879,2884]`not x`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [2883,2884]`x`
                                           Frame: [1,x,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1525,8 +1501,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                   FunctionBodyNode SourceSection: [3062,3256]`if not x:↵          ...`
                                     IfNode SourceSection: [3062,3113]`if not x:↵          ...`
                                       NotNodeGen SourceSection: [3065,3070]`not x`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [3069,3070]`x`
                                           Frame: [1,x,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1727,8 +1701,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [3434,3456]`if n == 0: return '{...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [3437,3443]`n == 0`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __eq__
@@ -1746,8 +1718,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [3465,3494]`if level <= 0: retur...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [3468,3478]`level <= 0`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __le__
@@ -1884,8 +1854,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [3787,3828]`if n > self.maxdict:...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [3790,3806]`n > self.maxdict`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -2019,8 +1987,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             EmptyNode SourceSection: None
                                     IfNode SourceSection: [3977,4199]`if len(s) > self.max...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [3980,4003]`len(s) > self.maxstr...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -2273,8 +2239,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [4314,4478]`if len(s) > self.max...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [4317,4338]`len(s) > self.maxlon...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -2524,8 +2488,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         BlockNode SourceSection: None
                                     IfNode SourceSection: [4787,4954]`if len(s) > self.max...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [4790,4812]`len(s) > self.maxoth...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__

@@ -427,8 +427,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [3866,3927]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [3869,3896]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [3869,3878]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -452,8 +450,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Frame: [4,<return_val>,Illegal]
                         AndNode SourceSection: [3934,3965]`not op_result and se...`
                           NotNodeGen SourceSection: [3934,3947]`not op_result`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [3938,3947]`op_result`
                               Frame: [3,op_result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -467,8 +463,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [1,other,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -555,8 +549,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [1,other,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -626,8 +618,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [4346,4407]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [4349,4376]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [4349,4358]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -650,8 +640,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,<return_val>,Illegal]
                         NotNodeGen SourceSection: [4414,4427]`not op_result`
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [4418,4427]`op_result`
                             Frame: [3,op_result,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -724,8 +712,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [4610,4671]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [4613,4640]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [4613,4622]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -749,8 +735,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Frame: [4,<return_val>,Illegal]
                         OrNode SourceSection: [4678,4708]`not op_result or sel...`
                           NotNodeGen SourceSection: [4678,4691]`not op_result`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [4682,4691]`op_result`
                               Frame: [3,op_result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -764,8 +748,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [1,other,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -835,8 +817,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [4887,4948]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [4890,4917]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [4890,4899]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -872,8 +852,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [1,other,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -943,8 +921,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [5152,5213]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [5155,5182]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [5155,5164]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -967,8 +943,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,<return_val>,Illegal]
                         NotNodeGen SourceSection: [5220,5233]`not op_result`
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [5224,5233]`op_result`
                             Frame: [3,op_result,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1041,8 +1015,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [5415,5476]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [5418,5445]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [5418,5427]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -1066,8 +1038,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Frame: [4,<return_val>,Illegal]
                         AndNode SourceSection: [5483,5514]`not op_result and se...`
                           NotNodeGen SourceSection: [5483,5496]`not op_result`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [5487,5496]`op_result`
                               Frame: [3,op_result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1081,8 +1051,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [1,other,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1169,8 +1137,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [1,other,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1240,8 +1206,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [5895,5956]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [5898,5925]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [5898,5907]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -1264,8 +1228,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,<return_val>,Illegal]
                         NotNodeGen SourceSection: [5963,5976]`not op_result`
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [5967,5976]`op_result`
                             Frame: [3,op_result,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1338,8 +1300,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [6159,6220]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [6162,6189]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [6162,6171]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -1363,8 +1323,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Frame: [4,<return_val>,Illegal]
                         OrNode SourceSection: [6227,6257]`not op_result or sel...`
                           NotNodeGen SourceSection: [6227,6240]`not op_result`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [6231,6240]`op_result`
                               Frame: [3,op_result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1378,8 +1336,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [1,other,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1449,8 +1405,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [6436,6497]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [6439,6466]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [6439,6448]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -1486,8 +1440,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Frame: [1,other,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1557,8 +1509,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [6701,6762]`if op_result is NotI...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [6704,6731]`op_result is NotImpl...`
                           ReadLocalVariableNode SourceSection: [6704,6713]`op_result`
                             Frame: [3,op_result,Illegal]
@@ -1581,8 +1531,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,<return_val>,Illegal]
                         NotNodeGen SourceSection: [6769,6782]`not op_result`
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [6773,6782]`op_result`
                             Frame: [3,op_result,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1753,11 +1701,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       NotNodeGen SourceSection: [7482,7537]`getattr(cls, op, Non...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: None
                                           PythonCallTernary SourceSection: [7482,7504]`getattr(cls, op, Non...`
                                             CallTernaryMethodNodeGen SourceSection: None
@@ -1819,8 +1763,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [7543,7644]`if not roots:↵      ...`
                       NotNodeGen SourceSection: [7546,7555]`not roots`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [7550,7555]`roots`
                           Frame: [1,roots,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1874,14 +1816,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           IfNode SourceSection: [7764,7870]`if opname not in roo...`
                             NotNodeGen SourceSection: [7767,7786]`opname not in roots`
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ContainsNodeGen SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __contains__
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                 ReadLocalVariableNode SourceSection: [7767,7773]`opname`
                                   Frame: [3,opname,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2631,8 +2569,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   FunctionBodyNode SourceSection: [9267,9997]`if not args:↵       ...`
                                     IfNode SourceSection: [9267,9369]`if not args:↵       ...`
                                       NotNodeGen SourceSection: [9270,9278]`not args`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [9274,9278]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -2647,8 +2583,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [9369,9469]`if len(args) < 2:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [9372,9385]`len(args) < 2`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __lt__
@@ -2710,8 +2644,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [9501,9599]`if not callable(func...`
                                       NotNodeGen SourceSection: [9504,9522]`not callable(func)`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallUnary SourceSection: [9508,9522]`callable(func)`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9508,9516]`callable`
@@ -2743,8 +2675,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [9627,9854]`if hasattr(func, "fu...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [9630,9651]`hasattr(func, "func"...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9630,9637]`hasattr`
@@ -2935,8 +2865,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   FunctionBodyNode SourceSection: [10044,10304]`if not args:↵       ...`
                                     IfNode SourceSection: [10044,10147]`if not args:↵       ...`
                                       NotNodeGen SourceSection: [10047,10055]`not args`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [10051,10055]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -3292,8 +3220,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             PythonObjectFactoryNodeGen SourceSection: None
                                       IfNode SourceSection: [10554,10665]`if type(self).__modu...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           BinaryComparisonNodeGen SourceSection: [10557,10593]`type(self).__module_...`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __eq__
@@ -3426,8 +3352,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [10828,10832]`None`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                             OrNode SourceSection: [10834,10855]`self.__dict__ or Non...`
                                               GetAttributeNode SourceSection: [10834,10847]`self.__dict__`
                                                 GetFixedAttributeNode SourceSection: None
@@ -3441,8 +3365,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [10851,10855]`None`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3493,8 +3415,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   FunctionBodyNode SourceSection: [10901,11793]`if not isinstance(st...`
                                     IfNode SourceSection: [10901,11014]`if not isinstance(st...`
                                       NotNodeGen SourceSection: [10904,10932]`not isinstance(state...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [10908,10932]`isinstance(state, tu...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10908,10918]`isinstance`
@@ -3517,8 +3437,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11014,11118]`if len(state) != 4:↵...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [11017,11032]`len(state) != 4`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __ne__
@@ -3592,14 +3510,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [11162,11418]`if (not callable(fun...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         OrNode SourceSection: [11166,11353]`not callable(func) o...`
                                           OrNode SourceSection: None
                                             OrNode SourceSection: None
                                               NotNodeGen SourceSection: [11166,11184]`not callable(func)`
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 PythonCallUnary SourceSection: [11170,11184]`callable(func)`
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [11170,11178]`callable`
@@ -3609,8 +3523,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     Frame: [2,func,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               NotNodeGen SourceSection: [11188,11215]`not isinstance(args,...`
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 PythonCallBinary SourceSection: [11192,11215]`isinstance(args, tup...`
                                                   CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [11192,11202]`isinstance`
@@ -3623,20 +3535,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     Identifier: tuple
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                             AndNode SourceSection: [11231,11278]`kwds is not None and...`
                                               NotNodeGen SourceSection: [11231,11247]`kwds is not None`
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 IsExpressionNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [11231,11235]`kwds`
                                                     Frame: [4,kwds,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ObjectLiteralNode SourceSection: [11243,11247]`None`
                                               NotNodeGen SourceSection: [11252,11278]`not isinstance(kwds,...`
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 PythonCallBinary SourceSection: [11256,11278]`isinstance(kwds, dic...`
                                                   CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [11256,11266]`isinstance`
@@ -3649,23 +3555,15 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     Identifier: dict
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                           AndNode SourceSection: [11295,11352]`namespace is not Non...`
                                             NotNodeGen SourceSection: [11295,11316]`namespace is not Non...`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               IsExpressionNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [11295,11304]`namespace`
                                                   Frame: [5,namespace,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ObjectLiteralNode SourceSection: [11312,11316]`None`
                                             NotNodeGen SourceSection: [11321,11352]`not isinstance(names...`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               PythonCallBinary SourceSection: [11325,11352]`isinstance(namespace...`
                                                 CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [11325,11335]`isinstance`
@@ -3678,11 +3576,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   Identifier: dict
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       RaiseNodeGen SourceSection: [11368,11408]`raise TypeError("inv...`
                                         PythonCallUnary SourceSection: [11374,11408]`TypeError("invalid p...`
                                           CallUnaryMethodNodeGen SourceSection: None
@@ -3706,8 +3600,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [11476,11631]`if kwds is None:↵   ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [11479,11491]`kwds is None`
                                           ReadLocalVariableNode SourceSection: [11479,11483]`kwds`
                                             Frame: [4,kwds,Illegal]
@@ -3721,8 +3613,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       IfNode SourceSection: [11523,11631]`elif type(kwds) is n...`
                                         NotNodeGen SourceSection: [11528,11550]`type(kwds) is not di...`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [11528,11538]`type(kwds)`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -3750,8 +3640,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         BlockNode SourceSection: None
                                     IfNode SourceSection: [11631,11689]`if namespace is None...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [11634,11651]`namespace is None`
                                           ReadLocalVariableNode SourceSection: [11634,11643]`namespace`
                                             Frame: [5,namespace,Illegal]
@@ -3934,12 +3822,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   FunctionBodyNode SourceSection: [12178,13009]`if not callable(func...`
                                     IfNode SourceSection: [12178,12508]`if not callable(func...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         AndNode SourceSection: [12181,12232]`not callable(func) a...`
                                           NotNodeGen SourceSection: [12181,12199]`not callable(func)`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallUnary SourceSection: [12185,12199]`callable(func)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12185,12193]`callable`
@@ -3949,8 +3833,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 Frame: [1,func,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [12204,12232]`not hasattr(func, "_...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [12208,12232]`hasattr(func, "__get...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12208,12215]`hasattr`
@@ -3961,8 +3843,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [12222,12231]`"__get__"`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       RaiseNodeGen SourceSection: [12246,12348]`raise TypeError("{!r...`
                                         PythonCallUnary SourceSection: [12252,12348]`TypeError("{!r} is n...`
                                           CallUnaryMethodNodeGen SourceSection: None
@@ -3980,8 +3860,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [12508,13009]`if isinstance(func, ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [12511,12542]`isinstance(func, par...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12511,12521]`isinstance`
@@ -4639,8 +4517,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ObjectLiteralNode SourceSection: [14115,14119]`None`
                                     IfNode SourceSection: [14128,14573]`if get is not None:↵...`
                                       NotNodeGen SourceSection: [14131,14146]`get is not None`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [14131,14134]`get`
                                             Frame: [3,get,Illegal]
@@ -4664,8 +4540,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [14197,14573]`if new_func is not s...`
                                           NotNodeGen SourceSection: [14200,14225]`new_func is not self...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [14200,14208]`new_func`
                                                 Frame: [5,new_func,Illegal]
@@ -4745,8 +4619,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [14573,14779]`if result is None:↵ ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [14576,14590]`result is None`
                                           ReadLocalVariableNode SourceSection: [14576,14582]`result`
                                             Frame: [4,result,Illegal]
@@ -5204,8 +5076,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [16508,16603]`if kwds:↵        key...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [16511,16515]`kwds`
                           Frame: [1,kwds,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -5253,8 +5123,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       BlockNode SourceSection: None
                     IfNode SourceSection: [16603,16811]`if typed:↵        ke...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [16606,16611]`typed`
                           Frame: [2,typed,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -5336,8 +5204,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ObjectLiteralNode SourceSection: None
                         IfNode SourceSection: [16665,16735]`if kwds:↵           ...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [16668,16672]`kwds`
                               Frame: [1,kwds,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5422,8 +5288,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           BlockNode SourceSection: None
                       IfNode SourceSection: [16735,16811]`elif len(key) == 1 a...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           AndNode SourceSection: [16740,16783]`len(key) == 1 and ty...`
                             BinaryComparisonNodeGen SourceSection: [16740,16753]`len(key) == 1`
                               LookupAndCallBinaryNodeGen SourceSection: None
@@ -5442,8 +5306,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __contains__
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                               PythonCallUnary SourceSection: [16758,16770]`type(key[0])`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [16758,16762]`type`
@@ -5461,8 +5323,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Frame: [4,fasttypes,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                         FrameReturnNode SourceSection: [16793,16806]`return key[0]`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
@@ -5538,12 +5398,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                   FunctionBodyNode SourceSection: [18016,18352]`if maxsize is not No...`
                     IfNode SourceSection: [18016,18147]`if maxsize is not No...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [18019,18071]`maxsize is not None ...`
                           NotNodeGen SourceSection: [18019,18038]`maxsize is not None`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [18019,18026]`maxsize`
                                 ReadLocalVariableNode SourceSection: None
@@ -5552,8 +5408,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadFromCellNodeGen SourceSection: None
                               ObjectLiteralNode SourceSection: [18034,18038]`None`
                           NotNodeGen SourceSection: [18043,18071]`not isinstance(maxsi...`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             PythonCallBinary SourceSection: [18047,18071]`isinstance(maxsize, ...`
                               CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [18047,18057]`isinstance`
@@ -5568,8 +5422,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Identifier: int
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       RaiseNodeGen SourceSection: [18081,18141]`raise TypeError('Exp...`
                         PythonCallUnary SourceSection: [18087,18141]`TypeError('Expected ...`
                           CallUnaryMethodNodeGen SourceSection: None
@@ -5917,8 +5769,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [19123,22710]`if maxsize == 0:↵↵  ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [19126,19138]`maxsize == 0`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
@@ -6021,8 +5871,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       IfNode SourceSection: [19387,22710]`elif maxsize is None...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           IsExpressionNodeGen SourceSection: [19392,19407]`maxsize is None`
                             ReadLocalCellNodeGen SourceSection: [19392,19399]`maxsize`
                               ReadLocalVariableNode SourceSection: None
@@ -6117,8 +5965,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadFromCellNodeGen SourceSection: None
                                       IfNode SourceSection: [19644,19739]`if result is not sen...`
                                         NotNodeGen SourceSection: [19647,19669]`result is not sentin...`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [19647,19653]`result`
                                               Frame: [3,result,Illegal]
@@ -6294,8 +6140,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           IfNode SourceSection: [20143,20634]`if link is not None:...`
                                             NotNodeGen SourceSection: [20146,20162]`link is not None`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               IsExpressionNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [20146,20150]`link`
                                                   Frame: [3,link,Illegal]
@@ -6483,8 +6327,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         CallUnaryMethodNodeGen SourceSection: None
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                         GetClassNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [20634,20671]`result = user_functi...`
                                         Identifier: result
@@ -6511,14 +6353,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [20711,22667]`if key in cache:↵   ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ContainsNodeGen SourceSection: [20714,20726]`key in cache`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [20714,20717]`key`
                                                   Frame: [2,key,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6531,8 +6369,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               EmptyNode SourceSection: [21038,21042]`pass`
                                             IfNode SourceSection: [21059,22667]`elif full:↵         ...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [21064,21068]`full`
                                                   ReadLocalVariableNode SourceSection: None
                                                     Frame: [23,full,Illegal]
@@ -6798,8 +6634,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         CallUnaryMethodNodeGen SourceSection: None
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                         GetClassNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [22691,22704]`return result`
                                         WriteLocalVariableNodeGen SourceSection: None
@@ -6885,8 +6719,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     CallUnaryMethodNodeGen SourceSection: None
                                     CallQuaternaryMethodNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                     GetClassNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [6,<return_val>,Illegal]
@@ -6996,8 +6828,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     CallUnaryMethodNodeGen SourceSection: None
                                     CallQuaternaryMethodNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                     GetClassNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [7,<return_val>,Illegal]
@@ -7092,8 +6922,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BooleanLiteralNode SourceSection: [23718,23722]`True`
                           BlockNode SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: [23732,23771]`sequences = [s for s...`
@@ -7131,8 +6959,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           GeneratorIfNode SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [23769,23770]`s`
                                                 Frame: [0,s,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -7170,8 +6996,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   PythonObjectFactoryNodeGen SourceSection: None
                             IfNode SourceSection: [23806,23858]`if not sequences:↵  ...`
                               NotNodeGen SourceSection: [23809,23822]`not sequences`
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadLocalVariableNode SourceSection: [23813,23822]`sequences`
                                   Frame: [0,sequences,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7213,14 +7037,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 Frame: [3,s2,Illegal]
                                           IfNode SourceSection: [24000,24148]`if candidate in s2[1...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ContainsNodeGen SourceSection: [24003,24022]`candidate in s2[1:]`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [24003,24012]`candidate`
                                                   Frame: [2,candidate,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7254,8 +7074,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               BlockNode SourceSection: None
                             IfNode SourceSection: [24184,24271]`if candidate is None...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 IsExpressionNodeGen SourceSection: [24187,24204]`candidate is None`
                                   ReadLocalVariableNode SourceSection: [24187,24196]`candidate`
                                     Frame: [2,candidate,Illegal]
@@ -7290,8 +7108,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Frame: [5,seq,Illegal]
                                   IfNode SourceSection: [24376,24428]`if seq[0] == candida...`
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       BinaryComparisonNodeGen SourceSection: [24379,24398]`seq[0] == candidate`
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __eq__
@@ -7392,8 +7208,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           IfNode SourceSection: [25430,25599]`if hasattr(base, '__...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               PythonCallBinary SourceSection: [25433,25469]`hasattr(base, '__abs...`
                                 CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [25433,25440]`hasattr`
@@ -7467,8 +7281,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       TernaryIfNode SourceSection: [25637,25663]`list(abcs) if abcs e...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [25651,25655]`abcs`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [1,abcs,Illegal]
@@ -7557,8 +7369,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           IfNode SourceSection: [25819,26107]`if issubclass(cls, b...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               AndNode SourceSection: [25822,25929]`issubclass(cls, base...`
                                 PythonCallBinary SourceSection: [25822,25843]`issubclass(cls, base...`
                                   CallBinaryMethodNodeGen SourceSection: None
@@ -7574,8 +7384,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadFromCellNodeGen SourceSection: None
                                 NotNodeGen SourceSection: [25848,25929]`not any(↵           ...`
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   PythonCallUnary SourceSection: [25852,25929]`any(↵               ...`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [25852,25855]`any`
@@ -7653,8 +7461,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                             ExpressionStatementNode SourceSection: [26075,26102]`abstract_bases.appen...`
                               PythonCallUnary SourceSection: [26075,26102]`abstract_bases.appen...`
                                 CallUnaryMethodNodeGen SourceSection: None
@@ -8103,14 +7909,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       AndNode SourceSection: [26961,27063]`typ not in bases and...`
                                         AndNode SourceSection: None
                                           NotNodeGen SourceSection: [26961,26977]`typ not in bases`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ContainsNodeGen SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [26961,26964]`typ`
                                                 Frame: [0,typ,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -8129,8 +7931,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [26995,27004]`'__mro__'`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [27043,27063]`issubclass(cls, typ)...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [27043,27053]`issubclass`
@@ -8145,8 +7945,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Frame: [0,typ,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [3,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -8186,8 +7984,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       PythonCallUnary SourceSection: [27098,27111]`is_related(n)`
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [27098,27108]`is_related`
@@ -8277,8 +8073,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [1,other,Illegal]
                                         IfNode SourceSection: [27286,27364]`if typ != other and ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             AndNode SourceSection: [27289,27326]`typ != other and typ...`
                                               BinaryComparisonNodeGen SourceSection: [27289,27301]`typ != other`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
@@ -8293,8 +8087,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [27306,27309]`typ`
                                                   Frame: [0,typ,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8309,8 +8101,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     Frame: [1,other,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                           FrameReturnNode SourceSection: [27344,27355]`return True`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
@@ -8370,11 +8160,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       NotNodeGen SourceSection: [27410,27431]`not is_strict_base(n...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallUnary SourceSection: [27414,27431]`is_strict_base(n)`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [27414,27428]`is_strict_base`
@@ -8466,18 +8252,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Frame: [8,sub,Illegal]
                                     IfNode SourceSection: [27687,27813]`if sub not in bases ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         AndNode SourceSection: [27690,27731]`sub not in bases and...`
                                           NotNodeGen SourceSection: [27690,27706]`sub not in bases`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ContainsNodeGen SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [27690,27693]`sub`
                                                 Frame: [8,sub,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -8500,8 +8280,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [8,sub,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       ExpressionStatementNode SourceSection: [27749,27804]`found.append([s for ...`
                                         PythonCallUnary SourceSection: [27749,27804]`found.append([s for ...`
                                           CallUnaryMethodNodeGen SourceSection: None
@@ -8540,14 +8318,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       GeneratorIfNode SourceSection: None
                                                         GeneratorAccessNode SourceSection: None
                                                         YesNodeGen SourceSection: None
-                                                          IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
                                                           ContainsNodeGen SourceSection: [27789,27802]`s in type_set`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __contains__
                                                             YesNodeGen SourceSection: None
-                                                              IsBuiltinClassProfile SourceSection: None
-                                                                CachedDispatchFirst SourceSection: None
                                                             ReadGeneratorFrameVariableNode SourceSection: [27789,27790]`s`
                                                               Frame: [0,s,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8606,8 +8380,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 BlockNode SourceSection: None
                               IfNode SourceSection: [27813,27951]`if not found:↵      ...`
                                 NotNodeGen SourceSection: [27816,27825]`not found`
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ReadLocalVariableNode SourceSection: [27820,27825]`found`
                                     Frame: [7,found,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -8658,14 +8430,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 Frame: [9,subcls,Illegal]
                                           IfNode SourceSection: [28058,28123]`if subcls not in mro...`
                                             NotNodeGen SourceSection: [28061,28078]`subcls not in mro`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ContainsNodeGen SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [28061,28067]`subcls`
                                                   Frame: [9,subcls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8799,8 +8567,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           BlockNode SourceSection: None
                             IfNode SourceSection: [28634,29115]`if match is not None...`
                               NotNodeGen SourceSection: [28637,28654]`match is not None`
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 IsExpressionNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [28637,28642]`match`
                                     Frame: [3,match,Illegal]
@@ -8809,8 +8575,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               BlockNode SourceSection: None
                                 IfNode SourceSection: [28821,29101]`if (t in registry an...`
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     AndNode SourceSection: [28825,28981]`t in registry and t ...`
                                       AndNode SourceSection: None
                                         AndNode SourceSection: None
@@ -8818,8 +8582,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __contains__
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                             ReadLocalVariableNode SourceSection: [28825,28826]`t`
                                               Frame: [4,t,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8827,14 +8589,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [1,registry,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [28843,28863]`t not in cls.__mro__...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ContainsNodeGen SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [28843,28844]`t`
                                                 Frame: [4,t,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -8849,17 +8607,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   Frame: [0,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                         NotNodeGen SourceSection: [28898,28922]`match not in cls.__m...`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ContainsNodeGen SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __contains__
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                             ReadLocalVariableNode SourceSection: [28898,28903]`match`
                                               Frame: [3,match,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8874,11 +8626,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                       NotNodeGen SourceSection: [28957,28981]`not issubclass(match...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [28961,28981]`issubclass(match, t)...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [28961,28971]`issubclass`
@@ -8891,8 +8639,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Frame: [4,t,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                   RaiseNodeGen SourceSection: [29000,29088]`raise RuntimeError("...`
                                     PythonCallUnary SourceSection: [29006,29088]`RuntimeError("Ambigu...`
                                       CallUnaryMethodNodeGen SourceSection: None
@@ -8915,14 +8661,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               BlockNode SourceSection: None
                             IfNode SourceSection: [29115,29159]`if t in registry:↵  ...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ContainsNodeGen SourceSection: [29118,29131]`t in registry`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                   ReadLocalVariableNode SourceSection: [29118,29119]`t`
                                     Frame: [4,t,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -9072,8 +8814,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         EmptyNode SourceSection: [30169,30189]`nonlocal cache_token...`
                                       IfNode SourceSection: [30198,30408]`if cache_token is no...`
                                         NotNodeGen SourceSection: [30201,30224]`cache_token is not N...`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: [30201,30212]`cache_token`
                                               ReadLocalVariableNode SourceSection: None
@@ -9093,8 +8833,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           IfNode SourceSection: [30284,30408]`if cache_token != cu...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [30287,30315]`cache_token != curre...`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __ne__
@@ -9256,8 +8994,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         EmptyNode SourceSection: [30857,30877]`nonlocal cache_token...`
                                       IfNode SourceSection: [30886,31673]`if func is None:↵   ...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [30889,30901]`func is None`
                                             ReadLocalVariableNode SourceSection: [30889,30893]`func`
                                               Frame: [1,func,Illegal]
@@ -9266,8 +9002,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [30915,31003]`if isinstance(cls, t...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               PythonCallBinary SourceSection: [30918,30939]`isinstance(cls, type...`
                                                 CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [30918,30928]`isinstance`
@@ -9359,8 +9093,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                           IfNode SourceSection: [31057,31334]`if not ann:↵        ...`
                                             NotNodeGen SourceSection: [31060,31067]`not ann`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [31064,31067]`ann`
                                                 Frame: [2,ann,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -9443,8 +9175,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           AssertNode SourceSection: [31540,31664]`assert isinstance(cl...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               PythonCallBinary SourceSection: [31547,31568]`isinstance(cls, type...`
                                                 CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31547,31557]`isinstance`
@@ -9477,8 +9207,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       IfNode SourceSection: [31702,31818]`if cache_token is No...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           AndNode SourceSection: [31705,31764]`cache_token is None ...`
                                             IsExpressionNodeGen SourceSection: [31705,31724]`cache_token is None`
                                               ReadLocalCellNodeGen SourceSection: [31705,31716]`cache_token`
@@ -9499,8 +9227,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadFromCellNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [31742,31763]`'__abstractmethods__...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                         WriteLocalCellNodeGen SourceSection: [31778,31809]`cache_token = get_ca...`
                                           Identifier: cache_token
                                           ReadLocalVariableNode SourceSection: None

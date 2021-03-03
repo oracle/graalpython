@@ -37,8 +37,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
                 GeneratorIfNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     AndNode SourceSection: None
                       BinaryArithmeticExpression SourceSection: [32,37]`x % 2`
                         LookupAndCallBinaryNodeGen SourceSection: None
@@ -57,8 +55,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
                         IntegerLiteralNode SourceSection: [45,46]`3`
                           Value: 3
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                   ExpressionStatementNode SourceSection: [5,9]`x**3`
                     YieldNode SourceSection: [5,9]`x**3`
                       flagSlot: 0

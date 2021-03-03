@@ -457,8 +457,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,<return_val>,Illegal]
                         NotNodeGen SourceSection: [1533,1538]`not a`
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [1537,1538]`a`
                             Frame: [0,a,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -504,8 +502,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           Frame: [1,<return_val>,Illegal]
                         TernaryIfNode SourceSection: [1614,1634]`True if a else False...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [1622,1623]`a`
                               Frame: [0,a,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -615,8 +611,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,<return_val>,Illegal]
                         NotNodeGen SourceSection: [1747,1757]`a is not b`
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           IsExpressionNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [1747,1748]`a`
                               Frame: [0,a,Illegal]
@@ -1648,8 +1642,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                   FunctionBodyNode SourceSection: [2989,3137]`if not hasattr(a, '_...`
                     IfNode SourceSection: [2989,3125]`if not hasattr(a, '_...`
                       NotNodeGen SourceSection: [2992,3021]`not hasattr(a, '__ge...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [2996,3021]`hasattr(a, '__getite...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [2996,3003]`hasattr`
@@ -1760,8 +1752,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [3217,3218]`b`
                             Frame: [1,b,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1827,8 +1817,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 Frame: [3,i,Illegal]
                           IfNode SourceSection: [3330,3368]`if i == b:↵         ...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               BinaryComparisonNodeGen SourceSection: [3333,3339]`i == b`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __eq__
@@ -2040,8 +2028,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           IfNode SourceSection: [3592,3628]`if j == b:↵         ...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               BinaryComparisonNodeGen SourceSection: [3595,3601]`j == b`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __eq__
@@ -2184,8 +2170,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                   FunctionBodyNode SourceSection: [4114,4853]`if not isinstance(de...`
                     IfNode SourceSection: [4114,4287]`if not isinstance(de...`
                       NotNodeGen SourceSection: [4117,4145]`not isinstance(defau...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [4121,4145]`isinstance(default, ...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4121,4131]`isinstance`
@@ -2317,8 +2301,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         BlockNode SourceSection: None
                     IfNode SourceSection: [4535,4588]`if val is NotImpleme...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [4538,4559]`val is NotImplemente...`
                           ReadLocalVariableNode SourceSection: [4538,4541]`val`
                             Frame: [4,val,Illegal]
@@ -2337,8 +2319,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       BlockNode SourceSection: None
                     IfNode SourceSection: [4588,4744]`if not isinstance(va...`
                       NotNodeGen SourceSection: [4591,4615]`not isinstance(val, ...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [4595,4615]`isinstance(val, int)...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4595,4605]`isinstance`
@@ -2387,8 +2367,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       BlockNode SourceSection: None
                     IfNode SourceSection: [4744,4843]`if val < 0:↵        ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [4747,4754]`val < 0`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __lt__
@@ -2530,16 +2508,12 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   FunctionBodyNode SourceSection: [5391,5988]`if not attrs:↵      ...`
                                     IfNode SourceSection: [5391,5988]`if not attrs:↵      ...`
                                       NotNodeGen SourceSection: [5394,5403]`not attrs`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [5398,5403]`attrs`
                                           Frame: [2,attrs,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [5417,5526]`if not isinstance(at...`
                                           NotNodeGen SourceSection: [5420,5445]`not isinstance(attr,...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [5424,5445]`isinstance(attr, str...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5424,5434]`isinstance`
@@ -3171,8 +3145,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   FunctionBodyNode SourceSection: [6649,6965]`if not items:↵      ...`
                                     IfNode SourceSection: [6649,6965]`if not items:↵      ...`
                                       NotNodeGen SourceSection: [6652,6661]`not items`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [6656,6661]`items`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [2,items,Illegal]
@@ -3739,8 +3711,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   FunctionBodyNode SourceSection: [7661,8005]`if len(args) < 2:↵  ...`
                                     IfNode SourceSection: [7661,7798]`if len(args) < 2:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [7664,7677]`len(args) < 2`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __lt__
@@ -3794,8 +3764,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           Value: 1
                                     IfNode SourceSection: [7850,7954]`if not isinstance(se...`
                                       NotNodeGen SourceSection: [7853,7884]`not isinstance(self....`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [7857,7884]`isinstance(self._nam...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7857,7867]`isinstance`
@@ -4216,8 +4184,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   FunctionBodyNode SourceSection: [8472,8778]`if not self._kwargs:...`
                                     IfNode SourceSection: [8472,8778]`if not self._kwargs:...`
                                       NotNodeGen SourceSection: [8475,8491]`not self._kwargs`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         GetAttributeNode SourceSection: [8479,8491]`self._kwargs`
                                           GetFixedAttributeNode SourceSection: None
                                             Key: _kwargs
@@ -4511,8 +4477,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                   FunctionBodyNode SourceSection: [8972,9127]`if not hasattr(a, '_...`
                     IfNode SourceSection: [8972,9108]`if not hasattr(a, '_...`
                       NotNodeGen SourceSection: [8975,9004]`not hasattr(a, '__ge...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [8979,9004]`hasattr(a, '__getite...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [8979,8986]`hasattr`

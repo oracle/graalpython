@@ -19,8 +19,6 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                 BlockNode SourceSection: None
                   IfNode SourceSection: [24,60]`if x % 2 == 0:â†µ     ...`
                     YesNodeGen SourceSection: None
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                       BinaryComparisonNodeGen SourceSection: [27,37]`x % 2 == 0`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __eq__

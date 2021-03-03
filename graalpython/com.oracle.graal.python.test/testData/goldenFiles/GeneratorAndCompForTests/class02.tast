@@ -117,11 +117,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         NotNodeGen SourceSection: [114,127]`not count > 0`
-                                                          IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
                                                           BinaryComparisonNodeGen SourceSection: [118,127]`count > 0`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __gt__

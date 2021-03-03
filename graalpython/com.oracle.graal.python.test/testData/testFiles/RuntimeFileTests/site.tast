@@ -219,14 +219,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             BlockNode SourceSection: None
                               IfNode SourceSection: [3841,4059]`if (getattr(getattr(...`
                                 NotNodeGen SourceSection: [3845,3979]`getattr(getattr(m, '...`
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ContainsNodeGen SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __contains__
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                     PythonCallTernary SourceSection: [3845,3904]`getattr(getattr(m, '...`
                                       CallTernaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [3845,3852]`getattr`
@@ -445,14 +441,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [4866,4964]`if dircase not in kn...`
                               NotNodeGen SourceSection: [4869,4895]`dircase not in known...`
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ContainsNodeGen SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                   ReadLocalVariableNode SourceSection: [4869,4876]`dircase`
                                     Frame: [3,dircase,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -570,8 +562,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               TryExceptNode SourceSection: None
                                 IfNode SourceSection: [5172,5282]`if os.path.exists(it...`
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     PythonCallUnary SourceSection: [5175,5195]`os.path.exists(item)...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
@@ -709,8 +699,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                   FunctionBodyNode SourceSection: [5609,6868]`if known_paths is No...`
                     IfNode SourceSection: [5609,5729]`if known_paths is No...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [5612,5631]`known_paths is None`
                           ReadLocalVariableNode SourceSection: [5612,5623]`known_paths`
                             Frame: [2,known_paths,Illegal]
@@ -812,8 +800,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               BlockNode SourceSection: None
                                 IfNode SourceSection: [5905,5967]`if line.startswith("...`
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     PythonCallUnary SourceSection: [5908,5928]`line.startswith("#")...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
@@ -828,8 +814,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     BlockNode SourceSection: None
                                       IfNode SourceSection: [5988,6109]`if line.startswith((...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           PythonCallUnary SourceSection: [5991,6031]`line.startswith(("im...`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -898,18 +882,12 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       IfNode SourceSection: [6201,6354]`if not dircase in kn...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           AndNode SourceSection: [6204,6254]`not dircase in known...`
                                             NotNodeGen SourceSection: [6204,6230]`not dircase in known...`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ContainsNodeGen SourceSection: [6208,6230]`dircase in known_pat...`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [6208,6215]`dircase`
                                                   Frame: [8,dircase,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -933,8 +911,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                 Frame: [7,dir,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                         BlockNode SourceSection: None
                                           ExpressionStatementNode SourceSection: [6276,6296]`sys.path.append(dir)...`
                                             PythonCallUnary SourceSection: [6276,6296]`sys.path.append(dir)...`
@@ -1120,13 +1096,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       GetClassNodeGen SourceSection: None
                     IfNode SourceSection: [6809,6850]`if reset:↵        kn...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [6812,6817]`reset`
                           Frame: [3,reset,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1190,8 +1162,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                   FunctionBodyNode SourceSection: [7013,7594]`if known_paths is No...`
                     IfNode SourceSection: [7013,7133]`if known_paths is No...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [7016,7035]`known_paths is None`
                           ReadLocalVariableNode SourceSection: [7016,7027]`known_paths`
                             Frame: [1,known_paths,Illegal]
@@ -1250,14 +1220,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [7178,7315]`if not sitedircase i...`
                       NotNodeGen SourceSection: [7181,7211]`not sitedircase in k...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ContainsNodeGen SourceSection: [7185,7211]`sitedircase in known...`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [7185,7196]`sitedircase`
                             Frame: [3,sitedircase,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1349,8 +1315,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       PythonCallUnary SourceSection: [7430,7451]`name.endswith(".pth"...`
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
@@ -1425,8 +1389,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       BlockNode SourceSection: None
                     IfNode SourceSection: [7535,7576]`if reset:↵        kn...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [7538,7543]`reset`
                           Frame: [2,reset,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1474,8 +1436,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                   FunctionBodyNode SourceSection: [7940,8337]`if sys.flags.no_user...`
                     IfNode SourceSection: [7940,7993]`if sys.flags.no_user...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         GetAttributeNode SourceSection: [7943,7965]`sys.flags.no_user_si...`
                           GetFixedAttributeNode SourceSection: None
                             Key: no_user_site
@@ -1502,8 +1462,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       BlockNode SourceSection: None
                     IfNode SourceSection: [7993,8159]`if hasattr(os, "getu...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [7996,8044]`hasattr(os, "getuid"...`
                           PythonCallBinary SourceSection: [7996,8017]`hasattr(os, "getuid"...`
                             CallBinaryMethodNodeGen SourceSection: None
@@ -1524,12 +1482,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8034,8043]`"geteuid"`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       IfNode SourceSection: [8099,8159]`if os.geteuid() != o...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [8102,8129]`os.geteuid() != os.g...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __ne__
@@ -1555,8 +1509,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       BlockNode SourceSection: None
                     IfNode SourceSection: [8159,8326]`if hasattr(os, "getg...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [8162,8210]`hasattr(os, "getgid"...`
                           PythonCallBinary SourceSection: [8162,8183]`hasattr(os, "getgid"...`
                             CallBinaryMethodNodeGen SourceSection: None
@@ -1577,12 +1529,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8200,8209]`"getegid"`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       IfNode SourceSection: [8265,8326]`if os.getegid() != o...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [8268,8295]`os.getegid() != os.g...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __ne__
@@ -1661,8 +1609,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ObjectLiteralNode SourceSection: [8648,8652]`None`
                     IfNode SourceSection: [8658,8700]`if env_base:↵       ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [8661,8669]`env_base`
                           Frame: [0,env_base,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1749,8 +1695,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [8781,8894]`if os.name == "nt":↵...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [8784,8799]`os.name == "nt"`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
@@ -1787,8 +1731,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               StringLiteralNode SourceSection: [8831,8840]`"APPDATA"`
                             StringLiteralNode SourceSection: [8845,8848]`"~"`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                         FrameReturnNode SourceSection: [8857,8888]`return joinuser(base...`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
@@ -1806,8 +1748,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       BlockNode SourceSection: None
                     IfNode SourceSection: [8894,9059]`if sys.platform == "...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [8897,8940]`sys.platform == "dar...`
                           BinaryComparisonNodeGen SourceSection: [8897,8921]`sys.platform == "dar...`
                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -1834,8 +1774,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Identifier: sys
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       FrameReturnNode SourceSection: [8950,9053]`return joinuser("~",...`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
@@ -1943,8 +1881,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [9210,9319]`if os.name == 'nt':↵...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [9213,9228]`os.name == 'nt'`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
@@ -1988,8 +1924,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       BlockNode SourceSection: None
                     IfNode SourceSection: [9319,9427]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [9322,9365]`sys.platform == 'dar...`
                           BinaryComparisonNodeGen SourceSection: [9322,9346]`sys.platform == 'dar...`
                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -2016,8 +1950,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Identifier: sys
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       FrameReturnNode SourceSection: [9375,9421]`return '%s/lib/pytho...`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
@@ -2089,8 +2021,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       EmptyNode SourceSection: [9744,9760]`global USER_BASE`
                     IfNode SourceSection: [9765,9826]`if USER_BASE is None...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [9768,9785]`USER_BASE is None`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [9768,9777]`USER_BASE`
                             Identifier: USER_BASE
@@ -2155,8 +2085,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [10131,10198]`if USER_SITE is None...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [10134,10151]`USER_SITE is None`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10134,10143]`USER_SITE`
                             Identifier: USER_SITE
@@ -2229,8 +2157,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [10551,10648]`if ENABLE_USER_SITE ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [10554,10599]`ENABLE_USER_SITE and...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10554,10570]`ENABLE_USER_SITE`
                             Identifier: ENABLE_USER_SITE
@@ -2252,8 +2178,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Frame: [1,user_site,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       ExpressionStatementNode SourceSection: [10609,10643]`addsitedir(user_site...`
                         PythonCallBinary SourceSection: [10609,10643]`addsitedir(user_site...`
                           CallBinaryMethodNodeGen SourceSection: None
@@ -2328,8 +2252,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [11045,11099]`if prefixes is None:...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [11048,11064]`prefixes is None`
                           ReadLocalVariableNode SourceSection: [11048,11056]`prefixes`
                             Frame: [0,prefixes,Illegal]
@@ -2355,12 +2277,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             BlockNode SourceSection: None
                               IfNode SourceSection: [11131,11193]`if not prefix or pre...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   OrNode SourceSection: [11134,11162]`not prefix or prefix...`
                                     NotNodeGen SourceSection: [11134,11144]`not prefix`
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ReadLocalVariableNode SourceSection: [11138,11144]`prefix`
                                         Frame: [3,prefix,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -2368,8 +2286,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __contains__
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                       ReadLocalVariableNode SourceSection: [11148,11154]`prefix`
                                         Frame: [3,prefix,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -2377,8 +2293,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Frame: [2,seen,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                 ContinueNode SourceSection: [11176,11184]`continue`
                                 BlockNode SourceSection: None
                               ExpressionStatementNode SourceSection: [11193,11209]`seen.add(prefix)`
@@ -2393,8 +2307,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               IfNode SourceSection: [11219,11841]`if os.sep == '/':↵  ...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [11222,11235]`os.sep == '/'`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __eq__
@@ -2601,8 +2513,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Frame: [2,sitedir,Illegal]
                           IfNode SourceSection: [12005,12082]`if os.path.isdir(sit...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               PythonCallUnary SourceSection: [12008,12030]`os.path.isdir(sitedi...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
@@ -2680,8 +2590,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                   FunctionBodyNode SourceSection: [12305,12513]`if os.sep == '\\':↵ ...`
                     IfNode SourceSection: [12305,12408]`if os.sep == '\\':↵ ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [12308,12322]`os.sep == '\\'`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
@@ -2788,8 +2696,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [12668,13095]`if sys.platform[:4] ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [12671,12697]`sys.platform[:4] == ...`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
@@ -2868,8 +2774,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [13222,13417]`if hasattr(os, '__fi...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [13225,13248]`hasattr(os, '__file_...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13225,13232]`hasattr`
@@ -3126,12 +3030,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       StringLiteralNode SourceSection: [14384,14386]`''`
                                   IfNode SourceSection: [14396,14590]`if readline_doc is n...`
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       AndNode SourceSection: [14399,14453]`readline_doc is not ...`
                                         NotNodeGen SourceSection: [14399,14423]`readline_doc is not ...`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [14399,14411]`readline_doc`
                                               Frame: [3,readline_doc,Illegal]
@@ -3141,15 +3041,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           StringLiteralNode SourceSection: [14428,14437]`'libedit'`
                                           ReadLocalVariableNode SourceSection: [14441,14453]`readline_doc`
                                             Frame: [3,readline_doc,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                     ExpressionStatementNode SourceSection: [14467,14513]`readline.parse_and_b...`
                                       PythonCallUnary SourceSection: [14467,14513]`readline.parse_and_b...`
                                         CallUnaryMethodNodeGen SourceSection: None
@@ -3184,8 +3080,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       BlockNode SourceSection: None
                                   IfNode SourceSection: [14962,15630]`if readline.get_curr...`
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       BinaryComparisonNodeGen SourceSection: [14965,15007]`readline.get_current...`
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __eq__
@@ -3334,8 +3228,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [15762,15929]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [15765,15822]`sys.platform == 'dar...`
                           BinaryComparisonNodeGen SourceSection: [15765,15789]`sys.platform == 'dar...`
                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -3355,15 +3247,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __contains__
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                             StringLiteralNode SourceSection: [15794,15815]`'__PYVENV_LAUNCHER__...`
                             ReadLocalVariableNode SourceSection: [15819,15822]`env`
                               Frame: [1,env,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [15832,15878]`executable = os.envi...`
                         Identifier: executable
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3512,8 +3400,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       PythonCallUnary SourceSection: [16269,16293]`os.path.isfile(conff...`
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
@@ -3601,8 +3487,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [16309,17457]`if candidate_confs:↵...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [16312,16327]`candidate_confs`
                           Frame: [7,candidate_confs,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -3633,14 +3517,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Frame: [12,line,Illegal]
                                 IfNode SourceSection: [16602,16967]`if '=' in line:↵    ...`
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ContainsNodeGen SourceSection: [16605,16616]`'=' in line`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __contains__
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                       StringLiteralNode SourceSection: [16605,16608]`'='`
                                       ReadLocalVariableNode SourceSection: [16612,16616]`line`
                                         Frame: [12,line,Illegal]
@@ -3712,8 +3592,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [16782,16967]`if key == 'include-s...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [16785,16822]`key == 'include-syst...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __eq__
@@ -3733,8 +3611,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                       IfNode SourceSection: [16896,16967]`elif key == 'home':↵...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           BinaryComparisonNodeGen SourceSection: [16901,16914]`key == 'home'`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __eq__
@@ -3780,8 +3656,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CallUnaryMethodNodeGen SourceSection: None
                           CallQuaternaryMethodNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           GetClassNodeGen SourceSection: None
                         BlockNode SourceSection: [16967,17009]`sys.prefix = sys.exe...`
                           WriteLocalVariableNodeGen SourceSection: None
@@ -3830,8 +3704,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [17296,17457]`if system_site == "t...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [17299,17320]`system_site == "true...`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __eq__
@@ -3931,8 +3803,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ExceptNode SourceSection: None
                               IfNode SourceSection: [17660,17757]`if exc.name == 'site...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [17663,17690]`exc.name == 'sitecus...`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __eq__
@@ -3963,8 +3833,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ExceptNode SourceSection: None
                           IfNode SourceSection: [17790,18055]`if sys.flags.verbose...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               GetAttributeNode SourceSection: [17793,17810]`sys.flags.verbose`
                                 GetFixedAttributeNode SourceSection: None
                                   Key: verbose
@@ -4087,8 +3955,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ExceptNode SourceSection: None
                               IfNode SourceSection: [18237,18334]`if exc.name == 'user...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [18240,18267]`exc.name == 'usercus...`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __eq__
@@ -4119,8 +3985,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ExceptNode SourceSection: None
                           IfNode SourceSection: [18367,18632]`if sys.flags.verbose...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               GetAttributeNode SourceSection: [18370,18387]`sys.flags.verbose`
                                 GetFixedAttributeNode SourceSection: None
                                   Key: verbose
@@ -4262,8 +4126,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [18958,19137]`if orig_path != sys....`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [18961,18982]`orig_path != sys.pat...`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __ne__
@@ -4301,8 +4163,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [19173,19257]`if ENABLE_USER_SITE ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [19176,19200]`ENABLE_USER_SITE is ...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19176,19192]`ENABLE_USER_SITE`
                             Identifier: ENABLE_USER_SITE
@@ -4362,8 +4222,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [19404,19463]`if not sys.flags.iso...`
                       NotNodeGen SourceSection: [19407,19429]`not sys.flags.isolat...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         GetAttributeNode SourceSection: [19411,19429]`sys.flags.isolated`
                           GetFixedAttributeNode SourceSection: None
                             Key: isolated
@@ -4396,8 +4254,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [19487,19631]`if ENABLE_USER_SITE:...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19490,19506]`ENABLE_USER_SITE`
                           Identifier: ENABLE_USER_SITE
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4413,8 +4269,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                   ReadVariableFromFrameNodeGen SourceSection: None
       IfNode SourceSection: [19631,19669]`if not sys.flags.no_...`
         NotNodeGen SourceSection: [19634,19655]`not sys.flags.no_sit...`
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
           GetAttributeNode SourceSection: [19638,19655]`sys.flags.no_site`
             GetFixedAttributeNode SourceSection: None
               Key: no_site
@@ -4494,8 +4348,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           EmptyNode SourceSection: None
                     IfNode SourceSection: [20166,20696]`if not args:↵       ...`
                       NotNodeGen SourceSection: [20169,20177]`not args`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [20173,20177]`args`
                           Frame: [1,args,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4583,8 +4435,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 TernaryIfNode SourceSection: [20432,20489]`"exists" if os.path....`
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     PythonCallUnary SourceSection: [20444,20468]`os.path.isdir(user_b...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
@@ -4620,8 +4470,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 TernaryIfNode SourceSection: [20553,20610]`"exists" if os.path....`
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     PythonCallUnary SourceSection: [20565,20589]`os.path.isdir(user_s...`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
@@ -4672,14 +4520,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [20712,20775]`if '--user-base' in ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ContainsNodeGen SourceSection: [20715,20736]`'--user-base' in arg...`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           StringLiteralNode SourceSection: [20715,20728]`'--user-base'`
                           ReadLocalVariableNode SourceSection: [20732,20736]`args`
                             Frame: [1,args,Illegal]
@@ -4697,14 +4541,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       BlockNode SourceSection: None
                     IfNode SourceSection: [20775,20839]`if '--user-site' in ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ContainsNodeGen SourceSection: [20778,20799]`'--user-site' in arg...`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           StringLiteralNode SourceSection: [20778,20791]`'--user-site'`
                           ReadLocalVariableNode SourceSection: [20795,20799]`args`
                             Frame: [1,args,Illegal]
@@ -4722,8 +4562,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       BlockNode SourceSection: None
                     IfNode SourceSection: [20839,21228]`if buffer:↵        p...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [20842,20848]`buffer`
                           Frame: [5,buffer,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4752,8 +4590,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadVariableFromFrameNodeGen SourceSection: None
                         IfNode SourceSection: [20897,21111]`if ENABLE_USER_SITE:...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20900,20916]`ENABLE_USER_SITE`
                               Identifier: ENABLE_USER_SITE
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4768,8 +4604,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Value: 0
                           IfNode SourceSection: [20950,21111]`elif ENABLE_USER_SIT...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               IsExpressionNodeGen SourceSection: [20955,20980]`ENABLE_USER_SITE is ...`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20955,20971]`ENABLE_USER_SITE`
                                   Identifier: ENABLE_USER_SITE
@@ -4786,8 +4620,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Value: 1
                             IfNode SourceSection: [21014,21111]`elif ENABLE_USER_SIT...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 IsExpressionNodeGen SourceSection: [21019,21043]`ENABLE_USER_SITE is ...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21019,21035]`ENABLE_USER_SITE`
                                     Identifier: ENABLE_USER_SITE
@@ -4880,8 +4712,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         SideEffect:
           IfNode SourceSection: [21228,21269]`if __name__ == '__ma...`
             YesNodeGen SourceSection: None
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               BinaryComparisonNodeGen SourceSection: [21231,21253]`__name__ == '__main_...`
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __eq__

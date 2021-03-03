@@ -561,8 +561,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   FunctionBodyNode SourceSection: [1276,1681]`if self.__lines:↵   ...`
                                     IfNode SourceSection: [1276,1320]`if self.__lines:↵   ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         GetAttributeNode SourceSection: [1279,1291]`self.__lines`
                                           GetFixedAttributeNode SourceSection: None
                                             Key: _Printer__lines
@@ -621,8 +619,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   CallQuaternaryMethodNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                   GetClassNodeGen SourceSection: None
                                                 BreakNode SourceSection: [1492,1497]`break`
                                               ExceptNode SourceSection: None
@@ -646,8 +642,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [1555,1607]`if not data:↵       ...`
                                       NotNodeGen SourceSection: [1558,1566]`not data`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [1562,1566]`data`
                                           Frame: [1,data,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -745,8 +739,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [1738,1915]`if len(self.__lines)...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [1741,1775]`len(self.__lines) <=...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __le__
@@ -880,8 +872,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       WhileNode SourceSection: None
                                         WhileRepeatingNode SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IntegerLiteralNode SourceSection: [2059,2060]`1`
                                               Value: 1
                                           TryFinallyNode SourceSection: [2074,2538]`try:↵               ...`
@@ -974,8 +964,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   WhileNode SourceSection: None
                                                     WhileRepeatingNode SourceSection: None
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         IsExpressionNodeGen SourceSection: [2346,2357]`key is None`
                                                           ReadLocalVariableNode SourceSection: [2346,2349]`key`
                                                             Frame: [4,key,Illegal]
@@ -996,14 +984,10 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                         IfNode SourceSection: [2419,2495]`if key not in ('', '...`
                                                           NotNodeGen SourceSection: [2422,2442]`key not in ('', 'q')...`
-                                                            IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
                                                             ContainsNodeGen SourceSection: None
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __contains__
                                                               YesNodeGen SourceSection: None
-                                                                IsBuiltinClassProfile SourceSection: None
-                                                                  CachedDispatchFirst SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [2422,2425]`key`
                                                                 Frame: [4,key,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1020,8 +1004,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   BlockNode SourceSection: None
                                                 IfNode SourceSection: [2495,2538]`if key == 'q':↵     ...`
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     BinaryComparisonNodeGen SourceSection: [2498,2508]`key == 'q'`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __eq__

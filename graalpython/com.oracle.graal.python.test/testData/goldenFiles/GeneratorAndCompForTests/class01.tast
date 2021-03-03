@@ -141,8 +141,6 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [119,135]`curr is not root`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [119,123]`curr`
                                                 Frame: [2,curr,Illegal]
