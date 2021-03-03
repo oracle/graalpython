@@ -29,6 +29,7 @@ package com.oracle.graal.python.builtins.objects.foreign;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
@@ -43,14 +44,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -100,6 +102,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -901,6 +904,40 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 objectStrNode = insert(ObjectBuiltinsFactory.ReprNodeFactory.create());
             }
             return objectStrNode;
+        }
+    }
+
+    @Builtin(name = __BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
+    abstract static class BasesNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "3")
+        Object getBases(Object self,
+                        @CachedLibrary("self") InteropLibrary lib) {
+            if (lib.isMetaObject(self)) {
+                return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+            } else {
+                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __BASES__);
+            }
+        }
+    }
+
+    @Builtin(name = __INSTANCECHECK__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
+    abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        Object check(Object self, Object instance,
+                        @CachedLibrary("self") InteropLibrary lib) {
+            if (lib.isMetaObject(self)) {
+                try {
+                    return lib.isMetaInstance(self, instance);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __INSTANCECHECK__);
+            }
         }
     }
 }
