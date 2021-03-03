@@ -86,15 +86,12 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.logging.Level;
 
 import javax.crypto.interfaces.DHPrivateKey;
@@ -110,6 +107,9 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.nodes.Node;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 import sun.security.provider.certpath.OCSP;
 import sun.security.util.DerValue;
@@ -210,23 +210,12 @@ public final class CertUtils {
         return formatDate(x509Certificate.getNotBefore());
     }
 
-    private static final SimpleDateFormat DF1 = new SimpleDateFormat("MMM  d HH:mm:ss yyyy z");
-    private static final SimpleDateFormat DF2 = new SimpleDateFormat("MMM dd HH:mm:ss yyyy z");
-    private static final Calendar CAL = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-    static {
-        DF1.setTimeZone(TimeZone.getTimeZone("GMT"));
-        DF2.setTimeZone(TimeZone.getTimeZone("GMT"));
-    }
+    private static final ZoneId zoneId = ZoneId.of("GMT");
+    private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("MMM ppd HH:mm:ss yyyy z");
 
     @TruffleBoundary
     private static String formatDate(Date d) {
-        CAL.setTime(d);
-        int day = CAL.get(Calendar.DAY_OF_MONTH);
-        if (day < 10) {
-            return DF1.format(d);
-        } else {
-            return DF2.format(d);
-        }
+        return ZonedDateTime.ofInstant(d.toInstant(), zoneId).format(DF);
     }
 
     @TruffleBoundary
