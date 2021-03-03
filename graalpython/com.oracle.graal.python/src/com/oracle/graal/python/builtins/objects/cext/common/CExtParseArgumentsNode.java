@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ParseTupleAndKeywordsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -285,12 +284,6 @@ public abstract class CExtParseArgumentsNode {
 
         static char[] getChars(String format) {
             return format.toCharArray();
-        }
-
-        @Override
-        public Node copy() {
-            // create a new uninitialized node
-            return ParseTupleAndKeywordsNodeGen.create();
         }
     }
 

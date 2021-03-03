@@ -185,7 +185,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         FrameDescriptor fd = node.scope.getFrameDescriptor();
         String name = node.scope.getScopeId();
         String qualname = node.scope.getQualname();
-        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
+        FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY, null);
         RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(funcRoot);
         ExpressionNode loopIterator = getIterator;
         GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, qualname, callTarget, loopIterator, fd, scopeEnvironment.getDefinitionCellSlots(),

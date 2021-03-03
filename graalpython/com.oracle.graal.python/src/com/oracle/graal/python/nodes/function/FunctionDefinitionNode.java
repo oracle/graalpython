@@ -259,4 +259,8 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         return doc;
     }
 
+    public String getQualname() {
+        return qualname;
+    }
+
 }

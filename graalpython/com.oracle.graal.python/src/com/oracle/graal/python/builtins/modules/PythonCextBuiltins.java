@@ -2653,10 +2653,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @ImportStatic(PythonOptions.class)
     abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"a == cachedA", "b == cachedB"})
+        @Specialization(guards = {"a == cachedA", "b == cachedB"}, assumptions = "singleContextAssumption()")
         static int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
-                        @Cached("a") @SuppressWarnings("unused") PythonNativeWrapper cachedA,
-                        @Cached("b") @SuppressWarnings("unused") PythonNativeWrapper cachedB,
+                        @Cached(value = "a", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedA,
+                        @Cached(value = "b", weak = true) @SuppressWarnings("unused") PythonNativeWrapper cachedB,
                         @Cached("doSlow(frame, a, b)") int result) {
             return result;
         }

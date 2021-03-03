@@ -138,6 +138,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PLZMADecompressor("LZMADecompressor", "_lzma"),
     LsprofProfiler("Profiler", "_lsprof"),
     PStruct("Struct", "_struct"),
+    PStructUnpackIterator("unpack_iterator", "_struct"),
     BZ2Compressor("BZ2Compressor", "_bz2"),
     BZ2Decompressor("BZ2Decompressor", "_bz2"),
     ZlibCompress("Compress", "zlib"),
@@ -413,6 +414,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         UnicodeEncodeError.base = UnicodeError;
         UnicodeTranslateError.base = UnicodeError;
         RecursionError.base = RuntimeError;
+        StructError.base = Exception;
 
         // warnings
         Warning.base = Exception;

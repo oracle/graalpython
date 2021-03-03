@@ -195,7 +195,7 @@ public class ParserBenchRunner {
         for (Source source : sources) {
             try {
                 PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, parser);
-                PythonParserImpl.CacheItem cachedItem = parser.parseWithANTLR(PythonParser.ParserMode.File, core, sstFactory, source, null, null);
+                PythonParserImpl.CacheItem cachedItem = parser.parseWithANTLR(PythonParser.ParserMode.File, 0, core, sstFactory, source, null, null);
                 result.add(cachedItem.copy());
             } catch (RuntimeException e) {
                 // do nothing

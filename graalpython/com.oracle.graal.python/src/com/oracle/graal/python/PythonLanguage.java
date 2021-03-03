@@ -312,7 +312,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         PythonCore pythonCore = context.getCore();
         try {
-            return (RootNode) pythonCore.getParser().parse(mode, pythonCore, source, null, null);
+            return (RootNode) pythonCore.getParser().parse(mode, 0, pythonCore, source, null, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
             PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -355,7 +355,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             private void parse(PythonContext context, VirtualFrame frame) {
                 CompilerAsserts.neverPartOfCompilation();
-                rootNode = (RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, context.getCore(), source, frame, argumentNames);
+                rootNode = (RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, 0, context.getCore(), source, frame, argumentNames);
             }
         };
         return executableNode;
@@ -412,7 +412,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
         PythonCore pythonCore = context.getCore();
-        return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame, null);
+        return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, 0, pythonCore, code, lexicalContextFrame, null);
     }
 
     @Override

@@ -626,12 +626,6 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class GeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doComplex(PComplex left, PComplex right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
@@ -642,12 +636,6 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class GtNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doComplex(PComplex left, PComplex right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
@@ -658,12 +646,6 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doComplex(PComplex left, PComplex right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
@@ -674,12 +656,6 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doComplex(PComplex left, PComplex right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }

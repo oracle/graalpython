@@ -805,7 +805,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             final String codeToCompile = code;
             Supplier<CallTarget> createCode = () -> {
                 Source source = PythonLanguage.newSource(context, codeToCompile, filename, mayBeFromFile);
-                return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null, null));
+                return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
             };
             RootCallTarget ct;
             if (getCore().isInitialized()) {
