@@ -167,6 +167,10 @@ int graal_hpy_legacy_slot_get_slot(cpy_PyTypeSlot *slot) {
 	return slot->slot;
 }
 
+void* graal_hpy_legacy_slot_get_pfunc(cpy_PyTypeSlot *slot) {
+	return slot->pfunc;
+}
+
 void* graal_hpy_legacy_slot_get_methods(cpy_PyTypeSlot *slot) {
 	uint64_t len=0;
 	cpy_PyMethodDef *legacy_methods = (cpy_PyMethodDef *) slot->pfunc;
@@ -201,6 +205,18 @@ void* graal_hpy_legacy_slot_get_descrs(cpy_PyTypeSlot *slot) {
 		return polyglot_from_cpy_PyGetSetDef_array(legacy_getset, len);
 	}
 	return NULL;
+}
+
+/* getters for legacy cpy_PyMethodDef */
+
+void* graal_hpy_legacy_methoddef_get_ml_name(cpy_PyMethodDef *methodDef) {
+	return polyglot_from_string(methodDef->ml_name, SRC_CS);
+}
+
+/* getters for legacy cpy_PyGetSetDef */
+
+void* graal_hpy_legacy_getsetdef_get_name(cpy_PyGetSetDef *getSetDef) {
+	return polyglot_from_string(getSetDef->name, SRC_CS);
 }
 
 /* getters for HPyDef */
@@ -263,6 +279,10 @@ void* graal_hpy_module_get_defines(HPyModuleDef *moduleDef) {
 
 void* graal_hpy_from_string(const char *ptr) {
 	return polyglot_from_string(ptr, SRC_CS);
+}
+
+uint64_t graal_hpy_strlen(const char *ptr) {
+	return strlen(ptr);
 }
 
 /* getters for HPyType_Spec */
@@ -396,11 +416,15 @@ double graal_hpy_read_d(void* object, HPy_ssize_t offset) {
 }
 
 void* graal_hpy_read_string(void* object, HPy_ssize_t offset) {
-    return polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
+    char *ptr = ReadMember(object, offset, char*);
+    if (ptr != NULL) {
+    	return polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
+    }
+    return NULL;
 }
 
 void* graal_hpy_read_string_in_place(void* object, HPy_ssize_t offset) {
-	char *addr = (char*) (((char*)object) + offset);
+    char *addr = (char*) (((char*)object) + offset);
     return polyglot_from_string(addr, "utf-8");
 }
 

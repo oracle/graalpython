@@ -46,7 +46,7 @@ import java.io.File;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -925,25 +925,29 @@ public class BasicTests extends ParserTestBase {
 
     @Test
     public void isIdentifier() throws Exception {
-        PythonCore core = context.getCore();
-        PythonParser parser = core.getParser();
-        Assert.assertTrue(parser.isIdentifier(core, "hello"));
-        Assert.assertTrue(parser.isIdentifier(core, "_"));
-        Assert.assertTrue(parser.isIdentifier(core, "b0"));
-        Assert.assertTrue(parser.isIdentifier(core, "bc"));
-        Assert.assertTrue(parser.isIdentifier(core, "b_"));
-        Assert.assertTrue(parser.isIdentifier(core, "µ"));
+        Assert.assertTrue(StringUtils.isIdentifier("hello"));
+        Assert.assertTrue(StringUtils.isIdentifier("_"));
+        Assert.assertTrue(StringUtils.isIdentifier("b0"));
+        Assert.assertTrue(StringUtils.isIdentifier("bc"));
+        Assert.assertTrue(StringUtils.isIdentifier("b_"));
+        Assert.assertTrue(StringUtils.isIdentifier("µ"));
 
-        Assert.assertFalse(parser.isIdentifier(core, " hello"));
-        Assert.assertFalse(parser.isIdentifier(core, "hello "));
-        Assert.assertFalse(parser.isIdentifier(core, "hel lo"));
-        Assert.assertFalse(parser.isIdentifier(core, "hel?o"));
-        Assert.assertFalse(parser.isIdentifier(core, "hel!o"));
+        Assert.assertTrue(StringUtils.isIdentifier("for"));
+        Assert.assertTrue(StringUtils.isIdentifier("break"));
+        Assert.assertTrue(StringUtils.isIdentifier("while"));
+        Assert.assertTrue(StringUtils.isIdentifier("return"));
+        Assert.assertTrue(StringUtils.isIdentifier("def"));
 
-        Assert.assertFalse(parser.isIdentifier(core, " "));
-        Assert.assertFalse(parser.isIdentifier(core, "["));
-        Assert.assertFalse(parser.isIdentifier(core, "©"));
-        Assert.assertFalse(parser.isIdentifier(core, "0"));
+        Assert.assertFalse(StringUtils.isIdentifier(" hello"));
+        Assert.assertFalse(StringUtils.isIdentifier("hello "));
+        Assert.assertFalse(StringUtils.isIdentifier("hel lo"));
+        Assert.assertFalse(StringUtils.isIdentifier("hel?o"));
+        Assert.assertFalse(StringUtils.isIdentifier("hel!o"));
+
+        Assert.assertFalse(StringUtils.isIdentifier(" "));
+        Assert.assertFalse(StringUtils.isIdentifier("["));
+        Assert.assertFalse(StringUtils.isIdentifier("©"));
+        Assert.assertFalse(StringUtils.isIdentifier("0"));
     }
 
     @Test

@@ -51,13 +51,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AttachLLVMTypeNode;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AttachLLVMTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
@@ -87,6 +87,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class CApiContext extends CExtContext {
@@ -197,7 +199,7 @@ public final class CApiContext extends CExtContext {
     public int getPyLongBitsInDigit() {
         if (pyLongBitsInDigit < 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            pyLongBitsInDigit = (int) CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_GET_LONG_BITS_PER_DIGIT);
+            pyLongBitsInDigit = (int) CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_GET_LONG_BITS_PER_DIGIT);
         }
         return pyLongBitsInDigit;
     }
@@ -283,9 +285,18 @@ public final class CApiContext extends CExtContext {
         return getCachedPrimitiveNativeWrapper((int) l);
     }
 
+    @TruffleBoundary
     @Override
-    protected String[] getKnownCacheSymbols() {
-        return NativeCAPISymbols.getValues();
+    protected Store initializeSymbolCache() {
+        PythonLanguage language = getContext().getLanguage();
+        Shape symbolCacheShape = language.getCApiSymbolCacheShape();
+        // We will always get an empty shape from the language and we do always add same key-value
+        // pairs (in the same order). So, in the end, each context should get the same shape.
+        Store s = new Store(symbolCacheShape);
+        for (NativeCAPISymbol sym : NativeCAPISymbol.getValues()) {
+            DynamicObjectLibrary.getUncached().put(s, sym, PNone.NO_VALUE);
+        }
+        return s;
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
@@ -394,7 +405,7 @@ public final class CApiContext extends CExtContext {
                     middleTime = System.currentTimeMillis();
                 }
 
-                callBulkSubref.call(NativeCAPISymbols.FUN_BULK_SUBREF, new PointerArrayWrapper(nativeObjectReferences), new RefCountArrayWrapper(nativeObjectReferences), (long) n);
+                callBulkSubref.call(NativeCAPISymbol.FUN_BULK_SUBREF, new PointerArrayWrapper(nativeObjectReferences), new RefCountArrayWrapper(nativeObjectReferences), (long) n);
 
                 if (loggable) {
                     final long countDuration = middleTime - startTime;
@@ -792,9 +803,13 @@ public final class CApiContext extends CExtContext {
         double_ptr_t,
         Py_ssize_ptr_t;
 
-        public static String getGetterFunctionName(LLVMType llvmType) {
+        public static NativeCAPISymbol getGetterFunctionName(LLVMType llvmType) {
             CompilerAsserts.neverPartOfCompilation();
-            return "get_" + llvmType.name() + "_typeid";
+            String getterFunctionName = "get_" + llvmType.name() + "_typeid";
+            if (!NativeCAPISymbol.isValid(getterFunctionName)) {
+                throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + getterFunctionName);
+            }
+            return NativeCAPISymbol.getByName(getterFunctionName);
         }
 
         public static boolean isPointer(LLVMType llvmType) {

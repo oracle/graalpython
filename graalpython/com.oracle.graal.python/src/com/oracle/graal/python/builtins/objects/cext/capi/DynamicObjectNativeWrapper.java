@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_DEREF_HANDLE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MEMORYVIEW_EXPORTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_BASE;
@@ -497,7 +497,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (profileNewType.profile(newFunction instanceof PDecoratedMethod)) {
                 newFunction = ((PDecoratedMethod) newFunction).getCallable();
             }
-            return ManagedMethodWrappers.createKeywords(newFunction, callGetNewfuncTypeidNode.call(NativeCAPISymbols.FUN_GET_NEWFUNC_TYPE_ID));
+            return ManagedMethodWrappers.createKeywords(newFunction, callGetNewfuncTypeidNode.call(NativeCAPISymbol.FUN_GET_NEWFUNC_TYPE_ID));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")

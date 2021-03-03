@@ -285,7 +285,7 @@ final class DefaultPythonLongExports {
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile errorProfile) {
         try {
-            return castToJavaIntNode.execute(x);
+            return PInt.asFileDescriptor(castToJavaIntNode.execute(x), raiseNode);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.TypeError, errorProfile);
             // we need to convert the TypeError to an OverflowError

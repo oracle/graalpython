@@ -319,4 +319,56 @@ public final class StringUtils {
         }
         return len1 - len2;
     }
+
+    /**
+     * Python identifiers are defined to start with an XID_Start or '_' character, followed by any
+     * number of XID_Continue characters. Python keywords are not treated in a special way, so they
+     * are identifiers as well.
+     */
+    @TruffleBoundary
+    public static boolean isIdentifier(String value) {
+        int pos = 0;
+        if (value.isEmpty()) {
+            return false;
+        }
+        int c = value.codePointAt(pos);
+        int type = Character.getType(c);
+        if (c != '_') {
+            // Unicode XID_Start
+            switch (type) {
+                case Character.UPPERCASE_LETTER:
+                case Character.LOWERCASE_LETTER:
+                case Character.TITLECASE_LETTER:
+                case Character.MODIFIER_LETTER:
+                case Character.OTHER_LETTER:
+                case Character.LETTER_NUMBER:
+                    break;
+                default:
+                    return false;
+            }
+        }
+        pos += Character.charCount(c);
+        while (pos < value.length()) {
+            c = value.codePointAt(pos);
+            type = Character.getType(c);
+            // Unicode XID_Continue
+            switch (type) {
+                case Character.UPPERCASE_LETTER:
+                case Character.LOWERCASE_LETTER:
+                case Character.TITLECASE_LETTER:
+                case Character.MODIFIER_LETTER:
+                case Character.OTHER_LETTER:
+                case Character.LETTER_NUMBER:
+                case Character.NON_SPACING_MARK:
+                case Character.COMBINING_SPACING_MARK:
+                case Character.DECIMAL_DIGIT_NUMBER:
+                case Character.CONNECTOR_PUNCTUATION:
+                    break;
+                default:
+                    return false;
+            }
+            pos += Character.charCount(c);
+        }
+        return true;
+    }
 }

@@ -31,17 +31,25 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 
 public final class BytesUtils {
 
@@ -729,5 +737,45 @@ public final class BytesUtils {
     @TruffleBoundary
     public static String createASCIIString(byte[] retbuf) {
         return new String(retbuf, StandardCharsets.US_ASCII);
+    }
+
+    @TruffleBoundary
+    public static String createUTF8String(byte[] retbuf) {
+        return new String(retbuf, StandardCharsets.UTF_8);
+    }
+
+    @TruffleBoundary
+    public static byte[] utf8StringToBytes(String str) {
+        return str.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /*
+     * corresponds to unicode_encode_utf8.
+     */
+    @TruffleBoundary
+    public static byte[] encodeUTF8(String str) throws CharacterCodingException {
+        CodingErrorAction errorAction = CodingErrorAction.REPORT;
+        Charset cs = StandardCharsets.UTF_8;
+        ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(str));
+        int n = encoded.remaining();
+        byte[] data = new byte[n];
+        encoded.get(data);
+        return data;
+    }
+
+    public static byte[] getBytes(PythonObjectLibrary lib, Object object) {
+        try {
+            return lib.getBufferBytes(object);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    public static int getBytesLength(PythonObjectLibrary lib, Object object) {
+        try {
+            return lib.getBufferLength(object);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 }

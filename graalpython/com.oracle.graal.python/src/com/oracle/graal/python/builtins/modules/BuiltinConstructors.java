@@ -25,11 +25,14 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
@@ -107,7 +110,6 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
@@ -171,8 +173,7 @@ import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNo
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -266,7 +267,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinConstructors extends PythonBuiltins {
@@ -2919,7 +2919,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule, isPublic = false)
+    @Builtin(name = MODULE, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonModule, isPublic = false, //
+                    doc = "module(name, doc=None)\n" +
+                                    "--\n" +
+                                    "\n" +
+                                    "Create a module object.\n" +
+                                    "\n" +
+                                    "The name must be a string; the optional doc argument can have any type.")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
@@ -3475,13 +3481,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached PythonCextBuiltins.DefaultCheckFunctionResultNode checkFunctionResultNode) {
-            Object state = foreignCallContext.enter(frame, getContext(), this);
+            PythonContext context = getContext();
+            Object state = foreignCallContext.enter(frame, context, this);
             try {
                 Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
-                checkFunctionResultNode.execute(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, result);
+                checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
                 return (PMemoryView) asPythonObjectNode.execute(result);
             } finally {
-                foreignCallContext.exit(frame, getContext(), state);
+                foreignCallContext.exit(frame, context, state);
             }
         }
 

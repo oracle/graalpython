@@ -573,6 +573,24 @@ class TestObject(object):
         assert tester.replace("o", "uff") == "helluff\nwuffrld"
         assert tester.replace("o", "uff", 1) == "helluff\nworld"
 
+    def test_doc(self):
+        TestDoc = CPyExtType("TestDoc",
+                                         '''
+                                             Py_ssize_t global_basicsize = -1;
+   
+                                             static PyObject* some_member(PyObject* self) {
+                                                 return PyLong_FromLong(42);
+                                             }
+                                         ''',
+                                         tp_methods='{"some_member", (PyCFunction)some_member, METH_NOARGS, "This is some member that returns some value."}',
+                                         )
+        obj = TestDoc()
+        expected_doc = "This is some member that returns some value."
+        assert obj.some_member() == 42
+        assert len(obj.some_member.__doc__) == len(expected_doc)
+        assert obj.some_member.__doc__ == expected_doc
+
+
 class TestObjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)

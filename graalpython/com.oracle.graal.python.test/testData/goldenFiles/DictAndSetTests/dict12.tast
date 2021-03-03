@@ -1,0 +1,10 @@
+ModuleRootNode Name: <module 'dict12'> SourceSection: [0,10]`{'a':'b',}`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,10]`{'a':'b',}`
+    FixedDictLiteralNodeGen SourceSection: [0,10]`{'a':'b',}`
+      PythonObjectFactoryNodeGen SourceSection: None
+      StringLiteralNode SourceSection: [5,8]`'b'`

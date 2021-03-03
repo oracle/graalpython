@@ -5,7 +5,7 @@ ModuleRootNode Name: <module 'dict05'> SourceSection: [0,12]`{a:b, c:d, }`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,12]`{a:b, c:d, }`
-    DictLiteralNodeGen SourceSection: [0,12]`{a:b, c:d, }`
+    DynamicDictLiteralNodeGen SourceSection: [0,12]`{a:b, c:d, }`
       PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [1,2]`a`
         Identifier: a
@@ -23,3 +23,5 @@ ModuleRootNode Name: <module 'dict05'> SourceSection: [0,12]`{a:b, c:d, }`
         Identifier: d
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
+      CachedDispatchFirst SourceSection: None
+      CachedDispatchFirst SourceSection: None

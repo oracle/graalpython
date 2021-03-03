@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.ServerSocketChannel;
@@ -133,16 +132,18 @@ public class SocketBuiltins extends PythonBuiltins {
                 if (acceptSocket == null) {
                     throw raiseOSError(null, OSErrorEnum.EWOULDBLOCK);
                 }
-                SocketAddress addr = acceptSocket.getLocalAddress();
-                if (!acceptSocket.socket().isBound() || addr == null) {
+                InetSocketAddress remoteAddress = (InetSocketAddress) acceptSocket.getRemoteAddress();
+                if (!acceptSocket.socket().isBound() || remoteAddress == null) {
                     throw raise(OSError);
                 }
                 PSocket newSocket = factory().createSocket(socket.getFamily(), socket.getType(), socket.getProto());
                 int fd = getContext().getResources().openSocket(newSocket);
                 newSocket.setFileno(fd);
                 newSocket.setSocket(acceptSocket);
-                Object[] output = {fd, ((InetSocketAddress) addr).getAddress().getHostAddress()};
-                return factory().createTuple(output);
+                SocketUtils.setBlocking(newSocket, socket.isBlocking());
+                newSocket.setTimeout(socket.getTimeout());
+                PTuple addressTuple = factory().createTuple(new Object[]{remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort()});
+                return factory().createTuple(new Object[]{fd, addressTuple});
             } catch (IOException e) {
                 throw raise(OSError);
             }

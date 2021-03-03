@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
@@ -105,8 +106,18 @@ import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedRandomBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -243,7 +254,6 @@ public final class Python3Core implements PythonCore {
                         "_functools",
                         "method",
                         "code",
-                        "posix",
                         "_io",
                         "_frozen_importlib",
                         "classes",
@@ -279,7 +289,8 @@ public final class Python3Core implements PythonCore {
                         "marshal",
                         "_struct",
                         "bool",
-                        "_lzma"));
+                        "_lzma",
+                        "_posixshmem"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
@@ -383,7 +394,21 @@ public final class Python3Core implements PythonCore {
                         new PythonCextBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
+
+                        // io
                         new IOModuleBuiltins(),
+                        new IOBaseBuiltins(),
+                        new BufferedIOBaseBuiltins(),
+                        new RawIOBaseBuiltins(),
+                        new TextIOBaseBuiltins(),
+                        new BufferedReaderBuiltins(),
+                        new BufferedWriterBuiltins(),
+                        new BufferedRandomBuiltins(),
+                        new BufferedReaderMixinBuiltins(),
+                        new BufferedWriterMixinBuiltins(),
+                        new BufferedIOMixinBuiltins(),
+                        new FileIOBuiltins(),
+
                         new StringModuleBuiltins(),
                         new ItertoolsModuleBuiltins(),
                         new FunctoolsModuleBuiltins(),
@@ -415,6 +440,7 @@ public final class Python3Core implements PythonCore {
                         new SSLSocketBuiltins(),
                         new MemoryBIOBuiltins(),
                         new BinasciiModuleBuiltins(),
+                        new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
@@ -423,10 +449,12 @@ public final class Python3Core implements PythonCore {
                         new OperatorModuleBuiltins(),
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
+
+                        // zlib
                         new ZLibModuleBuiltins(),
                         new ZlibCompressBuiltins(),
                         new ZlibDecompressBuiltins(),
-                        new BufferedReaderBuiltins(),
+
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
                         new MMapBuiltins(),
@@ -438,9 +466,12 @@ public final class Python3Core implements PythonCore {
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
                         new ContextvarsModuleBuiltins(),
+
+                        // lzma
                         new LZMAModuleBuiltins(),
                         new LZMACompressorBuiltins(),
                         new LZMADecompressorBuiltins(),
+
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
                         new WarningsModuleBuiltins(),
@@ -739,8 +770,7 @@ public final class Python3Core implements PythonCore {
             errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
         LOGGER.log(Level.SEVERE, errorMessage);
-        PException e = new PException(null, (Node) null);
-        e.setMessage(errorMessage);
+        RuntimeException e = new RuntimeException(errorMessage);
         throw e;
     }
 

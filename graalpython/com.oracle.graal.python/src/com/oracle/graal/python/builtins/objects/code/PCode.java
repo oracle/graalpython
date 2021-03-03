@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
@@ -264,7 +265,7 @@ public final class PCode extends PythonBuiltinObject {
                 if (FrameSlotIDs.RETURN_SLOT_ID.equals(varName) || varName.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX)) {
                     // pass
                 } else if (!varNameList.contains(varName)) {
-                    if (PythonLanguage.getCore().getParser().isIdentifier(PythonLanguage.getCore(), varName)) {
+                    if (StringUtils.isIdentifier(varName)) {
                         if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
                             varNameList.add(varName);
                         }

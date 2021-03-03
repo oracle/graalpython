@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
@@ -1637,23 +1638,15 @@ public final class StringBuiltins extends PythonBuiltins {
 
     // This is only used during bootstrap and then replaced with Python code
     @Builtin(name = "encode", minNumOfPositionalArgs = 1, parameterNames = {"self", "encoding", "errors"})
+    @ArgumentClinic(name = "encoding", conversion = ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class EncodeNode extends PythonBuiltinNode {
+    public abstract static class EncodeNode extends PythonTernaryClinicBuiltinNode {
 
-        @Specialization
-        Object doString(String self, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return encodeString(self, "utf-8", "strict");
-        }
-
-        @Specialization
-        Object doStringEncoding(String self, String encoding, @SuppressWarnings("unused") PNone errors) {
-            return encodeString(self, encoding, "strict");
-        }
-
-        @Specialization
-        Object doStringErrors(String self, @SuppressWarnings("unused") PNone encoding, String errors) {
-            return encodeString(self, "utf-8", errors);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.EncodeNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
@@ -1662,14 +1655,10 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(Object self, Object encoding, Object errors,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaStringCheckedNode castEncodingNode,
-                        @Cached CastToJavaStringCheckedNode castErrorsNode) {
+        Object doGeneric(Object self, String encoding, String errors,
+                        @Cached CastToJavaStringCheckedNode castSelfNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
-            String encodingStr = PGuards.isPNone(encoding) ? "utf-8" : castEncodingNode.cast(encoding, ErrorMessages.MUST_BE_STR_NOT_P, encoding);
-            String errorsStr = PGuards.isPNone(errors) ? "strict" : castErrorsNode.cast(errors, ErrorMessages.MUST_BE_STR_NOT_P, errors);
-            return encodeString(selfStr, encodingStr, errorsStr);
+            return encodeString(selfStr, encoding, errors);
         }
 
         @TruffleBoundary
@@ -1961,7 +1950,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class IsIdentifierNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doString(String self) {
-            return getCore().getParser().isIdentifier(getCore(), self);
+            return StringUtils.isIdentifier(self);
         }
 
         @Specialization(replaces = "doString")
@@ -2518,6 +2507,23 @@ public final class StringBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.ExpandTabsNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static long doString(String self) {
+            return self.hashCode();
+        }
+
+        @Specialization(replaces = "doString")
+        static long doGeneric(Object self,
+                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
+            return doString(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __HASH__, self));
         }
     }
 

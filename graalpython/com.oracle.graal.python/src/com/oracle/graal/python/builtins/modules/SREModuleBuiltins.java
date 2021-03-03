@@ -44,38 +44,27 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -103,79 +92,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         builtinConstants.put("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
         super.initialize(core);
-    }
-
-    /**
-     * Replaces any <it>quoted</it> escape sequence like {@code "\\n"} (two characters; backslash +
-     * 'n') by its single character like {@code "\n"} (one character; newline).
-     */
-    @Builtin(name = "_process_escape_sequences", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
-
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
-
-        @Specialization
-        Object run(PString str) {
-            return run(str.getValue());
-        }
-
-        @Specialization
-        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
-        Object run(String str) {
-            if (containsBackslash(str)) {
-                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), str, true);
-                return sb.toString();
-            }
-            return str;
-        }
-
-        @Specialization
-        Object run(PBytesLike str) {
-            byte[] bytes = doBytes(getToByteArrayNode().execute(str.getSequenceStorage()));
-            return factory().createByteArray(bytes);
-        }
-
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
-        Object run(Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
-            byte[] bytes;
-            try {
-                bytes = bufferLib.getBufferBytes(buffer);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            return factory().createByteArray(bytes);
-        }
-
-        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
-        private byte[] doBytes(byte[] str) {
-            StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, StandardCharsets.US_ASCII), true);
-            return sb.toString().getBytes(StandardCharsets.US_ASCII);
-        }
-
-        private static boolean containsBackslash(String str) {
-            CompilerAsserts.neverPartOfCompilation();
-            for (int i = 0; i < str.length(); i++) {
-                if (str.charAt(i) == '\\') {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Fallback
-        Object run(Object o) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_NOT_P, "string", o);
-        }
-
-        private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
-            if (toByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(ToByteArrayNodeGen.create());
-            }
-            return toByteArrayNode;
-        }
     }
 
     abstract static class ToRegexSourceNode extends Node {
@@ -234,7 +150,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class TRegexCallCompile extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object call(Object pattern, Object flags, PFunction fallbackCompiler,
+        Object call(VirtualFrame frame, Object pattern, Object flags, PFunction fallbackCompiler,
                         @Cached BranchProfile potentialSyntaxError,
                         @Cached BranchProfile syntaxError,
                         @Cached BranchProfile unsupportedRegexError,
@@ -251,7 +167,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 if (compiledRegexLib.isNull(compiledRegex)) {
                     unsupportedRegexError.enter();
                     if (context.getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback)) {
-                        return callFallbackCompilerNode.execute(fallbackCompiler, pattern, flags);
+                        return callFallbackCompilerNode.execute(frame, fallbackCompiler, pattern, flags);
                     } else {
                         throw raise(ValueError, "regular expression not supported, no fallback engine present");
                     }

@@ -335,7 +335,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [1099,1116]`'__annotations__'`
-                                      DictLiteralNodeGen SourceSection: [1118,1120]`{}`
+                                      EmptyDictLiteralNode SourceSection: [1118,1120]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                   FrameReturnNode SourceSection: [1130,1144]`return wrapper`
                                     WriteLocalVariableNodeGen SourceSection: None
@@ -569,10 +569,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadLocalVariableNode SourceSection: [1554,1555]`x`
                                             Frame: [1,x,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [1557,1570]`self.maxlevel`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [1557,1570]`self.maxlevel`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxlevel
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -637,10 +636,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Identifier: typename
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [3,typename,Illegal]
-                                      GetAttributeNodeGen SourceSection: [1623,1639]`type(x).__name__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [1623,1639]`type(x).__name__`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __name__
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -891,10 +889,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [10,repr1,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [2125,2135]`self.repr1`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [2125,2135]`self.repr1`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: repr1
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1139,10 +1136,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [2477,2480]`'('`
                                           StringLiteralNode SourceSection: [2482,2485]`')'`
-                                          GetAttributeNodeGen SourceSection: [2487,2500]`self.maxtuple`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [2487,2500]`self.maxtuple`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxtuple
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1223,10 +1219,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [2588,2591]`'['`
                                           StringLiteralNode SourceSection: [2593,2596]`']'`
-                                          GetAttributeNodeGen SourceSection: [2598,2610]`self.maxlist`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [2598,2610]`self.maxlist`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxlist
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1307,10 +1302,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mod__
                                             StringLiteralNode SourceSection: [2686,2699]`"array('%s')"`
-                                            GetAttributeNodeGen SourceSection: [2702,2712]`x.typecode`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [2702,2712]`x.typecode`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: typecode
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1327,10 +1321,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __mod__
                                         StringLiteralNode SourceSection: [2730,2745]`"array('%s', ["`
-                                        GetAttributeNodeGen SourceSection: [2748,2758]`x.typecode`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [2748,2758]`x.typecode`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: typecode
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -1355,10 +1348,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [3,header,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [2812,2816]`'])'`
-                                          GetAttributeNodeGen SourceSection: [2818,2831]`self.maxarray`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [2818,2831]`self.maxarray`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxarray
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1464,10 +1456,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [2990,2993]`'{'`
                                           StringLiteralNode SourceSection: [2995,2998]`'}'`
-                                          GetAttributeNodeGen SourceSection: [3000,3011]`self.maxset`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [3000,3011]`self.maxset`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxset
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1573,10 +1564,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [3182,3195]`'frozenset({'`
                                           StringLiteralNode SourceSection: [3197,3201]`'})'`
-                                          GetAttributeNodeGen SourceSection: [3238,3255]`self.maxfrozenset`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [3238,3255]`self.maxfrozenset`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxfrozenset
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1656,10 +1646,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [3339,3348]`'deque(['`
                                           StringLiteralNode SourceSection: [3350,3354]`'])'`
-                                          GetAttributeNodeGen SourceSection: [3356,3369]`self.maxdeque`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [3356,3369]`self.maxdeque`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxdeque
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1790,10 +1779,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Identifier: repr1
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [5,repr1,Illegal]
-                                      GetAttributeNodeGen SourceSection: [3540,3550]`self.repr1`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [3540,3550]`self.repr1`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: repr1
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1883,10 +1871,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               ReadLocalVariableNode SourceSection: [3614,3615]`x`
                                                 Frame: [1,x,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [3618,3630]`self.maxdict`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [3618,3630]`self.maxdict`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: maxdict
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1905,10 +1892,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadLocalVariableNode SourceSection: [3790,3791]`n`
                                             Frame: [3,n,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [3794,3806]`self.maxdict`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [3794,3806]`self.maxdict`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxdict
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2020,10 +2006,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           SliceLiteralNodeGen SourceSection: [3951,3966]`:self.maxstring`
                                             PythonObjectFactoryNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [3952,3966]`self.maxstring`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [3952,3966]`self.maxstring`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: maxstring
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2047,10 +2032,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNode SourceSection: [3984,3985]`s`
                                               Frame: [3,s,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [3989,4003]`self.maxstring`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [3989,4003]`self.maxstring`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxstring
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2076,10 +2060,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               BinaryArithmeticExpression SourceSection: [4029,4045]`self.maxstring-3`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
-                                                GetAttributeNodeGen SourceSection: [4029,4043]`self.maxstring`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [4029,4043]`self.maxstring`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: maxstring
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2108,10 +2091,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               BinaryArithmeticExpression SourceSection: [4074,4090]`self.maxstring-3`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
-                                                GetAttributeNodeGen SourceSection: [4074,4088]`self.maxstring`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [4074,4088]`self.maxstring`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: maxstring
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2304,10 +2286,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNode SourceSection: [4321,4322]`s`
                                               Frame: [3,s,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [4326,4338]`self.maxlong`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [4326,4338]`self.maxlong`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxlong
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2333,10 +2314,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               BinaryArithmeticExpression SourceSection: [4364,4378]`self.maxlong-3`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
-                                                GetAttributeNodeGen SourceSection: [4364,4376]`self.maxlong`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [4364,4376]`self.maxlong`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: maxlong
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2365,10 +2345,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               BinaryArithmeticExpression SourceSection: [4407,4421]`self.maxlong-3`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
-                                                GetAttributeNodeGen SourceSection: [4407,4419]`self.maxlong`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [4407,4419]`self.maxlong`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: maxlong
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2513,18 +2492,16 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [4724,4746]`'<%s instance at %#x...`
                                                 TupleLiteralNode SourceSection: [4749,4778]`(x.__class__.__name_...`
-                                                  GetAttributeNodeGen SourceSection: [4750,4770]`x.__class__.__name__...`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [4750,4770]`x.__class__.__name__...`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: __name__
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [4750,4761]`x.__class__`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [4750,4761]`x.__class__`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: __class__
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -2560,10 +2537,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNode SourceSection: [4794,4795]`s`
                                               Frame: [3,s,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [4799,4812]`self.maxother`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [4799,4812]`self.maxother`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maxother
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2589,10 +2565,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               BinaryArithmeticExpression SourceSection: [4838,4853]`self.maxother-3`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
-                                                GetAttributeNodeGen SourceSection: [4838,4851]`self.maxother`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [4838,4851]`self.maxother`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: maxother
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2621,10 +2596,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               BinaryArithmeticExpression SourceSection: [4882,4897]`self.maxother-3`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
-                                                GetAttributeNodeGen SourceSection: [4882,4895]`self.maxother`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [4882,4895]`self.maxother`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: maxother
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2777,10 +2751,9 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
         SideEffect:
           WriteNameNodeGen SourceSection: [5249,5266]`repr = aRepr.repr`
             Identifier: repr
-            GetAttributeNodeGen SourceSection: [5256,5266]`aRepr.repr`
-              GetFixedAttributeNodeGen SourceSection: None
+            GetAttributeNode SourceSection: [5256,5266]`aRepr.repr`
+              GetFixedAttributeNode SourceSection: None
                 Key: repr
-                CachedDispatchFirst SourceSection: None
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
                 IsBuiltinClassProfile SourceSection: None

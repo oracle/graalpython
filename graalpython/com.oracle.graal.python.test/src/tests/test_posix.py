@@ -185,6 +185,48 @@ class PosixTests(unittest.TestCase):
         orig = os.umask(0o22)
         self.assertEqual(0o22, os.umask(orig))
 
+    def test_fspath(self):
+        class StringSubclass(str):
+            pass
+
+        class Wrap:
+            def __init__(self, val):
+                self.val = val
+
+            def __fspath__(self):
+                return self.val
+
+        for x in ['abc', b'abc', StringSubclass('abc')]:
+            self.assertEqual(x, os.fspath(x))
+            self.assertEqual(x, os.fspath(Wrap(x)))
+
+        for x in [bytearray(b'abc'), 42, 3.14]:
+            with self.assertRaisesRegex(TypeError, f"expected str, bytes or os.PathLike object, not {type(x).__name__}"):
+                os.fspath(x)
+        for x in [bytearray(b'abc'), 42, 3.14]:
+            with self.assertRaisesRegex(TypeError, r"expected Wrap.__fspath__\(\) to return str or bytes, not " + type(x).__name__):
+                os.fspath(Wrap(x))
+
+    def test_path_convertor(self):
+        class C:
+            def __fspath__(self):
+                return bytearray(b'.')
+
+        os.close(os.open(bytearray(b'.'), 0))
+        with self.assertRaisesRegex(TypeError, r"expected C.__fspath__\(\) to return str or bytes, not bytearray"):
+            os.open(C(), 0)
+
+    def test_fd_converter(self):
+        class MyInt(int):
+            def fileno(self): return 0
+
+        class MyObj:
+            def fileno(self): return -1
+
+        self.assertRaises(ValueError, os.fsync, -1)
+        self.assertRaises(ValueError, os.fsync, MyInt(-1)) # fileno should be ignored
+        self.assertRaises(ValueError, os.fsync, MyObj())
+
 
 class WithCurdirFdTests(unittest.TestCase):
 
@@ -357,9 +399,11 @@ class ChdirTests(unittest.TestCase):
 
     def setUp(self):
         self.old_wd = os.getcwd()
+        os.mkdir(TEST_FULL_PATH1)
 
     def tearDown(self):
         os.chdir(self.old_wd)
+        os.rmdir(TEST_FULL_PATH1)
 
     def test_chdir(self):
         os.chdir(TEMP_DIR)
@@ -367,6 +411,27 @@ class ChdirTests(unittest.TestCase):
         self.assertEqual(os.fsencode(self.old_wd), os.getcwdb())
         os.chdir(os.fsencode(self.old_wd))
         self.assertEqual(self.old_wd, os.getcwd())
+
+    def test_chdir_relative(self):
+        os.chdir(TEMP_DIR)
+        tmp_dir = os.getcwd()
+        os.chdir(TEST_FILENAME1)
+        self.assertEqual(os.path.join(tmp_dir, TEST_FILENAME1), os.getcwd())
+
+    def test_chdir_relative_symlink(self):
+        os.symlink(TEST_FULL_PATH1, TEST_FULL_PATH2, target_is_directory=True)
+        try:
+            os.chdir(TEMP_DIR)
+            os.chdir(TEST_FILENAME2)
+        finally:
+            os.remove(TEST_FULL_PATH2)
+
+    def test_chdir_not_a_dir(self):
+        os.close(os.open(TEST_FULL_PATH2, os.O_WRONLY | os.O_CREAT))
+        try:
+            self.assertRaises(NotADirectoryError, os.chdir, TEST_FULL_PATH2)
+        finally:
+            os.unlink(TEST_FULL_PATH2)
 
     def test_chdir_fd(self):
         os.chdir(TEMP_DIR)

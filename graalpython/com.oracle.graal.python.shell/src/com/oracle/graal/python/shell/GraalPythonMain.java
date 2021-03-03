@@ -35,6 +35,7 @@ import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -286,7 +287,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         if (arg.startsWith("--llvm.") ||
                                         arg.startsWith("--python.CoreHome") ||
                                         arg.startsWith("--python.StdLibHome") ||
-                                        arg.startsWith("--python.CAPI")) {
+                                        arg.startsWith("--python.CAPI") ||
+                                        arg.startsWith("--PosixModuleBackend")) {
                             addRelaunchArg(arg);
                         }
                         // possibly a polyglot argument
@@ -349,16 +351,93 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static void print(String string) {
-        System.out.println(string);
+        System.err.println(string);
+    }
+
+    private static String getLauncherExecName() {
+        if (ImageInfo.inImageCode()) {
+            String binPathName = null;
+            if (ProcessProperties.getArgumentVectorBlockSize() > 0) {
+                binPathName = calculateProgramFullPath(ProcessProperties.getArgumentVectorProgramName());
+            }
+            if (binPathName != null) {
+                return binPathName;
+            }
+            return ProcessProperties.getExecutableName();
+        }
+        return GraalPythonMain.BASH_LAUNCHER_EXEC_NAME;
+    }
+
+    /**
+     * Follows the same semantics as CPython's {@code getpath.c:calculate_program_full_path} to
+     * determine the full program path if we just got a non-absolute program name. This method
+     * handles the following cases:
+     * <dl>
+     * <dt><b>Program name is an absolute path</b></dt>
+     * <dd>Just return {@code program}.</dd>
+     * <dt><b>Program name is a relative path</b></dt>
+     * <dd>it will resolve it to an absolute path. E.g. {@code "./python3"} will become {@code 
+     * "<current_working_dir>/python3"}/dd>
+     * <dt><b>Program name is neither an absolute nor a relative path</b></dt>
+     * <dd>It will resolve the program name wrt. to the {@code PATH} env variable. Since it may be
+     * that the {@code PATH} variable is not available, this method will return {@code null}</dd>
+     * </dl>
+     * 
+     * @param program The program name as passed in the process' argument vector (position 0).
+     * @return The absolute path to the program or {@code null}.
+     */
+    private static String calculateProgramFullPath(String program) {
+        Path programPath = Paths.get(program);
+
+        // If this is an absolute path, we are already fine.
+        if (programPath.isAbsolute()) {
+            return program;
+        }
+
+        /*
+         * If there is no slash in the arg[0] path, then we have to assume python is on the user's
+         * $PATH, since there's no other way to find a directory to start the search from. If $PATH
+         * isn't exported, you lose.
+         */
+        if (programPath.getNameCount() < 2) {
+            // Resolve the program name with respect to the PATH variable.
+            String path = System.getenv("PATH");
+            if (path != null) {
+                int last = 0;
+                for (int i = path.indexOf(File.pathSeparatorChar); i != -1; i = path.indexOf(File.pathSeparatorChar, last)) {
+                    Path resolvedProgramName = Paths.get(path.substring(last, i)).resolve(programPath);
+                    if (Files.isExecutable(resolvedProgramName)) {
+                        return resolvedProgramName.toString();
+                    }
+
+                    // next start is the char after the separator because we have "path0:path1" and
+                    // 'i' points to ':'
+                    last = i + 1;
+                }
+            }
+            return null;
+        }
+        // It's seemingly a relative path, so we can just resolve it to an absolute one.
+        assert !programPath.isAbsolute();
+        /*
+         * Another special case (see: CPython function "getpath.c:copy_absolute"): If the program
+         * name starts with "./" (on Unix; or similar on other systems) then the path is
+         * canonicalized.
+         */
+        if (".".equals(programPath.getName(0).toString())) {
+            return programPath.toAbsolutePath().normalize().toString();
+        }
+        return programPath.toAbsolutePath().toString();
     }
 
     private String[] getExecutableList() {
-        if (ImageInfo.inImageCode()) {
-            return execListWithRelaunchArgs(ProcessProperties.getExecutableName());
-        } else {
-            if (BASH_LAUNCHER_EXEC_NAME != null) {
-                return execListWithRelaunchArgs(BASH_LAUNCHER_EXEC_NAME);
-            }
+        String launcherExecName = getLauncherExecName();
+        if (launcherExecName != null) {
+            return execListWithRelaunchArgs(launcherExecName);
+        }
+
+        // This should only be reached if this main is directly executed via Java.
+        if (!ImageInfo.inImageCode()) {
             StringBuilder sb = new StringBuilder();
             ArrayList<String> exec_list = new ArrayList<>();
             sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
@@ -386,14 +465,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
             return exec_list.toArray(new String[exec_list.size()]);
         }
+
+        return new String[]{""};
     }
 
     private String getExecutable() {
         if (ImageInfo.inImageBuildtimeCode()) {
             return "";
         } else {
-            if (BASH_LAUNCHER_EXEC_NAME != null) {
-                return BASH_LAUNCHER_EXEC_NAME;
+            String launcherExecName = getLauncherExecName();
+            if (launcherExecName != null) {
+                return launcherExecName;
             }
             String[] executableList = getExecutableList();
             for (int i = 0; i < executableList.length; i++) {
@@ -621,7 +703,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void printHelp(OptionCategory maxCategory) {
-        print("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
+        System.out.println("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
                         "-B     : this disables writing .py[co] files on import\n" +
                         "-c cmd : program passed in as string (terminates option list)\n" +

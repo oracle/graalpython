@@ -63,6 +63,7 @@ class Bar(Foo):
         return super()
 
 
+# ~igv~: function_root_do_stuff_at
 def do_stuff(bar):
     foobar = bar.get_super()
     for i in range(50000):

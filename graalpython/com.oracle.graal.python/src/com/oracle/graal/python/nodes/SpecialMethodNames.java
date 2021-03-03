@@ -115,6 +115,7 @@ public abstract class SpecialMethodNames {
     public static final String __RDIVMOD__ = "__rdivmod__";
     public static final String __RPOW__ = "__rpow__";
     public static final String __RLSHIFT__ = "__rlshift__";
+    public static final String __RRSHIFT__ = "__rrshift__";
     public static final String __RAND__ = "__rand__";
     public static final String __RXOR__ = "__rxor__";
     public static final String __ROR__ = "__ror__";

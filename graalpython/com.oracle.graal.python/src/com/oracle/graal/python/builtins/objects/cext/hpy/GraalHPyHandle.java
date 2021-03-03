@@ -47,6 +47,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -82,14 +83,15 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     boolean isPointer(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
-        return isAllocatedProfile.profile(id != -1);
+                    @Exclusive @Cached ConditionProfile isNativeProfile) {
+        return isNativeProfile.profile(id != -1);
     }
 
     @ExportMessage
-    long asPointer(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) throws UnsupportedMessageException {
-        if (!isPointer(isAllocatedProfile)) {
+    long asPointer() throws UnsupportedMessageException {
+        // note: we don't use a profile here since 'asPointer' is usually used right after
+        // 'isPointer'
+        if (!isPointer(ConditionProfile.getUncached())) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
@@ -98,10 +100,9 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     void toNative(
-                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached("createCountingProfile()") ConditionProfile notNativeProfile) {
-        if (notNativeProfile.profile(!isPointer(isAllocatedProfile))) {
+                    @Exclusive @Cached ConditionProfile isNativeProfile) {
+        if (!isPointer(isNativeProfile)) {
             id = context.getHPyContext().getHPyHandleForObject(this);
         }
     }
@@ -178,6 +179,11 @@ public final class GraalHPyHandle implements TruffleObject {
         throw UnknownIdentifierException.create(key);
     }
 
+    @ExportMessage
+    boolean isNull() {
+        return id == 0;
+    }
+
     public GraalHPyHandle copy() {
         return new GraalHPyHandle(delegate);
     }
@@ -185,7 +191,7 @@ public final class GraalHPyHandle implements TruffleObject {
     public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
         if (isPointer(isAllocatedProfile)) {
             try {
-                hpyContext.releaseHPyHandleForObject((int) asPointer(isAllocatedProfile));
+                hpyContext.releaseHPyHandleForObject((int) asPointer());
                 id = -1;
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

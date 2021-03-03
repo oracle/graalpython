@@ -7,7 +7,14 @@
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_modify
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_modify_unregister
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_register
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_select
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_select_interrupt_noraise
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_selector
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_timeout
 *graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_unregister
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_unregister_after_fd_close
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_unregister_after_fd_close_and_reuse
+*graalpython.lib-python.3.test.test_selectors.DefaultSelectorTestCase.test_unregister_after_socket_close
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_above_fd_setsize
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_close
 *graalpython.lib-python.3.test.test_selectors.DevpollSelectorTestCase.test_context_manager
@@ -95,4 +102,11 @@
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_modify
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_modify_unregister
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_register
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_select
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_select_interrupt_noraise
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_selector
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_timeout
 *graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_unregister
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_unregister_after_fd_close
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_unregister_after_fd_close_and_reuse
+*graalpython.lib-python.3.test.test_selectors.SelectSelectorTestCase.test_unregister_after_socket_close

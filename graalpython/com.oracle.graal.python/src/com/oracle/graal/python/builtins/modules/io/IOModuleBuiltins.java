@@ -40,7 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PFileIO;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 
 import java.util.List;
 
@@ -48,6 +53,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -74,9 +80,31 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
+        /*
+         * This is temporary fix and will be removed once _io patches are removed.
+         */
         PythonModule ioModule = core.lookupBuiltinModule("_io");
-        PythonAbstractClass bufferediobase = (PythonAbstractClass) ioModule.getAttribute("BufferedIOBase");
-        core.lookupType(PBufferedReader).setSuperClass(bufferediobase);
+        PythonAbstractClass unspportedOp = (PythonAbstractClass) ioModule.getAttribute("UnsupportedOperation");
+        core.lookupType(IOUnsupportedOperation).setSuperClass(unspportedOp);
+    }
+
+    @Builtin(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)
+    @GenerateNodeFactory
+    public abstract static class IOBaseNode extends PythonBuiltinNode {
+        @Specialization
+        public PythonObject create(Object cls) {
+            return factory().createPythonObject(cls);
+        }
+    }
+
+    @Builtin(name = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PFileIO)
+    @GenerateNodeFactory
+    public abstract static class FileIONode extends PythonBuiltinNode {
+        @Specialization
+        public PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
+            return factory().createFileIO(cls);
+        }
     }
 
     @Builtin(name = "BufferedReader", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedReader)
@@ -86,6 +114,26 @@ public class IOModuleBuiltins extends PythonBuiltins {
         public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BufferedReaderBuiltins.InitNode
             return factory().createBufferedReader(cls);
+        }
+    }
+
+    @Builtin(name = "BufferedWriter", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedWriter)
+    @GenerateNodeFactory
+    public abstract static class BufferedWriterNode extends PythonBuiltinNode {
+        @Specialization
+        public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see BufferedWriterBuiltins.InitNode
+            return factory().createBufferedWriter(cls);
+        }
+    }
+
+    @Builtin(name = "BufferedRandom", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedRandom)
+    @GenerateNodeFactory
+    public abstract static class BufferedRandomNode extends PythonBuiltinNode {
+        @Specialization
+        public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see BufferedRandomBuiltins.InitNode
+            return factory().createBufferedRandom(cls);
         }
     }
 }

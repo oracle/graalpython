@@ -62,10 +62,12 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_BE_UNICODE = "%s argument %d must be a unicode character, not %p";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
+    public static final String ARG_MUST_NOT_BE_EMPTY = "%s arg %d must not be empty";
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
     public static final String ARG_SHOULD_BE_INT_BYTESLIKE_OBJ = "argument should be integer or bytes-like object, not '%p'";
     public static final String ARG_SHOULD_BE_INT_OR_NONE = "argument should be integer or None, not %p";
     public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %d";
+    public static final String ARGS_CHANGED_DURING_ITERATION = "args changed during iteration";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
     public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
     public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
@@ -88,7 +90,9 @@ public abstract class ErrorMessages {
     public static final String BAD_COMPRESSION_LEVEL = "Bad compression level";
     public static final String BAD_FILE_DESCRIPTOR = "bad file descriptor";
     public static final String BAD_MARSHAL_DATA = "bad marshal data";
+    public static final String BAD_MEMBER_DESCR_TYPE_FOR_P = "bad memberdescr type for %p";
     public static final String BAD_OPERAND_FOR = "bad operand type for %s%s: '%p'";
+    public static final String BAD_VALUES_IN_FDS_TO_KEEP = "bad value(s) in fds_to_keep";
     public static final String BAD_TYPECODE = "bad typecode (must be i, d, b, B, or l)";
     public static final String BASE_OUT_OF_RANGE_FOR_INT = "base is out of range for int()";
     public static final String BASES_MUST_BE_TYPES = "bases must be types";
@@ -118,6 +122,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_ASSIGN_TO_COMPREHENSION = "cannot assign to %s comprehension";
     public static final String CANNOT_BE_INTEPRETED_AS_LONG = "%s cannot be interpreted as long (type %p)";
     public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
+    public static final String S_CANNOT_BE_NEGATIVE_INTEGER_D = "%s cannot be negative integer (%d)";
     public static final String CANNOT_CALL_CTOR_OF = "cannot call constructor of %s";
     public static final String CANNOT_CLOSE_EXPORTED_PTRS_EXIST = "cannot close exported pointers exist";
     public static final String CANNOT_CONVERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
@@ -250,6 +255,9 @@ public abstract class ErrorMessages {
     public static final String FD_IS_GREATER_THAN_MAXIMUM = "fd is greater than maximum";
     public static final String FD_IS_LESS_THAN_MINIMUM = "fd is less than minimum";
     public static final String FILE_NOT_OPENED_FOR_READING = "file not opened for reading";
+    public static final String FILE_OR_STREAM_IS_NOT_READABLE = "File or stream is not readable.";
+    public static final String FILE_OR_STREAM_IS_NOT_SEEKABLE = "File or stream is not seekable.";
+    public static final String FILE_OR_STREAM_IS_NOT_WRITABLE = "File or stream is not writable.";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";
@@ -267,6 +275,7 @@ public abstract class ErrorMessages {
     public static final String FUNC_CONSTRUCTION_NOT_SUPPORTED = "function construction not supported for (%p, %p, %p, %p, %p, %p)";
     public static final String FUNC_TAKES_AT_LEAST_D_ARGS = "function takes at least %d arguments (%d given)";
     public static final String FUNC_TAKES_EXACTLY_D_ARGS = "function takes exaclty %d arguments (%d given)";
+    public static final String FUNC_S_MUST_BE_S_NOT_P = "%s() %s must be %s, not %p";
     public static final String GENERATOR_EXPR_MUST_BE_PARENTHESIZED = "Generator expression must be parenthesized";
     public static final String GENERATOR_IGNORED_EXIT = "generator ignored GeneratorExit";
     public static final String GENERATOR_RAISED_STOPITER = "generator raised StopIteration";
@@ -287,6 +296,7 @@ public abstract class ErrorMessages {
     public static final String IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT = "if you give only one argument to maketrans it must be a dict";
     public static final String INVALID_INDEXING_OF_0_DIM_MEMORY = "invalid indexing of 0-dim memory";
     public static final String ILLEGAL_ARG = "illegal argument";
+    public static final String ILLEGAL_ENVIRONMENT_VARIABLE_NAME = "illegal environment variable name";
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
     public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
@@ -297,6 +307,7 @@ public abstract class ErrorMessages {
     public static final String INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D = "index out of bounds on dimension %d";
     public static final String INDEX_OUT_OF_RANGE = "index out of range";
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
+    public static final String INPUT_TOO_LONG = "input too long";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
     public static final String INSTANCE_HAS_NO_ATTR_S = "%s instance has no attribute '%s'";
     public static final String INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = "int() can't convert non-string with explicit base";
@@ -523,6 +534,8 @@ public abstract class ErrorMessages {
     public static final String RETURNED_RESULT_WITH_ERROR_SET = "%s returned a result with an error set";
     public static final String RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = "%s returned an unexpected return code; expected 'int' but was %s";
     public static final String S_EMBEDDED_NULL_CHARACTER_IN_S = "%sembedded null character in %s";
+    public static final String S_MUST_BE_S = "%s must be %s";
+    public static final String S_NOT_SUPPORTED = "%s not supported";
     public static final String S_S_SHOULD_BE_S_NOT_P = "%s%s should be %s, not %p";
     public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
     public static final String S_SHOULD_BE_ASCII_OR_BYTELIKE = "%s should be an ASCII string or a bytes-like object";
@@ -621,6 +634,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_SIZE_WAS = "unsupported %s size; was: %d";
     public static final String UNSUPPORTED_STR_TYPE = "unsupported string type: %s";
     public static final String UNSUPPORTED_TARGET_SIZE = "Unsupported target size: %d";
+    public static final String UNSUPPORTED_USE_OF_SYS_EXECUTABLE = "internal error: unsupported use of sys.executable";
     public static final String VALUE_EXPECTED = "%s value expected";
     public static final String VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = "value too large to fit into index-sized integer";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
@@ -690,6 +704,9 @@ public abstract class ErrorMessages {
     public static final String CERTIFICATE_VERIFY_FAILED = "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: %s";
     public static final String CONTEXT_DOESNT_SUPPORT_MIN_MAX = "The context's protocol doesn't support modification of highest and lowest version.";
     public static final String UNSUPPORTED_PROTOCOL_VERSION = "Unsupported protocol version 0x%x";
+    public static final String METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = "Method requires a 'bytes' object, got '%p'";
+    public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
+    public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
@@ -732,6 +749,18 @@ public abstract class ErrorMessages {
     public static final String IO_CLOSED = "I/O operation on closed file.";
     public static final String MUST_BE_NON_NEG_OR_NEG_1 = "read length must be non-negative or -1";
     public static final String BUF_SIZE_POS = "buffer size must be strictly positive";
+    public static final String S_SHOULD_RETURN_BYTES = "%s should return bytes";
+    public static final String S_RETURNED_TOO_MUCH_DATA = "%s returned too much data: %d bytes requested, %d returned";
+    public static final String S_SHOULD_RETURN_BYTES_NOT_P = " should have returned a bytes object, not '%p'";
+    public static final String BAD_MODE = "Must have exactly one of create/read/write/append mode and at most one plus";
+    public static final String NEG_FD = "negative file descriptor";
+    public static final String CANNOT_USE_CLOSEFD = "Cannot use closefd=False with file name";
+    public static final String EXPECTED_INT_FROM_OPENER = "expected integer from opener";
+    public static final String OPENER_RETURNED_D = "opener returned %d";
+    public static final String FILE_NOT_OPEN_FOR_S = "File not open for %s";
+    public static final String UNBOUNDED_READ_RETURNED_MORE_BYTES = "unbounded read returned more bytes than a Python bytes object can hold";
+    public static final String INVALID_MODE_S = "invalid mode: %s";
+    public static final String S_TO_CLOSED_FILE = "%s to closed file";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT = "cannot pickle '%s' object";

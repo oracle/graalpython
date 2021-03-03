@@ -8,10 +8,9 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
     PythonCallNodeGen SourceSection: [0,16]`a().b.c(x).d.f()`
       CallNodeGen SourceSection: None
       GetCallAttributeNodeGen SourceSection: None
-        GetAttributeNodeGen SourceSection: [0,12]`a().b.c(x).d`
-          GetFixedAttributeNodeGen SourceSection: None
+        GetAttributeNode SourceSection: [0,12]`a().b.c(x).d`
+          GetFixedAttributeNode SourceSection: None
             Key: d
-            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -19,10 +18,9 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
           PythonCallUnary SourceSection: [0,10]`a().b.c(x)`
             CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
-              GetAttributeNodeGen SourceSection: [0,5]`a().b`
-                GetFixedAttributeNodeGen SourceSection: None
+              GetAttributeNode SourceSection: [0,5]`a().b`
+                GetFixedAttributeNode SourceSection: None
                   Key: b
-                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None

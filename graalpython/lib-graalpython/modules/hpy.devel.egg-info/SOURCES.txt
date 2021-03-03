@@ -1,0 +1,11 @@
+hpy.devel.egg-info/PKG-INFO
+hpy.devel.egg-info/SOURCES.txt
+hpy.devel.egg-info/dependency_links.txt
+hpy.devel.egg-info/top_level.txt
+hpy/devel/__init__.py
+hpy/devel/src/runtime/argparse.c
+hpy/devel/src/runtime/ctx_listbuilder.c
+hpy/devel/src/runtime/ctx_module.c
+hpy/devel/src/runtime/ctx_tuple.c
+hpy/devel/src/runtime/ctx_tuplebuilder.c
+hpy/devel/src/runtime/ctx_type.c

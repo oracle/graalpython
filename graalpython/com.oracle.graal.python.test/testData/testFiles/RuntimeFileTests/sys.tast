@@ -117,10 +117,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
           CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [2497,2534]`version_info = imple...`
         Identifier: version_info
-        GetAttributeNodeGen SourceSection: [2512,2534]`implementation.versi...`
-          GetFixedAttributeNodeGen SourceSection: None
+        GetAttributeNode SourceSection: [2512,2534]`implementation.versi...`
+          GetFixedAttributeNode SourceSection: None
             Key: version
-            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -176,10 +175,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2637,2641]`type`
                           Identifier: type
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [2642,2673]`type(make_flags_clas...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [2642,2673]`type(make_flags_clas...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: __code__
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -627,7 +625,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4239,4263]`path_importer_cache ...`
         Identifier: path_importer_cache
-        DictLiteralNodeGen SourceSection: [4261,4263]`{}`
+        EmptyDictLiteralNode SourceSection: [4261,4263]`{}`
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4367,4383]`warnoptions = []`
         Identifier: warnoptions
@@ -771,10 +769,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     Identifier: tb
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [1,tb,Illegal]
-                                    GetAttributeNodeGen SourceSection: [4701,4716]`e.__traceback__`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                    GetAttributeNode SourceSection: [4701,4716]`e.__traceback__`
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: __traceback__
-                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -802,26 +799,23 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [4765,4794]`'  File "%s", line %...`
                                                 TupleLiteralNode SourceSection: [4797,4933]`(↵                tb...`
-                                                  GetAttributeNodeGen SourceSection: [4815,4845]`tb.tb_frame.f_code.c...`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [4815,4845]`tb.tb_frame.f_code.c...`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: co_filename
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [4815,4833]`tb.tb_frame.f_code`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [4815,4833]`tb.tb_frame.f_code`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: f_code
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
-                                                      GetAttributeNodeGen SourceSection: [4815,4826]`tb.tb_frame`
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                      GetAttributeNode SourceSection: [4815,4826]`tb.tb_frame`
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: tb_frame
-                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -829,10 +823,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                         ReadLocalVariableNode SourceSection: [4815,4817]`tb`
                                                           Frame: [1,tb,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [4863,4875]`tb.tb_lineno`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [4863,4875]`tb.tb_lineno`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: tb_lineno
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -840,26 +833,23 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                     ReadLocalVariableNode SourceSection: [4863,4865]`tb`
                                                       Frame: [1,tb,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [4893,4919]`tb.tb_frame.f_code.c...`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [4893,4919]`tb.tb_frame.f_code.c...`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: co_name
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [4893,4911]`tb.tb_frame.f_code`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [4893,4911]`tb.tb_frame.f_code`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: f_code
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
-                                                      GetAttributeNodeGen SourceSection: [4893,4904]`tb.tb_frame`
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                      GetAttributeNode SourceSection: [4893,4904]`tb.tb_frame`
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: tb_frame
-                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -882,10 +872,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                             Identifier: tb
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,tb,Illegal]
-                                            GetAttributeNodeGen SourceSection: [4965,4975]`tb.tb_next`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [4965,4975]`tb.tb_next`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: tb_next
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -921,10 +910,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                             Op: __mod__
                                           StringLiteralNode SourceSection: [5031,5039]`"%s: %s"`
                                           TupleLiteralNode SourceSection: [5042,5069]`(type(e).__qualname_...`
-                                            GetAttributeNodeGen SourceSection: [5043,5063]`type(e).__qualname__...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [5043,5063]`type(e).__qualname__...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __qualname__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -954,10 +942,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     ExpressionStatementNode SourceSection: [5110,5150]`print(type(e).__qual...`
                                       PythonCallNodeGen SourceSection: [5110,5150]`print(type(e).__qual...`
                                         CallNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [5116,5136]`type(e).__qualname__...`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [5116,5136]`type(e).__qualname__...`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: __qualname__
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -1570,10 +1557,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     ReadLocalVariableNode SourceSection: [6827,6831]`text`
                                       Frame: [2,text,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [6839,6854]`stdout.encoding`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [6839,6854]`stdout.encoding`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: encoding
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -1599,10 +1585,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                   PythonCallUnary SourceSection: [6926,6952]`stdout.buffer.write(...`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [6926,6939]`stdout.buffer`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [6926,6939]`stdout.buffer`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: buffer
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1624,10 +1609,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                         ReadLocalVariableNode SourceSection: [6986,6991]`bytes`
                                           Frame: [3,bytes,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [6999,7014]`stdout.encoding`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [6999,7014]`stdout.encoding`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: encoding
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None

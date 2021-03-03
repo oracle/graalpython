@@ -281,6 +281,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void flock(int fd, int operation,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("flock", "%d %d", fd, operation);
+        try {
+            lib.flock(delegate, fd, operation);
+        } catch (PosixException e) {
+            throw logException("flock", e);
+        }
+    }
+
+    @ExportMessage
     final boolean getBlocking(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("getBlocking", "%d", fd);
@@ -573,6 +584,162 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void kill(long pid, int signal,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("kill", "%d, %d", pid, signal);
+        try {
+            lib.kill(delegate, pid, signal);
+        } catch (PosixException e) {
+            throw logException("kill", e);
+        }
+    }
+
+    @ExportMessage
+    final long[] waitpid(long pid, int options,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("waitpid", "%d, %d", pid, options);
+        try {
+            return logExit("waitpid", "%s", lib.waitpid(delegate, pid, options));
+        } catch (PosixException e) {
+            throw logException("waitpid", e);
+        }
+    }
+
+    @ExportMessage
+    final boolean wcoredump(int status,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("wcoredump", "%d", status);
+        return logExit("wcoredump", "%b", lib.wcoredump(delegate, status));
+    }
+
+    @ExportMessage
+    final boolean wifcontinued(int status,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("wifcontinued", "%d", status);
+        return logExit("wifcontinued", "%b", lib.wifcontinued(delegate, status));
+    }
+
+    @ExportMessage
+    final boolean wifstopped(int status,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("wifstopped", "%d", status);
+        return logExit("wifstopped", "%b", lib.wifstopped(delegate, status));
+    }
+
+    @ExportMessage
+    final boolean wifsignaled(int status,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("wifsignaled", "%d", status);
+        return logExit("wifsignaled", "%b", lib.wifsignaled(delegate, status));
+    }
+
+    @ExportMessage
+    final boolean wifexited(int status,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("wifexited", "%d", status);
+        return logExit("wifexited", "%b", lib.wifexited(delegate, status));
+    }
+
+    @ExportMessage
+    final int wexitstatus(int status,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("wexitstatus", "%d", status);
+        return logExit("wexitstatus", "%d", lib.wexitstatus(delegate, status));
+    }
+
+    @ExportMessage
+    final int wtermsig(int status,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("wtermsig", "%d", status);
+        return logExit("wtermsig", "%d", lib.wtermsig(delegate, status));
+    }
+
+    @ExportMessage
+    final int wstopsig(int status,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("wstopsig", "%d", status);
+        return logExit("wstopsig", "%d", lib.wstopsig(delegate, status));
+    }
+
+    @ExportMessage
+    final long getuid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getuid", "");
+        return logExit("getuid", "%d", lib.getuid(delegate));
+    }
+
+    @ExportMessage
+    final long getppid(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("getppid", "");
+        return logExit("getppid", "%d", lib.getuid(delegate));
+    }
+
+    @ExportMessage
+    final long getsid(long pid,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getsid", "%d", pid);
+        try {
+            return logExit("getsid", "%d", lib.getsid(delegate, pid));
+        } catch (PosixException e) {
+            throw logException("getsid", e);
+        }
+    }
+
+    @ExportMessage
+    final String ctermid(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("ctermid", "");
+        try {
+            return logExit("ctermid", "%s", lib.ctermid(delegate));
+        } catch (PosixException e) {
+            throw logException("ctermid", e);
+        }
+    }
+
+    @ExportMessage
+    final void setenv(Object name, Object value, boolean overwrite,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("setenv", "%s, %s, %b", name, value, overwrite);
+        try {
+            lib.setenv(delegate, name, value, overwrite);
+        } catch (PosixException e) {
+            throw logException("setenv", e);
+        }
+    }
+
+    @ExportMessage
+    final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("forkExec", "%s, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %b, %b, %b, %s", executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd,
+                        stderrWriteFd, errPipeReadFd, errPipeWriteFd, closeFds, restoreSignals, callSetsid, fdsToKeep);
+        try {
+            return logExit("forkExec", "%d", lib.forkExec(delegate, executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd,
+                            errPipeWriteFd, closeFds, restoreSignals, callSetsid, fdsToKeep));
+        } catch (PosixException e) {
+            throw logException("forkExec", e);
+        }
+    }
+
+    @ExportMessage
+    final void execv(Object pathname, Object[] args,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("execv", "%s, %s", pathname, args);
+        try {
+            lib.execv(delegate, pathname, args);
+        } catch (PosixException e) {
+            throw logException("execv", e);
+        }
+    }
+
+    @ExportMessage
+    final int system(Object command,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("system", "%s", command);
+        return logExit("system", "%d", lib.system(delegate, command));
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "createPathFromString", "%s", path);
@@ -657,7 +824,12 @@ public class LoggingPosixSupport extends PosixSupport {
             return Arrays.toString((long[]) arg);
         }
         if (arg instanceof Object[]) {
-            return Arrays.toString((Object[]) arg);
+            Object[] src = (Object[]) arg;
+            Object[] res = new Object[src.length];
+            for (int i = 0; i < src.length; ++i) {
+                res[i] = fixLogArg(src[i]);
+            }
+            return Arrays.toString(res);
         }
         return arg;
     }

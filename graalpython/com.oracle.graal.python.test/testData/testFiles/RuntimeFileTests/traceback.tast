@@ -105,10 +105,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: file
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,file,Illegal]
-                        GetAttributeNodeGen SourceSection: [774,784]`sys.stderr`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [774,784]`sys.stderr`
+                          GetFixedAttributeNode SourceSection: None
                             Key: stderr
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -519,10 +518,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: file
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,file,Illegal]
-                        GetAttributeNodeGen SourceSection: [3718,3728]`sys.stderr`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [3718,3728]`sys.stderr`
+                          GetFixedAttributeNode SourceSection: None
                             Key: stderr
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -944,10 +942,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __mod__
                                 StringLiteralNode SourceSection: [5691,5716]`'<unprintable %s obj...`
-                                GetAttributeNodeGen SourceSection: [5719,5739]`type(value).__name__...`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [5719,5739]`type(value).__name__...`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: __name__
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -1199,10 +1196,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                     ExpressionStatementNode SourceSection: [6374,6480]`print_exception(sys....`
                       PythonCallNodeGen SourceSection: [6374,6480]`print_exception(sys....`
                         CallNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [6390,6403]`sys.last_type`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [6390,6403]`sys.last_type`
+                          GetFixedAttributeNode SourceSection: None
                             Key: last_type
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -1210,10 +1206,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6390,6393]`sys`
                             Identifier: sys
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [6405,6419]`sys.last_value`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [6405,6419]`sys.last_value`
+                          GetFixedAttributeNode SourceSection: None
                             Key: last_value
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -1221,10 +1216,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6405,6408]`sys`
                             Identifier: sys
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [6421,6439]`sys.last_traceback`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [6421,6439]`sys.last_traceback`
+                          GetFixedAttributeNode SourceSection: None
                             Key: last_traceback
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -1310,10 +1304,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: f
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,f,Illegal]
-                        GetAttributeNodeGen SourceSection: [6857,6879]`sys._getframe().f_ba...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [6857,6879]`sys._getframe().f_ba...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: f_back
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -1411,10 +1404,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: f
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,f,Illegal]
-                        GetAttributeNodeGen SourceSection: [7071,7093]`sys._getframe().f_ba...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7071,7093]`sys._getframe().f_ba...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: f_back
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -1509,10 +1501,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: f
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,f,Illegal]
-                        GetAttributeNodeGen SourceSection: [7601,7623]`sys._getframe().f_ba...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7601,7623]`sys._getframe().f_ba...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: f_back
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -1617,10 +1608,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   PythonCallNodeGen SourceSection: [7873,7892]`tb.tb_frame.clear()`
                                     CallNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [7873,7884]`tb.tb_frame`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [7873,7884]`tb.tb_frame`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: tb_frame
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1639,10 +1629,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                               Identifier: tb
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [0,tb,Illegal]
-                              GetAttributeNodeGen SourceSection: [8027,8037]`tb.tb_next`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [8027,8037]`tb.tb_next`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: tb_next
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -1838,10 +1827,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Frame: [5,lookup_line,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [9375,9384]`self.line`
-                                        GetAttributeNodeGen SourceSection: [9375,9384]`self.line`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [9375,9384]`self.line`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: line
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2026,10 +2014,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 BinaryComparisonNodeGen SourceSection: [9561,9592]`self.filename == oth...`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __eq__
-                                                  GetAttributeNodeGen SourceSection: [9561,9574]`self.filename`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [9561,9574]`self.filename`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: filename
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -2037,10 +2024,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadLocalVariableNode SourceSection: [9561,9565]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [9578,9592]`other.filename`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [9578,9592]`other.filename`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: filename
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -2051,10 +2037,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 BinaryComparisonNodeGen SourceSection: [9617,9644]`self.lineno == other...`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __eq__
-                                                  GetAttributeNodeGen SourceSection: [9617,9628]`self.lineno`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [9617,9628]`self.lineno`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: lineno
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -2062,10 +2047,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadLocalVariableNode SourceSection: [9617,9621]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [9632,9644]`other.lineno`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [9632,9644]`other.lineno`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: lineno
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -2079,10 +2063,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               BinaryComparisonNodeGen SourceSection: [9669,9692]`self.name == other.n...`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __eq__
-                                                GetAttributeNodeGen SourceSection: [9669,9678]`self.name`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [9669,9678]`self.name`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: name
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2090,10 +2073,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [9669,9673]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [9682,9692]`other.name`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [9682,9692]`other.name`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: name
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2107,10 +2089,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             BinaryComparisonNodeGen SourceSection: [9717,9744]`self.locals == other...`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __eq__
-                                              GetAttributeNodeGen SourceSection: [9717,9728]`self.locals`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9717,9728]`self.locals`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: locals
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2118,10 +2099,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadLocalVariableNode SourceSection: [9717,9721]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [9732,9744]`other.locals`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9732,9744]`other.locals`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: locals
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2157,10 +2137,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __eq__
                                             TupleLiteralNode SourceSection: [9802,9852]`(self.filename, self...`
-                                              GetAttributeNodeGen SourceSection: [9803,9816]`self.filename`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9803,9816]`self.filename`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: filename
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2168,10 +2147,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadLocalVariableNode SourceSection: [9803,9807]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [9818,9829]`self.lineno`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9818,9829]`self.lineno`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: lineno
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2179,10 +2157,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadLocalVariableNode SourceSection: [9818,9822]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [9831,9840]`self.name`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9831,9840]`self.name`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: name
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2190,10 +2167,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadLocalVariableNode SourceSection: [9831,9835]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [9842,9851]`self.line`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9842,9851]`self.line`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: line
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2267,10 +2243,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Frame: [2,<return_val>,Illegal]
                                         GetItemNodeGen SourceSection: [9940,9995]`(self.filename, self...`
                                           TupleLiteralNode SourceSection: [9940,9990]`(self.filename, self...`
-                                            GetAttributeNodeGen SourceSection: [9941,9954]`self.filename`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [9941,9954]`self.filename`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: filename
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2278,10 +2253,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [9941,9945]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [9956,9967]`self.lineno`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [9956,9967]`self.lineno`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: lineno
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2289,10 +2263,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [9956,9960]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [9969,9978]`self.name`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [9969,9978]`self.name`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: name
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2300,10 +2273,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [9969,9973]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [9980,9989]`self.line`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [9980,9989]`self.line`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: line
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2364,10 +2336,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             Identifier: iter
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ListLiteralNode SourceSection: [10041,10091]`[self.filename, self...`
-                                            GetAttributeNodeGen SourceSection: [10042,10055]`self.filename`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [10042,10055]`self.filename`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: filename
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2375,10 +2346,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [10042,10046]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [10057,10068]`self.lineno`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [10057,10068]`self.lineno`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: lineno
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2386,10 +2356,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [10057,10061]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [10070,10079]`self.name`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [10070,10079]`self.name`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: name
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2397,10 +2366,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [10070,10074]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [10081,10090]`self.line`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [10081,10090]`self.line`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: line
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2457,10 +2425,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           KeywordArgumentsNodeGen SourceSection: None
                                             ExecuteKeywordArgumentsNode SourceSection: None
                                               KeywordLiteralNode SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [10220,10233]`self.filename`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [10220,10233]`self.filename`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: filename
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2469,10 +2436,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               KeywordLiteralNode SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [10242,10253]`self.lineno`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [10242,10253]`self.lineno`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: lineno
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2481,10 +2447,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               KeywordLiteralNode SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [10260,10269]`self.name`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [10260,10269]`self.name`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: name
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2549,10 +2514,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [10317,10335]`self._line is None`
-                                            GetAttributeNodeGen SourceSection: [10317,10327]`self._line`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [10317,10327]`self._line`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _line
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2575,10 +2539,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [10362,10371]`linecache`
                                                     Identifier: linecache
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [10380,10393]`self.filename`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [10380,10393]`self.filename`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: filename
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2586,10 +2549,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [10380,10384]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [10395,10406]`self.lineno`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [10395,10406]`self.lineno`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: lineno
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2603,10 +2565,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNodeGen SourceSection: [10431,10441]`self._line`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [10431,10441]`self._line`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _line
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2662,18 +2623,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                         Identifier: f
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [0,f,Illegal]
-                        GetAttributeNodeGen SourceSection: [10718,10747]`sys._getframe().f_ba...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [10718,10747]`sys._getframe().f_ba...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: f_back
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          GetAttributeNodeGen SourceSection: [10718,10740]`sys._getframe().f_ba...`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [10718,10740]`sys._getframe().f_ba...`
+                            GetFixedAttributeNode SourceSection: None
                               Key: f_back
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -2695,10 +2654,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 ReadGeneratorFrameVariableNode SourceSection: [10787,10788]`f`
                                   Frame: [0,f,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [10790,10800]`f.f_lineno`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [10790,10800]`f.f_lineno`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: f_lineno
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -2712,10 +2670,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             Identifier: f
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [0,f,Illegal]
-                            GetAttributeNodeGen SourceSection: [10813,10821]`f.f_back`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [10813,10821]`f.f_back`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: f_back
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2783,10 +2740,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           YieldNode SourceSection: [11086,11117]`yield tb.tb_frame, t...`
                             flagSlot: 0
                             TupleLiteralNode SourceSection: [11092,11117]`tb.tb_frame, tb.tb_l...`
-                              GetAttributeNodeGen SourceSection: [11092,11103]`tb.tb_frame`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [11092,11103]`tb.tb_frame`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: tb_frame
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -2794,10 +2750,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 ReadGeneratorFrameVariableNode SourceSection: [11092,11094]`tb`
                                   Frame: [0,tb,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                              GetAttributeNodeGen SourceSection: [11105,11117]`tb.tb_lineno`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [11105,11117]`tb.tb_lineno`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: tb_lineno
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -2811,10 +2766,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           Identifier: tb
                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [0,tb,Illegal]
-                          GetAttributeNodeGen SourceSection: [11131,11141]`tb.tb_next`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [11131,11141]`tb.tb_next`
+                            GetFixedAttributeNode SourceSection: None
                               Key: tb_next
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -3141,10 +3095,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 Identifier: co
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [8,co,Illegal]
-                                                GetAttributeNodeGen SourceSection: [12379,12387]`f.f_code`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [12379,12387]`f.f_code`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: f_code
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3156,10 +3109,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 Identifier: filename
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [9,filename,Illegal]
-                                                GetAttributeNodeGen SourceSection: [12411,12425]`co.co_filename`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [12411,12425]`co.co_filename`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: co_filename
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3171,10 +3123,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 Identifier: name
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [10,name,Illegal]
-                                                GetAttributeNodeGen SourceSection: [12445,12455]`co.co_name`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [12445,12455]`co.co_name`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: co_name
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3202,10 +3153,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [12522,12530]`filename`
                                                     Frame: [9,filename,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [12532,12543]`f.f_globals`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [12532,12543]`f.f_globals`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: f_globals
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -3224,10 +3174,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Identifier: f_locals
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [11,f_locals,Illegal]
-                                                  GetAttributeNodeGen SourceSection: [12674,12684]`f.f_locals`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [12674,12684]`f.f_locals`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: f_locals
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -3314,10 +3263,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [12,f,Illegal]
                                               ExpressionStatementNode SourceSection: [13061,13067]`f.line`
-                                                GetAttributeNodeGen SourceSection: [13061,13067]`f.line`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [13061,13067]`f.line`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: line
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3626,10 +3574,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                               ReadLocalVariableNode SourceSection: [14681,14690]`last_file`
                                                                 Frame: [2,last_file,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                              GetAttributeNodeGen SourceSection: [14694,14708]`frame.filename`
-                                                                GetFixedAttributeNodeGen SourceSection: None
+                                                              GetAttributeNode SourceSection: [14694,14708]`frame.filename`
+                                                                GetFixedAttributeNode SourceSection: None
                                                                   Key: filename
-                                                                  CachedDispatchFirst SourceSection: None
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
@@ -3657,10 +3604,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           ReadLocalVariableNode SourceSection: [14755,14764]`last_line`
                                                             Frame: [3,last_line,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          GetAttributeNodeGen SourceSection: [14768,14780]`frame.lineno`
-                                                            GetFixedAttributeNodeGen SourceSection: None
+                                                          GetAttributeNode SourceSection: [14768,14780]`frame.lineno`
+                                                            GetFixedAttributeNode SourceSection: None
                                                               Key: lineno
-                                                              CachedDispatchFirst SourceSection: None
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                               IsBuiltinClassProfile SourceSection: None
@@ -3688,10 +3634,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadLocalVariableNode SourceSection: [14827,14836]`last_name`
                                                         Frame: [4,last_name,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      GetAttributeNodeGen SourceSection: [14840,14850]`frame.name`
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                      GetAttributeNode SourceSection: [14840,14850]`frame.name`
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: name
-                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -3740,10 +3685,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Identifier: last_file
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [2,last_file,Illegal]
-                                                    GetAttributeNodeGen SourceSection: [15044,15058]`frame.filename`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [15044,15058]`frame.filename`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: filename
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -3755,10 +3699,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Identifier: last_line
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [3,last_line,Illegal]
-                                                    GetAttributeNodeGen SourceSection: [15087,15099]`frame.lineno`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [15087,15099]`frame.lineno`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: lineno
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -3770,10 +3713,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Identifier: last_name
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [4,last_name,Illegal]
-                                                    GetAttributeNodeGen SourceSection: [15128,15138]`frame.name`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [15128,15138]`frame.name`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: name
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -3818,10 +3760,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     CallTernaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       StringLiteralNode SourceSection: [15261,15292]`'  File "{}", line {...`
-                                                    GetAttributeNodeGen SourceSection: [15317,15331]`frame.filename`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [15317,15331]`frame.filename`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: filename
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -3829,10 +3770,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadLocalVariableNode SourceSection: [15317,15322]`frame`
                                                         Frame: [9,frame,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [15333,15345]`frame.lineno`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [15333,15345]`frame.lineno`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: lineno
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -3840,10 +3780,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadLocalVariableNode SourceSection: [15333,15338]`frame`
                                                         Frame: [9,frame,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [15347,15357]`frame.name`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [15347,15357]`frame.name`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: name
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -3855,10 +3794,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [15375,15385]`frame.line`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [15375,15385]`frame.line`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: line
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -3880,10 +3818,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       PythonCallNodeGen SourceSection: [15432,15450]`frame.line.strip()`
                                                         CallNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
-                                                          GetAttributeNodeGen SourceSection: [15432,15442]`frame.line`
-                                                            GetFixedAttributeNodeGen SourceSection: None
+                                                          GetAttributeNode SourceSection: [15432,15442]`frame.line`
+                                                            GetFixedAttributeNode SourceSection: None
                                                               Key: line
-                                                              CachedDispatchFirst SourceSection: None
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                               IsBuiltinClassProfile SourceSection: None
@@ -3896,10 +3833,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [15468,15480]`frame.locals`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [15468,15480]`frame.locals`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: locals
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -3965,10 +3901,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         PythonCallNodeGen SourceSection: [15524,15544]`frame.locals.items()...`
                                                           CallNodeGen SourceSection: None
                                                           GetCallAttributeNodeGen SourceSection: None
-                                                            GetAttributeNodeGen SourceSection: [15524,15536]`frame.locals`
-                                                              GetFixedAttributeNodeGen SourceSection: None
+                                                            GetAttributeNode SourceSection: [15524,15536]`frame.locals`
+                                                              GetFixedAttributeNode SourceSection: None
                                                                 Key: locals
-                                                                CachedDispatchFirst SourceSection: None
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
@@ -4229,10 +4164,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
                                                   IsExpressionNodeGen SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [17717,17736]`exc_value.__cause__`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [17717,17736]`exc_value.__cause__`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: __cause__
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -4258,10 +4192,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [17765,17767]`id`
                                                       Identifier: id
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [17768,17787]`exc_value.__cause__`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [17768,17787]`exc_value.__cause__`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: __cause__
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -4286,10 +4219,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [17860,17864]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [17865,17884]`exc_value.__cause__`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [17865,17884]`exc_value.__cause__`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: __cause__
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4297,10 +4229,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [17865,17874]`exc_value`
                                                     Frame: [2,exc_value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [17903,17922]`exc_value.__cause__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [17903,17922]`exc_value.__cause__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __cause__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4308,18 +4239,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadLocalVariableNode SourceSection: [17903,17912]`exc_value`
                                                   Frame: [2,exc_value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [17940,17973]`exc_value.__cause__....`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [17940,17973]`exc_value.__cause__....`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __traceback__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [17940,17959]`exc_value.__cause__`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [17940,17959]`exc_value.__cause__`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: __cause__
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4365,10 +4294,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
                                                   IsExpressionNodeGen SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [18181,18202]`exc_value.__context_...`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [18181,18202]`exc_value.__context_...`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: __context__
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -4394,10 +4322,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [18231,18233]`id`
                                                       Identifier: id
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [18234,18255]`exc_value.__context_...`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [18234,18255]`exc_value.__context_...`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: __context__
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -4422,10 +4349,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [18330,18334]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [18335,18356]`exc_value.__context_...`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [18335,18356]`exc_value.__context_...`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: __context__
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4433,10 +4359,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [18335,18344]`exc_value`
                                                     Frame: [2,exc_value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [18375,18396]`exc_value.__context_...`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [18375,18396]`exc_value.__context_...`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __context__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4444,18 +4369,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadLocalVariableNode SourceSection: [18375,18384]`exc_value`
                                                   Frame: [2,exc_value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [18414,18449]`exc_value.__context_...`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [18414,18449]`exc_value.__context_...`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __traceback__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [18414,18435]`exc_value.__context_...`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [18414,18435]`exc_value.__context_...`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: __context__
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4524,10 +4447,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [18826,18835]`exc_value`
                                                 Frame: [2,exc_value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [18792,18822]`exc_value.__suppress...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [18792,18822]`exc_value.__suppress...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __suppress_context__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -4619,10 +4541,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [19350,19354]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [19366,19384]`exc_value.filename`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [19366,19384]`exc_value.filename`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: filename
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4640,10 +4561,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [19411,19414]`str`
                                                   Identifier: str
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [19415,19431]`exc_value.lineno`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [19415,19431]`exc_value.lineno`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: lineno
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4656,10 +4576,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [19445,19449]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [19457,19471]`exc_value.text`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [19457,19471]`exc_value.text`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: text
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4672,10 +4591,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [19484,19488]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [19498,19514]`exc_value.offset`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [19498,19514]`exc_value.offset`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: offset
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4688,10 +4606,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadLocalVariableNode SourceSection: [19527,19531]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [19538,19551]`exc_value.msg`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [19538,19551]`exc_value.msg`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: msg
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4806,10 +4723,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [19768,19771]`exc`
                                                     Frame: [1,exc,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [19773,19790]`exc.__traceback__`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [19773,19790]`exc.__traceback__`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: __traceback__
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -4876,10 +4792,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [1,frame,Illegal]
                                               ExpressionStatementNode SourceSection: [19952,19962]`frame.line`
-                                                GetAttributeNodeGen SourceSection: [19952,19962]`frame.line`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [19952,19962]`frame.line`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: line
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4888,10 +4803,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [1,frame,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [19928,19938]`self.stack`
-                                              GetAttributeNodeGen SourceSection: [19928,19938]`self.stack`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [19928,19938]`self.stack`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: stack
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4904,10 +4818,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [19974,19990]`self.__context__`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [19974,19990]`self.__context__`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __context__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -4919,10 +4832,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             PythonCallNodeGen SourceSection: [20004,20034]`self.__context__._lo...`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [20004,20020]`self.__context__`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [20004,20020]`self.__context__`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: __context__
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4935,10 +4847,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [20046,20060]`self.__cause__`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [20046,20060]`self.__cause__`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __cause__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -4950,10 +4861,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             PythonCallNodeGen SourceSection: [20074,20102]`self.__cause__._load...`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [20074,20088]`self.__cause__`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [20074,20088]`self.__cause__`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: __cause__
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -5016,10 +4926,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             BinaryComparisonNodeGen SourceSection: [20148,20179]`self.__dict__ == oth...`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __eq__
-                                              GetAttributeNodeGen SourceSection: [20148,20161]`self.__dict__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [20148,20161]`self.__dict__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __dict__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5027,10 +4936,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadLocalVariableNode SourceSection: [20148,20152]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [20165,20179]`other.__dict__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [20165,20179]`other.__dict__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __dict__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5081,10 +4989,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,<return_val>,Illegal]
-                                            GetAttributeNodeGen SourceSection: [20219,20228]`self._str`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [20219,20228]`self._str`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _str
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5134,10 +5041,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: [20759,20780]`self.exc_type is Non...`
-                                              GetAttributeNodeGen SourceSection: [20759,20772]`self.exc_type`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [20759,20772]`self.exc_type`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: exc_type
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5156,10 +5062,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Identifier: _format_final_exc_line
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ObjectLiteralNode SourceSection: [20823,20827]`None`
-                                                  GetAttributeNodeGen SourceSection: [20829,20838]`self._str`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [20829,20838]`self._str`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: _str
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -5175,18 +5080,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Identifier: stype
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [1,stype,Illegal]
-                                          GetAttributeNodeGen SourceSection: [20876,20902]`self.exc_type.__qual...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [20876,20902]`self.exc_type.__qual...`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: __qualname__
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [20876,20889]`self.exc_type`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [20876,20889]`self.exc_type`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: exc_type
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5198,18 +5101,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Identifier: smod
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [2,smod,Illegal]
-                                          GetAttributeNodeGen SourceSection: [20918,20942]`self.exc_type.__modu...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [20918,20942]`self.exc_type.__modu...`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: __module__
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [20918,20931]`self.exc_type`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [20918,20931]`self.exc_type`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: exc_type
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5262,10 +5163,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21047,21057]`issubclass`
                                                 Identifier: issubclass
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [21058,21071]`self.exc_type`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [21058,21071]`self.exc_type`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: exc_type
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5288,10 +5188,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadGeneratorFrameVariableNode SourceSection: [21128,21133]`stype`
                                                     Frame: [1,stype,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  GetAttributeNodeGen SourceSection: [21135,21144]`self._str`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [21135,21144]`self._str`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: _str
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -5308,10 +5207,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [3,filename,Illegal]
                                           OrNode SourceSection: [21260,21287]`self.filename or "<s...`
-                                            GetAttributeNodeGen SourceSection: [21260,21273]`self.filename`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [21260,21273]`self.filename`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: filename
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5333,10 +5231,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21305,21308]`str`
                                                 Identifier: str
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [21309,21320]`self.lineno`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [21309,21320]`self.lineno`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: lineno
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5366,10 +5263,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Identifier: badline
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [5,badline,Illegal]
-                                          GetAttributeNodeGen SourceSection: [21412,21421]`self.text`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [21412,21421]`self.text`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: text
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -5381,10 +5277,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Identifier: offset
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [6,offset,Illegal]
-                                          GetAttributeNodeGen SourceSection: [21439,21450]`self.offset`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [21439,21450]`self.offset`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: offset
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -5579,10 +5474,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [8,msg,Illegal]
                                           OrNode SourceSection: [21970,22005]`self.msg or "<no det...`
-                                            GetAttributeNodeGen SourceSection: [21970,21978]`self.msg`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [21970,21978]`self.msg`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: msg
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5672,10 +5566,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
                                               IsExpressionNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [22580,22594]`self.__cause__`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [22580,22594]`self.__cause__`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: __cause__
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -5714,10 +5607,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                       EmptyNode SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
-                                                      GetAttributeNodeGen SourceSection: [22635,22649]`self.__cause__`
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                      GetAttributeNode SourceSection: [22635,22649]`self.__cause__`
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: __cause__
-                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -5743,10 +5635,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
                                                     IsExpressionNodeGen SourceSection: None
-                                                      GetAttributeNodeGen SourceSection: [22725,22741]`self.__context__`
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                      GetAttributeNode SourceSection: [22725,22741]`self.__context__`
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: __context__
-                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -5758,10 +5649,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   NotNodeGen SourceSection: [22774,22803]`not self.__suppress_...`
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [22778,22803]`self.__suppress_cont...`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                    GetAttributeNode SourceSection: [22778,22803]`self.__suppress_cont...`
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: __suppress_context__
-                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -5802,10 +5692,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                         EmptyNode SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
-                                                        GetAttributeNodeGen SourceSection: [22833,22849]`self.__context__`
-                                                          GetFixedAttributeNodeGen SourceSection: None
+                                                        GetAttributeNode SourceSection: [22833,22849]`self.__context__`
+                                                          GetFixedAttributeNode SourceSection: None
                                                             Key: __context__
-                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -5829,10 +5718,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [22920,22938]`self.exc_traceback`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [22920,22938]`self.exc_traceback`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: exc_traceback
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5869,10 +5757,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             PythonCallNodeGen SourceSection: [23028,23047]`self.stack.format()`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [23028,23038]`self.stack`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [23028,23038]`self.stack`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: stack
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None

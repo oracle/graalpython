@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -105,6 +106,8 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
+    private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
+    private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
@@ -458,6 +461,7 @@ public final class PythonContext {
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
+        posixSupport.postInitialize();
         setupRuntimeInformation(true);
         core.postInitialize();
         importSiteIfForced();
@@ -465,12 +469,12 @@ public final class PythonContext {
 
     private void importSiteIfForced() {
         if (getOption(PythonOptions.ForceImportSite)) {
-            CallTarget site = env.parsePublic(Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build());
+            CallTarget site = env.parsePublic(FORCE_IMPORTS_SOURCE);
             site.call();
         }
         if (!getOption(PythonOptions.WarnOptions).isEmpty()) {
             // we must force an import of the warnings module here if warnings were passed
-            CallTarget site = env.parsePublic(Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build());
+            CallTarget site = env.parsePublic(IMPORT_WARNINGS_SOURCE);
             site.call();
         }
     }
@@ -1040,6 +1044,24 @@ public final class PythonContext {
     public void popCurrentImport() {
         assert currentImport.get() != null && currentImport.get().peek() != null : "invalid popCurrentImport without push";
         currentImport.get().pop();
+    }
+
+    public Thread[] getThreads() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (singleThreaded.isValid()) {
+            return new Thread[]{Thread.currentThread()};
+        } else {
+            Set<Thread> threads = new HashSet<>();
+            for (PythonThreadState ts : threadStateMapping.values()) {
+                for (WeakReference<Thread> thRef : ts.getOwners()) {
+                    Thread th = thRef.get();
+                    if (th != null) {
+                        threads.add(th);
+                    }
+                }
+            }
+            return threads.toArray(new Thread[0]);
+        }
     }
 
     private PythonThreadState getThreadState() {

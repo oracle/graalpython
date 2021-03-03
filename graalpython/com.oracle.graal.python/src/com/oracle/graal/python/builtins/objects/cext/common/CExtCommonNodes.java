@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.CharacterCodingException;
@@ -58,12 +59,14 @@ import java.nio.charset.CodingErrorAction;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -72,13 +75,18 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -106,69 +114,85 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtCommonNodes {
+
+    private static final int SIGABRT_EXIT_CODE = 134;
+
+    @TruffleBoundary
+    public static PythonExitException fatalError(Node location, PythonContext context, String prefix, String msg, int status) {
+        PrintWriter stderr = new PrintWriter(context.getStandardErr());
+        stderr.print("Fatal Python error: ");
+        if (prefix != null) {
+            stderr.print(prefix);
+            stderr.print(": ");
+        }
+        if (msg != null) {
+            stderr.print(msg);
+        } else {
+            stderr.print("<message not set>");
+        }
+        stderr.println();
+        stderr.flush();
+
+        if (status < 0) {
+            // In CPython, this will use 'abort()' which sets a special exit code.
+            throw new PythonExitException(location, SIGABRT_EXIT_CODE);
+        }
+        throw new PythonExitException(location, status);
+    }
 
     @GenerateUncached
     public abstract static class ImportCExtSymbolNode extends PNodeWithContext {
 
-        public abstract Object execute(CExtContext nativeContext, String name);
+        public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol);
 
-        // n.b. if 'singleContextAssumption' is valid, we may also cache the native context
-        @Specialization(guards = {"nativeContext == cachedNativeContext", "cachedName == name"}, //
-                        limit = "1", //
-                        assumptions = "singleContextAssumption()")
+        @Specialization(guards = "cachedSymbol == symbol", limit = "1", assumptions = "singleContextAssumption()")
         @SuppressWarnings("unused")
-        static Object doReceiverCachedIdentity(CExtContext nativeContext, String name,
-                        @Cached("nativeContext") CExtContext cachedNativeContext,
-                        @Cached("name") String cachedName,
+        static Object doSymbolCached(CExtContext nativeContext, NativeCExtSymbol symbol,
+                        @Cached("symbol") NativeCExtSymbol cachedSymbol,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, name)") Object sym) {
-            return sym;
+                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object llvmSymbol) {
+            return llvmSymbol;
         }
 
         // n.b. if 'singleContextAssumption' is valid, we may also cache the native context
-        @Specialization(guards = {"nativeContext == cachedNativeContext", "cachedName.equals(name)"}, //
-                        limit = "1", //
+        @Specialization(guards = "nativeContext == cachedNativeContext", limit = "1", //
                         assumptions = "singleContextAssumption()", //
-                        replaces = "doReceiverCachedIdentity")
+                        replaces = "doSymbolCached")
         @SuppressWarnings("unused")
-        static Object doReceiverCached(CExtContext nativeContext, String name,
+        static Object doWithSymbolCacheSingleContext(CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
-                        @Cached("name") String cachedName,
+                        @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
+                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, name)") Object sym) {
-            return sym;
+                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object sym) {
+            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib, raiseNode);
         }
 
-        @Specialization(replaces = {"doReceiverCachedIdentity", "doReceiverCached"}, limit = "1")
-        static Object doWithSymbolCache(CExtContext nativeContext, String name,
+        @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
+        static Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
                         @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, name, PNone.NO_VALUE);
+            Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, symbol, PNone.NO_VALUE);
             if (nativeSymbol == PNone.NO_VALUE) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, name);
-                dynamicObjectLib.put(symbolCache, name, nativeSymbol);
-                dynamicObjectLib.updateShape(symbolCache);
+                CompilerDirectives.transferToInterpreter();
+                nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, symbol);
+                dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
             }
             return nativeSymbol;
         }
 
-        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, String name) {
-            Object capiLibrary = nativeContext.getLLVMLibrary();
-            return importCAPISymbol(raiseNode, InteropLibrary.getFactory().getUncached(capiLibrary), capiLibrary, name);
-        }
-
-        private static Object importCAPISymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
+        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, NativeCExtSymbol symbol) {
+            Object llvmLibrary = nativeContext.getLLVMLibrary();
+            String name = symbol.getName();
             try {
-                return library.readMember(capiLibrary, name);
+                return InteropLibrary.getUncached().readMember(llvmLibrary, name);
             } catch (UnknownIdentifierException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, capiLibrary);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
             }
         }
     }
@@ -176,26 +200,23 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class PCallCExtFunction extends PNodeWithContext {
 
-        public final Object call(CExtContext nativeContext, String name, Object... args) {
-            return execute(nativeContext, name, args);
+        public final Object call(CExtContext nativeContext, NativeCExtSymbol symbol, Object... args) {
+            return execute(nativeContext, symbol, args);
         }
 
-        public abstract Object execute(CExtContext nativeContext, String name, Object[] args);
+        public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol, Object[] args);
 
         @Specialization
-        static Object doIt(CExtContext nativeContext, String name, Object[] args,
+        static Object doIt(CExtContext nativeContext, NativeCExtSymbol symbol, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
-                        @Cached BranchProfile profile,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return interopLibrary.execute(importCExtSymbolNode.execute(nativeContext, name), args);
+                return interopLibrary.execute(importCExtSymbolNode.execute(nativeContext, symbol), args);
             } catch (UnsupportedTypeException | ArityException e) {
-                profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
-                profile.enter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, name);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, symbol.getName());
             }
         }
     }
@@ -203,33 +224,30 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class EncodeNativeStringNode extends PNodeWithContext {
 
-        public abstract PBytes execute(Charset charset, Object unicodeObject, String errors);
+        public abstract byte[] execute(Charset charset, Object unicodeObject, String errors);
 
         @Specialization
-        static PBytes doJavaString(Charset charset, String unicodeObject, String errors,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
+        static byte[] doJavaString(Charset charset, String unicodeObject, String errors,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, raiseNode);
-                return factory.createBytes(BytesBuiltins.doEncode(charset, unicodeObject, action));
+                return BytesBuiltins.doEncode(charset, unicodeObject, action);
             } catch (CharacterCodingException e) {
                 throw raiseNode.raise(UnicodeEncodeError, "%m", e);
             }
         }
 
         @Specialization
-        static PBytes doGeneric(Charset charset, Object unicodeObject, String errors,
+        static byte[] doGeneric(Charset charset, Object unicodeObject, String errors,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
 
             try {
                 String s = castToJavaStringNode.execute(unicodeObject);
-                return doJavaString(charset, s, errors, factory, raiseNode);
+                return doJavaString(charset, s, errors, raiseNode);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
             }
-
         }
     }
 
@@ -389,221 +407,63 @@ public abstract class CExtCommonNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
 
-        public abstract Object execute(Frame frame, Object o, int signed, long targetTypeSize);
+        public abstract Object execute(Frame frame, Object o, int signed, int targetTypeSize);
 
-        public final long executeLong(Frame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
+        public final long executeLong(Frame frame, Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
             return PGuards.expectLong(execute(frame, o, signed, targetTypeSize));
         }
 
-        public final int executeInt(Frame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
+        public final int executeInt(Frame frame, Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
             return PGuards.expectInteger(execute(frame, o, signed, targetTypeSize));
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize) {
+        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+            return nativeWrapper.getInt();
+        }
+
+        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInUInt32(nativeWrapper)"})
+        @SuppressWarnings("unused")
+        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
             return nativeWrapper.getInt();
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed != 0", "fitsInInt64(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize) {
+        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
             return nativeWrapper.getLong();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInUInt32(nativeWrapper)"})
-        @SuppressWarnings("unused")
-        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize) {
-            return nativeWrapper.getInt();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInInt32(nativeWrapper)"}, replaces = "doWrapperToUInt32Pos")
-        @SuppressWarnings("unused")
-        static int doWrapperToUInt32(Frame frame, PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            return doIntToUInt32(frame, nativeWrapper.getInt(), signed, targetTypeSize, raiseNativeNode, negativeProfile);
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInUInt64(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize) {
+        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
             return nativeWrapper.getLong();
         }
 
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInInt64(nativeWrapper)"}, replaces = "doWrapperToUInt64Pos")
+        @Specialization
         @SuppressWarnings("unused")
-        static long doWrapperToUInt64(Frame frame, PrimitiveNativeWrapper nativeWrapper, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            long value = nativeWrapper.getLong();
-            if (negativeProfile.profile(value < 0)) {
-                return raiseNegativeValue(frame, raiseNativeNode);
-            }
-            return value;
+        static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize,
+                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, true);
         }
 
-        @Specialization(guards = {"targetTypeSize == 4", "signed != 0"})
-        @SuppressWarnings("unused")
-        static long doIntToInt32(int value, int signed, long targetTypeSize) {
-            return value;
+        @Specialization
+        static Object doInt(int value, int signed, int targetTypeSize,
+                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
         }
 
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static long doIntToUInt32Pos(int value, int signed, long targetTypeSize) {
-            return value;
+        @Specialization
+        static Object doLong(long value, int signed, int targetTypeSize,
+                        @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
         }
 
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
-        @SuppressWarnings("unused")
-        static int doIntToUInt32(Frame frame, int value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            if (negativeProfile.profile(value < 0)) {
-                return raiseNegativeValue(frame, raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
-        @SuppressWarnings("unused")
-        static long doIntToInt64(int value, int signed, long targetTypeSize) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static long doIntToUInt64Pos(int value, int signed, long targetTypeSize) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
-        @SuppressWarnings("unused")
-        static int doIntToUInt64(Frame frame, int value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            if (negativeProfile.profile(value < 0)) {
-                return raiseNegativeValue(frame, raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doIntOther(Frame frame, @SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 4")
-        static long doLong4(Frame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseTooLarge(frame, raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
-        @SuppressWarnings("unused")
-        static long doLongToInt64(long value, int signed, long targetTypeSize) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
-        @SuppressWarnings("unused")
-        static long doLongToUInt64Pos(long value, int signed, long targetTypeSize) {
-            return value;
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
-        @SuppressWarnings("unused")
-        static long doLongToUInt64(Frame frame, long value, int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached ConditionProfile negativeProfile) {
-            if (negativeProfile.profile(value < 0)) {
-                return raiseNegativeValue(frame, raiseNativeNode);
-            }
-            return value;
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        static PythonNativeVoidPtr doVoid(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return obj;
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doPInt(Frame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 4")
-        @TruffleBoundary
-        static int doPIntTo32Bit(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            try {
-                if (signed != 0) {
-                    return obj.intValueExact();
-                } else if (obj.bitLength() <= 32) { // investigate the use of NarrowBigIntegerNode
-                                                    // (avoid the truffle boundary)
-                    if (obj.isNegative()) {
-                        return raiseNegativeValue(raiseNativeNode);
-                    }
-                    return obj.intValue();
-                }
-            } catch (OverflowException e) {
-                // fall through
-            }
-            return raiseTooLarge(raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        @TruffleBoundary
-        static long doPIntTo64Bit(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            try {
-                if (signed != 0) {
-                    return obj.longValueExact();
-                } else if (obj.bitLength() <= 64) {
-                    if (obj.isNegative()) {
-                        return raiseNegativeValue(raiseNativeNode);
-                    }
-                    return obj.longValue();
-                }
-            } catch (OverflowException e) {
-                // fall through
-            }
-            return raiseTooLarge(raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static long doPInt(Frame frame, @SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize,
-                        @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseUnsupportedSize(frame, raiseNativeNode, targetTypeSize);
-        }
-
-        @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)", "!isInteger(obj)", "!isPInt(obj)"})
-        static Object doGeneric(Object obj, int signed, long targetTypeSize,
-                        @Cached CExtNodes.AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
-        }
-
-        private static int raiseTooLarge(PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
-            return raiseNativeNode.raiseIntWithoutFrame(-1, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        private static int raiseTooLarge(Frame frame, PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
-            return raiseNativeNode.raiseInt(frame, -1, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
-        }
-
-        private static Integer raiseUnsupportedSize(Frame frame, PRaiseNativeNode raiseNativeNode, long targetTypeSize) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
-        }
-
-        private static int raiseNegativeValue(PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseIntWithoutFrame(-1, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
-        }
-
-        private static int raiseNegativeValue(Frame frame, PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+        @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)"}, replaces = {"doInt", "doLong"})
+        static Object doOther(Object obj, int signed, int targetTypeSize,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, true);
         }
 
         static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
@@ -691,5 +551,304 @@ public abstract class CExtCommonNodes {
             // is a float object, use the value and do *NOT* call '__float__'.
             return lib.asJavaDouble(value);
         }
+    }
+
+    public abstract static class CheckFunctionResultNode extends PNodeWithContext {
+        public abstract Object execute(PythonContext context, String name, Object result);
+    }
+
+    @GenerateUncached
+    public abstract static class GetByteArrayNode extends Node {
+
+        public abstract byte[] execute(Object obj, long n) throws InteropException, OverflowException;
+
+        @Specialization(limit = "1")
+        static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
+            return subRangeIfNeeded(obj.getByteArray(lib), n);
+        }
+
+        @Specialization(limit = "1")
+        static byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            Object delegate = lib.getDelegate(obj);
+            if (delegate instanceof PBytesLike) {
+                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+                return subRangeIfNeeded(bytes, n);
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization(limit = "5")
+        static byte[] doForeign(Object obj, long n,
+                        @CachedLibrary("obj") InteropLibrary interopLib,
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib) throws InteropException, OverflowException {
+            long size = n < 0 ? interopLib.getArraySize(obj) : n;
+            byte[] bytes = new byte[PInt.intValueExact(size)];
+            for (int i = 0; i < bytes.length; i++) {
+                Object elem = interopLib.readArrayElement(obj, i);
+                if (elementLib.fitsInByte(elem)) {
+                    bytes[i] = elementLib.asByte(elem);
+                }
+            }
+            return bytes;
+        }
+
+        private static byte[] subRangeIfNeeded(byte[] bytes, long n) {
+            if (bytes.length > n && n >= 0) {
+                // cast to int is guaranteed because of 'bytes.length > n'
+                return PythonUtils.arrayCopyOf(bytes, (int) n);
+            } else {
+                return bytes;
+            }
+        }
+    }
+
+    /**
+     * Converts a Python object (i.e. {@code PyObject*}) to a C integer value ({@code int} or
+     * {@code long}).<br/>
+     * This node is used to implement {@code PyLong_AsLong} or similar C API functions and does
+     * coercion and may raise a Python exception if coercion fails.
+     */
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
+    public abstract static class AsNativePrimitiveNode extends Node {
+
+        public final int toInt32(Object value, boolean exact) {
+            return (int) execute(value, 1, 4, exact);
+        }
+
+        public final int toUInt32(Object value, boolean exact) {
+            return (int) execute(value, 0, 4, exact);
+        }
+
+        public final long toInt64(Object value, boolean exact) {
+            return (long) execute(value, 1, 8, exact);
+        }
+
+        public final long toUInt64(Object value, boolean exact) {
+            return (long) execute(value, 0, 8, exact);
+        }
+
+        public abstract Object execute(byte value, int signed, int targetTypeSize, boolean exact);
+
+        public abstract Object execute(int value, int signed, int targetTypeSize, boolean exact);
+
+        public abstract Object execute(long value, int signed, int targetTypeSize, boolean exact);
+
+        public abstract Object execute(Object value, int signed, int targetTypeSize, boolean exact);
+
+        @Specialization(guards = {"targetTypeSize == 4", "signed != 0"})
+        @SuppressWarnings("unused")
+        static int doIntToInt32(int value, int signed, int targetTypeSize, boolean exact) {
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "value >= 0"})
+        @SuppressWarnings("unused")
+        static int doIntToUInt32Pos(int value, int signed, int targetTypeSize, boolean exact) {
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 4", "signed == 0"}, replaces = "doIntToUInt32Pos")
+        @SuppressWarnings("unused")
+        static int doIntToUInt32(int value, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            if (exact && value < 0) {
+                throw raiseNegativeValue(raiseNativeNode);
+            }
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
+        @SuppressWarnings("unused")
+        static long doIntToInt64(int obj, int signed, int targetTypeSize, boolean exact) {
+            return obj;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
+        @SuppressWarnings("unused")
+        static long doIntToUInt64Pos(int value, int signed, int targetTypeSize, boolean exact) {
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doIntToUInt64Pos")
+        @SuppressWarnings("unused")
+        static long doIntToUInt64(int value, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            if (exact && value < 0) {
+                throw raiseNegativeValue(raiseNativeNode);
+            }
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
+        @SuppressWarnings("unused")
+        static long doLongToInt64(long value, int signed, int targetTypeSize, boolean exact) {
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
+        @SuppressWarnings("unused")
+        static long doLongToUInt64Pos(long value, int signed, int targetTypeSize, boolean exact) {
+            return value;
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
+        @SuppressWarnings("unused")
+        static long doLongToUInt64(long value, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNativeNode") @Cached PRaiseNode raiseNativeNode) {
+            if (exact && value < 0) {
+                throw raiseNegativeValue(raiseNativeNode);
+            }
+            return value;
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
+        @SuppressWarnings("unused")
+        static int doLongToInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return PInt.intValueExact(obj);
+            } catch (OverflowException e) {
+                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+            }
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0", "obj >= 0"})
+        @SuppressWarnings("unused")
+        static int doLongToUInt32PosExact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return PInt.intValueExact(obj);
+            } catch (OverflowException e) {
+                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+            }
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"}, replaces = "doLongToUInt32PosExact")
+        @SuppressWarnings("unused")
+        static int doLongToUInt32Exact(long obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (obj < 0) {
+                throw raiseNegativeValue(raiseNode);
+            }
+            try {
+                return PInt.intValueExact(obj);
+            } catch (OverflowException e) {
+                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+            }
+        }
+
+        @Specialization(guards = {"!exact", "targetTypeSize == 4"})
+        @SuppressWarnings("unused")
+        static int doLongToInt32Lossy(long obj, int signed, int targetTypeSize, boolean exact) {
+            return (int) obj;
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        @SuppressWarnings("unused")
+        static Object doVoidPtrToI64(PythonNativeVoidPtr obj, int signed, int targetTypeSize, boolean exact) {
+            return obj;
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4"})
+        @SuppressWarnings("unused")
+        @TruffleBoundary
+        static int doPIntTo32Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                if (signed != 0) {
+                    return obj.intValueExact();
+                } else if (obj.bitLength() <= 32) {
+                    if (obj.isNegative()) {
+                        throw raiseNegativeValue(raiseNode);
+                    }
+                    return obj.intValue();
+                }
+            } catch (OverflowException e) {
+                // fall through
+            }
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 8"})
+        @SuppressWarnings("unused")
+        @TruffleBoundary
+        static long doPIntTo64Bit(PInt obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                if (signed != 0) {
+                    return obj.longValueExact();
+                } else if (obj.bitLength() <= 64) {
+                    if (obj.isNegative()) {
+                        throw raiseNegativeValue(raiseNode);
+                    }
+                    return obj.longValue();
+                }
+            } catch (OverflowException e) {
+                // fall through
+            }
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"!exact", "targetTypeSize == 4"})
+        @SuppressWarnings("unused")
+        static int doPIntToInt32Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
+            return obj.intValue();
+        }
+
+        @Specialization(guards = {"!exact", "targetTypeSize == 8"})
+        @SuppressWarnings("unused")
+        static long doPIntToInt64Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
+            return obj.longValue();
+        }
+
+        @Specialization(guards = {"targetTypeSize == 4 || targetTypeSize == 8"}, //
+                        replaces = {"doIntToInt32", "doIntToUInt32Pos", "doIntToUInt32", //
+                                        "doIntToInt64", "doIntToUInt64Pos", "doIntToUInt64", //
+                                        "doLongToInt64", "doLongToUInt64Pos", "doLongToUInt64", //
+                                        "doLongToInt32Exact", "doLongToUInt32PosExact", "doLongToUInt32Exact", "doLongToInt32Lossy", //
+                                        "doVoidPtrToI64", //
+                                        "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
+        static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
+                        @Cached LookupAndCallUnaryDynamicNode callIndexNode,
+                        @Cached LookupAndCallUnaryDynamicNode callIntNode,
+                        @Cached AsNativePrimitiveNode recursive,
+                        @Exclusive @Cached BranchProfile noIntProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+
+            Object result = callIndexNode.executeObject(obj, SpecialMethodNames.__INDEX__);
+            if (result == PNone.NO_VALUE) {
+                result = callIntNode.executeObject(obj, SpecialMethodNames.__INT__);
+                if (result == PNone.NO_VALUE) {
+                    noIntProfile.enter();
+                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, result);
+                }
+            }
+            // n.b. this check is important to avoid endless recursions; it will ensure that
+            // 'doGeneric' is not triggered in the recursive node
+            if (!(isIntegerType(result))) {
+                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+            }
+            return recursive.execute(result, signed, targetTypeSize, exact);
+        }
+
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        @SuppressWarnings("unused")
+        static int doUnsupportedTargetSize(Object obj, int signed, int targetTypeSize, boolean exact,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
+        }
+
+        static boolean isIntegerType(Object obj) {
+            return PGuards.isInteger(obj) || PGuards.isPInt(obj) || obj instanceof PythonNativeVoidPtr;
+        }
+
+        private static PException raiseNegativeValue(PRaiseNode raiseNativeNode) {
+            throw raiseNativeNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
+        }
+
     }
 }

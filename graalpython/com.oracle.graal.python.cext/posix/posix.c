@@ -53,12 +53,15 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <sys/wait.h>
+#include <sys/file.h>
 #include <unistd.h>
 
 
@@ -83,6 +86,7 @@ int32_t get_inheritable(int32_t fd) {
     return !(flags & FD_CLOEXEC);
 }
 
+// note: this is also called between fork() and exec()
 int32_t set_inheritable(int32_t fd, int32_t inheritable) {
     int res = fcntl(fd, F_GETFD);
     if (res >= 0) {
@@ -213,6 +217,10 @@ int32_t call_ftruncate(int32_t fd, int64_t length) {
 
 int32_t call_fsync(int32_t fd) {
     return fsync(fd);
+}
+
+int32_t call_flock(int32_t fd, int32_t operation) {
+    return flock(fd, operation);
 }
 
 int32_t get_blocking(int32_t fd) {
@@ -418,6 +426,83 @@ int32_t call_fchmod(int32_t fd, int32_t mode) {
 
 int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
     return readlinkat(dirFd, path, buf, size);
+}
+
+int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) {
+    return waitpid(pid, status, options);
+}
+
+int32_t call_wcoredump(int32_t status) {
+    return WCOREDUMP(status) ? 1 : 0;
+}
+
+int32_t call_wifcontinued(int32_t status) {
+    return WIFCONTINUED(status) ? 1 : 0;
+}
+
+int32_t call_wifstopped(int32_t status) {
+    return WIFSTOPPED(status) ? 1 : 0;
+}
+
+int32_t call_wifsignaled(int32_t status) {
+    return WIFSIGNALED(status) ? 1 : 0;
+}
+
+int32_t call_wifexited(int32_t status) {
+    return WIFEXITED(status) ? 1 : 0;
+}
+
+int32_t call_wexitstatus(int32_t status) {
+    return WEXITSTATUS(status);
+}
+
+int32_t call_wtermsig(int32_t status) {
+    return WTERMSIG(status);
+}
+
+int32_t call_wstopsig(int32_t status) {
+    return WSTOPSIG(status);
+}
+
+int32_t call_kill(int64_t pid, int32_t signal) {
+    return kill(pid, signal);
+}
+
+int64_t call_getuid() {
+    return getuid();
+}
+
+int64_t call_getppid() {
+    return getppid();
+}
+
+int64_t call_getsid(int64_t pid) {
+    return getsid(pid);
+}
+
+int32_t call_ctermid(char *buf) {
+    return ctermid(buf) == NULL ? -1 : 0;
+}
+
+int32_t call_setenv(char *name, char *value, int overwrite) {
+    return setenv(name, value, overwrite);
+}
+
+// See comment in NFiPosixSupport.execv() for the description of arguments
+void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
+    // We reuse the memory allocated for offsets to avoid the need to allocate and reliably free another array
+    char **strings = (char **) offsets;
+    for (int32_t i = 0; i < offsetsLen; ++i) {
+        strings[i] = offsets[i] == -1 ? NULL : data + offsets[i];
+    }
+
+    char *pathname = strings[0];
+    char **argv = strings + 1;
+    execv(pathname, argv);
+}
+
+int32_t call_system(const char *pathname) {
+    return system(pathname);
 }
 
 int32_t get_errno() {

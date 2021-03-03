@@ -303,10 +303,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 ReadLocalVariableNode SourceSection: [1499,1502]`msg`
                                                   Frame: [1,msg,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [1504,1515]`self.lineno`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [1504,1515]`self.lineno`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: lineno
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -314,10 +313,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                   ReadLocalVariableNode SourceSection: [1504,1508]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [1517,1527]`self.colno`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [1517,1527]`self.colno`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: colno
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -549,10 +547,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
-                                        GetAttributeNodeGen SourceSection: [1833,1842]`self.name`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [1833,1842]`self.name`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: name
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -785,10 +782,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       YieldNode SourceSection: None
                                         flagSlot: 0
                                         TupleLiteralNode SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [2075,2084]`item.name`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [2075,2084]`item.name`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: name
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -876,7 +872,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
           StringLiteralNode SourceSection: [3205,3606]`"""↵    CATEGORY_DIG...`
       WriteNameNodeGen SourceSection: [3658,3739]`OP_IGNORE = {↵    LI...`
         Identifier: OP_IGNORE
-        DictLiteralNodeGen SourceSection: [3670,3739]`{↵    LITERAL: LITER...`
+        DynamicDictLiteralNodeGen SourceSection: [3670,3739]`{↵    LITERAL: LITER...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3676,3683]`LITERAL`
             Identifier: LITERAL
@@ -894,9 +890,11 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_IGNORE
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [3741,3837]`OP_LOCALE_IGNORE = {...`
         Identifier: OP_LOCALE_IGNORE
-        DictLiteralNodeGen SourceSection: [3760,3837]`{↵    LITERAL: LITER...`
+        DynamicDictLiteralNodeGen SourceSection: [3760,3837]`{↵    LITERAL: LITER...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3766,3773]`LITERAL`
             Identifier: LITERAL
@@ -914,9 +912,11 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_LOC_IGNORE
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [3839,3936]`OP_UNICODE_IGNORE = ...`
         Identifier: OP_UNICODE_IGNORE
-        DictLiteralNodeGen SourceSection: [3859,3936]`{↵    LITERAL: LITER...`
+        DynamicDictLiteralNodeGen SourceSection: [3859,3936]`{↵    LITERAL: LITER...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3865,3872]`LITERAL`
             Identifier: LITERAL
@@ -934,9 +934,11 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_UNI_IGNORE
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [3938,4017]`AT_MULTILINE = {↵   ...`
         Identifier: AT_MULTILINE
-        DictLiteralNodeGen SourceSection: [3953,4017]`{↵    AT_BEGINNING: ...`
+        DynamicDictLiteralNodeGen SourceSection: [3953,4017]`{↵    AT_BEGINNING: ...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3959,3971]`AT_BEGINNING`
             Identifier: AT_BEGINNING
@@ -954,9 +956,11 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_END_LINE
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4019,4109]`AT_LOCALE = {↵    AT...`
         Identifier: AT_LOCALE
-        DictLiteralNodeGen SourceSection: [4031,4109]`{↵    AT_BOUNDARY: A...`
+        DynamicDictLiteralNodeGen SourceSection: [4031,4109]`{↵    AT_BOUNDARY: A...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4037,4048]`AT_BOUNDARY`
             Identifier: AT_BOUNDARY
@@ -974,9 +978,11 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_LOC_NON_BOUNDARY
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4111,4202]`AT_UNICODE = {↵    A...`
         Identifier: AT_UNICODE
-        DictLiteralNodeGen SourceSection: [4124,4202]`{↵    AT_BOUNDARY: A...`
+        DynamicDictLiteralNodeGen SourceSection: [4124,4202]`{↵    AT_BOUNDARY: A...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4130,4141]`AT_BOUNDARY`
             Identifier: AT_BOUNDARY
@@ -994,9 +1000,11 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_UNI_NON_BOUNDARY
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4204,4558]`CH_LOCALE = {↵    CA...`
         Identifier: CH_LOCALE
-        DictLiteralNodeGen SourceSection: [4216,4558]`{↵    CATEGORY_DIGIT...`
+        DynamicDictLiteralNodeGen SourceSection: [4216,4558]`{↵    CATEGORY_DIGIT...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4222,4236]`CATEGORY_DIGIT`
             Identifier: CATEGORY_DIGIT
@@ -1062,9 +1070,17 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: CATEGORY_NOT_LINEBREAK
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4560,4939]`CH_UNICODE = {↵    C...`
         Identifier: CH_UNICODE
-        DictLiteralNodeGen SourceSection: [4573,4939]`{↵    CATEGORY_DIGIT...`
+        DynamicDictLiteralNodeGen SourceSection: [4573,4939]`{↵    CATEGORY_DIGIT...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4579,4593]`CATEGORY_DIGIT`
             Identifier: CATEGORY_DIGIT
@@ -1130,6 +1146,14 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: CATEGORY_UNI_NOT_LINEBREAK
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
+          CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [4949,4970]`SRE_FLAG_TEMPLATE = ...`
         Identifier: SRE_FLAG_TEMPLATE
         IntegerLiteralNode SourceSection: [4969,4970]`1`

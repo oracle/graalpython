@@ -26,10 +26,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
           BinaryComparisonNodeGen SourceSection: [328,347]`_sre.MAGIC == MAGIC`
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __eq__
-            GetAttributeNodeGen SourceSection: [328,338]`_sre.MAGIC`
-              GetFixedAttributeNodeGen SourceSection: None
+            GetAttributeNode SourceSection: [328,338]`_sre.MAGIC`
+              GetFixedAttributeNode SourceSection: None
                 Key: MAGIC
-                CachedDispatchFirst SourceSection: None
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
                 IsBuiltinClassProfile SourceSection: None
@@ -378,10 +377,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         Identifier: _combine_flags
         FunctionDefinitionNode Name: _combine_flags SourceSection: None
           Arguments:
-            GetAttributeNodeGen SourceSection: [2352,2372]`sre_parse.TYPE_FLAGS...`
-              GetFixedAttributeNodeGen SourceSection: None
+            GetAttributeNode SourceSection: [2352,2372]`sre_parse.TYPE_FLAGS...`
+              GetFixedAttributeNode SourceSection: None
                 Key: TYPE_FLAGS
-                CachedDispatchFirst SourceSection: None
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
                 IsBuiltinClassProfile SourceSection: None
@@ -546,10 +544,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       Identifier: emit
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,emit,Illegal]
-                      GetAttributeNodeGen SourceSection: [2566,2577]`code.append`
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: [2566,2577]`code.append`
+                        GetFixedAttributeNode SourceSection: None
                           Key: append
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -670,10 +667,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: iscased
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [9,iscased,Illegal]
-                            GetAttributeNodeGen SourceSection: [2948,2968]`_sre.unicode_iscased...`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [2948,2968]`_sre.unicode_iscased...`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: unicode_iscased
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -685,10 +681,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: tolower
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [10,tolower,Illegal]
-                            GetAttributeNodeGen SourceSection: [2991,3011]`_sre.unicode_tolower...`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [2991,3011]`_sre.unicode_tolower...`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: unicode_tolower
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -708,10 +703,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: iscased
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [9,iscased,Illegal]
-                            GetAttributeNodeGen SourceSection: [3086,3104]`_sre.ascii_iscased`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [3086,3104]`_sre.ascii_iscased`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: ascii_iscased
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -723,10 +717,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: tolower
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [10,tolower,Illegal]
-                            GetAttributeNodeGen SourceSection: [3127,3145]`_sre.ascii_tolower`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [3127,3145]`_sre.ascii_tolower`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: ascii_tolower
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2239,10 +2232,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   Identifier: tailappend
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [24,tailappend,Illegal]
-                                                  GetAttributeNodeGen SourceSection: [7316,7327]`tail.append`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [7316,7327]`tail.append`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: append
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -2869,10 +2861,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       Identifier: emit
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,emit,Illegal]
-                      GetAttributeNodeGen SourceSection: [9000,9011]`code.append`
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: [9000,9011]`code.append`
+                        GetFixedAttributeNode SourceSection: None
                           Key: append
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -4152,7 +4143,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       Identifier: comps
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [18,comps,Illegal]
-                      DictLiteralNodeGen SourceSection: [14180,14182]`{}`
+                      EmptyDictLiteralNode SourceSection: [14180,14182]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14187,14211]`mapping = bytearray(...`
                       Identifier: mapping
@@ -4403,10 +4394,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         BinaryArithmeticExpression SourceSection: [14676,14693]`_sre.CODESIZE * 8`
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __mul__
-          GetAttributeNodeGen SourceSection: [14676,14689]`_sre.CODESIZE`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [14676,14689]`_sre.CODESIZE`
+            GetFixedAttributeNode SourceSection: None
               Key: CODESIZE
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -4698,10 +4688,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         BinaryComparisonNodeGen SourceSection: [15054,15081]`a.itemsize == _sre.C...`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __eq__
-                          GetAttributeNodeGen SourceSection: [15054,15064]`a.itemsize`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [15054,15064]`a.itemsize`
+                            GetFixedAttributeNode SourceSection: None
                               Key: itemsize
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -4709,10 +4698,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             ReadLocalVariableNode SourceSection: [15054,15055]`a`
                               Frame: [1,a,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [15068,15081]`_sre.CODESIZE`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [15068,15081]`_sre.CODESIZE`
+                            GetFixedAttributeNode SourceSection: None
                               Key: CODESIZE
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -4738,10 +4726,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               ReadLocalVariableNode SourceSection: [15097,15098]`a`
                                 Frame: [1,a,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            GetAttributeNodeGen SourceSection: [15102,15112]`a.itemsize`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [15102,15112]`a.itemsize`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: itemsize
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -5184,10 +5171,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
-                            GetAttributeNodeGen SourceSection: [16260,16280]`_sre.unicode_iscased...`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [16260,16280]`_sre.unicode_iscased...`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: unicode_iscased
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -5200,10 +5186,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
-                            GetAttributeNodeGen SourceSection: [16306,16324]`_sre.ascii_iscased`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [16306,16324]`_sre.ascii_iscased`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: ascii_iscased
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -5264,10 +5249,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       Identifier: prefixappend
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [3,prefixappend,Illegal]
-                      GetAttributeNodeGen SourceSection: [16432,16445]`prefix.append`
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: [16432,16445]`prefix.append`
+                        GetFixedAttributeNode SourceSection: None
                           Key: append
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -5592,10 +5576,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   BlockNode SourceSection: None
                               BreakNode SourceSection: [17307,17312]`break`
                         GetIteratorExpressionNodeGen SourceSection: [16521,16533]`pattern.data`
-                          GetAttributeNodeGen SourceSection: [16521,16533]`pattern.data`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [16521,16533]`pattern.data`
+                            GetFixedAttributeNode SourceSection: None
                               Key: data
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -5686,10 +5669,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               NotNodeGen SourceSection: [17471,17487]`not pattern.data`
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
-                                GetAttributeNodeGen SourceSection: [17475,17487]`pattern.data`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [17475,17487]`pattern.data`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: data
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -5706,10 +5688,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               BlockNode SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: [17521,17545]`op, av = pattern.dat...`
                               GetItemNodeGen SourceSection: [17530,17545]`pattern.data[0]`
-                                GetAttributeNodeGen SourceSection: None
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: data
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -5941,10 +5922,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: charsetappend
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [9,charsetappend,Illegal]
-                            GetAttributeNodeGen SourceSection: [18010,18024]`charset.append`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [18010,18024]`charset.append`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: append
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -6513,10 +6493,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       Identifier: emit
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [9,emit,Illegal]
-                      GetAttributeNodeGen SourceSection: [19669,19680]`code.append`
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: [19669,19680]`code.append`
+                        GetFixedAttributeNode SourceSection: None
                           Key: append
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -6965,18 +6944,16 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       BinaryArithmeticExpression SourceSection: [20686,20709]`p.pattern.flags | fl...`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __or__
-                        GetAttributeNodeGen SourceSection: [20686,20701]`p.pattern.flags`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [20686,20701]`p.pattern.flags`
+                          GetFixedAttributeNode SourceSection: None
                             Key: flags
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          GetAttributeNodeGen SourceSection: [20686,20695]`p.pattern`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [20686,20695]`p.pattern`
+                            GetFixedAttributeNode SourceSection: None
                               Key: pattern
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -7017,10 +6994,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         ReadLocalVariableNode SourceSection: [20824,20828]`code`
                           Frame: [2,code,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [20830,20836]`p.data`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [20830,20836]`p.data`
+                          GetFixedAttributeNode SourceSection: None
                             Key: data
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -7134,10 +7110,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 BinaryArithmeticExpression SourceSection: [20951,20966]`_sre.CODESIZE*2`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __mul__
-                                                  GetAttributeNodeGen SourceSection: [20951,20964]`_sre.CODESIZE`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                  GetAttributeNode SourceSection: [20951,20964]`_sre.CODESIZE`
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: CODESIZE
-                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -8345,10 +8320,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                     ReadGeneratorFrameVariableNode SourceSection: [23296,23297]`x`
                                                                                       Frame: [0,x,Illegal]
                                                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                                                  GetAttributeNodeGen SourceSection: [23307,23320]`_sre.CODESIZE`
-                                                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                                                  GetAttributeNode SourceSection: [23307,23320]`_sre.CODESIZE`
+                                                                                    GetFixedAttributeNode SourceSection: None
                                                                                       Key: CODESIZE
-                                                                                      CachedDispatchFirst SourceSection: None
                                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                                         Op: __getattribute__
                                                                                       IsBuiltinClassProfile SourceSection: None
@@ -8356,10 +8330,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [23307,23311]`_sre`
                                                                                       Identifier: _sre
                                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                                                  GetAttributeNodeGen SourceSection: [23322,23335]`sys.byteorder`
-                                                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                                                  GetAttributeNode SourceSection: [23322,23335]`sys.byteorder`
+                                                                                    GetFixedAttributeNode SourceSection: None
                                                                                       Key: byteorder
-                                                                                      CachedDispatchFirst SourceSection: None
                                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                                         Op: __getattribute__
                                                                                       IsBuiltinClassProfile SourceSection: None
@@ -8412,10 +8385,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                 Op: __floordiv__
                                                                               IntegerLiteralNode SourceSection: [23398,23401]`256`
                                                                                 Value: 256
-                                                                              GetAttributeNodeGen SourceSection: [23403,23416]`_sre.CODESIZE`
-                                                                                GetFixedAttributeNodeGen SourceSection: None
+                                                                              GetAttributeNode SourceSection: [23403,23416]`_sre.CODESIZE`
+                                                                                GetFixedAttributeNode SourceSection: None
                                                                                   Key: CODESIZE
-                                                                                  CachedDispatchFirst SourceSection: None
                                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                                     Op: __getattribute__
                                                                                   IsBuiltinClassProfile SourceSection: None
@@ -8453,10 +8425,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     Op: __floordiv__
                                                                   IntegerLiteralNode SourceSection: [23482,23485]`256`
                                                                     Value: 256
-                                                                  GetAttributeNodeGen SourceSection: [23487,23500]`_sre.CODESIZE`
-                                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                                  GetAttributeNode SourceSection: [23487,23500]`_sre.CODESIZE`
+                                                                    GetFixedAttributeNode SourceSection: None
                                                                       Key: CODESIZE
-                                                                      CachedDispatchFirst SourceSection: None
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                       IsBuiltinClassProfile SourceSection: None
@@ -9937,18 +9908,16 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       Identifier: groupindex
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,groupindex,Illegal]
-                      GetAttributeNodeGen SourceSection: [26606,26625]`p.pattern.groupdict`
-                        GetFixedAttributeNodeGen SourceSection: None
+                      GetAttributeNode SourceSection: [26606,26625]`p.pattern.groupdict`
+                        GetFixedAttributeNode SourceSection: None
                           Key: groupdict
-                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
-                        GetAttributeNodeGen SourceSection: [26606,26615]`p.pattern`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [26606,26615]`p.pattern`
+                          GetFixedAttributeNode SourceSection: None
                             Key: pattern
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -9966,18 +9935,16 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         ListLiteralNode SourceSection: [26643,26649]`[None]`
                           ObjectLiteralNode SourceSection: [26644,26648]`None`
                           PythonObjectFactoryNodeGen SourceSection: None
-                        GetAttributeNodeGen SourceSection: [26652,26668]`p.pattern.groups`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [26652,26668]`p.pattern.groups`
+                          GetFixedAttributeNode SourceSection: None
                             Key: groups
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          GetAttributeNodeGen SourceSection: [26652,26661]`p.pattern`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [26652,26661]`p.pattern`
+                            GetFixedAttributeNode SourceSection: None
                               Key: pattern
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -10046,18 +10013,16 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             ReadLocalVariableNode SourceSection: [26774,26779]`flags`
                               Frame: [1,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            GetAttributeNodeGen SourceSection: [26782,26797]`p.pattern.flags`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [26782,26797]`p.pattern.flags`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: flags
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
-                              GetAttributeNodeGen SourceSection: [26782,26791]`p.pattern`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [26782,26791]`p.pattern`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: pattern
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -10071,18 +10036,16 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           BinaryArithmeticExpression SourceSection: [26813,26831]`p.pattern.groups-1`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __sub__
-                            GetAttributeNodeGen SourceSection: [26813,26829]`p.pattern.groups`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [26813,26829]`p.pattern.groups`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: groups
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
-                              GetAttributeNodeGen SourceSection: [26813,26822]`p.pattern`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [26813,26822]`p.pattern`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: pattern
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -10131,10 +10094,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 Identifier: error
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-              GetAttributeNodeGen SourceSection: [26919,26934]`sre_parse.FLAGS`
-                GetFixedAttributeNodeGen SourceSection: None
+              GetAttributeNode SourceSection: [26919,26934]`sre_parse.FLAGS`
+                GetFixedAttributeNode SourceSection: None
                   Key: FLAGS
-                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None

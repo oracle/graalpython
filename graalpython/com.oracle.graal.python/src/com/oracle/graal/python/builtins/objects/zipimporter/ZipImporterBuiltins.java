@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.StandardOpenOption;
@@ -197,6 +198,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 
+        /** Size of the input stream buffer. */
+        public static final int BUFFER_SIZE = 512 * 1024;
+
         @CompilerDirectives.TruffleBoundary
         private void initZipImporter(PZipImporter self, String path) {
             if (path == null || path.isEmpty()) {
@@ -241,7 +245,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                     ZipInputStream zis = null;
                     LOCZipEntryStream locis = null;
                     try {
-                        locis = new LOCZipEntryStream(tfile.newInputStream(StandardOpenOption.READ));
+                        locis = new LOCZipEntryStream(new BufferedInputStream(tfile.newInputStream(StandardOpenOption.READ), BUFFER_SIZE));
                         locis.findFirstEntryPosition(); // find location of the first zip entry
                         if (locis.positions.isEmpty()) {
                             // no PK\003\004 found -> not a correct zip file

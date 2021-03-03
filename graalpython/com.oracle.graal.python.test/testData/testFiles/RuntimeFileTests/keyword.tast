@@ -55,10 +55,9 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [954,996]`iskeyword = frozense...`
         Identifier: iskeyword
-        GetAttributeNodeGen SourceSection: [966,996]`frozenset(kwlist).__...`
-          GetFixedAttributeNodeGen SourceSection: None
+        GetAttributeNode SourceSection: [966,996]`frozenset(kwlist).__...`
+          GetFixedAttributeNode SourceSection: None
             Key: __contains__
-            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -117,10 +116,9 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [2,args,Illegal]
                       GetItemNodeGen SourceSection: [1041,1053]`sys.argv[1:]`
-                        GetAttributeNodeGen SourceSection: None
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: argv
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -452,10 +450,9 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                               PythonCallUnary SourceSection: [2019,2079]`sys.stderr.write("ta...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [2019,2029]`sys.stderr`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [2019,2029]`sys.stderr`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: stderr
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None

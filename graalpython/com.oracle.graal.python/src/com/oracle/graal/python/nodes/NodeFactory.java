@@ -70,13 +70,13 @@ import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
-import com.oracle.graal.python.nodes.generator.DictConcatNodeFactory;
+import com.oracle.graal.python.nodes.generator.DictConcatNodeGen;
 import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
 import com.oracle.graal.python.nodes.literal.BytesLiteralNode;
-import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory;
+import com.oracle.graal.python.nodes.literal.DictLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
 import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
@@ -85,7 +85,7 @@ import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.literal.LongLiteralNode;
 import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
-import com.oracle.graal.python.nodes.literal.SetLiteralNodeFactory;
+import com.oracle.graal.python.nodes.literal.SetLiteralNodeGen;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
@@ -245,11 +245,11 @@ public class NodeFactory {
     }
 
     public ExpressionNode createDictLiteral() {
-        return DictLiteralNodeFactory.create(new ExpressionNode[0], new ExpressionNode[0]);
+        return DictLiteralNode.create(new ExpressionNode[0], new ExpressionNode[0]);
     }
 
     public ExpressionNode createDictLiteral(ExpressionNode[] keys, ExpressionNode[] values) {
-        return DictLiteralNodeFactory.create(keys, values);
+        return DictLiteralNode.create(keys, values);
     }
 
     public TupleLiteralNode createTupleLiteral(ExpressionNode... values) {
@@ -279,11 +279,11 @@ public class NodeFactory {
 
     public ExpressionNode createSetLiteral(List<ExpressionNode> values) {
         ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
-        return SetLiteralNodeFactory.create(convertedValues);
+        return SetLiteralNodeGen.create(convertedValues);
     }
 
     public ExpressionNode createSetLiteral(ExpressionNode[] values) {
-        return SetLiteralNodeFactory.create(values);
+        return SetLiteralNodeGen.create(values);
     }
 
     public ExpressionNode createUnaryOperation(String string, ExpressionNode operand) {
@@ -520,7 +520,7 @@ public class NodeFactory {
     }
 
     public ExpressionNode createDictionaryConcat(ExpressionNode... dictNodes) {
-        return DictConcatNodeFactory.create(dictNodes);
+        return DictConcatNodeGen.create(dictNodes);
     }
 
     public ExpressionNode callBuiltin(String string, ExpressionNode argument) {

@@ -58,9 +58,7 @@ def __import__(filename, module_name):
 
     # If we can, avoid opening the file and use our cached code
     if not __graalpython__.has_cached_code(filename):
-        fd = posix.open(full_filename, posix.O_RDONLY)
-        content = posix.read(fd, sys.maxsize)
-        posix.close(fd)
+        content = __graalpython__.read_file(full_filename)
         code = compile(content, filename, "exec")
     else:
         # n.b.: for these builtin modules, there's never a full path and none of

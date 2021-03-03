@@ -383,11 +383,12 @@ public class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    public void ftruncate(int fd, long size) throws IOException {
+    public Object ftruncate(int fd, long size) throws IOException {
         Channel channel = getFileChannel(fd);
         if (channel instanceof SeekableByteChannel) {
-            ((SeekableByteChannel) channel).truncate(size);
+            return ((SeekableByteChannel) channel).truncate(size);
         }
+        return null;
     }
 
     @TruffleBoundary
@@ -426,22 +427,16 @@ public class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    public int registerChild(Process child) {
-        int pid = nextFreePid();
-        children.set(pid, child);
-        return pid;
-    }
-
-    @TruffleBoundary
-    private int nextFreePid() {
+    protected int registerChild(Process child) {
         synchronized (children) {
             for (int i = 0; i < children.size(); i++) {
                 Process openPath = children.get(i);
                 if (openPath == null) {
+                    children.set(i, child);
                     return i;
                 }
             }
-            children.add(null);
+            children.add(child);
             return children.size() - 1;
         }
     }

@@ -38,6 +38,8 @@
 #define WRAP_TUPLE_BUILDER(_ptr) ((HPyTupleBuilder){(_ptr)})
 #define UNWRAP_LIST_BUILDER(_h) ((_h)._lst)
 #define WRAP_LIST_BUILDER(_ptr) ((HPyListBuilder){(_ptr)})
+#define UNWRAP_TRACKER(_h) ((_h)._i)
+#define WRAP_TRACKER(_ptr) ((HPyTracker){(_ptr)})
 
 static inline HPy HPyModule_Create(HPyContext ctx, HPyModuleDef *def) {
      return WRAP(ctx->ctx_Module_Create ( ctx, def ));
@@ -77,6 +79,34 @@ static inline HPy HPyLong_FromSsize_t(HPyContext ctx, HPy_ssize_t value) {
 
 static inline long HPyLong_AsLong(HPyContext ctx, HPy h) {
      return ctx->ctx_Long_AsLong ( ctx, UNWRAP(h) );
+}
+
+static inline unsigned long HPyLong_AsUnsignedLong(HPyContext ctx, HPy h) {
+     return ctx->ctx_Long_AsUnsignedLong ( ctx, UNWRAP(h) ); 
+}
+
+static inline unsigned long HPyLong_AsUnsignedLongMask(HPyContext ctx, HPy h) {
+     return ctx->ctx_Long_AsUnsignedLongMask ( ctx, UNWRAP(h) ); 
+}
+
+static inline long long HPyLong_AsLongLong(HPyContext ctx, HPy h) {
+     return ctx->ctx_Long_AsLongLong ( ctx, UNWRAP(h) ); 
+}
+
+static inline unsigned long long HPyLong_AsUnsignedLongLong(HPyContext ctx, HPy h) {
+     return ctx->ctx_Long_AsUnsignedLongLong ( ctx, UNWRAP(h) ); 
+}
+
+static inline unsigned long long HPyLong_AsUnsignedLongLongMask(HPyContext ctx, HPy h) {
+     return ctx->ctx_Long_AsUnsignedLongLongMask ( ctx, UNWRAP(h) ); 
+}
+
+static inline size_t HPyLong_AsSize_t(HPyContext ctx, HPy h) {
+     return ctx->ctx_Long_AsSize_t ( ctx, UNWRAP(h) ); 
+}
+
+static inline HPy_ssize_t HPyLong_AsSsize_t(HPyContext ctx, HPy h) {
+     return ctx->ctx_Long_AsSsize_t ( ctx, UNWRAP(h) ); 
 }
 
 static inline HPy HPyFloat_FromDouble(HPyContext ctx, double v) {
@@ -235,12 +265,20 @@ static inline void HPyErr_SetString(HPyContext ctx, HPy h_type, const char *mess
      ctx->ctx_Err_SetString ( ctx, UNWRAP(h_type), message );
 }
 
+static inline void HPyErr_SetObject(HPyContext ctx, HPy h_type, HPy h_value) {
+     ctx->ctx_Err_SetObject ( ctx, UNWRAP(h_type), UNWRAP(h_value) ); 
+}
+
 static inline int HPyErr_Occurred(HPyContext ctx) {
      return ctx->ctx_Err_Occurred ( ctx );
 }
 
 static inline HPy HPyErr_NoMemory(HPyContext ctx) {
      return WRAP(ctx->ctx_Err_NoMemory ( ctx )); 
+}
+
+static inline void HPyErr_Clear(HPyContext ctx) {
+     ctx->ctx_Err_Clear ( ctx ); 
 }
 
 static inline int HPy_IsTrue(HPyContext ctx, HPy h) {
@@ -355,6 +393,14 @@ static inline char *HPyBytes_AS_STRING(HPyContext ctx, HPy h) {
      return ctx->ctx_Bytes_AS_STRING ( ctx, UNWRAP(h) );
 }
 
+static inline HPy HPyBytes_FromString(HPyContext ctx, const char *v) {
+     return WRAP(ctx->ctx_Bytes_FromString ( ctx, v )); 
+}
+
+static inline HPy HPyBytes_FromStringAndSize(HPyContext ctx, const char *v, HPy_ssize_t len) {
+     return WRAP(ctx->ctx_Bytes_FromStringAndSize ( ctx, v, len )); 
+}
+
 static inline HPy HPyUnicode_FromString(HPyContext ctx, const char *utf8) {
      return WRAP(ctx->ctx_Unicode_FromString ( ctx, utf8 ));
 }
@@ -391,12 +437,8 @@ static inline HPy HPyDict_New(HPyContext ctx) {
      return WRAP(ctx->ctx_Dict_New ( ctx ));
 }
 
-static inline int HPyDict_SetItem(HPyContext ctx, HPy h_dict, HPy h_key, HPy h_val) {
-     return ctx->ctx_Dict_SetItem ( ctx, UNWRAP(h_dict), UNWRAP(h_key), UNWRAP(h_val) );
-}
-
-static inline HPy HPyDict_GetItem(HPyContext ctx, HPy h_dict, HPy h_key) {
-     return WRAP(ctx->ctx_Dict_GetItem ( ctx, UNWRAP(h_dict), UNWRAP(h_key) ));
+static inline HPy HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n) {
+     return WRAP(ctx->ctx_Tuple_FromArray ( ctx, (_HPyPtr)items, n ));
 }
 
 static inline HPy HPy_FromPyObject(HPyContext ctx, cpy_PyObject *obj) {
@@ -405,10 +447,6 @@ static inline HPy HPy_FromPyObject(HPyContext ctx, cpy_PyObject *obj) {
 
 static inline cpy_PyObject *HPy_AsPyObject(HPyContext ctx, HPy h) {
      return ctx->ctx_AsPyObject ( ctx, UNWRAP(h) ); 
-}
-
-static inline HPy HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n) {
-     return WRAP(ctx->ctx_Tuple_FromArray ( ctx, items, n )); 
 }
 
 static inline void _HPy_CallRealFunctionFromTrampoline(HPyContext ctx, HPyFunc_Signature sig, void *func, void *args) {
@@ -448,6 +486,22 @@ static inline HPy HPyTupleBuilder_Build(HPyContext ctx, HPyTupleBuilder builder)
 }
 
 static inline void HPyTupleBuilder_Cancel(HPyContext ctx, HPyTupleBuilder builder) {
-     ctx->ctx_TupleBuilder_Cancel ( ctx, UNWRAP_TUPLE_BUILDER(builder) ); 
+     ctx->ctx_TupleBuilder_Cancel ( ctx, UNWRAP_TUPLE_BUILDER(builder));
+}
+
+static inline HPyTracker HPyTracker_New(HPyContext ctx, HPy_ssize_t size) {
+     return WRAP_TRACKER(ctx->ctx_Tracker_New ( ctx, size )); 
+}
+
+static inline int HPyTracker_Add(HPyContext ctx, HPyTracker ht, HPy h) {
+     return ctx->ctx_Tracker_Add ( ctx, UNWRAP_TRACKER(ht), UNWRAP(h) ); 
+}
+
+static inline void HPyTracker_ForgetAll(HPyContext ctx, HPyTracker ht) {
+     ctx->ctx_Tracker_ForgetAll ( ctx, UNWRAP_TRACKER(ht) ); 
+}
+
+static inline void HPyTracker_Close(HPyContext ctx, HPyTracker ht) {
+     ctx->ctx_Tracker_Close ( ctx, UNWRAP_TRACKER(ht) ); 
 }
 

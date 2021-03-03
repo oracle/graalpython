@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import _imp
+from .devel import version
 
 def load_from_spec(spec):
     try:
@@ -46,3 +47,6 @@ def load_from_spec(spec):
         if e.__cause__:
             raise e.__cause__
         raise
+
+def get_version():
+    return (version.__version__, version.__git_revision__)

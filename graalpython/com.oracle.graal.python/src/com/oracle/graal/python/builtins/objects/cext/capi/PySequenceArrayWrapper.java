@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PTR_ARRAY_TYPE_ID;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NATIVE_HANDLE_FOR_ARRAY;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;

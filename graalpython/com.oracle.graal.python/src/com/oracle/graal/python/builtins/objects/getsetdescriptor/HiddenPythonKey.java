@@ -45,7 +45,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 /**
  * Use instead of {@link HiddenKey} which does comparison based on object identity.
  */
-public class HiddenPythonKey {
+public final class HiddenPythonKey {
     private final String name;
 
     public HiddenPythonKey(String name) {

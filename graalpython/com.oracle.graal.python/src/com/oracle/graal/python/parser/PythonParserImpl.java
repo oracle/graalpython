@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonFileDetector;
@@ -57,7 +56,6 @@ import com.oracle.graal.python.parser.sst.SSTNodeWithScope;
 import com.oracle.graal.python.parser.sst.SSTNodeWithScopeFinder;
 import com.oracle.graal.python.parser.sst.SSTSerializerVisitor;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
-import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -385,36 +383,6 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         } catch (Exception e) {
             throw handleParserError(errors, source, e);
         }
-    }
-
-    @Override
-    @TruffleBoundary
-    public boolean isIdentifier(PythonCore core, String snippet) {
-        if (snippet.length() != snippet.trim().length()) {
-            // identifier cannot start or end with any whitspace
-            return false;
-        }
-        Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(snippet));
-        Token t = lexer.nextToken();
-        if (t.getType() == Python3Lexer.NAME) {
-            // the first token is identifier
-            t = lexer.nextToken();
-            if (t.getType() == Python3Lexer.NEWLINE) {
-                // lexer alwayes add new line at the end
-                t = lexer.nextToken();
-                if (t.getType() == Python3Lexer.EOF) {
-                    // now we are sure that this is identifer
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    @Override
-    @TruffleBoundary
-    public String unescapeJavaString(PythonCore core, String str) {
-        return StringUtils.unescapeJavaString(core, str);
     }
 
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {

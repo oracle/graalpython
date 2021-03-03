@@ -132,7 +132,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
                 PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
                 throw handlePythonException(pe.getEscapedException());
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 handleJavaException(e);
                 throw e;
             }
@@ -166,7 +166,7 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     @TruffleBoundary
-    private void handleJavaException(Exception e) {
+    private void handleJavaException(Throwable e) {
         try {
             boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
             if (!exitException) {

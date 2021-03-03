@@ -55,13 +55,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyInitObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -221,7 +220,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private SetItemNode setItemNode;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
-        @Child private PConstructAndRaiseNode constructAndRaiseNode;
 
         static class ImportException extends Exception {
             private static final long serialVersionUID = 3517291912314595890L;
@@ -340,7 +338,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
             }
             Object nativeResult = interop.execute(pyinitFunc, hpyContext);
-            getCheckResultNode().execute(initFuncName, nativeResult);
+            getCheckResultNode().execute(context, initFuncName, nativeResult);
 
             Object result = HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
             if (!(result instanceof PythonModule)) {
@@ -377,7 +375,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 nativeResult = interop.execute(pyinitFunc, arguments);
             }
 
-            getCheckResultNode().execute(initFuncName, nativeResult);
+            getCheckResultNode().execute(context, initFuncName, nativeResult);
 
             Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
             if (!(result instanceof PythonModule)) {
@@ -496,14 +494,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return checkResultNode;
         }
 
-        private PConstructAndRaiseNode getConstructAndRaiseNode() {
-            if (constructAndRaiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
-            }
-            return constructAndRaiseNode;
-        }
-
         @TruffleBoundary
         private PException reportImportError(RuntimeException e, String name, String path) throws ImportException {
             StringBuilder sb = new StringBuilder();
@@ -618,6 +608,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         PBytes run(PInt magicNumber, PBytesLike source) {
             return run(magicNumber.longValue(), source);
+        }
+
+        @Specialization
+        PBytes run(int magicNumber, PBytesLike source) {
+            return run((long) magicNumber, source);
         }
     }
 

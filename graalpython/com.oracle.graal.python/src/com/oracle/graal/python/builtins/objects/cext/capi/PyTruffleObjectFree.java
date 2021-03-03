@@ -128,7 +128,7 @@ public class PyTruffleObjectFree implements TruffleObject {
                 if (LOGGER.isLoggable(Level.FINER)) {
                     LOGGER.finer(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, nativeWrapper));
                 }
-                callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, nativePointer);
+                callReleaseHandleNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, nativePointer);
             }
         }
     }

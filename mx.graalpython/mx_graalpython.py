@@ -30,6 +30,7 @@ import glob
 import itertools
 import json
 import os
+import pathlib
 import platform
 import re
 import shlex
@@ -475,7 +476,7 @@ def python_gvm(args=None, **kwargs):
 
 def python_svm(args=None, **kwargs):
     "Build and run the native graalpython image"
-    with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
+    with set_env(FORCE_BASH_LAUNCHERS="true", NATIVE_IMAGES="graalpython", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
         return _python_graalvm_launcher((args or []) + ["svm"], **kwargs)
 
 
@@ -487,11 +488,13 @@ def python_so(args):
 
 def _python_graalvm_launcher(args, extra_dy=None):
     dy = "/vm,/tools"
+    binary = "graalpython"
     if extra_dy:
         dy += "," + extra_dy
     if "sandboxed" in args:
         args.remove("sandboxed")
         dy += ",/sulong-managed,/graalpython-enterprise"
+        binary = "graalpython-managed"
     if "svm" in args:
         args.remove("svm")
         dy += ",/substratevm"
@@ -499,7 +502,7 @@ def _python_graalvm_launcher(args, extra_dy=None):
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
     mx.run_mx(dy + ["graalvm-home"], out=mx.TeeOutputCapture(out))
-    launcher = os.path.join(out.data.strip(), "bin", "graalpython").split("\n")[-1].strip()
+    launcher = os.path.join(out.data.strip(), "bin", binary).split("\n")[-1].strip()
     mx.log(launcher)
     if args:
         mx.run([launcher] + args)
@@ -587,6 +590,13 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
     if aot_compatible:
         exclude += AOT_INCOMPATIBLE_TESTS
 
+    # just to be able to verify, print C ext mode (also works for CPython)
+    mx.run([python_binary,
+            "-c",
+            "import sys; print('C EXT MODE: ' + (__graalpython__.platform_id if sys.implementation.name == 'graalpython' else 'cpython'))"],
+           nonZeroIsFatal=True,
+           env=env)
+
     # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = _list_graalpython_unittests(paths, exclude)
 
@@ -597,20 +607,22 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments
         basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-        jacoco_basedir = "%s-jacoco" % basedir
-        shutil.rmtree(jacoco_basedir, ignore_errors=True)
-        shutil.copytree(basedir, jacoco_basedir, symlinks=True)
-        launcher_path = os.path.join(jacoco_basedir, 'bin', 'graalpython')
-        with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-            lines = launcher.readlines()
-        assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
-        lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
-        with open(launcher_path, 'w') as launcher:
-            launcher.writelines(lines)
-        # jacoco only dumps the data on exit, and when we run all our unittests
-        # at once it generates so much data we run out of heap space
-        for testfile in testfiles:
-            mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
+        launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpython').resolve())
+        launcher_path_bak = launcher_path + ".bak"
+        shutil.copy(launcher_path, launcher_path_bak)
+        try:
+            with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+                lines = launcher.readlines()
+            assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
+            lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
+            with open(launcher_path, 'w') as launcher:
+                launcher.writelines(lines)
+            # jacoco only dumps the data on exit, and when we run all our unittests
+            # at once it generates so much data we run out of heap space
+            for testfile in testfiles:
+                mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
+        finally:
+            shutil.move(launcher_path_bak, launcher_path)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
@@ -672,7 +684,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+            run_python_unittests(python_gvm(["sandboxed"]))
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
@@ -688,7 +700,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
+            run_hpy_unittests(python_gvm(["sandboxed"]))
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
@@ -706,7 +718,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_svm(["sandboxed"]), args=["--llvm.managed"])
+            run_python_unittests(python_svm(["sandboxed"]))
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -1096,7 +1108,8 @@ def update_import_cmd(args):
         mx.abort("overlays repo must be clean")
     overlaybranch = vc.active_branch(overlaydir)
     if overlaybranch == "master":
-        vc.pull(overlaydir)
+        if "--no-pull" not in args:
+            vc.pull(overlaydir)
         vc.set_branch(overlaydir, current_branch, with_remote=False)
         vc.git_command(overlaydir, ["checkout", current_branch], abortOnError=True)
     elif overlaybranch == current_branch:
@@ -1118,7 +1131,7 @@ def update_import_cmd(args):
     # now update all imports
     for name in imports_to_update:
         for idx, suite_py in enumerate(suite_py_files):
-            update_import(name, suite_py, rev=("HEAD" if idx else "origin/master"))
+            update_import(name, suite_py, rev=("HEAD" if (idx or "--no-pull" in args) else "origin/master"))
 
     # copy files we inline from our imports
     shutil.copy(
@@ -1977,7 +1990,7 @@ def update_hpy_import_cmd(args):
         vc_git.pull(hpy_repo_path, update=True)
 
     # determine short revision of HPy
-    import_version = vc_git.git_command(hpy_repo_path, ["rev-parse", "--short", "HEAD"])
+    import_version = vc_git.git_command(hpy_repo_path, ["rev-parse", "--short", "HEAD"]).strip()
     mx.log("Determined HPy revision {}".format(import_version))
 
     if vc_git.isDirty(hpy_repo_path):
@@ -1989,6 +2002,17 @@ def update_hpy_import_cmd(args):
     vc.git_command(SUITE.dir, ["checkout", HPY_IMPORT_ORPHAN_BRANCH_NAME])
     assert not SUITE.vc.isDirty(SUITE.dir)
 
+    def import_file(src_file, dest_file):
+        mx.logv("Importing HPy file {} to {}".format(src_file, dest_file))
+
+        # ensure that relative parent directories already exist (ignore existing)
+        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+
+        # copy file (overwrite existing)
+        mx.copyfile(src_file, dest_file)
+        # we may copy ignored files
+        vc.add(SUITE.dir, dest_file, abortOnError=False)
+
     def import_files(from_dir, to_dir):
         mx.log("Importing HPy files from {}".format(from_dir))
         for dirpath, _, filenames in os.walk(from_dir):
@@ -1997,37 +2021,74 @@ def update_hpy_import_cmd(args):
             for filename in filenames:
                 src_file = join(dirpath, filename)
                 dest_file = join(to_dir, relative_dir_path, filename)
-                mx.logv("Importing HPy file {} to {}".format(src_file, dest_file))
+                import_file(src_file, dest_file)
 
-                # ensure that relative parent directories already exist (ignore existing)
-                os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+    def remove_inexistent_file(src_file, dest_file):
+        if not os.path.exists(dest_file):
+            mx.logv("Removing file {} since {} does not exist".format(src_file, dest_file))
+            vc.git_command(SUITE.dir, ["rm", src_file])
 
-                # copy file (overwrite existing)
-                mx.copyfile(src_file, dest_file)
-                # we may copy ignored files
-                vc.add(SUITE.dir, dest_file, abortOnError=False)
-
+    def remove_inexistent_files(hpy_dir, our_dir):
+        mx.log("Looking for removed files in {} (HPy reference dir {})".format(our_dir, hpy_dir))
+        for dirpath, _, filenames in os.walk(our_dir):
+            relative_dir_path = os.path.relpath(dirpath, start=our_dir)
+            for filename in filenames:
+                src_file = join(dirpath, filename)
+                dest_file = join(hpy_dir, relative_dir_path, filename)
+                remove_inexistent_file(src_file, dest_file)
 
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.dependency("com.oracle.graal.python.cext").dir, "include")
 
+    # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
+    dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
+    src_version_file = join(hpy_repo_path, "hpy", "devel", "version.py")
+    if not os.path.exists(src_version_file):
+        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
+        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
+        mx.abort("File 'version.py' is not available. Did you forget to run 'setup.py build' ?")
+    import_file(src_version_file, dest_version_file)
+
     # copy headers from .../hpy/hpy/devel/include' to 'header_dest'
     # but exclude subdir 'cpython' (since that's only for CPython)
     import_files(hpy_repo_include_dir, header_dest)
+    remove_inexistent_files(hpy_repo_include_dir, header_dest)
 
-    # runtime sources go into 'lib-graalpython/module/hpy/src
-    runtime_files_dest = join(_get_core_home(), "modules", "hpy", "src")
+    # runtime sources go into 'lib-graalpython/module/hpy/devel/src'
+    runtime_files_dest = join(_get_core_home(), "modules", "hpy", "devel", "src")
     import_files(hpy_repo_runtime_dir, runtime_files_dest)
+    remove_inexistent_files(hpy_repo_runtime_dir, runtime_files_dest)
 
-    # tests go to 'lib-graalpython/module/hpy/tests
+    # tests go to 'lib-graalpython/module/hpy/tests'
     test_files_dest = _hpy_test_root()
     import_files(hpy_repo_test_dir, test_files_dest)
+    remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
+
+    # import 'version.py' by path and read '__version__'
+    from importlib import util
+    spec = util.spec_from_file_location("version", dest_version_file)
+    version_module = util.module_from_spec(spec)
+    spec.loader.exec_module(version_module)
+    imported_version = version_module.__version__
 
     SUITE.vc.git_command(SUITE.dir, ["add", header_dest, runtime_files_dest, test_files_dest])
     raw_input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update HPy inlined files: %s" % import_version)
     SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
     SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])
+
+    # update PKG-INFO version
+    pkg_info_file = join(_get_core_home(), "modules", "hpy.devel.egg-info", "PKG-INFO")
+    with open(pkg_info_file, "w") as f:
+        f.write("Metadata-Version: 2.1\n"
+                "Name: hpy.devel\n"
+                "Version: {}\n"
+                "Summary: UNKNOWN\n"
+                "Home-page: UNKNOWN\n"
+                "License: UNKNOWN\n"
+                "Description: UNKNOWN\n"
+                "Platform: UNKNOWN\n"
+                "Provides-Extra: dev".format(imported_version).strip())
 
 
 def run_leak_launcher(input_args, out=None):

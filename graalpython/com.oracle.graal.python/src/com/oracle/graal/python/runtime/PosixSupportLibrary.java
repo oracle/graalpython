@@ -62,18 +62,39 @@ public abstract class PosixSupportLibrary extends Library {
                                                     // equal to AT_FDCWD
 
     public static final int O_CLOEXEC = 524288;
+    public static final int O_APPEND = 1024;
+    public static final int O_TRUNC = 512;
+    public static final int O_EXCL = 128;
+    public static final int O_CREAT = 64;
+    public static final int O_RDWR = 2;
+    public static final int O_WRONLY = 1;
+    public static final int O_RDONLY = 0;
 
     public static final char POSIX_FILENAME_SEPARATOR = '/';
 
-    public static final int S_IFMT = 0170000;
-    public static final int S_IFDIR = 0040000;
-    public static final int S_IFREG = 0100000;
-    public static final int S_IFLNK = 0120000;
+    // from stat.h
+
+    /* Encoding of the file mode. */
+    public static final int S_IFMT = 0170000; /* These bits determine file type. */
+
+    /* File types. */
+    public static final int S_IFDIR = 0040000; /* Directory. */
+    public static final int S_IFCHR = 0020000; /* Character device. */
+    public static final int S_IFBLK = 0060000; /* Block device. */
+    public static final int S_IFREG = 0100000; /* Regular file. */
+    public static final int S_IFIFO = 0010000; /* FIFO. */
+    public static final int S_IFLNK = 0120000; /* Symbolic link. */
+    public static final int S_IFSOCK = 0140000; /* Socket. */
 
     public static final int DT_UNKNOWN = 0;
     public static final int DT_DIR = 4;
     public static final int DT_REG = 8;
     public static final int DT_LNK = 10;
+
+    public static final int LOCK_SH = 1;
+    public static final int LOCK_EX = 2;
+    public static final int LOCK_NB = 4;
+    public static final int LOCK_UN = 8;
 
     public abstract String getBackend(Object recevier);
 
@@ -108,6 +129,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;
 
     public abstract void fsync(Object receiver, int fd) throws PosixException;
+
+    public abstract void flock(Object receiver, int fd, int operation) throws PosixException;
 
     public abstract boolean getBlocking(Object receiver, int fd) throws PosixException;
 
@@ -221,6 +244,47 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void fchmod(Object receiver, int fd, int mode) throws PosixException;
 
     public abstract Object readlinkat(Object receiver, int dirFd, Object path) throws PosixException;
+
+    public abstract void kill(Object receiver, long pid, int signal) throws PosixException;
+
+    public abstract long[] waitpid(Object receiver, long pid, int options) throws PosixException;
+
+    public abstract boolean wcoredump(Object receiver, int status);
+
+    public abstract boolean wifcontinued(Object receiver, int status);
+
+    public abstract boolean wifstopped(Object receiver, int status);
+
+    public abstract boolean wifsignaled(Object receiver, int status);
+
+    public abstract boolean wifexited(Object receiver, int status);
+
+    public abstract int wexitstatus(Object receiver, int status);
+
+    public abstract int wtermsig(Object receiver, int status);
+
+    public abstract int wstopsig(Object receiver, int status);
+
+    public abstract long getuid(Object receiver);
+
+    public abstract long getppid(Object receiver);
+
+    public abstract long getsid(Object receiver, long pid) throws PosixException;
+
+    public abstract String ctermid(Object receiver) throws PosixException;
+
+    // note: this leaks memory in nfi backend and is not synchronized
+    // TODO is it worth synchronizing at least all accesses made through PosixSupportLibrary?
+    public abstract void setenv(Object receiver, Object name, Object value, boolean overwrite) throws PosixException;
+
+    public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
+                    int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException;
+
+    // args.length must be > 0
+    public abstract void execv(Object receiver, Object pathname, Object[] args) throws PosixException;
+
+    // does not throw, because posix does not exactly define the return value
+    public abstract int system(Object receiver, Object command);
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
@@ -393,6 +457,35 @@ public abstract class PosixSupportLibrary extends Library {
             CompilerAsserts.neverPartOfCompilation();
             return String.format("select[read = %s; write = %s; err = %s]", Arrays.toString(readfds), Arrays.toString(writefds), Arrays.toString(errorfds));
         }
+    }
+
+    // from stat.h macros
+    private static boolean istype(long mode, int mask) {
+        return (mode & S_IFMT) == mask;
+    }
+
+    public static boolean isDIR(long mode) {
+        return istype(mode, S_IFDIR);
+    }
+
+    public static boolean isCHR(long mode) {
+        return istype(mode, S_IFCHR);
+    }
+
+    public static boolean isBLK(long mode) {
+        return istype(mode, S_IFBLK);
+    }
+
+    public static boolean isREG(long mode) {
+        return istype(mode, S_IFREG);
+    }
+
+    public static boolean isFIFO(long mode) {
+        return istype(mode, S_IFIFO);
+    }
+
+    public static boolean isLNK(long mode) {
+        return istype(mode, S_IFLNK);
     }
 
     public static class ChannelNotSelectableException extends UnsupportedPosixFeatureException {
