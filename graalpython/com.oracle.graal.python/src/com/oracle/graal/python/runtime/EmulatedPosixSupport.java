@@ -1919,19 +1919,16 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    // Note: all the mmap related messages are behind Truffle boundary until GR-29663 is resolved
+
     public static final class MMapHandle {
         private static final MMapHandle NONE = new MMapHandle(null, 0);
         private SeekableByteChannel channel;
         private final long offset;
 
         public MMapHandle(SeekableByteChannel channel, long offset) {
-            setChannel(channel);
+            this.channel = channel;
             this.offset = offset;
-        }
-
-        @TruffleBoundary
-        private void setChannel(SeekableByteChannel channel) {
-            // this.channel = channel;
         }
 
         @Override
@@ -2005,6 +2002,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     final MMapHandle mmap(long length, int prot, int flags, int fd, long offset,
                     @Shared("defaultDirProfile") @Cached ConditionProfile isAnonymousProfile) throws PosixException {
         if (prot == PROT_NONE) {
@@ -2058,6 +2056,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public byte mmapReadByte(Object mmap, long index,
                     @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
         if (mmap == MMapHandle.NONE) {
@@ -2075,6 +2074,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
                     @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
         if (mmap == MMapHandle.NONE) {
@@ -2109,6 +2109,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
                     @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
         if (mmap == MMapHandle.NONE) {
@@ -2131,6 +2132,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
+    @TruffleBoundary
     public void mmapFlush(Object mmap, long offset, long length) {
         // Intentionally noop
         // If we had access to the underlying NIO FileChannel, we could explicitly set force(true)
@@ -2141,6 +2143,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public void mmapUnmap(Object mmap, @SuppressWarnings("unused") long length) throws PosixException {
         if (mmap == MMapHandle.NONE) {
             return;
