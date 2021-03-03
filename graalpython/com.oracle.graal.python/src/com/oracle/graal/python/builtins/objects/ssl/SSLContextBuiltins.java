@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.ssl;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import static com.oracle.graal.python.builtins.objects.ssl.CertUtils.getCertificates;
 
 import java.io.BufferedReader;
@@ -65,6 +66,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.logging.Level;
 
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLContext;
@@ -77,7 +79,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
-import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -100,7 +101,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -125,7 +125,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import java.util.logging.Level;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -508,7 +507,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @Builtin(name = "num_tickets", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class NumTicketsNode extends PythonBuiltinNode {
+    abstract static class NumTicketsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(value)")
         int get(PSSLContext self, PNone value) {
@@ -540,16 +539,27 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "sni_callback", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class SNICallbackNode extends PythonBuiltinNode {
+    abstract static class SNICallbackNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object notImplemented(@SuppressWarnings("unused") PSSLContext self, @SuppressWarnings("unused") Object value) {
             throw raise(NotImplementedError);
         }
     }
 
+    @Builtin(name = "post_handshake_auth", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class PostHandshakeAuthNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object pha(@SuppressWarnings("unused") PSSLContext self) {
+            // JDK doesn't implement post handshake auth. CPython returns None when it's not
+            // available
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "set_default_verify_paths", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class SetDefaultVerifyPathsNode extends PythonBuiltinNode {
+    abstract static class SetDefaultVerifyPathsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object set(VirtualFrame frame, PSSLContext self,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
@@ -612,7 +622,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "cert_store_stats", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class CertStoreStatsNode extends PythonBuiltinNode {
+    abstract static class CertStoreStatsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
         Object storeStats(PSSLContext self) {
