@@ -255,7 +255,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
-    public EmulatedPosixSupport(PythonContext context) {
+    public EmulatedPosixSupport(PythonContext context, boolean useNfiForSocketFd) {
+        super(useNfiForSocketFd);
         this.context = context;
         setEnv(context.getEnv());
     }

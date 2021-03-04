@@ -568,7 +568,7 @@ public final class PythonContext {
         // The resources field will be removed once all posix builtins go through PosixSupport
         switch (option) {
             case "java":
-                result = resources = new EmulatedPosixSupport(this);
+                result = resources = new EmulatedPosixSupport(this, false);
                 break;
             case "native":
             case "llvm":
@@ -576,14 +576,14 @@ public final class PythonContext {
                 // for now it's here because we still need to expose the emulated backend as
                 // 'resources'
                 if (ImageInfo.inImageBuildtimeCode()) {
-                    EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
+                    EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this, false);
                     NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
                     result = new ImageBuildtimePosixSupport(nativePosixSupport, emulatedPosixSupport);
                     resources = emulatedPosixSupport;
                 } else if (ImageInfo.inImageRuntimeCode()) {
                     NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
                     result = new ImageBuildtimePosixSupport(nativePosixSupport, null);
-                    resources = new EmulatedPosixSupport(this);
+                    resources = new EmulatedPosixSupport(this, true);
                     resources.setEnv(env);
                 } else {
                     if (!getOption(PythonOptions.RunViaLauncher)) {
@@ -591,7 +591,7 @@ public final class PythonContext {
                                         "descriptors 0, 1 and 2 regardless of stream redirection specified in Truffle environment");
                     }
                     result = new NFIPosixSupport(this, option);
-                    resources = new EmulatedPosixSupport(this);
+                    resources = new EmulatedPosixSupport(this, true);
                     resources.setEnv(env);
                 }
                 break;

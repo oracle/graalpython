@@ -268,7 +268,7 @@ public final class NFIPosixSupport extends PosixSupport {
             try {
                 posix.nfiLibrary = posix.context.getEnv().parseInternal(loadSrc).call();
             } catch (Throwable e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+                throw CompilerDirectives.shouldNotReachHere("Unable to load native posix support library", e);
             }
         }
 

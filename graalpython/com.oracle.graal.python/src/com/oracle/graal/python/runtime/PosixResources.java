@@ -83,6 +83,7 @@ public class PosixResources extends PosixSupport {
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
+    private boolean useNfiForSocketFd;
 
     private static class ProcessGroup extends Process {
         private final List<Process> children;
@@ -186,7 +187,7 @@ public class PosixResources extends PosixSupport {
         }
     }
 
-    public PosixResources() {
+    public PosixResources(boolean useNfiForSocketFd) {
         files = Collections.synchronizedSortedMap(new TreeMap<>());
         filePaths = Collections.synchronizedMap(new HashMap<>());
         children = Collections.synchronizedList(new ArrayList<>());
@@ -208,6 +209,7 @@ public class PosixResources extends PosixSupport {
         children.add(new ProcessGroup(children)); // PID 0 is special, and refers to all processes
                                                   // in the process group
         inodes = new HashMap<>();
+        this.useNfiForSocketFd = useNfiForSocketFd;
     }
 
     @TruffleBoundary
@@ -340,22 +342,23 @@ public class PosixResources extends PosixSupport {
 
     @TruffleBoundary
     public int openSocket(PSocket socket, PythonContext context) {
-        Object posixSupport = context.getPosixSupport();
         synchronized (files) {
             int fd;
-            if (posixSupport == this) {
+            if (!useNfiForSocketFd) {
                 // using emulated backend
                 fd = nextFreeFd();
             } else {
                 // using nfi backend
                 try {
+                    Object posixSupport = context.getPosixSupport();
                     PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
                     if (nativeFdForSockets == -1) {
                         int[] fds = posixLib.pipe(posixSupport);
-                        posixLib.close(posixSupport, fds[1]);
                         nativeFdForSockets = fds[0];
+                        fd = fds[1];
+                    } else {
+                        fd = posixLib.dup(posixSupport, nativeFdForSockets);
                     }
-                    fd = posixLib.dup(posixSupport, nativeFdForSockets);
                 } catch (PosixException e) {
                     throw CompilerDirectives.shouldNotReachHere("Unable to assign native fd to a socket", e);
                 }
@@ -373,11 +376,10 @@ public class PosixResources extends PosixSupport {
         }
         socket.setFileno(-1);
         close(fd);
-        Object posixSupport = context.getPosixSupport();
-        if (posixSupport != this) {
+        if (useNfiForSocketFd) {
             // using nfi backend
             try {
-                PosixSupportLibrary.getUncached().close(posixSupport, fd);
+                PosixSupportLibrary.getUncached().close(context.getPosixSupport(), fd);
             } catch (PosixException e) {
                 throw CompilerDirectives.shouldNotReachHere("Unable to close native fd", e);
             }
