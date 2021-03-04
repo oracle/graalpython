@@ -200,20 +200,24 @@ def file_names_filter(f_name, names):
 
 
 def main(sources, add=True, dry_run=True, check_style=True, single_source=False, source_filter=None,
-         ignore_filter=None):
+         ignore_filter=None, count=False):
     files = glob.glob("{}**/*.java".format(sources), recursive=True)
-    if ignore_filter:
+    if ignore_filter and not count:
         files = list(filter(lambda f: not file_names_filter(f, ignore_filter), files))
-    if source_filter:
+    if source_filter and not count:
         files = list(filter(lambda f: file_names_filter(f, source_filter), files))
 
+    cnt = 0
     for java_file in files:
         with open(java_file, 'r+') as SRC:
             source = SRC.read()
             if add:
                 messages, shared = get_messages(source, PTRN_MESSAGE)
                 if len(messages) > 0:
-                    # if sum(map(lambda m: 0 if m.is_with_gil else 1, messages)) == 0:
+                    if count:
+                        cnt += 1
+                        continue
+
                     if 'GilNode gil' in source:
                         print("[skipping] {}".format(java_file))
                         continue
@@ -245,7 +249,10 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
             else:
                 print("removal of the GIL not yet supported")
                 return
-    if check_style:
+
+    if count:
+        print("TO PROCESS: {} files".format(cnt))
+    if check_style and not count:
         # running the checkstyle gate (twice)
         for i in range(2):
             os.system("mx python-gate --tags style,python-license")
@@ -255,6 +262,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry_run", help="do not write any changes, stop after the first file transform",
                         action="store_true")
+    parser.add_argument("--count", help="count how many files may need the GIL", action="store_true")
     parser.add_argument("--remove", help="remove the GIL", action="store_true")
     parser.add_argument("--no_style", help="do not run the style checker", action="store_true")
     parser.add_argument("--single", help="stop after modifying the first source", action="store_true")
@@ -264,4 +272,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args.sources, add=not args.remove, dry_run=args.dry_run, check_style=not args.no_style,
-         single_source=args.single, source_filter=args.filter, ignore_filter=args.ignore)
+         single_source=args.single, source_filter=args.filter, ignore_filter=args.ignore, count=args.count)

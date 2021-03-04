@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -215,19 +216,29 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     // type(None).__eq__.__get__(None, type(None)) wouldn't bind the method correctly
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallUnboundMethodNode call) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+                    @Shared("callMethod") @Cached CallUnboundMethodNode call, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return call.execute(frame, this, receiver, arguments);
+        } finally {
+            gil.release(mustRelease);
         }
-        return call.execute(frame, this, receiver, arguments);
     }
 
     @ExportMessage
     public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallUnboundMethodNode call) {
-        return callUnboundMethodWithState(state, receiver, arguments, gotState, call);
+                    @Shared("callMethod") @Cached CallUnboundMethodNode call, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return callUnboundMethodWithState(state, receiver, arguments, gotState, call, gil);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @GenerateUncached
