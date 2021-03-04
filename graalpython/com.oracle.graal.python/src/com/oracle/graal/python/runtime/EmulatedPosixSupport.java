@@ -1979,7 +1979,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
         @Override
         public SeekableByteChannel position(long newPosition) throws IOException {
-            if (newPosition < 0) {
+            if (newPosition < 0 || newPosition >= data.length) {
                 throw new IllegalArgumentException();
             }
             cur = (int) newPosition;
