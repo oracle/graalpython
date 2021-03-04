@@ -107,12 +107,28 @@ int32_t set_inheritable(int32_t fd, int32_t inheritable) {
 int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
     int fixedFlags = flags;
     // TODO remove this once we properly synchronize constants between Java and C
-    if (flags & 64) {
-        fixedFlags &= ~64;
+
+#define WRONG_O_CLOEXEC 524288
+#define WRONG_O_APPEND 1024
+#define WRONG_O_TRUNC 512
+#define WRONG_O_EXCL 128
+#define WRONG_O_CREAT 64
+
+    fixedFlags &= ~(WRONG_O_CLOEXEC | WRONG_O_APPEND | WRONG_O_TRUNC | WRONG_O_EXCL | WRONG_O_CREAT);
+
+    if (flags & WRONG_O_CREAT) {
         fixedFlags |= O_CREAT;
     }
-    if (flags & 524288) {
-        fixedFlags &= ~524288;
+    if (flags & WRONG_O_EXCL) {
+        fixedFlags |= O_EXCL;
+    }
+    if (flags & WRONG_O_TRUNC) {
+        fixedFlags |= O_TRUNC;
+    }
+    if (flags & WRONG_O_APPEND) {
+        fixedFlags |= O_APPEND;
+    }
+    if (flags & WRONG_O_CLOEXEC) {
         fixedFlags |= O_CLOEXEC;
     }
     return openat(fixDirFd(dirFd), pathname, fixedFlags, mode);

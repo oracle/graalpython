@@ -51,6 +51,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+import sys
 
 PREFIX = 'select_graalpython_test'
 TEMP_DIR = tempfile.gettempdir()
@@ -82,18 +83,22 @@ def python_flock_blocks_sh_flock(python_flock_type, sh_flock_type):
 
 class FcntlTests(unittest.TestCase):
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
+    @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
     def test_flock_x_and_x(self):
         python_flock_blocks_sh_flock(fcntl.LOCK_EX, 'x')
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
+    @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
     def test_flock_x_and_s(self):
         python_flock_blocks_sh_flock(fcntl.LOCK_EX, 's')
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
+    @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
     def test_flock_s_and_x(self):
         python_flock_blocks_sh_flock(fcntl.LOCK_SH, 'x')
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
+    @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
     def test_flock_s_and_s(self):
         os.close(os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY | os.O_CREAT))
         file = os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY)
