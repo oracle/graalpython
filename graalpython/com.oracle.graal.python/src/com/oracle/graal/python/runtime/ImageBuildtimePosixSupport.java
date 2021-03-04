@@ -603,6 +603,48 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final Object mmap(long length, int prot, int flags, int fd, long offset,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.mmap(nativePosixSupport, length, prot, flags, fd, offset);
+    }
+
+    @ExportMessage
+    final byte mmapReadByte(Object mmap, long index,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.mmapReadByte(nativePosixSupport, mmap, index);
+    }
+
+    @ExportMessage
+    final int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.mmapReadBytes(nativePosixSupport, mmap, index, bytes, length);
+    }
+
+    @ExportMessage
+    final void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.mmapWriteBytes(nativePosixSupport, mmap, index, bytes, length);
+    }
+
+    @ExportMessage
+    final void mmapFlush(Object mmap, long offset, long length,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.mmapFlush(nativePosixSupport, mmap, offset, length);
+    }
+
+    @ExportMessage
+    final void mmapUnmap(Object mmap, long length,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.mmapUnmap(nativePosixSupport, mmap, length);
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         if (ImageInfo.inImageBuildtimeCode()) {
