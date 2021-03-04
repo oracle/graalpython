@@ -516,15 +516,39 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def subgroup(self):
         return SUBGROUP_GRAAL_PYTHON
 
+    def with_branch_and_commit_dict(self, d):
+        """
+        We run our benchmark from the graalpython directories, but with other
+        suites as primary suites in the CI, so we potentially want to update
+        branch and commit info.
+        """
+        if mx.primary_suite().dir != os.getcwd():
+            if any(os.path.isdir(d) and d.startswith("mx.graalpython") for d in os.listdir()):
+                vc = SUITE.vc
+                if vc is None:
+                    return d
+                branch = vc.active_branch(SUITE.dir, abortOnError=False) or "<unknown>"
+                info = vc.parent_info(SUITE.dir)
+                url = vc.default_pull(SUITE.dir, abortOnError=False) or "unknown"
+                d.update({
+                    "branch": branch,
+                    "commit.rev": vc.parent(SUITE.dir),
+                    "commit.repo-url": url,
+                    "commit.author": info["author"],
+                    "commit.author-ts": info["author-ts"],
+                    "commit.committer": info["committer"],
+                    "commit.committer-ts": info["committer-ts"],
+                })
+        return d
+
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = self.get_bench_name(benchmarks)
         arg = self.get_arg(bench_name)
-
         return [
             # warmup curves
             StdOutRule(
                 r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
-                {
+                self.with_branch_and_commit_dict({
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "warmup",
                     "metric.iteration": ("<iteration>", int),
@@ -534,12 +558,12 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "config.run-flags": "".join(arg),
-                }
+                })
             ),
             # secondary metric(s)
             StdOutRule(
                 r"### WARMUP detected at iteration: (?P<endOfWarmup>[0-9]+$)",
-                {
+                self.with_branch_and_commit_dict({
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "end-of-warmup",
                     "metric.iteration": 0,
@@ -549,13 +573,13 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "config.run-flags": "".join(arg),
-                }
+                })
             ),
 
             # no warmups
             StdOutRule(
                 r"^@@@ name=(?P<benchmark>[a-zA-Z0-9._\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
-                {
+                self.with_branch_and_commit_dict({
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "time",
                     "metric.iteration": 0,
@@ -565,7 +589,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "config.run-flags": "".join(arg),
-                }
+                })
             ),
         ]
 
@@ -731,12 +755,11 @@ class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = self.get_bench_name(benchmarks)
         arg = self.get_arg(bench_name)
-
         return [
             # startup (difference between start of VM to end of first iteration)
             StdOutRule(
                 r"### STARTUP +at iteration: (?P<iteration>[0-9]+), +duration: (?P<time>[0-9]+(\.[0-9]+)?$)",
-                {
+                self.with_branch_and_commit_dict({
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "startup",
                     "metric.iteration": ("<iteration>", int),
@@ -746,12 +769,12 @@ class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "config.run-flags": "".join(arg),
-                }
+                })
             ),
 
             StdOutRule(
                 r"### EARLY WARMUP +at iteration: (?P<iteration>[0-9]+), +duration: (?P<time>[0-9]+(\.[0-9]+)?$)",
-                {
+                self.with_branch_and_commit_dict({
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "early-warmup",
                     "metric.iteration": ("<iteration>", int),
@@ -761,12 +784,12 @@ class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "config.run-flags": "".join(arg),
-                }
+                })
             ),
 
             StdOutRule(
                 r"### LATE WARMUP +at iteration: (?P<iteration>[0-9]+), +duration: (?P<time>[0-9]+(\.[0-9]+)?$)",
-                {
+                self.with_branch_and_commit_dict({
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "late-warmup",
                     "metric.iteration": ("<iteration>", int),
@@ -776,7 +799,7 @@ class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
                     "metric.score-function": "id",
                     "metric.better": "lower",
                     "config.run-flags": "".join(arg),
-                }
+                })
             ),
         ]
 
