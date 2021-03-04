@@ -752,6 +752,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 LoadCertError result = CertUtils.getCertificates(r, certificates);
                 switch (result) {
                     case BAD_BASE64_DECODE:
+                    case SOME_BAD_BASE64_DECODE:
                     case EMPTY_CERT:
                         throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
                     case BEGIN_CERTIFICATE_WITHOUT_END:
