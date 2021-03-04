@@ -1496,6 +1496,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (!isImmutable.execute(owner)) {
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
+                } else if (owner != object && (info & WRITE_SIDE_EFFECTS) == 0) {
+                    // we already checked the owner to be immutable at this point, so we definitely
+                    // cannot remove it (lookup will always lead to that not mutable owner). But if
+                    // it's not a setter, we may still be able to write that attribute directly on
+                    // the object
+                    if (!isImmutable.execute(object)) {
+                        info |= MODIFIABLE;
+                    }
                 }
             } else {
                 if (dataModelLibrary.isSequence(object) && isItemReadable(object, fieldName, getItemNode)) {

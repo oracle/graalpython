@@ -160,9 +160,6 @@ if sys.implementation.name == "graalpython":
         polyglot.__remove__(o, "@direct_field")
         assert not hasattr(o, "direct_field")
 
-        o["grrrr"] = 12
-        polyglot.__remove__(o, "grrrr")
-        assert "grrrr" not in list(o.keys())
 
     def test_execute():
         assert polyglot.__execute__(abs, -10) == 10
@@ -251,7 +248,6 @@ if sys.implementation.name == "graalpython":
 
         assert polyglot.__key_info__(o, "__getattribute__", "readable")
         assert polyglot.__key_info__(o, "__getattribute__", "invokable")
-        assert not polyglot.__key_info__(o, "__getattribute__", "modifiable")
         assert not polyglot.__key_info__(o, "__getattribute__", "removable")
         assert not polyglot.__key_info__(o, "__getattribute__", "insertable")
 
@@ -268,12 +264,12 @@ if sys.implementation.name == "graalpython":
             java.add_to_classpath(1)
         except TypeError as e:
             assert "classpath argument 1 must be string, not int" in str(e)
-            
+
         try:
             java.add_to_classpath('a', 1)
         except TypeError as e:
             assert "classpath argument 2 must be string, not int" in str(e)
-        
+
     def test_host_lookup():
         import java
         try:
