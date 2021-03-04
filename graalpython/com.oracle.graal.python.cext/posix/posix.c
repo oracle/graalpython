@@ -322,7 +322,7 @@ int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) 
 }
 
 int32_t call_mkdirat(int32_t dirFd, const char *pathname, int32_t mode) {
-    return mkdirat(dirFd, pathname, mode);
+    return mkdirat(fixDirFd(dirFd), pathname, mode);
 }
 
 int32_t call_getcwd(char *buf, uint64_t size) {
@@ -403,7 +403,7 @@ int32_t call_futimens(int32_t fd, int64_t *timespec) {
 }
 
 int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
-    return renameat(oldDirFd, oldPath, newDirFd, newPath);
+    return renameat(fixDirFd(oldDirFd), oldPath, fixDirFd(newDirFd), newPath);
 }
 
 int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
@@ -426,7 +426,7 @@ int32_t call_fchmod(int32_t fd, int32_t mode) {
 }
 
 int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
-    return readlinkat(dirFd, path, buf, size);
+    return readlinkat(fixDirFd(dirFd), path, buf, size);
 }
 
 int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) {
