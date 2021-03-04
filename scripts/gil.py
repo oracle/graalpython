@@ -133,7 +133,7 @@ class ExportedMessage(object):
         else:
             _uncached_gil = ""
             _args += ", " if self.args else ""
-            if self._shared:
+            if self._shared and ('limit = ' not in self.header or 'limit = "1"' in self.header):
                 _args += '@Shared("gil")'
             _args += "@Cached GilNode gil"
             if "..." in _args:
@@ -202,7 +202,7 @@ def file_names_filter(f_name, names):
 def main(sources, add=True, dry_run=True, check_style=True, single_source=False, source_filter=None,
          ignore_filter=None, count=False):
     files = glob.glob("{}**/*.java".format(sources), recursive=True)
-    if ignore_filter and not count:
+    if ignore_filter:
         files = list(filter(lambda f: not file_names_filter(f, ignore_filter), files))
     if source_filter and not count:
         files = list(filter(lambda f: file_names_filter(f, source_filter), files))
