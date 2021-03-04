@@ -103,11 +103,6 @@ public class LoggingPosixSupport extends PosixSupport {
         delegate.setEnv(env);
     }
 
-    @Override
-    public void postInitialize() {
-        delegate.postInitialize();
-    }
-
     @ExportMessage
     final String getBackend(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {

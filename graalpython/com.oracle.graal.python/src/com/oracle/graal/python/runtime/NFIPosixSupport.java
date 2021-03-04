@@ -77,6 +77,7 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
+import org.graalvm.nativeimage.ImageInfo;
 
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
@@ -303,10 +304,14 @@ public final class NFIPosixSupport extends PosixSupport {
         this.context = context;
         this.nfiBackend = nfiBackend;
         this.cachedFunctions = new AtomicReferenceArray<>(PosixNativeFunction.values().length);
+        setEnv(context.getEnv());
     }
 
     @Override
     public void setEnv(Env env) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            return;
+        }
         // Java NIO (and TruffleFile) do not expect/support changing native working directory since
         // it is inherently thread-unsafe operation. It is not defined how NIO behaves when native
         // cwd changes, thus we need to prevent TruffleFile from resolving relative paths using

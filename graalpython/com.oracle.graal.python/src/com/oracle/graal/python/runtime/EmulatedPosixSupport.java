@@ -262,8 +262,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Override
-    public void postInitialize() {
-        environ.putAll(System.getenv());
+    public void setEnv(Env env) {
+        super.setEnv(env);
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            environ.putAll(System.getenv());
+        }
     }
 
     @ExportMessage

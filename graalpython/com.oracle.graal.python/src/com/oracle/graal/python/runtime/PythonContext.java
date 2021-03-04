@@ -450,7 +450,7 @@ public final class PythonContext {
     }
 
     public void initialize() {
-        initalizePosixSupport();
+        initializePosixSupport();
         core.initialize(this);
         setupRuntimeInformation(false);
         core.postInitialize();
@@ -463,7 +463,6 @@ public final class PythonContext {
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
-        posixSupport.postInitialize();
         setupRuntimeInformation(true);
         core.postInitialize();
         importSiteIfForced();
@@ -562,7 +561,7 @@ public final class PythonContext {
         isInitialized = true;
     }
 
-    private void initalizePosixSupport() {
+    private void initializePosixSupport() {
         String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
         PosixSupport result;
         // The resources field will be removed once all posix builtins go through PosixSupport
