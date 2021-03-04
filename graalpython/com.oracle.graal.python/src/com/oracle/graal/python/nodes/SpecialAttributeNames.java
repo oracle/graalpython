@@ -83,4 +83,5 @@ public abstract class SpecialAttributeNames {
     public static final String __ALL__ = "__all__";
     public static final String __FLAGS__ = "__flags__";
     public static final String __ABSTRACTMETHODS__ = "__abstractmethods__";
+    public static final String __ORIG_BASES__ = "__orig_bases__";
 }

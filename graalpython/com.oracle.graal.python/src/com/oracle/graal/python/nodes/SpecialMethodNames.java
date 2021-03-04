@@ -159,6 +159,7 @@ public abstract class SpecialMethodNames {
     public static final String __SETFORMAT__ = "__setformat__";
     public static final String __OBJCLASS__ = "__objclass__";
     public static final String __ISABSTRACTMETHOD__ = "__isabstractmethod__";
+    public static final String __MRO_ENTRIES__ = "__mro_entries__";
     public static final String KEYS = "keys";
     public static final String ITEMS = "items";
     public static final String VALUES = "values";
