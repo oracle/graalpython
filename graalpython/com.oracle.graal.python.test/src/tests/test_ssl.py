@@ -57,7 +57,7 @@ class CertTests(unittest.TestCase):
 
     def check_load_cert_chain_error(self, certfile, keyfile=None, errno=-1, strerror=None, err=ssl.SSLError):
         try:
-            if(keyfile is None):
+            if keyfile is None:
                 self.ctx.load_cert_chain(data_file(certfile))
             else:
                 self.ctx.load_cert_chain(data_file(certfile), data_file(keyfile))
@@ -70,17 +70,41 @@ class CertTests(unittest.TestCase):
         else:
             assert False
 
-    def check_load_verify_locations_error(self, cafile, capath=None, errno=-1, strerror=None, err=ssl.SSLError):
+    def check_load_verify_locations_error(self, cafile=None, capath=None, cadata=None, errno=-1, strerror=None, err=ssl.SSLError):
         try:
-            if(capath is None):
-                self.ctx.load_verify_locations(data_file(cafile))
-            else:
-                self.ctx.load_verify_locations(data_file(cafile), data_file(capath))
+            if capath is not None:
+                capath = data_file(capath)
+            if cafile is not None:
+                cafile = data_file(cafile)
+            if cadata is not None:
+                cadata = open(data_file(cadata)).read()
+            self.ctx.load_verify_locations(cafile, capath, cadata)            
         except err as e:
             if errno != -1:
                 self.assertEqual(e.errno, errno)
             if strerror is not None:    
-                self.assertIn(strerror, e.strerror)
+                if isinstance(ssl.SSLError, err):
+                    self.assertIn(strerror, e.strerror)
+                else:
+                 self.assertIn(strerror, str(e))
+            self.assertIsInstance(type(e), type(err))
+        else:
+            assert False
+            
+    def check_load_verify_locations_cadata_bytes_error(self, cadata, errno=-1, strerror=None, err=ssl.SSLError):
+        try:            
+            
+            cadata = open(data_file(cadata)).read()
+            cadata.replace("")
+            self.ctx.load_verify_locations(cafile, capath, cadata)            
+        except err as e:
+            if errno != -1:
+                self.assertEqual(e.errno, errno)
+            if strerror is not None:    
+                if isinstance(ssl.SSLError, err):
+                    self.assertIn(strerror, e.strerror)
+                else:
+                 self.assertIn(strerror, str(e))
             self.assertIsInstance(type(e), type(err))
         else:
             assert False
@@ -127,6 +151,10 @@ class CertTests(unittest.TestCase):
     def test_load_verify_locations(self):
         self.ctx.load_verify_locations(data_file("cert_rsa.pem"))
         self.ctx.load_verify_locations(capath=data_file("cert_rsa.pem"))
+        cad = open(data_file("cert_rsa.pem")).read()
+        self.ctx.load_verify_locations(cadata=cad)        
+        cad = ssl.PEM_cert_to_DER_cert(cad)
+        self.ctx.load_verify_locations(cadata=cad)
         self.ctx.load_verify_locations(data_file("cert_rsa.pem"), 'does_not_exit')
         self.ctx.load_verify_locations(StringWrapper(data_file("cert_rsa.pem")), )
         self.ctx.load_verify_locations(capath=StringWrapper(data_file("cert_rsa.pem")))
@@ -156,9 +184,16 @@ class CertTests(unittest.TestCase):
         self.check_load_verify_locations_error(cafile="broken_cert_data.pem", errno=9, strerror="[X509] PEM lib")
         self.check_load_verify_locations_error(cafile="broken_cert_data_at_begin.pem", errno=9, strerror="[X509] PEM lib")
         self.check_load_verify_locations_error(cafile="broken_cert_data_at_end.pem", errno=9, strerror="[X509] PEM lib")
-        
-        # TODO test cadata
-        # TODO load_DH_params
+
+        self.check_load_verify_locations_error(cadata="empty.pem", strerror="Empty certificate data", err=ValueError)
+        self.check_load_verify_locations_error(cadata="empty_cert.pem")
+
+        self.check_load_verify_locations_error(cadata="broken_cert_double_begin.pem")
+        self.check_load_verify_locations_error(cadata="broken_cert_only_begin.pem")
+        self.check_load_verify_locations_error(cadata="broken_cert_no_end.pem")
+        self.check_load_verify_locations_error(cadata="broken_cert_data.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE]")
+        self.check_load_verify_locations_error(cadata="broken_cert_data_at_begin.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE]")
+        self.check_load_verify_locations_error(cadata="broken_cert_data_at_end.pem", errno=100, strerror="[PEM: BAD_BASE64_DECODE]")        
 
     def test_load_default_verify_paths(self):
         env = os.environ
@@ -198,7 +233,7 @@ class CertTests(unittest.TestCase):
         s_out = ssl.MemoryBIO()
         client = context.wrap_bio(c_in, c_out, server_hostname=hostname)
         server = server_context.wrap_bio(s_in, s_out, server_side=True)
-
+        
         try:
             for _ in range(5):
                 try:
@@ -214,11 +249,11 @@ class CertTests(unittest.TestCase):
                 if s_out.pending:
                     c_in.write(s_out.read())
         except ssl.SSLCertVerificationError as e:
-            self.assertIsNotNone(e.verify_code)
-            self.assertIsNotNone(e.verify_message)
+                    self.assertIsNotNone(e.verify_code)
+                    self.assertIsNotNone(e.verify_message)
         else:
-            assert False
-        
+                assert False
+    
 def get_cipher_list(cipher_string):
     context = ssl.SSLContext()
     context.set_ciphers(cipher_string)
