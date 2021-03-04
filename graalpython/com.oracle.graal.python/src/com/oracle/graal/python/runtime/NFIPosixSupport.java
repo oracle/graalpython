@@ -98,6 +98,12 @@ public final class NFIPosixSupport extends PosixSupport {
     private enum PosixNativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
+        read_byte("(pointer, sint64):sint8"),
+        read_bytes("(pointer, [sint8], sint64, sint32):void"),
+        write_bytes("(pointer, [sint8], sint64, sint32):void"),
+        call_mmap("(sint64, sint32, sint32, sint32, sint64):pointer"),
+        call_munmap("(pointer, sint64):sint32"),
+        call_msync("(pointer, sint64, sint64):void"),
         call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint32):sint32"),
@@ -201,7 +207,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         public long callLong(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
             try {
-                return ensureResultInterop().asLong(call(posix, function, args));
+                return getResultInterop().asLong(call(posix, function, args));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -209,7 +215,15 @@ public final class NFIPosixSupport extends PosixSupport {
 
         public int callInt(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
             try {
-                return ensureResultInterop().asInt(call(posix, function, args));
+                return getResultInterop().asInt(call(posix, function, args));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        public byte callByte(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
+            try {
+                return getResultInterop().asByte(call(posix, function, args));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -270,7 +284,7 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
 
-        private InteropLibrary ensureResultInterop() {
+        public InteropLibrary getResultInterop() {
             if (resultInterop == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 resultInterop = insert(InteropLibrary.getFactory().createDispatched(2));
@@ -1122,6 +1136,87 @@ public final class NFIPosixSupport extends PosixSupport {
         offsets[startPos + src.length] = -1;        // this will become NULL in C (the char* array
         // needs to be terminated by a NULL)
         return offset;
+    }
+
+    private static final class MMapHandle {
+        private final Object pointer;
+        private final long length;
+
+        public MMapHandle(Object pointer, long length) {
+            this.pointer = pointer;
+            this.length = length;
+        }
+    }
+
+    @ExportMessage
+    public Object mmap(long length, int prot, int flags, int fd, long offset,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        Object address = invokeNode.call(this, PosixNativeFunction.call_mmap, length, prot, flags, fd, offset);
+        if (invokeNode.getResultInterop().isNull(address)) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+        return new MMapHandle(address, length);
+    }
+
+    @ExportMessage
+    public byte mmapReadByte(Object mmap, long index,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        MMapHandle handle = (MMapHandle) mmap;
+        if (index < 0 || index >= handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IndexOutOfBoundsException();
+        }
+        return invokeNode.callByte(this, PosixNativeFunction.read_byte, handle.pointer, index);
+    }
+
+    @ExportMessage
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, index, length);
+        invokeNode.call(this, PosixNativeFunction.read_bytes, handle.pointer, wrap(bytes), index, length);
+        return length;
+    }
+
+    @ExportMessage
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, index, length);
+        invokeNode.call(this, PosixNativeFunction.write_bytes, handle.pointer, wrap(bytes), index, length);
+    }
+
+    @ExportMessage
+    public void mmapFlush(Object mmap, long offset, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, offset, length);
+        invokeNode.call(this, PosixNativeFunction.call_msync, handle.pointer, offset, length);
+    }
+
+    @ExportMessage
+    public void mmapUnmap(Object mmap, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        MMapHandle handle = (MMapHandle) mmap;
+        if (length != handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalArgumentException();
+        }
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_munmap, handle.pointer, length);
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    private static void checkIndexAndLen(MMapHandle handle, long index, long length) {
+        if (length < 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalArgumentException();
+        }
+        if (index < 0 || index + length > handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IndexOutOfBoundsException();
+        }
     }
 
     // ------------------

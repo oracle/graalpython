@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.MAP_ANONYMOUS;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.PROT_EXEC;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.PROT_NONE;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.PROT_READ;
+import static com.oracle.graal.python.runtime.PosixSupportLibrary.PROT_WRITE;
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
 import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
 import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
@@ -123,7 +128,9 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatu
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -1910,6 +1917,278 @@ public final class EmulatedPosixSupport extends PosixResources {
             setPriority(Thread.MAX_PRIORITY);
             Thread.yield();
         }
+    }
+
+    // Note: all the mmap related messages are behind Truffle boundary until GR-29663 is resolved
+
+    public static final class MMapHandle {
+        private static final MMapHandle NONE = new MMapHandle(null, 0);
+        private SeekableByteChannel channel;
+        private final long offset;
+
+        public MMapHandle(SeekableByteChannel channel, long offset) {
+            this.channel = channel;
+            this.offset = offset;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return String.format("Emulated mmap [channel=%s, offset=%d]", channel, offset);
+        }
+    }
+
+    private static final class AnonymousMap implements SeekableByteChannel {
+        private final byte[] data;
+
+        private boolean open = true;
+        private int cur;
+
+        public AnonymousMap(int cap) {
+            this.data = new byte[cap];
+        }
+
+        @Override
+        public boolean isOpen() {
+            return open;
+        }
+
+        @Override
+        public void close() throws IOException {
+            open = false;
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            int nread = Math.min(dst.remaining(), data.length - cur);
+            dst.put(data, cur, nread);
+            return nread;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            int nwrite = Math.min(src.remaining(), data.length - cur);
+            src.get(data, cur, nwrite);
+            return nwrite;
+        }
+
+        @Override
+        public long position() throws IOException {
+            return cur;
+        }
+
+        @Override
+        public SeekableByteChannel position(long newPosition) throws IOException {
+            if (newPosition < 0 || newPosition >= data.length) {
+                throw new IllegalArgumentException();
+            }
+            cur = (int) newPosition;
+            return this;
+        }
+
+        @Override
+        public long size() throws IOException {
+            return data.length;
+        }
+
+        @Override
+        public SeekableByteChannel truncate(long size) throws IOException {
+            for (int i = 0; i < size; i++) {
+                data[i] = 0;
+            }
+            return this;
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    final MMapHandle mmap(long length, int prot, int flags, int fd, long offset,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile isAnonymousProfile) throws PosixException {
+        if (prot == PROT_NONE) {
+            return MMapHandle.NONE;
+        }
+
+        // Note: the profile is not really defaultDirProfile, but it's good to share...
+        if (isAnonymousProfile.profile((flags & MAP_ANONYMOUS) != 0)) {
+            try {
+                return new MMapHandle(new AnonymousMap(PythonUtils.toIntExact(length)), 0);
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new UnsupportedPosixFeatureException(String.format("Anonymous mapping in mmap for memory larger than %d", Integer.MAX_VALUE));
+            }
+        }
+
+        String path = getFilePath(fd);
+        TruffleFile file = getTruffleFile(path);
+        Set<StandardOpenOption> options = mmapProtToOptions(prot);
+
+        // we create a new channel, the file may be closed but the mmap object should still work
+        SeekableByteChannel fileChannel;
+        try {
+            fileChannel = newByteChannel(file, options);
+            position(fileChannel, offset);
+            return new MMapHandle(fileChannel, offset);
+        } catch (IOException e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @TruffleBoundary
+    private static Set<StandardOpenOption> mmapProtToOptions(int prot) {
+        HashSet<StandardOpenOption> options = new HashSet<>();
+        if ((prot & PROT_READ) != 0) {
+            options.add(StandardOpenOption.READ);
+        }
+        if ((prot & PROT_WRITE) != 0) {
+            options.add(StandardOpenOption.WRITE);
+        }
+        if ((prot & PROT_EXEC) != 0) {
+            throw new UnsupportedPosixFeatureException("mmap: flag PROT_EXEC is not supported");
+        }
+        return options;
+    }
+
+    @TruffleBoundary
+    private static SeekableByteChannel newByteChannel(TruffleFile file, Set<StandardOpenOption> options) throws IOException {
+        return file.newByteChannel(options);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public byte mmapReadByte(Object mmap, long index,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        ByteBuffer readingBuffer = allocateByteBuffer(1);
+        int readSize = readBytes(handle, index, readingBuffer, errBranch);
+        if (readSize == 0) {
+            throw posixException(OSErrorEnum.ENODATA);
+        }
+        return getByte(readingBuffer);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        int sz;
+        try {
+            sz = PythonUtils.toIntExact(length);
+        } catch (OverflowException e) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EOVERFLOW);
+        }
+        ByteBuffer readingBuffer = allocateByteBuffer(sz);
+        int readSize = readBytes(handle, index, readingBuffer, errBranch);
+        if (readSize > 0) {
+            getByteBufferArray(readingBuffer, bytes, readSize);
+        }
+        return readSize;
+    }
+
+    private static int readBytes(MMapHandle handle, long index, ByteBuffer readingBuffer, BranchProfile errBranch) throws PosixException {
+        try {
+            position(handle.channel, index + handle.offset);
+            return readChannel(handle.channel, readingBuffer);
+        } catch (IOException e) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        try {
+            position(handle.channel, handle.offset + index);
+            int written = handle.channel.write(ByteBuffer.wrap(bytes, 0, length));
+            if (written != length) {
+                throw posixException(OSErrorEnum.EIO);
+            }
+        } catch (Exception e) {
+            // Catching generic Exception to also cover NonWritableChannelException
+            errBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    @TruffleBoundary
+    public void mmapFlush(Object mmap, long offset, long length) {
+        // Intentionally noop
+        // If we had access to the underlying NIO FileChannel, we could explicitly set force(true)
+        // when creating the channel. Another possibility would be exposing JDK's memory mapped
+        // files support via Truffle API, which would allow for more compatible (and completely
+        // different implementation of mmap in emulated posix)
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public void mmapUnmap(Object mmap, @SuppressWarnings("unused") long length) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            return;
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        if (handle.channel != null) {
+            try {
+                closeChannel(handle.channel);
+            } catch (IOException e) {
+                throw posixException(OSErrorEnum.fromException(e));
+            }
+            handle.channel = null;
+        }
+    }
+
+    @TruffleBoundary
+    private static void closeChannel(Channel ch) throws IOException {
+        ch.close();
+    }
+
+    @TruffleBoundary
+    private static void position(SeekableByteChannel ch, long offset) throws IOException {
+        ch.position(offset);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static ByteBuffer allocateByteBuffer(int n) {
+        return ByteBuffer.allocate(n);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    protected static void getByteBufferArray(ByteBuffer src, byte[] dst, int readSize) {
+        src.flip();
+        src.get(dst, 0, readSize);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    protected static byte getByte(ByteBuffer src) {
+        src.flip();
+        return src.get();
+    }
+
+    @TruffleBoundary
+    private static int readChannel(Object readableChannel, ByteBuffer dst) throws IOException {
+        return ((ReadableByteChannel) readableChannel).read(dst);
     }
 
     // ------------------

@@ -152,7 +152,6 @@ public abstract class ErrorMessages {
     public static final String CANNOT_INITIALIZE_WITH = "cannot initialize %s with %s%s";
     public static final String CANNOT_LOAD = "cannot load %s: %s";
     public static final String CANNOT_LOAD_M = "cannot load %s: %m";
-    public static final String CANNOT_MMAP_FILE = "cannot mmap file";
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
     public static final String CANNOT_RESIZE_BUFFER = "cannot resize buffer";
     public static final String CANNOT_SPECIFY_FILTERS = "Cannot specify filters except with FORMAT_RAW";
@@ -388,7 +387,6 @@ public abstract class ErrorMessages {
     public static final String MATH_DOMAIN_ERROR = "math domain error";
     public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
-    public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
     public static final String MEMORYVIEW_INVALID_SLICE_KEY = "memoryview: invalid slice key";
     public static final String MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P = "memoryview: a bytes-like object is required, not '%p'";
     public static final String MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S = "memoryview: invalid value for format '%s'";
@@ -674,6 +672,17 @@ public abstract class ErrorMessages {
     public static final String METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = "Method requires a 'bytes' object, got '%p'";
     public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
+
+    // mmap
+    public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
+    public static final String MEM_MAPPED_OFFSET_MUST_BE_POSITIVE = "memory mapped offset must be positive";
+    public static final String MEM_MAPPED_OFFSET_INVALID_ACCESS = "mmap invalid access parameter.";
+    public static final String MMAP_CHANGED_LENGTH = "The mmapped file has changed its length";
+    public static final String CANNOT_MMAP_AN_EMPTY_FILE = "cannot mmap an empty file";
+    public static final String MMAP_S_IS_GREATER_THAN_FILE_SIZE = "mmap %s is greater than file size";
+    public static final String TOO_MANY_REMAINING_BYTES_TO_BE_STORED = "There are too many remaining bytes to be stored in a bytes object.";
+    public static final String MMAP_CANNOT_MODIFY_READONLY_MEMORY = "mmap can't modify a readonly memory map.";
+    public static final String DATA_OUT_OF_RANGE = "data out of range";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";

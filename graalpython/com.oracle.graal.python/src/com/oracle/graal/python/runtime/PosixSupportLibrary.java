@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.PLATFORM_DARWIN;
+import static com.oracle.graal.python.util.PythonUtils.getPythonOSName;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -86,6 +89,13 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int S_IFLNK = 0120000; /* Symbolic link. */
     public static final int S_IFSOCK = 0140000; /* Socket. */
 
+    public static final int MAP_ANONYMOUS = getPythonOSName().equals(PLATFORM_DARWIN) ? 4096 : 0x20;
+
+    // Constants for accessing the fields of the fstat result:
+    // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
+    public static final int ST_MODE = 0;
+    public static final int ST_SIZE = 6;
+
     public static final int DT_UNKNOWN = 0;
     public static final int DT_DIR = 4;
     public static final int DT_REG = 8;
@@ -95,6 +105,14 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int LOCK_EX = 2;
     public static final int LOCK_NB = 4;
     public static final int LOCK_UN = 8;
+
+    public static final int MAP_SHARED = 0x01;
+    public static final int MAP_PRIVATE = 0x02;
+
+    public static final int PROT_READ = 0x1; /* Page can be read. */
+    public static final int PROT_WRITE = 0x2; /* Page can be written. */
+    public static final int PROT_EXEC = 0x4; /* Page can be executed. */
+    public static final int PROT_NONE = 0x0; /* Page can not be accessed. */
 
     public abstract String getBackend(Object recevier);
 
@@ -146,7 +164,8 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param receiver the receiver of the message
      * @param fd the file descriptor
-     * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array
+     * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array. There are
+     *         constants for some of the indices, e.g., {@link #ST_MODE}.
      * @throws PosixException if an error occurs
      */
     public abstract long[] fstat(Object receiver, int fd) throws PosixException;
@@ -285,6 +304,18 @@ public abstract class PosixSupportLibrary extends Library {
 
     // does not throw, because posix does not exactly define the return value
     public abstract int system(Object receiver, Object command);
+
+    public abstract Object mmap(Object receiver, long length, int prot, int flags, int fd, long offset) throws PosixException;
+
+    public abstract byte mmapReadByte(Object receiver, Object mmap, long index) throws PosixException;
+
+    public abstract int mmapReadBytes(Object receiver, Object mmap, long index, byte[] bytes, int length) throws PosixException;
+
+    public abstract void mmapWriteBytes(Object receiver, Object mmap, long index, byte[] bytes, int length) throws PosixException;
+
+    public abstract void mmapFlush(Object receiver, Object mmap, long offset, long length) throws PosixException;
+
+    public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
