@@ -402,12 +402,12 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
 
     @TruffleBoundary
     public static Object lookupSlow(Object klass, Object key) {
-        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), false);
+        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
     }
 
     @TruffleBoundary
     public static Object lookupSlowSkipPythonClasses(Object klass, Object key) {
-        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
+        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), true);
     }
 
     private static Object lookup(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
