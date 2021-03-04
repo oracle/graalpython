@@ -160,17 +160,19 @@ def message_is_class(match):
     return ' class ' in match.group('header')
 
 
-def get_messages(source, pattern, start_offset=0, is_class=False):
+def get_messages(source, pattern, start_offset=0, is_class=False, no_sharing=False):
     matches = list(re.finditer(pattern, source))
     messages = []
     shared = False
-    if (len(matches) > 1 and pattern == PTRN_MESSAGE) or (len(matches) > 2 and pattern == PTRN_SPECIALIZATION):
+    if ((len(matches) > 1 and pattern == PTRN_MESSAGE) or (len(matches) > 2 and pattern == PTRN_SPECIALIZATION)) and \
+            not no_sharing:
         shared = True
     for match in matches:
         if message_is_class(match):
             start = match.start()
             end = find_end(match, source, is_class=True)
-            messages.extend(get_messages(source[start: end], PTRN_SPECIALIZATION, start_offset=start)[0])
+            messages.extend(get_messages(source[start: end], PTRN_SPECIALIZATION, start_offset=start,
+                                         no_sharing=no_sharing)[0])
         else:
             messages.append(ExportedMessage(match, source, start_offset=start_offset, is_class=is_class, shared=shared))
     return messages, shared
@@ -200,7 +202,7 @@ def file_names_filter(f_name, names):
 
 
 def main(sources, add=True, dry_run=True, check_style=True, single_source=False, source_filter=None,
-         ignore_filter=None, count=False):
+         ignore_filter=None, count=False, no_sharing=False):
     files = glob.glob("{}**/*.java".format(sources), recursive=True)
     if ignore_filter:
         files = list(filter(lambda f: not file_names_filter(f, ignore_filter), files))
@@ -212,7 +214,7 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
         with open(java_file, 'r+') as SRC:
             source = SRC.read()
             if add:
-                messages, shared = get_messages(source, PTRN_MESSAGE)
+                messages, shared = get_messages(source, PTRN_MESSAGE, no_sharing=no_sharing)
                 if len(messages) > 0:
                     if count:
                         cnt += 1
@@ -265,6 +267,7 @@ if __name__ == '__main__':
     parser.add_argument("--count", help="count how many files may need the GIL", action="store_true")
     parser.add_argument("--remove", help="remove the GIL", action="store_true")
     parser.add_argument("--no_style", help="do not run the style checker", action="store_true")
+    parser.add_argument("--no_sharing", help="do not use @Shared", action="store_true")
     parser.add_argument("--single", help="stop after modifying the first source", action="store_true")
     parser.add_argument("--filter", type=str, help="filter for source name(s) (comma separated)")
     parser.add_argument("--ignore", type=str, help="ignore filter for source name(s) (comma separated)")
@@ -272,4 +275,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args.sources, add=not args.remove, dry_run=args.dry_run, check_style=not args.no_style,
-         single_source=args.single, source_filter=args.filter, ignore_filter=args.ignore, count=args.count)
+         single_source=args.single, source_filter=args.filter, ignore_filter=args.ignore, count=args.count,
+         no_sharing=args.no_sharing)

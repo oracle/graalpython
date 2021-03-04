@@ -51,8 +51,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -78,7 +80,13 @@ public class KeywordsStorage extends HashingStorage {
     @Override
     @ExportMessage
     public int length() {
-        return keywords.length;
+        GilNode gil = GilNode.getUncached();
+        boolean mustRelease = gil.acquire();
+        try {
+            return keywords.length;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
@@ -107,19 +115,34 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
         static boolean cached(KeywordsStorage self, String key, ThreadState state,
-                        @Exclusive @Cached("self.length()") int cachedLen) {
-            return self.findCachedStringKey(key, cachedLen) != -1;
+                        @Exclusive @Cached("self.length()") int cachedLen, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return self.findCachedStringKey(key, cachedLen) != -1;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(replaces = "cached")
-        static boolean string(KeywordsStorage self, String key, ThreadState state) {
-            return self.findStringKey(key) != -1;
+        static boolean string(KeywordsStorage self, String key, ThreadState state, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return self.findStringKey(key) != -1;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static boolean pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Exclusive @Cached IsBuiltinClassProfile profile) {
-            return string(self, key.getValue(), state);
+                        @Exclusive @Cached IsBuiltinClassProfile profile, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return string(self, key.getValue(), state, gil);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)")
@@ -135,69 +158,99 @@ public class KeywordsStorage extends HashingStorage {
     public static class GetItemWithState {
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
         static Object cached(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen) {
-            final int idx = self.findCachedStringKey(key, cachedLen);
-            return idx != -1 ? self.keywords[idx].getValue() : null;
+                        @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                final int idx = self.findCachedStringKey(key, cachedLen);
+                return idx != -1 ? self.keywords[idx].getValue() : null;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(replaces = "cached")
-        static Object string(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state) {
-            final int idx = self.findStringKey(key);
-            return idx != -1 ? self.keywords[idx].getValue() : null;
+        static Object string(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                final int idx = self.findStringKey(key);
+                return idx != -1 ? self.keywords[idx].getValue() : null;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassProfile profile) {
-            return string(self, key.getValue(), state);
+                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassProfile profile, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return string(self, key.getValue(), state, gil);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)")
         static Object notString(KeywordsStorage self, Object key, ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            long hash = getHashWithState(key, lib, state, gotState);
-            for (int i = 0; i < self.keywords.length; i++) {
-                String currentKey = self.keywords[i].getName();
-                long keyHash;
-                if (gotState.profile(state != null)) {
-                    keyHash = lib.hashWithState(currentKey, state);
-                    if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                        return self.keywords[i].getValue();
-                    }
-                } else {
-                    keyHash = lib.hash(currentKey);
-                    if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                        return self.keywords[i].getValue();
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                long hash = getHashWithState(key, lib, state, gotState);
+                for (int i = 0; i < self.keywords.length; i++) {
+                    String currentKey = self.keywords[i].getName();
+                    long keyHash;
+                    if (gotState.profile(state != null)) {
+                        keyHash = lib.hashWithState(currentKey, state);
+                        if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
+                            return self.keywords[i].getValue();
+                        }
+                    } else {
+                        keyHash = lib.hash(currentKey);
+                        if (keyHash == hash && lib.equals(key, currentKey, lib)) {
+                            return self.keywords[i].getValue();
+                        }
                     }
                 }
+                return null;
+            } finally {
+                gil.release(mustRelease);
             }
-            return null;
         }
     }
 
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib);
-        if (gotState.profile(state != null)) {
-            return lib.setItemWithState(newStore, key, value, state);
-        } else {
-            return lib.setItem(newStore, key, value);
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            HashingStorage newStore = generalize(lib);
+            if (gotState.profile(state != null)) {
+                return lib.setItemWithState(newStore, key, value, state);
+            } else {
+                return lib.setItem(newStore, key, value);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib);
-        if (gotState.profile(state != null)) {
-            return lib.delItemWithState(newStore, key, state);
-        } else {
-            return lib.delItem(newStore, key);
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            HashingStorage newStore = generalize(lib);
+            if (gotState.profile(state != null)) {
+                return lib.delItemWithState(newStore, key, state);
+            } else {
+                return lib.delItem(newStore, key);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -212,23 +265,33 @@ public class KeywordsStorage extends HashingStorage {
         @Specialization(guards = "self.length() == cachedLen", limit = "1")
         @ExplodeLoop
         static Object cached(KeywordsStorage self, ForEachNode<Object> node, Object arg,
-                        @Exclusive @Cached("self.length()") int cachedLen) {
-            Object result = arg;
-            for (int i = 0; i < cachedLen; i++) {
-                PKeyword entry = self.keywords[i];
-                result = node.execute(entry.getName(), result);
+                        @Exclusive @Cached("self.length()") int cachedLen, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object result = arg;
+                for (int i = 0; i < cachedLen; i++) {
+                    PKeyword entry = self.keywords[i];
+                    result = node.execute(entry.getName(), result);
+                }
+                return result;
+            } finally {
+                gil.release(mustRelease);
             }
-            return result;
         }
 
         @Specialization(replaces = "cached")
-        static Object generic(KeywordsStorage self, ForEachNode<Object> node, Object arg) {
-            Object result = arg;
-            for (int i = 0; i < self.length(); i++) {
-                PKeyword entry = self.keywords[i];
-                result = node.execute(entry.getName(), result);
+        static Object generic(KeywordsStorage self, ForEachNode<Object> node, Object arg, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object result = arg;
+                for (int i = 0; i < self.length(); i++) {
+                    PKeyword entry = self.keywords[i];
+                    result = node.execute(entry.getName(), result);
+                }
+                return result;
+            } finally {
+                gil.release(mustRelease);
             }
-            return result;
         }
     }
 
@@ -238,24 +301,34 @@ public class KeywordsStorage extends HashingStorage {
         @ExplodeLoop
         static HashingStorage cached(KeywordsStorage self, HashingStorage other,
                         @Exclusive @Cached("self.length()") int cachedLen,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            HashingStorage result = other;
-            for (int i = 0; i < cachedLen; i++) {
-                PKeyword entry = self.keywords[i];
-                result = lib.setItem(result, entry.getName(), entry.getValue());
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                HashingStorage result = other;
+                for (int i = 0; i < cachedLen; i++) {
+                    PKeyword entry = self.keywords[i];
+                    result = lib.setItem(result, entry.getName(), entry.getValue());
+                }
+                return result;
+            } finally {
+                gil.release(mustRelease);
             }
-            return result;
         }
 
         @Specialization(replaces = "cached")
         static HashingStorage generic(KeywordsStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            HashingStorage result = other;
-            for (int i = 0; i < self.length(); i++) {
-                PKeyword entry = self.keywords[i];
-                result = lib.setItem(result, entry.getName(), entry.getValue());
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                HashingStorage result = other;
+                for (int i = 0; i < self.length(); i++) {
+                    PKeyword entry = self.keywords[i];
+                    result = lib.setItem(result, entry.getName(), entry.getValue());
+                }
+                return result;
+            } finally {
+                gil.release(mustRelease);
             }
-            return result;
         }
     }
 
@@ -272,16 +345,24 @@ public class KeywordsStorage extends HashingStorage {
         return this;
     }
 
-    @Override
     @ExportMessage
-    public HashingStorageIterable<Object> keys() {
-        return new HashingStorageIterable<>(new KeysIterator(this));
+    public HashingStorageIterable<Object> keys(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return new HashingStorageIterable<>(new KeysIterator(this));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    @Override
-    public HashingStorageIterable<Object> reverseKeys() {
-        return new HashingStorageIterable<>(new ReverseKeysIterator(this));
+    public HashingStorageIterable<Object> reverseKeys(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return new HashingStorageIterable<>(new ReverseKeysIterator(this));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     private abstract static class AbstractKeysIterator implements Iterator<Object> {
