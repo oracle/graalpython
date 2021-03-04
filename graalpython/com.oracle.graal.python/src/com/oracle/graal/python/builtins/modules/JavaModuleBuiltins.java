@@ -70,7 +70,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -327,7 +326,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @ExportMessage
         Object readArrayElement(long index,
                         @CachedLibrary("this.delegate") InteropLibrary delegateLib,
-                        @CachedLibrary(limit = "1") InteropLibrary elementLib, @Shared("gil") @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib, @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
             boolean mustRelease = gil.acquire();
             try {
                 Object element = delegateLib.readArrayElement(delegate, index);
