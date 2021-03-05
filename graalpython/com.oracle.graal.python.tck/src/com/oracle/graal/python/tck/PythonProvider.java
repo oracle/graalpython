@@ -92,6 +92,7 @@ public class PythonProvider implements LanguageProvider {
     private static final TypeDescriptor BYTES = intersection(OBJECT, ITERABLE, array(INT));
     private static final TypeDescriptor BYTEARRAY = intersection(OBJECT, ITERABLE, array(INT));
     private static final TypeDescriptor DICT = dict(ANY, ANY);
+    private static final TypeDescriptor SET = set(ANY);
     private static final TypeDescriptor LIST = list(ANY);
     private static final TypeDescriptor TUPLE = tuple(ANY);
     private static final TypeDescriptor DATETIME_DATE = intersection(OBJECT, DATE);
@@ -115,6 +116,10 @@ public class PythonProvider implements LanguageProvider {
 
     private static final TypeDescriptor dict(TypeDescriptor keyType, @SuppressWarnings("unused") TypeDescriptor valueType) {
         return intersection(OBJECT, iterable(keyType));
+    }
+
+    private static final TypeDescriptor set(TypeDescriptor componentType) {
+        return intersection(OBJECT, iterable(componentType));
     }
 
     private static final TypeDescriptor iter(TypeDescriptor componentType) {
@@ -179,6 +184,7 @@ public class PythonProvider implements LanguageProvider {
             "dict", DICT, "{object(): 'q'}",
             "dict:int-str", dict(INT, STR), "{1: 'q'}",
             "dict:str-int", dict(STR, INT), "{'q': 1}",
+            "set", SET, "{object(), 'q', 12}",
             "datetime", DATETIME_DATETIME, "import datetime; datetime.datetime.now()",
             "date", DATETIME_DATE, "import datetime; datetime.date.today()",
             "time", DATETIME_TIME, "import datetime; datetime.datetime.now().time()",
