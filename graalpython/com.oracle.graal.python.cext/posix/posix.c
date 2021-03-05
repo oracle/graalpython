@@ -522,31 +522,19 @@ int32_t call_system(const char *pathname) {
     return system(pathname);
 }
 
-void *call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
+int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
     void *result = mmap(NULL, length, prot, flags, fd, offset);
-    return result == MAP_FAILED ? NULL : result;
+    return result == MAP_FAILED ? 0 : (int64_t) result;
 }
 
-int32_t call_munmap(void* address, int64_t length) {
-    return munmap(address, length);
+int32_t call_munmap(int64_t address, int64_t length) {
+    return munmap((void *) address, length);
 }
 
-void call_msync(void* address, int64_t offset, int64_t length) {
+void call_msync(int64_t address, int64_t offset, int64_t length) {
     // TODO: can be generalized to also accept different flags,
     // but MS_SYNC and such seem to be defined to different values across systems
-    msync(address + offset, length, MS_SYNC);
-}
-
-int8_t read_byte(int8_t *address, int64_t index) {
-    return address[index];
-}
-
-void write_bytes(int8_t *address, int8_t* buffer, int64_t index, int32_t length) {
-    memcpy(address + index, buffer, length);
-}
-
-void read_bytes(int8_t *address, int8_t* buffer, int64_t index, int32_t length) {
-    memcpy(buffer, address + index, length);
+    msync(((int8_t *) address) + offset, length, MS_SYNC);
 }
 
 int32_t get_errno() {

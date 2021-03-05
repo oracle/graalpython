@@ -43,9 +43,12 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
@@ -77,7 +80,8 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
-import org.graalvm.nativeimage.ImageInfo;
+
+import sun.misc.Unsafe;
 
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
@@ -96,15 +100,28 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
 
+    private static final Unsafe UNSAFE = initUnsafe();
+
+    private static Unsafe initUnsafe() {
+        try {
+            return Unsafe.getUnsafe();
+        } catch (SecurityException se) {
+            try {
+                Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+                theUnsafe.setAccessible(true);
+                return (Unsafe) theUnsafe.get(Unsafe.class);
+            } catch (Exception e) {
+                throw new UnsupportedOperationException("Cannot initialize Unsafe for the native POSIX backend", e);
+            }
+        }
+    }
+
     private enum PosixNativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
-        read_byte("(pointer, sint64):sint8"),
-        read_bytes("(pointer, [sint8], sint64, sint32):void"),
-        write_bytes("(pointer, [sint8], sint64, sint32):void"),
-        call_mmap("(sint64, sint32, sint32, sint32, sint64):pointer"),
-        call_munmap("(pointer, sint64):sint32"),
-        call_msync("(pointer, sint64, sint64):void"),
+        call_mmap("(sint64, sint32, sint32, sint32, sint64):sint64"),
+        call_munmap("(sint64, sint64):sint32"),
+        call_msync("(sint64, sint64, sint64):void"),
         call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint32):sint32"),
@@ -1155,10 +1172,10 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private static final class MMapHandle {
-        private final Object pointer;
+        private final long pointer;
         private final long length;
 
-        public MMapHandle(Object pointer, long length) {
+        public MMapHandle(long pointer, long length) {
             this.pointer = pointer;
             this.length = length;
         }
@@ -1167,39 +1184,39 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public Object mmap(long length, int prot, int flags, int fd, long offset,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Object address = invokeNode.call(this, PosixNativeFunction.call_mmap, length, prot, flags, fd, offset);
-        if (invokeNode.getResultInterop().isNull(address)) {
+        long address = invokeNode.callLong(this, PosixNativeFunction.call_mmap, length, prot, flags, fd, offset);
+        if (address == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return new MMapHandle(address, length);
     }
 
     @ExportMessage
-    public byte mmapReadByte(Object mmap, long index,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+    @SuppressWarnings("static-method")
+    public byte mmapReadByte(Object mmap, long index) {
         MMapHandle handle = (MMapHandle) mmap;
         if (index < 0 || index >= handle.length) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IndexOutOfBoundsException();
         }
-        return invokeNode.callByte(this, PosixNativeFunction.read_byte, handle.pointer, index);
+        return UNSAFE.getByte(handle.pointer + index);
     }
 
     @ExportMessage
-    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+    @SuppressWarnings("static-method")
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
         checkIndexAndLen(handle, index, length);
-        invokeNode.call(this, PosixNativeFunction.read_bytes, handle.pointer, wrap(bytes), index, length);
+        UNSAFE.copyMemory(null, handle.pointer + index, bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
         return length;
     }
 
     @ExportMessage
-    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+    @SuppressWarnings("static-method")
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
         checkIndexAndLen(handle, index, length);
-        invokeNode.call(this, PosixNativeFunction.write_bytes, handle.pointer, wrap(bytes), index, length);
+        UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, handle.pointer + index, length);
     }
 
     @ExportMessage
