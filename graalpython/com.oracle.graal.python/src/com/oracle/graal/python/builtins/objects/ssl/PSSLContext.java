@@ -56,6 +56,7 @@ import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_CRL_CHECK_ALL;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import java.net.Socket;
@@ -87,7 +88,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedTrustManager;
-import javax.net.ssl.X509TrustManager;
 
 public final class PSSLContext extends PythonBuiltinObject {
     private final SSLMethod method;
@@ -103,8 +103,11 @@ public final class PSSLContext extends PythonBuiltinObject {
 
     private String[] alpnProtocols;
 
-    private KeyStore keystore;
+    private KeyStore caKeystore;
+    private KeyStore chainKeystore;
     private Set<X509CRL> crls;
+
+    private boolean useDefaultTrustStore;
 
     private char[] password = PythonUtils.EMPTY_CHAR_ARRAY;
 
@@ -121,12 +124,22 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public KeyStore getKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
-        if (keystore == null) {
-            keystore = KeyStore.getInstance("JKS");
-            keystore.load(null);
+    public KeyStore getCAKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+        if (caKeystore == null) {
+            caKeystore = KeyStore.getInstance("JKS");
+
+            caKeystore.load(null);
         }
-        return keystore;
+        return caKeystore;
+    }
+
+    @TruffleBoundary
+    private KeyStore getChainKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+        if (chainKeystore == null) {
+            chainKeystore = KeyStore.getInstance("JKS");
+            chainKeystore.load(null);
+        }
+        return chainKeystore;
     }
 
     public SSLMethod getMethod() {
@@ -134,11 +147,11 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    void setCertificateEntries(Collection<? extends Object> list) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+    void setCAEntries(Collection<? extends Object> list) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         for (Object obj : list) {
             if (obj instanceof X509Certificate) {
                 X509Certificate cert = (X509Certificate) obj;
-                getKeyStore().setCertificateEntry(CertUtils.getAlias(cert), cert);
+                getCAKeyStore().setCertificateEntry(CertUtils.getAlias(cert), cert);
             } else if (obj instanceof X509CRL) {
                 getCRLs().add((X509CRL) obj);
             } else {
@@ -155,42 +168,53 @@ public final class PSSLContext extends PythonBuiltinObject {
         return crls;
     }
 
-    void setKeyEntry(PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+    void setCertChain(PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         this.password = password;
-        getKeyStore().setKeyEntry(CertUtils.getAlias(pk), pk, password, certs);
+        getChainKeyStore().setKeyEntry(CertUtils.getAlias(pk), pk, password, certs);
     }
 
-    void init() throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException, InvalidAlgorithmParameterException {
-        TrustManager[] tms = null;
+    void init() throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException, InvalidAlgorithmParameterException, IOException, CertificateException {
+        X509ExtendedTrustManager defaultTrustManager = getDefaultTrustManagers();
+        X509ExtendedTrustManager trustManager = getX509ExtendedTrustManager(getTrustManagerFactory(getCAKeyStore()).getTrustManagers());
+        TrustManager tm = new DelegateTrustManager(trustManager, defaultTrustManager, verifyMode);
+
         KeyManager[] kms = null;
-        if (verifyMode == SSLModuleBuiltins.SSL_CERT_NONE) {
-            tms = new TrustManager[]{new CertNoneTrustManager()};
-            LOGGER.fine("PSSLContext.init() using SSL_CERT_NONE TrustManager");
-        }
-        if (keystore != null && keystore.size() > 0) {
-            if (tms == null) {
-                TrustManagerFactory tmf = getTrustManagerFactory();
-                tms = tmf.getTrustManagers();
-                if (verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL) {
-                    LOGGER.fine("PSSLContext.init() using SSL_CERT_OPTIONAL TrustManager");
-                    List<TrustManager> l = new ArrayList<>(tms.length);
-                    for (TrustManager tm : tms) {
-                        if (tm instanceof X509ExtendedTrustManager) {
-                            l.add(new DelegateTrustManager((X509ExtendedTrustManager) tm, true));
-                        }
-                    }
-                    tms = l.toArray(new TrustManager[l.size()]);
-                }
-            }
+        if (chainKeystore != null) {
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            kmf.init(keystore, password);
+            kmf.init(chainKeystore, password);
             kms = kmf.getKeyManagers();
         }
-        context.init(kms, tms, null);
+
+        context.init(kms, new TrustManager[]{tm}, null);
     }
 
-    private TrustManagerFactory getTrustManagerFactory() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, KeyStoreException {
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    private X509ExtendedTrustManager getDefaultTrustManagers() throws KeyStoreException, NoSuchAlgorithmException {
+        if (useDefaultTrustStore) {
+            TrustManagerFactory tmf = getTrustManagerFactory();
+            tmf.init((KeyStore) null);
+            return getX509ExtendedTrustManager(tmf.getTrustManagers());
+        }
+        return null;
+    }
+
+    private static X509ExtendedTrustManager getX509ExtendedTrustManager(TrustManager[] tms) {
+        for (TrustManager tm : tms) {
+            if (tm instanceof X509ExtendedTrustManager) {
+                return (X509ExtendedTrustManager) tm;
+            }
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("at least one X509ExtendedTrustManager should be provided.");
+    }
+
+    @TruffleBoundary
+    private static TrustManagerFactory getTrustManagerFactory() throws NoSuchAlgorithmException {
+        return TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    }
+
+    @TruffleBoundary
+    private TrustManagerFactory getTrustManagerFactory(KeyStore ks) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, KeyStoreException {
+        TrustManagerFactory tmf = getTrustManagerFactory();
         boolean crlCheck = (verifyFlags & X509_V_FLAG_CRL_CHECK) != 0;
         boolean crlCheckAll = (verifyFlags & X509_V_FLAG_CRL_CHECK_ALL) != 0;
         LOGGER.fine(() -> String.format("PSSLContext.getTrustManagerFactory() crlCheck: %b, crlCheckAll: %b", crlCheck, crlCheckAll));
@@ -201,7 +225,7 @@ public final class PSSLContext extends PythonBuiltinObject {
                 opt.add(ONLY_END_ENTITY);
             }
             rc.setOptions(opt);
-            PKIXBuilderParameters params = new PKIXBuilderParameters(keystore, new X509CertSelector());
+            PKIXBuilderParameters params = new PKIXBuilderParameters(ks, new X509CertSelector());
             params.addCertPathChecker(rc);
             if (crls != null && !crls.isEmpty()) {
                 CertStore certStores = CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls));
@@ -210,7 +234,7 @@ public final class PSSLContext extends PythonBuiltinObject {
             }
             tmf.init(new CertPathTrustManagerParameters(params));
         } else {
-            tmf.init(keystore);
+            tmf.init(ks);
         }
         return tmf;
     }
@@ -236,6 +260,10 @@ public final class PSSLContext extends PythonBuiltinObject {
         assert verifyMode == SSLModuleBuiltins.SSL_CERT_NONE || verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL || verifyMode == SSLModuleBuiltins.SSL_CERT_REQUIRED;
         LOGGER.fine(() -> String.format("PSSLContext.setVerifyMode: %d", verifyMode));
         this.verifyMode = verifyMode;
+    }
+
+    public void setUseDefaultTrustStore(boolean useDefaultTrustStore) {
+        this.useDefaultTrustStore = useDefaultTrustStore;
     }
 
     @TruffleBoundary
@@ -332,78 +360,185 @@ public final class PSSLContext extends PythonBuiltinObject {
         return list.toArray(new String[0]);
     }
 
-    private static class CertNoneTrustManager implements X509TrustManager {
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-
-        }
-
-        @Override
-        public X509Certificate[] getAcceptedIssuers() {
-            return new X509Certificate[0];
-        }
-    }
-
     private static class DelegateTrustManager extends X509ExtendedTrustManager {
-        private final X509ExtendedTrustManager delegate;
-        /*
-         * if in server mode and OPTIONAL, then check certificates only if some provided.
-         */
-        private final boolean certOptional;
 
-        public DelegateTrustManager(X509ExtendedTrustManager delegate, boolean certOptional) {
+        private final X509ExtendedTrustManager delegate;
+        private final X509ExtendedTrustManager defaultTM;
+        private final int verifyMode;
+
+        private X509Certificate[] issuers;
+
+        public DelegateTrustManager(X509ExtendedTrustManager delegate, X509ExtendedTrustManager defaultTM, int verifyMode) {
             this.delegate = delegate;
-            this.certOptional = certOptional;
+            this.defaultTM = defaultTM;
+            this.verifyMode = verifyMode;
+            LOGGER.fine(() -> String.format("PSSLContext.init() using DelegateTrustManager, verifyMode=",
+                            verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL ? "SSL_CERT_OPTIONAL" : "SSL_CERT_REQUIRED"));
         }
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            if (certOptional && (chain == null || chain.length == 0)) {
+            if (skipCheckClientTrusted(chain)) {
                 return;
             }
-            delegate.checkClientTrusted(chain, authType);
+            if (canCheckDelegateTrustManager()) {
+                try {
+                    delegate.checkClientTrusted(chain, authType);
+                    return;
+                } catch (CertificateException e) {
+                    if (defaultTM != null) {
+                        throw e;
+                    }
+                }
+            }
+            if (canCheckDefaultTrustManager()) {
+                defaultTM.checkClientTrusted(chain, authType);
+                return;
+            }
+            throw new CertificateException("certificate verify failed: unable to get local issuer certificate");
         }
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String string, Socket socket) throws CertificateException {
-            if (certOptional && (chain == null || chain.length == 0)) {
+            if (skipCheckClientTrusted(chain)) {
                 return;
             }
-            delegate.checkClientTrusted(chain, string, socket);
+            if (canCheckDelegateTrustManager()) {
+                try {
+                    delegate.checkClientTrusted(chain, string, socket);
+                    return;
+                } catch (CertificateException e) {
+                    if (defaultTM == null) {
+                        throw e;
+                    }
+                }
+            }
+            if (canCheckDefaultTrustManager()) {
+                defaultTM.checkClientTrusted(chain, string, socket);
+                return;
+            }
+            throw new CertificateException("certificate verify failed: unable to get local issuer certificate");
         }
 
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String string, SSLEngine ssle) throws CertificateException {
-            if (certOptional && (chain == null || chain.length == 0)) {
+            if (skipCheckClientTrusted(chain)) {
                 return;
             }
-            delegate.checkClientTrusted(chain, string, ssle);
+            if (canCheckDelegateTrustManager()) {
+                try {
+                    delegate.checkClientTrusted(chain, string, ssle);
+                    return;
+                } catch (CertificateException e) {
+                    if (defaultTM == null) {
+                        throw e;
+                    }
+                }
+            }
+            if (canCheckDefaultTrustManager()) {
+                defaultTM.checkClientTrusted(chain, string, ssle);
+                return;
+            }
+            throw new CertificateException("certificate verify failed: unable to get local issuer certificate");
         }
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            delegate.checkServerTrusted(chain, authType);
+            if (skipCheckServerTrusted()) {
+                return;
+            }
+            if (canCheckDelegateTrustManager()) {
+                try {
+                    delegate.checkServerTrusted(chain, authType);
+                    return;
+                } catch (CertificateException e) {
+                    if (defaultTM == null) {
+                        throw e;
+                    }
+                }
+            }
+            if (canCheckDefaultTrustManager()) {
+                defaultTM.checkServerTrusted(chain, authType);
+                return;
+            }
+            throw new CertificateException("certificate verify failed: unable to get local issuer certificate");
         }
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String string, Socket socket) throws CertificateException {
-            delegate.checkServerTrusted(chain, string, socket);
+            if (skipCheckServerTrusted()) {
+                return;
+            }
+            if (canCheckDelegateTrustManager()) {
+                try {
+                    delegate.checkServerTrusted(chain, string, socket);
+                    return;
+                } catch (CertificateException e) {
+                    if (defaultTM == null) {
+                        throw e;
+                    }
+                }
+            }
+            if (canCheckDefaultTrustManager()) {
+                defaultTM.checkServerTrusted(chain, string, socket);
+                return;
+            }
+            throw new CertificateException("certificate verify failed: unable to get local issuer certificate");
         }
 
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String string, SSLEngine ssle) throws CertificateException {
-            delegate.checkServerTrusted(chain, string, ssle);
+            if (skipCheckServerTrusted()) {
+                return;
+            }
+            if (canCheckDelegateTrustManager()) {
+                try {
+                    delegate.checkServerTrusted(chain, string, ssle);
+                    return;
+                } catch (CertificateException e) {
+                    if (defaultTM == null) {
+                        throw e;
+                    }
+                }
+            }
+            if (canCheckDefaultTrustManager()) {
+                defaultTM.checkServerTrusted(chain, string, ssle);
+                return;
+            }
+            throw new CertificateException("certificate verify failed: unable to get local issuer certificate");
+        }
+
+        private boolean skipCheckClientTrusted(X509Certificate[] chain) {
+            return verifyMode == SSLModuleBuiltins.SSL_CERT_NONE ||
+                            (verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL && (chain == null || chain.length == 0));
+        }
+
+        private boolean skipCheckServerTrusted() {
+            return verifyMode == SSLModuleBuiltins.SSL_CERT_NONE;
+        }
+
+        private boolean canCheckDelegateTrustManager() {
+            return delegate.getAcceptedIssuers().length > 0;
+        }
+
+        private boolean canCheckDefaultTrustManager() {
+            return defaultTM != null && defaultTM.getAcceptedIssuers().length > 0;
         }
 
         @Override
         public X509Certificate[] getAcceptedIssuers() {
-            return delegate.getAcceptedIssuers();
+            if (issuers == null) {
+                if (defaultTM == null) {
+                    issuers = delegate.getAcceptedIssuers();
+                } else {
+                    X509Certificate[] delegateIssuers = delegate.getAcceptedIssuers();
+                    X509Certificate[] defaultIssuers = defaultTM.getAcceptedIssuers();
+                    issuers = new X509Certificate[delegateIssuers.length + defaultIssuers.length];
+                    PythonUtils.arraycopy(delegateIssuers, 0, issuers, 0, delegateIssuers.length);
+                    PythonUtils.arraycopy(defaultIssuers, 0, issuers, delegateIssuers.length, defaultIssuers.length);
+                }
+            }
+            return issuers;
         }
     }
 

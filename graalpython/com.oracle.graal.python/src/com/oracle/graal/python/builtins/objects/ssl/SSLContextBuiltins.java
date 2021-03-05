@@ -189,7 +189,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     static SSLEngine createSSLEngine(PNodeWithRaise node, PSSLContext context, boolean serverMode, String serverHostname) {
         try {
             context.init();
-        } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | KeyManagementException | InvalidAlgorithmParameterException ex) {
+        } catch (NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException | KeyManagementException | InvalidAlgorithmParameterException | IOException | CertificateException ex) {
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, ex);
         }
         SSLParameters parameters = new SSLParameters();
@@ -581,7 +581,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 try {
                     LoadCertError result = CertUtils.loadVerifyLocations(file, path, certificates);
                     if (result == LoadCertError.NO_ERROR) {
-                        self.setCertificateEntries(certificates);
+                        self.setCAEntries(certificates);
                     } else {
                         // do not raise any errors
                         LOGGER.finer(() -> String.format("set_default_verify_paths loadVerifyLocations returned %s", result));
@@ -590,6 +590,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     // do not raise any errors
                     LOGGER.log(Level.FINER, "", ex);
                 }
+            } else {
+                self.setUseDefaultTrustStore(true);
             }
             return PNone.NONE;
         }
@@ -627,7 +629,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         Object storeStats(PSSLContext self) {
             try {
-                KeyStore keystore = self.getKeyStore();
+                KeyStore keystore = self.getCAKeyStore();
                 Enumeration<String> aliases = keystore.aliases();
                 int x509 = 0, crl = 0, ca = 0;
                 while (aliases.hasMoreElements()) {
@@ -721,7 +723,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                         default:
                             assert false : "not handled: " + result;
                     }
-                    self.setCertificateEntries(certificates);
+                    self.setCAEntries(certificates);
                 }
             } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | CRLException ex) {
                 throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, ex);
@@ -743,7 +745,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
             List<Object> certificates = new ArrayList<>();
             getCertificates(dataString, certificates);
-            context.setCertificateEntries(certificates);
+            context.setCAEntries(certificates);
         }
 
         @TruffleBoundary
@@ -770,7 +772,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         private void fromBytesLike(ToByteArrayNode toBytes, Object cadata, PSSLContext context) throws KeyStoreException, IOException, NoSuchAlgorithmException {
             byte[] bytes = toBytes.execute(((PBytesLike) cadata).getSequenceStorage());
             try {
-                context.setCertificateEntries(CertUtils.generateCertificates(bytes));
+                context.setCAEntries(CertUtils.generateCertificates(bytes));
             } catch (CertificateException ex) {
                 String msg = ex.getMessage();
                 if (msg != null) {
@@ -876,7 +878,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 }
                 certs = certificates.toArray(new X509Certificate[certificates.size()]);
                 PrivateKey pk = CertUtils.createPrivateKey(this, pkBytes, certs[0]);
-                self.setKeyEntry(pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
+                self.setCertChain(pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
             } catch (InvalidKeySpecException | IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | CRLException ex) {
                 throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, ex);
             }
@@ -993,7 +995,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         Object getCerts(PSSLContext self, @SuppressWarnings("unused") boolean binary_form) {
             try {
                 List<PDict> result = new ArrayList<>();
-                KeyStore ks = self.getKeyStore();
+                KeyStore ks = self.getCAKeyStore();
                 Enumeration<String> aliases = ks.aliases();
                 while (aliases.hasMoreElements()) {
                     X509Certificate cert = (X509Certificate) ks.getCertificate(aliases.nextElement());
@@ -1012,7 +1014,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
         Object getCertsBinary(PSSLContext self, @SuppressWarnings("unused") boolean binary_form) {
             try {
                 List<PBytes> result = new ArrayList<>();
-                KeyStore ks = self.getKeyStore();
+                KeyStore ks = self.getCAKeyStore();
                 Enumeration<String> aliases = ks.aliases();
                 while (aliases.hasMoreElements()) {
                     X509Certificate cert = (X509Certificate) ks.getCertificate(aliases.nextElement());
