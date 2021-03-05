@@ -189,7 +189,7 @@ def add_import(source, shared=False):
     gil_import = "" if skip_gil_import else "\n" + GIL_NODE_IMPORT
     cached_import = "" if skip_cached_import else "\n" + CACHED_IMPORT
     if shared:
-        shared_import = "" if skip_excl_shared else + "\n" + EXCLUSIVE_IMPORT
+        shared_import = "" if skip_excl_shared else "\n" + EXCLUSIVE_IMPORT
     else:
         shared_import = ""
     return source[:end] + gil_import + cached_import + shared_import + source[end:]
