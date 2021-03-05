@@ -48,9 +48,11 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -91,30 +93,39 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     int getBufferLength(
-                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode) {
-        return castToIntNode.execute(length);
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return castToIntNode.execute(length);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     byte[] getBufferBytes(
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @Cached BranchProfile gotException,
-                    @Cached PRaiseNode raiseNode) {
-
+                    @Cached PRaiseNode raiseNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            int len = castToIntNode.execute(length);
+            try {
+                int len = castToIntNode.execute(length);
 
-            // save current position
-            // TODO: restore in case of failure
-            @SuppressWarnings("unused")
-            long oldPos = PMMap.position(mappedByteBuffer);
+                // save current position
+                // TODO: restore in case of failure
+                @SuppressWarnings("unused")
+                long oldPos = PMMap.position(mappedByteBuffer);
 
-            PMMap.position(mappedByteBuffer, 0);
-            ByteSequenceStorage s = ReadFromChannelNode.read(mappedByteBuffer, len, gotException, raiseNode);
-            return s.getInternalByteArray();
-        } catch (IOException e) {
-            // TODO(fa) how to handle?
-            return null;
+                PMMap.position(mappedByteBuffer, 0);
+                ByteSequenceStorage s = ReadFromChannelNode.read(mappedByteBuffer, len, gotException, raiseNode);
+                return s.getInternalByteArray();
+            } catch (IOException e) {
+                // TODO(fa) how to handle?
+                return null;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 

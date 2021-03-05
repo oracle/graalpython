@@ -39,10 +39,12 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -82,12 +84,18 @@ public class PythonObject extends PythonAbstractObject {
 
     @ExportMessage
     public void setLazyPythonClass(Object cls,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        // n.b.: the CLASS property is usually a constant property that is stored in the shape in
-        // single-context-mode. If we change it for the first time, there's an implicit shape
-        // transition
-        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | CLASS_CHANGED_FLAG);
-        dylib.put(this, CLASS, cls);
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // n.b.: the CLASS property is usually a constant property that is stored in the shape
+            // in
+            // single-context-mode. If we change it for the first time, there's an implicit shape
+            // transition
+            dylib.setShapeFlags(this, dylib.getShapeFlags(this) | CLASS_CHANGED_FLAG);
+            dylib.put(this, CLASS, cls);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -105,14 +113,24 @@ public class PythonObject extends PythonAbstractObject {
         public static Object getConstantClass(PythonObject self,
                         @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
                         @Cached("self.getShape()") Shape cachedShape,
-                        @Cached(value = "getInitialClass(self)", weak = true) Object klass) {
-            return klass;
+                        @Cached(value = "getInitialClass(self)", weak = true) Object klass, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return klass;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(replaces = "getConstantClass")
         public static Object getPythonClass(PythonObject self,
-                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return dylib.getOrDefault(self, CLASS, self.initialPythonClass);
+                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return dylib.getOrDefault(self, CLASS, self.initialPythonClass);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
@@ -174,24 +192,44 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     @ExportMessage
-    public boolean hasDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        return dylib.containsKey(this, DICT);
+    public boolean hasDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return dylib.containsKey(this, DICT);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    public PDict getDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        return (PDict) dylib.getOrDefault(this, DICT, null);
+    public PDict getDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return (PDict) dylib.getOrDefault(this, DICT, null);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public final void setDict(PDict dict,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(this, DICT, dict);
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            dylib.put(this, DICT, dict);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    public final void deleteDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(this, DICT, null);
+    public final void deleteDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            dylib.put(this, DICT, null);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     /* needed for some guards in exported messages of subclasses */
