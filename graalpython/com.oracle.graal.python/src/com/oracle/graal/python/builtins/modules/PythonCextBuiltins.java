@@ -786,43 +786,40 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "do_richcompare", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
-        protected static BinaryComparisonNode create(int op) {
-            return BinaryComparisonNode.create(SpecialMethodNames.getCompareName(op), SpecialMethodNames.getCompareReversal(op), SpecialMethodNames.getCompareOpString(op));
-        }
 
         @Specialization(guards = "op == 0")
         Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.LtNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 1")
         Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.LeNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 2")
         Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.EqNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 3")
         Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.NeNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 4")
         Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.GtNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 5")
         Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.GeNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
     }

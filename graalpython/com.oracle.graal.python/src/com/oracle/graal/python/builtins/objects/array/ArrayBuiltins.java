@@ -353,7 +353,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Override
         protected BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.create(__LT__, __GT__, "<");
+            return BinaryComparisonNode.LtNode.create();
         }
 
         @Override
@@ -368,7 +368,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Override
         protected BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.create(__GT__, __LT__, ">");
+            return BinaryComparisonNode.GtNode.create();
         }
 
         @Override
@@ -383,7 +383,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Override
         protected BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.create(__LE__, __GE__, "<=");
+            return BinaryComparisonNode.LeNode.create();
         }
 
         @Override
@@ -398,7 +398,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Override
         protected BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.create(__GE__, __LE__, ">=");
+            return BinaryComparisonNode.GeNode.create();
         }
 
         @Override

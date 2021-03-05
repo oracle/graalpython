@@ -147,7 +147,7 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class LtNode extends PythonBuiltinNode {
         @Specialization
         public boolean lt(VirtualFrame frame, PCell self, PCell other,
-                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached BinaryComparisonNode.LtNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
@@ -158,10 +158,6 @@ public class CellBuiltins extends PythonBuiltins {
                 return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
             }
             return right != null;
-        }
-
-        protected static BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.create(__LT__, __GT__, "<");
         }
 
         @SuppressWarnings("unused")
@@ -179,7 +175,7 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class LeNode extends PythonBuiltinNode {
         @Specialization
         public boolean le(VirtualFrame frame, PCell self, PCell other,
-                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached BinaryComparisonNode.LeNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
@@ -190,10 +186,6 @@ public class CellBuiltins extends PythonBuiltins {
                 return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
             }
             return left == null;
-        }
-
-        protected static BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.create(__LE__, __GE__, "<=");
         }
 
         @SuppressWarnings("unused")
@@ -211,7 +203,7 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class GtNode extends PythonBuiltinNode {
         @Specialization
         public boolean gt(VirtualFrame frame, PCell self, PCell other,
-                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached BinaryComparisonNode.GtNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
@@ -222,10 +214,6 @@ public class CellBuiltins extends PythonBuiltins {
                 return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
             }
             return left != null;
-        }
-
-        protected static BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.create(__GT__, __LT__, ">");
         }
 
         @SuppressWarnings("unused")
@@ -243,7 +231,7 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class GeNode extends PythonBuiltinNode {
         @Specialization
         public boolean ge(VirtualFrame frame, PCell self, PCell other,
-                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached BinaryComparisonNode.GeNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
@@ -254,10 +242,6 @@ public class CellBuiltins extends PythonBuiltins {
                 return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
             }
             return right == null;
-        }
-
-        protected static BinaryComparisonNode createComparison() {
-            return BinaryComparisonNode.create(__GE__, __LE__, ">=");
         }
 
         @SuppressWarnings("unused")
