@@ -58,6 +58,7 @@ RUNTIME_PACKAGE = "package com.oracle.graal.python.runtime;"
 GIL_NODE_IMPORT = "import com.oracle.graal.python.runtime.GilNode;"
 CACHED_IMPORT = "import com.oracle.truffle.api.dsl.Cached;"
 SHARED_IMPORT = "import com.oracle.truffle.api.dsl.Cached.Shared;"
+EXCLUSIVE_IMPORT = "import com.oracle.truffle.api.dsl.Cached.Exclusive;"
 
 
 def find_end(match, source, is_class=False):
@@ -133,8 +134,9 @@ class ExportedMessage(object):
         else:
             _uncached_gil = ""
             _args += ", " if self.args else ""
-            if self._shared and ('limit = ' not in self.header or 'limit = "1"' in self.header):
-                _args += '@Shared("gil")'
+            # if self._shared and ('limit = ' not in self.header or 'limit = "1"' in self.header):
+            #     _args += '@Shared("gil")'
+            _args += "@Exclusive"
             _args += "@Cached GilNode gil"
             if "..." in _args:
                 _args = _args.replace("...", "[]")
@@ -183,11 +185,11 @@ def add_import(source, shared=False):
     end = match.end()
     skip_gil_import = GIL_NODE_IMPORT in source or RUNTIME_PACKAGE in source
     skip_cached_import = CACHED_IMPORT in source
-    skip_import_shared = SHARED_IMPORT in source
+    skip_excl_shared = EXCLUSIVE_IMPORT in source
     gil_import = "" if skip_gil_import else "\n" + GIL_NODE_IMPORT
     cached_import = "" if skip_cached_import else "\n" + CACHED_IMPORT
     if shared:
-        shared_import = "" if skip_import_shared else "\n" + SHARED_IMPORT
+        shared_import = "" if skip_excl_shared else + "\n" + EXCLUSIVE_IMPORT
     else:
         shared_import = ""
     return source[:end] + gil_import + cached_import + shared_import + source[end:]
