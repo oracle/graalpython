@@ -220,12 +220,12 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
             if add:
                 messages, shared = get_messages(source, PTRN_MESSAGE, sharing=sharing)
                 if len(messages) > 0:
-                    if count:
-                        cnt += 1
-                        continue
-
                     if 'GilNode gil' in source:
                         print("[skipping] {}".format(java_file))
+                        continue
+
+                    if count:
+                        cnt += 1
                         continue
 
                     print("[process] dry run: {}, add: {}. messages: {}, {}".format(

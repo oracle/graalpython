@@ -34,9 +34,11 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -89,18 +91,33 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     boolean isMetaInstance(Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+                    @Cached IsSubtypeNode isSubtype, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    String getMetaSimpleName() {
-        return type.getName();
+    String getMetaSimpleName(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return type.getName();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    String getMetaQualifiedName() {
-        return type.getPrintName();
+    String getMetaQualifiedName(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return type.getPrintName();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @Override
