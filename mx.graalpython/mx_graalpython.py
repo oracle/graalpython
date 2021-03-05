@@ -580,7 +580,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     return testfiles
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None, env=None):
+def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None):
     # ensure that the test distribution is up-to-date
     mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
@@ -626,7 +626,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
             # jacoco only dumps the data on exit, and when we run all our unittests
             # at once it generates so much data we run out of heap space
             for testfile in testfiles:
-                mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
+                mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env)
         finally:
             shutil.move(launcher_path_bak, launcher_path)
     else:
@@ -720,11 +720,11 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
-            run_python_unittests(python_svm())
+            run_python_unittests(python_svm(), aot_compatible=True)
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_svm(["sandboxed"]))
+            run_python_unittests(python_svm(["sandboxed"]), aot_compatible=True)
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
