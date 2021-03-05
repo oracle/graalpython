@@ -39,7 +39,6 @@ import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
@@ -105,12 +104,6 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         } catch (ControlFlowException e) {
             throw e;
         } catch (Exception | StackOverflowError | AssertionError e) {
-            if (shouldCatchJavaExceptions() && getContext().getEnv().isHostException(e)) {
-                boolean handled = catchHostException(frame, e);
-                if (handled) {
-                    return;
-                }
-            }
             PException pe = wrapJavaExceptionIfApplicable(e);
             if (pe != null) {
                 boolean handled = catchPException(frame, pe);
@@ -163,34 +156,6 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         try {
             for (ExceptNode exceptNode : exceptNodes) {
                 if (everMatched.profile(exceptNode.matchesTruffleException(frame, exception))) {
-                    ExceptionState exceptionState = saveExceptionState(frame);
-                    try {
-                        exceptNode.executeExcept(frame, exception);
-                    } finally {
-                        restoreExceptionState(frame, exceptionState);
-                    }
-                }
-            }
-        } catch (ExceptionHandledException eh) {
-            return true;
-        } catch (PException handlerException) {
-            throw handlerException;
-        } catch (Exception | StackOverflowError | AssertionError e) {
-            PException handlerException = wrapJavaExceptionIfApplicable(e);
-            if (handlerException == null) {
-                throw e;
-            }
-            throw handlerException.getExceptionForReraise();
-        }
-        return false;
-    }
-
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    private boolean catchHostException(VirtualFrame frame, Throwable exception) {
-        assert !(exception instanceof AbstractTruffleException);
-        try {
-            for (ExceptNode exceptNode : exceptNodes) {
-                if (everMatched.profile(exceptNode.matchesHostException(frame, exception))) {
                     ExceptionState exceptionState = saveExceptionState(frame);
                     try {
                         exceptNode.executeExcept(frame, exception);
@@ -326,9 +291,5 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     public void setCatchesFunction(CatchesFunction catchesFunction) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         this.catchesFunction = catchesFunction;
-    }
-
-    private boolean shouldCatchJavaExceptions() {
-        return getPythonLanguage().getEngineOption(PythonOptions.EmulateJython);
     }
 }

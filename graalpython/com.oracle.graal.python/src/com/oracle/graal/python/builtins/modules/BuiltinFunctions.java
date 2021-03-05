@@ -1068,14 +1068,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         boolean isInstance(VirtualFrame frame, Object instance, Object cls) {
-            if (getPythonLanguage().getEngineOption(PythonOptions.EmulateJython)) {
-                TruffleLanguage.Env env = getContext().getEnv();
-                if (env.isHostObject(cls)) {
-                    Object hostCls = env.asHostObject(cls);
-                    Object hostInstance = env.isHostObject(instance) ? env.asHostObject(instance) : instance;
-                    return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
-                }
-            }
             TriState check = isInstanceCheckInternal(frame, instance, cls);
             if (check == TriState.UNDEFINED) {
                 return typeInstanceCheckNode.executeWith(frame, cls, instance);
