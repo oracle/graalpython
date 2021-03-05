@@ -250,14 +250,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static final int S_IFDIR = 0040000;
     private static final int S_IFREG = 0100000;
 
-    private final PythonContext context;
     private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
     public EmulatedPosixSupport(PythonContext context, boolean useNfiForSocketFd) {
-        super(useNfiForSocketFd);
-        this.context = context;
+        super(context, useNfiForSocketFd);
         setEnv(context.getEnv());
     }
 

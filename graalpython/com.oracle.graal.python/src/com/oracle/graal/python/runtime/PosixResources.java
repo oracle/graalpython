@@ -78,12 +78,13 @@ public class PosixResources extends PosixSupport {
     private static final int FD_STDERR = 2;
 
     /** Context-local file-descriptor mappings and PID mappings */
+    protected final PythonContext context;
     private final SortedMap<Integer, ChannelWrapper> files;
     protected final Map<Integer, String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
-    private boolean useNfiForSocketFd;
+    private final boolean useNfiForSocketFd;
 
     private static class ProcessGroup extends Process {
         private final List<Process> children;
@@ -187,7 +188,8 @@ public class PosixResources extends PosixSupport {
         }
     }
 
-    public PosixResources(boolean useNfiForSocketFd) {
+    public PosixResources(PythonContext context, boolean useNfiForSocketFd) {
+        this.context = context;
         files = Collections.synchronizedSortedMap(new TreeMap<>());
         filePaths = Collections.synchronizedMap(new HashMap<>());
         children = Collections.synchronizedList(new ArrayList<>());
@@ -341,7 +343,7 @@ public class PosixResources extends PosixSupport {
     private int nativeFdForSockets = -1;
 
     @TruffleBoundary
-    public int openSocket(PSocket socket, PythonContext context) {
+    public int openSocket(PSocket socket) {
         synchronized (files) {
             int fd;
             if (!useNfiForSocketFd) {
@@ -369,7 +371,7 @@ public class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    public void closeSocket(PSocket socket, PythonContext context) {
+    public void closeSocket(PSocket socket) {
         int fd = socket.getFileno();
         if (fd < 0) {
             return;

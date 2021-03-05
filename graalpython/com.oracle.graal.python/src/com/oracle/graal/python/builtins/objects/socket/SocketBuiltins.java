@@ -137,7 +137,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raise(OSError);
                 }
                 PSocket newSocket = factory().createSocket(socket.getFamily(), socket.getType(), socket.getProto());
-                int fd = getContext().getResources().openSocket(newSocket, getContext());
+                int fd = getContext().getResources().openSocket(newSocket);
                 newSocket.setFileno(fd);
                 newSocket.setSocket(acceptSocket);
                 SocketUtils.setBlocking(newSocket, socket.isBlocking());
@@ -191,7 +191,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
             }
-            getContext().getResources().closeSocket(socket, getContext());
+            getContext().getResources().closeSocket(socket);
             return PNone.NONE;
         }
     }

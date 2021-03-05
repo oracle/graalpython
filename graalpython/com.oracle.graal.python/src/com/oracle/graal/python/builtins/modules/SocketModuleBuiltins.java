@@ -285,7 +285,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         private Object createSocketInternal(Object cls, int family, int type, int proto) {
             if (getContext().getEnv().isNativeAccessAllowed()) {
                 PSocket newSocket = factory().createSocket(cls, family, type, proto);
-                int fd = getContext().getResources().openSocket(newSocket, getContext());
+                int fd = getContext().getResources().openSocket(newSocket);
                 newSocket.setFileno(fd);
                 return newSocket;
             } else {
@@ -680,7 +680,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            getContext().getResources().closeSocket(socket, getContext());
+            getContext().getResources().closeSocket(socket);
             return PNone.NONE;
         }
 
