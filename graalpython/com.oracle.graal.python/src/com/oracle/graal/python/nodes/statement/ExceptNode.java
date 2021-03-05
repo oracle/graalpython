@@ -104,7 +104,8 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
 
     public boolean matchesTruffleException(@SuppressWarnings("unused") VirtualFrame frame, AbstractTruffleException e) {
         assert !(e instanceof PException);
-        // TODO: (tfel) should we allow catching with the meta-object of arbitrary truffle exceptions?
+        // TODO: (tfel) should we allow catching with the meta-object of arbitrary truffle
+        // exceptions?
         return exceptType == null;
     }
 
