@@ -8,6 +8,12 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Added subclassing of Java classes in JVM mode
 * Use native posix functions in the GraalPython Launcher
 
+## Version 21.1.0
+
+* Support catching exceptions from other languages or Java with catch-all except blocks
+* Support iterating over iterables from other languages, as well as allow other languages to iterate over Python iterables and iterators
+* Support isinstance and issubclass with instances and classes of other languages
+
 ## Version 21.0.0
 
 * Implement name mangling for private attributes
