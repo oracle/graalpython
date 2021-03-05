@@ -34,10 +34,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -173,19 +176,29 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    byte[] getBufferBytes() {
+    byte[] getBufferBytes(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            return Arrays.copyOf(buffer, getBufferLength());
-        } catch (Throwable t) {
-            // Break exception edges
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw t;
+            try {
+                return Arrays.copyOf(buffer, getBufferLength(gil));
+            } catch (Throwable t) {
+                // Break exception edges
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw t;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
-    int getBufferLength() {
-        return length * format.bytesize;
+    int getBufferLength(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return length * format.bytesize;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     public enum MachineFormat {
