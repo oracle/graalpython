@@ -895,7 +895,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             try {
                 version = dylib.getLongOrDefault(self, FILTERS_VERSION, 0);
             } catch (UnexpectedResultException e) {
-                CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere();
             }
             dylib.putLong(self, FILTERS_VERSION, version + 1);
             return PNone.NONE;

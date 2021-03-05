@@ -417,7 +417,7 @@ final class DefaultPythonObjectExports {
                 try {
                     return lib.getIterator(receiver);
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.shouldNotReachHere();
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
             } else if (lib.hasArrayElements(receiver)) {
                 return doForeignArray(receiver, threadState, factory, raiseNode, lib);

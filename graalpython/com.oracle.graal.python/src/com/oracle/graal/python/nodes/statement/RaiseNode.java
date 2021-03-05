@@ -212,7 +212,7 @@ public abstract class RaiseNode extends StatementNode {
             try {
                 throw lib.throwException(exception);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.shouldNotReachHere();
+                throw CompilerDirectives.shouldNotReachHere();
             }
         }
         throw raiseNoException(raise);
