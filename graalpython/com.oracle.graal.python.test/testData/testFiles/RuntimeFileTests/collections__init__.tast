@@ -194,14 +194,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                   FunctionBodyNode SourceSection: [1749,2238]`if name in _collecti...`
                     IfNode SourceSection: [1749,2168]`if name in _collecti...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ContainsNodeGen SourceSection: [1752,1784]`name in _collections...`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [1752,1756]`name`
                             Frame: [0,name,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -850,8 +846,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [4033,4573]`if not args:↵       ...`
                                     IfNode SourceSection: [4033,4180]`if not args:↵       ...`
                                       NotNodeGen SourceSection: [4036,4044]`not args`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [4040,4044]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -892,8 +886,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [4207,4313]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [4210,4223]`len(args) > 1`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -1149,14 +1141,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [4901,5189]`if key not in self:↵...`
                                     IfNode SourceSection: [4901,5159]`if key not in self:↵...`
                                       NotNodeGen SourceSection: [4904,4919]`key not in self`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ContainsNodeGen SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [4904,4907]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1565,8 +1553,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                         NotNodeGen SourceSection: [5878,5894]`curr is not root`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [5878,5882]`curr`
                                               Frame: [2,curr,Illegal]
@@ -1683,8 +1669,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                         NotNodeGen SourceSection: [6146,6162]`curr is not root`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [6146,6150]`curr`
                                               Frame: [2,curr,Illegal]
@@ -1853,8 +1837,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [6622,7117]`if not self:↵       ...`
                                     IfNode SourceSection: [6622,6693]`if not self:↵       ...`
                                       NotNodeGen SourceSection: [6625,6633]`not self`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [6629,6633]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1883,8 +1865,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [6720,7013]`if last:↵           ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [6723,6727]`last`
                                           Frame: [1,last,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -2181,8 +2161,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [7540,7871]`if last:↵           ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [7543,7547]`last`
                                           Frame: [2,last,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -2770,14 +2748,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [9092,9282]`if key in self:↵    ...`
                                     IfNode SourceSection: [9092,9199]`if key in self:↵    ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ContainsNodeGen SourceSection: [9095,9106]`key in self`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9095,9098]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2814,8 +2788,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [9199,9268]`if default is self._...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [9202,9226]`default is self.__ma...`
                                           ReadLocalVariableNode SourceSection: [9202,9209]`default`
                                             Frame: [2,default,Illegal]
@@ -2905,14 +2877,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [9505,9600]`if key in self:↵    ...`
                                     IfNode SourceSection: [9505,9558]`if key in self:↵    ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ContainsNodeGen SourceSection: [9508,9519]`key in self`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9508,9511]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3003,8 +2971,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     FunctionBodyNode SourceSection: [9695,9834]`if not self:↵       ...`
                                       IfNode SourceSection: [9695,9771]`if not self:↵       ...`
                                         NotNodeGen SourceSection: [9698,9706]`not self`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9702,9706]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3184,8 +3150,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ObjectLiteralNode SourceSection: [10069,10073]`None`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                           ObjectLiteralNode SourceSection: [10075,10079]`None`
                                           PythonCallUnary SourceSection: [10081,10099]`iter(self.items())`
                                             CallUnaryMethodNodeGen SourceSection: None
@@ -3404,8 +3368,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [10668,10817]`if isinstance(other,...`
                                     IfNode SourceSection: [10668,10786]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [10671,10701]`isinstance(other, Or...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10671,10681]`isinstance`
@@ -3455,8 +3417,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [10786,10817]`return dict.__eq__(s...`
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -3583,8 +3543,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                   FunctionBodyNode SourceSection: [12231,17578]`if isinstance(field_...`
                     IfNode SourceSection: [12231,12328]`if isinstance(field_...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [12234,12262]`isinstance(field_nam...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12234,12244]`isinstance`
@@ -3660,8 +3618,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [12417,12731]`if rename:↵        s...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [12420,12426]`rename`
                           Frame: [3,rename,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -3705,14 +3661,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               BlockNode SourceSection: None
                                 IfNode SourceSection: [12512,12711]`if (not name.isident...`
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     OrNode SourceSection: [12516,12647]`not name.isidentifie...`
                                       OrNode SourceSection: None
                                         OrNode SourceSection: None
                                           NotNodeGen SourceSection: [12516,12539]`not name.isidentifie...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallNodeGen SourceSection: [12520,12539]`name.isidentifier()`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -3728,8 +3680,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               Frame: [8,name,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                         PythonCallUnary SourceSection: [12595,12615]`name.startswith('_')...`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
@@ -3738,14 +3688,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [12611,12614]`'_'`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                       ContainsNodeGen SourceSection: [12635,12647]`name in seen`
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __contains__
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [12635,12639]`name`
                                           Frame: [8,name,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -3753,8 +3699,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           Frame: [6,seen,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                   SetItemNodeGen SourceSection: [12666,12698]`field_names[index] =...`
                                     ReadLocalCellNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: None
@@ -3801,8 +3745,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           BlockNode SourceSection: None
                             IfNode SourceSection: [12777,12885]`if type(name) is not...`
                               NotNodeGen SourceSection: [12780,12801]`type(name) is not st...`
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 IsExpressionNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [12780,12790]`type(name)`
                                     CallUnaryMethodNodeGen SourceSection: None
@@ -3826,8 +3768,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               BlockNode SourceSection: None
                             IfNode SourceSection: [12885,13049]`if not name.isidenti...`
                               NotNodeGen SourceSection: [12888,12911]`not name.isidentifie...`
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 PythonCallNodeGen SourceSection: [12892,12911]`name.isidentifier()`
                                   CallNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
@@ -3846,8 +3786,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               BlockNode SourceSection: None
                             IfNode SourceSection: [13049,13197]`if _iskeyword(name):...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 PythonCallUnary SourceSection: [13052,13068]`_iskeyword(name)`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13052,13062]`_iskeyword`
@@ -3901,8 +3839,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           BlockNode SourceSection: None
                             IfNode SourceSection: [13247,13414]`if name.startswith('...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 AndNode SourceSection: [13250,13285]`name.startswith('_')...`
                                   PythonCallUnary SourceSection: [13250,13270]`name.startswith('_')...`
                                     CallUnaryMethodNodeGen SourceSection: None
@@ -3912,14 +3848,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [13266,13269]`'_'`
                                   NotNodeGen SourceSection: [13275,13285]`not rename`
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                     ReadLocalVariableNode SourceSection: [13279,13285]`rename`
                                       Frame: [3,rename,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                               RaiseNodeGen SourceSection: [13299,13405]`raise ValueError('Fi...`
                                 PythonCallUnary SourceSection: [13305,13405]`ValueError('Field na...`
                                   CallUnaryMethodNodeGen SourceSection: None
@@ -3932,14 +3864,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               BlockNode SourceSection: None
                             IfNode SourceSection: [13414,13515]`if name in seen:↵   ...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ContainsNodeGen SourceSection: [13417,13429]`name in seen`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
                                   ReadLocalVariableNode SourceSection: [13417,13421]`name`
                                     Frame: [8,name,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3981,8 +3909,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [13559,13934]`if defaults is not N...`
                       NotNodeGen SourceSection: [13562,13582]`defaults is not None...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [13562,13570]`defaults`
                             Frame: [4,defaults,Illegal]
@@ -4003,8 +3929,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               ReadVariableFromFrameNodeGen SourceSection: None
                         IfNode SourceSection: [13627,13744]`if len(defaults) > l...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [13630,13662]`len(defaults) > len(...`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __gt__
@@ -4304,8 +4228,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         Parts: 5
                     IfNode SourceSection: [14644,14714]`if defaults is not N...`
                       NotNodeGen SourceSection: [14647,14667]`defaults is not None...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14647,14655]`defaults`
                             Frame: [4,defaults,Illegal]
@@ -4386,8 +4308,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [14807,14929]`if _len(result) != n...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [14810,14836]`_len(result) != num_...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __ne__
@@ -4519,8 +4439,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   IfNode SourceSection: [15174,15267]`if kwds:↵           ...`
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ReadLocalVariableNode SourceSection: [15177,15181]`kwds`
                                         Frame: [1,kwds,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -4982,8 +4900,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [17327,17502]`if module is None:↵ ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [17330,17344]`module is None`
                           ReadLocalVariableNode SourceSection: [17330,17336]`module`
                             Frame: [5,module,Illegal]
@@ -5030,8 +4946,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       BlockNode SourceSection: None
                     IfNode SourceSection: [17502,17565]`if module is not Non...`
                       NotNodeGen SourceSection: [17505,17523]`module is not None`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [17505,17511]`module`
                             Frame: [5,module,Illegal]
@@ -5259,8 +5173,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [20713,21055]`if not args:↵       ...`
                                     IfNode SourceSection: [20713,20856]`if not args:↵       ...`
                                       NotNodeGen SourceSection: [20716,20724]`not args`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [20720,20724]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -5301,8 +5213,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [20883,20989]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [20886,20899]`len(args) > 1`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -5470,8 +5380,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [21584,21739]`if n is None:↵      ...`
                                     IfNode SourceSection: [21584,21680]`if n is None:↵      ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [21587,21596]`n is None`
                                           ReadLocalVariableNode SourceSection: [21587,21588]`n`
                                             Frame: [1,n,Illegal]
@@ -5722,8 +5630,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [23882,24706]`if not args:↵       ...`
                                     IfNode SourceSection: [23882,24023]`if not args:↵       ...`
                                       NotNodeGen SourceSection: [23885,23893]`not args`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [23889,23893]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -5764,8 +5670,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [24050,24156]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [24053,24066]`len(args) > 1`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -5805,8 +5709,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Frame: [3,iterable,Illegal]
                                       TernaryIfNode SourceSection: [24167,24192]`args[0] if args else...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [24178,24182]`args`
                                             Frame: [0,args,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5819,8 +5721,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ObjectLiteralNode SourceSection: [24188,24192]`None`
                                     IfNode SourceSection: [24201,24662]`if iterable is not N...`
                                       NotNodeGen SourceSection: [24204,24224]`iterable is not None...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [24204,24212]`iterable`
                                             Frame: [3,iterable,Illegal]
@@ -5828,8 +5728,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ObjectLiteralNode SourceSection: [24220,24224]`None`
                                       IfNode SourceSection: [24238,24662]`if isinstance(iterab...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           PythonCallBinary SourceSection: [24241,24287]`isinstance(iterable,...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [24241,24251]`isinstance`
@@ -5850,8 +5748,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IfNode SourceSection: [24305,24600]`if self:↵           ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadLocalVariableNode SourceSection: [24308,24312]`self`
                                               Frame: [2,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5961,8 +5857,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [24662,24706]`if kwds:↵           ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [24665,24669]`kwds`
                                           Frame: [1,kwds,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -6025,8 +5919,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [25453,26171]`if not args:↵       ...`
                                     IfNode SourceSection: [25453,25596]`if not args:↵       ...`
                                       NotNodeGen SourceSection: [25456,25464]`not args`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [25460,25464]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -6067,8 +5959,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [25623,25729]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [25626,25639]`len(args) > 1`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -6108,8 +5998,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Frame: [3,iterable,Illegal]
                                       TernaryIfNode SourceSection: [25740,25765]`args[0] if args else...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [25751,25755]`args`
                                             Frame: [0,args,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -6122,8 +6010,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ObjectLiteralNode SourceSection: [25761,25765]`None`
                                     IfNode SourceSection: [25774,26125]`if iterable is not N...`
                                       NotNodeGen SourceSection: [25777,25797]`iterable is not None...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [25777,25785]`iterable`
                                             Frame: [3,iterable,Illegal]
@@ -6146,8 +6032,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [25843,26125]`if isinstance(iterab...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [25846,25892]`isinstance(iterable,...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [25846,25856]`isinstance`
@@ -6262,8 +6146,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [26125,26171]`if kwds:↵           ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [26128,26132]`kwds`
                                           Frame: [1,kwds,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -6443,14 +6325,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [26452,26512]`if elem in self:↵   ...`
                                     IfNode SourceSection: [26452,26512]`if elem in self:↵   ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ContainsNodeGen SourceSection: [26455,26467]`elem in self`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [26455,26459]`elem`
                                             Frame: [1,elem,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -6510,8 +6388,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [26540,27260]`if not self:↵       ...`
                                     IfNode SourceSection: [26540,26613]`if not self:↵       ...`
                                       NotNodeGen SourceSection: [26543,26551]`not self`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [26547,26551]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -6690,8 +6566,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [27436,27832]`if not isinstance(ot...`
                                     IfNode SourceSection: [27436,27513]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [27439,27469]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [27443,27469]`isinstance(other, Co...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [27443,27453]`isinstance`
@@ -6768,8 +6642,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             IfNode SourceSection: [27628,27693]`if newcount > 0:↵   ...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [27631,27643]`newcount > 0`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __gt__
@@ -6826,18 +6698,12 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           IfNode SourceSection: [27739,27819]`if elem not in self ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               AndNode SourceSection: [27742,27772]`elem not in self and...`
                                                 NotNodeGen SourceSection: [27742,27758]`elem not in self`
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   ContainsNodeGen SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __contains__
                                                     YesNodeGen SourceSection: None
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [27742,27746]`elem`
                                                       Frame: [4,elem,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -6853,8 +6719,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   IntegerLiteralNode SourceSection: [27771,27772]`0`
                                                     Value: 0
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                             SetItemNodeGen SourceSection: [27790,27810]`result[elem] = count...`
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [2,result,Illegal]
@@ -6930,8 +6794,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [28039,28439]`if not isinstance(ot...`
                                     IfNode SourceSection: [28039,28116]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [28042,28072]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [28046,28072]`isinstance(other, Co...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [28046,28056]`isinstance`
@@ -7008,8 +6870,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             IfNode SourceSection: [28231,28296]`if newcount > 0:↵   ...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [28234,28246]`newcount > 0`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __gt__
@@ -7066,18 +6926,12 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           IfNode SourceSection: [28342,28426]`if elem not in self ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               AndNode SourceSection: [28345,28375]`elem not in self and...`
                                                 NotNodeGen SourceSection: [28345,28361]`elem not in self`
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   ContainsNodeGen SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __contains__
                                                     YesNodeGen SourceSection: None
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [28345,28349]`elem`
                                                       Frame: [4,elem,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -7093,8 +6947,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   IntegerLiteralNode SourceSection: [28374,28375]`0`
                                                     Value: 0
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                             SetItemNodeGen SourceSection: [28393,28417]`result[elem] = 0 - c...`
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [2,result,Illegal]
@@ -7175,8 +7027,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [28653,29113]`if not isinstance(ot...`
                                     IfNode SourceSection: [28653,28730]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [28656,28686]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [28660,28686]`isinstance(other, Co...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [28660,28670]`isinstance`
@@ -7251,8 +7101,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Frame: [4,newcount,Illegal]
                                               TernaryIfNode SourceSection: [28851,28896]`other_count if count...`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   BinaryComparisonNodeGen SourceSection: [28866,28885]`count < other_count`
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __lt__
@@ -7270,8 +7118,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             IfNode SourceSection: [28909,28974]`if newcount > 0:↵   ...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [28912,28924]`newcount > 0`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __gt__
@@ -7328,18 +7174,12 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           IfNode SourceSection: [29020,29100]`if elem not in self ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               AndNode SourceSection: [29023,29053]`elem not in self and...`
                                                 NotNodeGen SourceSection: [29023,29039]`elem not in self`
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   ContainsNodeGen SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __contains__
                                                     YesNodeGen SourceSection: None
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [29023,29027]`elem`
                                                       Frame: [5,elem,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -7355,8 +7195,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   IntegerLiteralNode SourceSection: [29052,29053]`0`
                                                     Value: 0
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                             SetItemNodeGen SourceSection: [29071,29091]`result[elem] = count...`
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [2,result,Illegal]
@@ -7432,8 +7270,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [29303,29637]`if not isinstance(ot...`
                                     IfNode SourceSection: [29303,29380]`if not isinstance(ot...`
                                       NotNodeGen SourceSection: [29306,29336]`not isinstance(other...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [29310,29336]`isinstance(other, Co...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [29310,29320]`isinstance`
@@ -7508,8 +7344,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Frame: [4,newcount,Illegal]
                                               TernaryIfNode SourceSection: [29501,29546]`count if count < oth...`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   BinaryComparisonNodeGen SourceSection: [29510,29529]`count < other_count`
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __lt__
@@ -7527,8 +7361,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             IfNode SourceSection: [29559,29624]`if newcount > 0:↵   ...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [29562,29574]`newcount > 0`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __gt__
@@ -7640,8 +7472,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           IfNode SourceSection: [29822,29881]`if count > 0:↵      ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [29825,29834]`count > 0`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __gt__
@@ -7753,8 +7583,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           IfNode SourceSection: [30137,30200]`if count < 0:↵      ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [30140,30149]`count < 0`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __lt__
@@ -7868,11 +7696,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GeneratorIfNode SourceSection: None
                                                     GeneratorAccessNode SourceSection: None
                                                     YesNodeGen SourceSection: None
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
                                                       NotNodeGen SourceSection: [30386,30399]`not count > 0`
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         BinaryComparisonNodeGen SourceSection: [30390,30399]`count > 0`
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __gt__
@@ -8272,8 +8096,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             IfNode SourceSection: [31511,31584]`if other_count > cou...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [31514,31533]`other_count > count`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __gt__
@@ -8400,8 +8222,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             IfNode SourceSection: [31926,31999]`if other_count < cou...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BinaryComparisonNodeGen SourceSection: [31929,31948]`other_count < count`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __lt__
@@ -8564,8 +8384,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8784,14 +8602,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           Frame: [3,<return_val>,Illegal]
                                         TernaryIfNode SourceSection: [33392,33429]`self[key] if key in ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ContainsNodeGen SourceSection: [33405,33416]`key in self`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [33405,33408]`key`
                                                 Frame: [1,key,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -9055,8 +8869,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __contains__
                                                           YesNodeGen SourceSection: None
-                                                            IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [33790,33793]`key`
                                                             ReadGeneratorFrameVariableNode SourceSection: None
                                                               Frame: [1,key,Illegal]
@@ -9475,8 +9287,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [34625,34702]`if m is None:↵      ...`
                                     IfNode SourceSection: [34625,34666]`if m is None:↵      ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [34628,34637]`m is None`
                                           ReadLocalVariableNode SourceSection: [34628,34629]`m`
                                             Frame: [1,m,Illegal]
@@ -10082,8 +9892,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [36122,36850]`if not args:↵       ...`
                                     IfNode SourceSection: [36122,36266]`if not args:↵       ...`
                                       NotNodeGen SourceSection: [36125,36133]`not args`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [36129,36133]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -10124,8 +9932,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [36293,36399]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [36296,36309]`len(args) > 1`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -10161,8 +9967,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [36399,36716]`if args:↵           ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [36402,36406]`args`
                                           Frame: [0,args,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -10178,14 +9982,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Value: 0
                                       IfNode SourceSection: [36443,36716]`elif 'dict' in kwarg...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ContainsNodeGen SourceSection: [36448,36464]`'dict' in kwargs`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __contains__
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                             StringLiteralNode SourceSection: [36448,36454]`'dict'`
                                             ReadLocalVariableNode SourceSection: [36458,36464]`kwargs`
                                               Frame: [1,kwargs,Illegal]
@@ -10240,8 +10040,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     IfNode SourceSection: [36739,36798]`if dict is not None:...`
                                       NotNodeGen SourceSection: [36742,36758]`dict is not None`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [36742,36746]`dict`
                                             Frame: [3,dict,Illegal]
@@ -10260,8 +10058,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [36798,36850]`if len(kwargs):↵    ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallUnary SourceSection: [36801,36812]`len(kwargs)`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [36801,36804]`len`
@@ -10387,14 +10183,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [36931,37121]`if key in self.data:...`
                                     IfNode SourceSection: [36931,36994]`if key in self.data:...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ContainsNodeGen SourceSection: [36934,36950]`key in self.data`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [36934,36937]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -10430,8 +10222,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [36994,37102]`if hasattr(self.__cl...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [36997,37035]`hasattr(self.__class...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [36997,37004]`hasattr`
@@ -10726,8 +10516,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [37409,37412]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -10839,8 +10627,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [37564,37843]`if self.__class__ is...`
                                     IfNode SourceSection: [37564,37649]`if self.__class__ is...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [37567,37593]`self.__class__ is Us...`
                                           GetAttributeNode SourceSection: [37567,37581]`self.__class__`
                                             GetFixedAttributeNode SourceSection: None
@@ -11168,8 +10954,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     IfNode SourceSection: [38372,38709]`if initlist is not N...`
                                       NotNodeGen SourceSection: [38375,38395]`initlist is not None...`
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [38375,38383]`initlist`
                                             Frame: [1,initlist,Illegal]
@@ -11177,8 +10961,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ObjectLiteralNode SourceSection: [38391,38395]`None`
                                       IfNode SourceSection: [38469,38709]`if type(initlist) ==...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           BinaryComparisonNodeGen SourceSection: [38472,38505]`type(initlist) == ty...`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __eq__
@@ -11226,8 +11008,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [38559,38709]`elif isinstance(init...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [38564,38594]`isinstance(initlist,...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [38564,38574]`isinstance`
@@ -11761,8 +11541,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           Frame: [2,<return_val>,Illegal]
                                         TernaryIfNode SourceSection: [39136,39188]`other.data if isinst...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [39150,39177]`isinstance(other, Us...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [39150,39160]`isinstance`
@@ -11842,8 +11620,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __contains__
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [39230,39234]`item`
                                             Frame: [1,item,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -12158,8 +11934,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [39484,39730]`if isinstance(other,...`
                                     IfNode SourceSection: [39484,39684]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [39487,39514]`isinstance(other, Us...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [39487,39497]`isinstance`
@@ -12207,8 +11981,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                       IfNode SourceSection: [39582,39684]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           PythonCallBinary SourceSection: [39587,39621]`isinstance(other, ty...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [39587,39597]`isinstance`
@@ -12340,8 +12112,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [39770,40016]`if isinstance(other,...`
                                     IfNode SourceSection: [39770,39970]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [39773,39800]`isinstance(other, Us...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [39773,39783]`isinstance`
@@ -12389,8 +12159,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                       IfNode SourceSection: [39868,39970]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           PythonCallBinary SourceSection: [39873,39907]`isinstance(other, ty...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [39873,39883]`isinstance`
@@ -12522,8 +12290,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [40056,40274]`if isinstance(other,...`
                                     IfNode SourceSection: [40056,40263]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [40059,40086]`isinstance(other, Us...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [40059,40069]`isinstance`
@@ -12564,8 +12330,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ObjectLiteralNode SourceSection: None
                                       IfNode SourceSection: [40132,40263]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           PythonCallBinary SourceSection: [40137,40171]`isinstance(other, ty...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [40137,40147]`isinstance`
@@ -13499,8 +13263,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   FunctionBodyNode SourceSection: [41003,41307]`if isinstance(other,...`
                                     IfNode SourceSection: [41003,41307]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [41006,41033]`isinstance(other, Us...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [41006,41016]`isinstance`
@@ -13656,8 +13418,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [41389,41571]`if isinstance(seq, s...`
                                         IfNode SourceSection: [41389,41571]`if isinstance(seq, s...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [41392,41412]`isinstance(seq, str)...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [41392,41402]`isinstance`
@@ -13679,8 +13439,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           IfNode SourceSection: [41450,41571]`elif isinstance(seq,...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               PythonCallBinary SourceSection: [41455,41482]`isinstance(seq, User...`
                                                 CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [41455,41465]`isinstance`
@@ -14183,8 +13941,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [41953,42066]`if isinstance(string...`
                                         IfNode SourceSection: [41953,42040]`if isinstance(string...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [41956,41986]`isinstance(string, U...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [41956,41966]`isinstance`
@@ -14294,8 +14050,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [42105,42216]`if isinstance(string...`
                                         IfNode SourceSection: [42105,42191]`if isinstance(string...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [42108,42138]`isinstance(string, U...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [42108,42118]`isinstance`
@@ -14405,8 +14159,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [42255,42368]`if isinstance(string...`
                                         IfNode SourceSection: [42255,42342]`if isinstance(string...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [42258,42288]`isinstance(string, U...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [42258,42268]`isinstance`
@@ -14516,8 +14268,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [42407,42518]`if isinstance(string...`
                                         IfNode SourceSection: [42407,42493]`if isinstance(string...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [42410,42440]`isinstance(string, U...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [42410,42420]`isinstance`
@@ -14627,8 +14377,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [42557,42670]`if isinstance(string...`
                                         IfNode SourceSection: [42557,42644]`if isinstance(string...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [42560,42590]`isinstance(string, U...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [42560,42570]`isinstance`
@@ -14738,8 +14486,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [42714,42808]`if isinstance(char, ...`
                                         IfNode SourceSection: [42714,42784]`if isinstance(char, ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [42717,42745]`isinstance(char, Use...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [42717,42727]`isinstance`
@@ -14775,8 +14521,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [42791,42795]`char`
                                                 Frame: [1,char,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -14967,8 +14711,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [42967,43202]`if isinstance(other,...`
                                         IfNode SourceSection: [42967,43157]`if isinstance(other,...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [42970,42999]`isinstance(other, Us...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [42970,42980]`isinstance`
@@ -15016,8 +14758,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                           IfNode SourceSection: [43067,43157]`elif isinstance(othe...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               PythonCallBinary SourceSection: [43072,43094]`isinstance(other, st...`
                                                 CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [43072,43082]`isinstance`
@@ -15137,8 +14877,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [43242,43375]`if isinstance(other,...`
                                         IfNode SourceSection: [43242,43330]`if isinstance(other,...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [43245,43267]`isinstance(other, st...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [43245,43255]`isinstance`
@@ -15725,8 +15463,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [43993,44099]`if isinstance(sub, U...`
                                         IfNode SourceSection: [43993,44060]`if isinstance(sub, U...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [43996,44023]`isinstance(sub, User...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [43996,44006]`isinstance`
@@ -15837,16 +15573,12 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [44178,44399]`if encoding:↵       ...`
                                         IfNode SourceSection: [44178,44358]`if encoding:↵       ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadLocalVariableNode SourceSection: [44181,44189]`encoding`
                                               Frame: [1,encoding,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                             IfNode SourceSection: [44203,44300]`if errors:↵         ...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [44206,44212]`errors`
                                                   Frame: [2,errors,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -16193,8 +15925,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [44671,44776]`if isinstance(sub, U...`
                                         IfNode SourceSection: [44671,44738]`if isinstance(sub, U...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [44674,44701]`isinstance(sub, User...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [44674,44684]`isinstance`
@@ -17614,8 +17344,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [46113,46307]`if isinstance(old, U...`
                                         IfNode SourceSection: [46113,46180]`if isinstance(old, U...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [46116,46143]`isinstance(old, User...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [46116,46126]`isinstance`
@@ -17644,8 +17372,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [46180,46247]`if isinstance(new, U...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [46183,46210]`isinstance(new, User...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [46183,46193]`isinstance`
@@ -17785,8 +17511,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       FunctionBodyNode SourceSection: [46369,46475]`if isinstance(sub, U...`
                                         IfNode SourceSection: [46369,46436]`if isinstance(sub, U...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [46372,46399]`isinstance(sub, User...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [46372,46382]`isinstance`

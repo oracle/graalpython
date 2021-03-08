@@ -36,8 +36,6 @@ ModuleRootNode Name: <module 'unicode03'> SourceSection: [0,183]`def test():↵ 
                     FunctionBodyNode SourceSection: [63,183]`assert a == '𝒜' and...`
                       AssertNode SourceSection: [63,107]`assert a == '𝒜' and...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           AndNode SourceSection: [70,107]`a == '𝒜' and b == '...`
                             AndNode SourceSection: None
                               BinaryComparisonNodeGen SourceSection: [70,79]`a == '𝒜'`
@@ -55,8 +53,6 @@ ModuleRootNode Name: <module 'unicode03'> SourceSection: [0,183]`def test():↵ 
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [89,93]`'𝒞'`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [98,107]`c == '𝒵'`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __eq__
@@ -65,8 +61,6 @@ ModuleRootNode Name: <module 'unicode03'> SourceSection: [0,183]`def test():↵ 
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [103,107]`'𝒵'`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                       ExpressionStatementNode SourceSection: [110,183]`f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 res...`
                         FormatStringLiteralNode SourceSection: [110,183]`f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 res...`
                           Parts: 3

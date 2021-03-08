@@ -94,8 +94,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   FunctionBodyNode SourceSection: [742,890]`if file is None:↵   ...`
                     IfNode SourceSection: [742,789]`if file is None:↵   ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [745,757]`file is None`
                           ReadLocalVariableNode SourceSection: [745,749]`file`
                             Frame: [1,file,Illegal]
@@ -507,8 +505,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   FunctionBodyNode SourceSection: [3686,3876]`if file is None:↵   ...`
                     IfNode SourceSection: [3686,3733]`if file is None:↵   ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [3689,3701]`file is None`
                           ReadLocalVariableNode SourceSection: [3689,3693]`file`
                             Frame: [4,file,Illegal]
@@ -830,8 +826,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [5470,5594]`if value is None or ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         OrNode SourceSection: [5473,5502]`value is None or not...`
                           IsExpressionNodeGen SourceSection: [5473,5486]`value is None`
                             ReadLocalVariableNode SourceSection: [5473,5478]`value`
@@ -839,14 +833,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ObjectLiteralNode SourceSection: [5482,5486]`None`
                           NotNodeGen SourceSection: [5490,5502]`not valuestr`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [5494,5502]`valuestr`
                               Frame: [2,valuestr,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [5512,5533]`line = "%s\n" % etyp...`
                         Identifier: line
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1173,8 +1163,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   FunctionBodyNode SourceSection: [6290,6480]`if not hasattr(sys, ...`
                     IfNode SourceSection: [6290,6374]`if not hasattr(sys, ...`
                       NotNodeGen SourceSection: [6293,6322]`not hasattr(sys, "la...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [6297,6322]`hasattr(sys, "last_t...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6297,6304]`hasattr`
@@ -1293,8 +1281,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   FunctionBodyNode SourceSection: [6831,6936]`if f is None:↵      ...`
                     IfNode SourceSection: [6831,6884]`if f is None:↵      ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [6834,6843]`f is None`
                           ReadLocalVariableNode SourceSection: [6834,6835]`f`
                             Frame: [0,f,Illegal]
@@ -1393,8 +1379,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   FunctionBodyNode SourceSection: [7045,7147]`if f is None:↵      ...`
                     IfNode SourceSection: [7045,7098]`if f is None:↵      ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [7048,7057]`f is None`
                           ReadLocalVariableNode SourceSection: [7048,7049]`f`
                             Frame: [0,f,Illegal]
@@ -1490,8 +1474,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   FunctionBodyNode SourceSection: [7575,7721]`if f is None:↵      ...`
                     IfNode SourceSection: [7575,7628]`if f is None:↵      ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [7578,7587]`f is None`
                           ReadLocalVariableNode SourceSection: [7578,7579]`f`
                             Frame: [0,f,Illegal]
@@ -1594,8 +1576,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           NotNodeGen SourceSection: [7832,7846]`tb is not None`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [7832,7834]`tb`
                                 Frame: [0,tb,Illegal]
@@ -1821,8 +1801,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [9347,9393]`if lookup_line:↵    ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         ReadLocalVariableNode SourceSection: [9350,9361]`lookup_line`
                                           Frame: [5,lookup_line,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1845,8 +1823,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       TernaryIfNode SourceSection: [9407,9466]`{k: repr(v) for k, v...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9450,9456]`locals`
                                             Frame: [6,locals,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1990,8 +1966,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   FunctionBodyNode SourceSection: [9505,9891]`if isinstance(other,...`
                                     IfNode SourceSection: [9505,9754]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [9508,9539]`isinstance(other, Fr...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9508,9518]`isinstance`
@@ -2058,8 +2032,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Frame: [1,other,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [9669,9692]`self.name == other.n...`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __eq__
@@ -2084,8 +2056,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [1,other,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                             BinaryComparisonNodeGen SourceSection: [9717,9744]`self.locals == other...`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __eq__
@@ -2110,13 +2080,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [9754,9870]`if isinstance(other,...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         PythonCallBinary SourceSection: [9757,9781]`isinstance(other, tu...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9757,9767]`isinstance`
@@ -2511,8 +2477,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                     FunctionBodyNode SourceSection: [10314,10441]`if self._line is Non...`
                                       IfNode SourceSection: [10314,10424]`if self._line is Non...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [10317,10335]`self._line is None`
                                             GetAttributeNode SourceSection: [10317,10327]`self._line`
                                               GetFixedAttributeNode SourceSection: None
@@ -2612,8 +2576,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   GeneratorBlockNode SourceSection: None
                     IfNode SourceSection: [10692,10752]`if f is None:↵      ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [10695,10704]`f is None`
                           ReadGeneratorFrameVariableNode SourceSection: [10695,10696]`f`
                             Frame: [0,f,Illegal]
@@ -2682,8 +2644,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                         NotNodeGen SourceSection: [10758,10771]`f is not None`
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           IsExpressionNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [10758,10759]`f`
                               Frame: [0,f,Illegal]
@@ -2778,8 +2738,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                               ReadVariableFromFrameNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       NotNodeGen SourceSection: [11062,11076]`tb is not None`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [11062,11064]`tb`
                             Frame: [0,tb,Illegal]
@@ -2930,8 +2888,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                     FunctionBodyNode SourceSection: [11918,13089]`if limit is None:↵  ...`
                                       IfNode SourceSection: [11918,12075]`if limit is None:↵  ...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [11921,11934]`limit is None`
                                             ReadLocalVariableNode SourceSection: [11921,11926]`limit`
                                               Frame: [3,limit,Illegal]
@@ -2954,12 +2910,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ObjectLiteralNode SourceSection: [11987,11991]`None`
                                           IfNode SourceSection: [12005,12075]`if limit is not None...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               AndNode SourceSection: [12008,12039]`limit is not None an...`
                                                 NotNodeGen SourceSection: [12008,12025]`limit is not None`
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   IsExpressionNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [12008,12013]`limit`
                                                       Frame: [3,limit,Illegal]
@@ -2974,8 +2926,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   IntegerLiteralNode SourceSection: [12038,12039]`0`
                                                     Value: 0
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [12057,12066]`limit = 0`
                                               Identifier: limit
                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2986,8 +2936,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [12075,12286]`if limit is not None...`
                                         NotNodeGen SourceSection: [12078,12095]`limit is not None`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12078,12083]`limit`
                                               Frame: [3,limit,Illegal]
@@ -2995,8 +2943,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             ObjectLiteralNode SourceSection: [12091,12095]`None`
                                         IfNode SourceSection: [12109,12286]`if limit >= 0:↵     ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             BinaryComparisonNodeGen SourceSection: [12112,12122]`limit >= 0`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __ge__
@@ -3165,8 +3111,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                               IfNode SourceSection: [12628,12747]`if capture_locals:↵ ...`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [12631,12645]`capture_locals`
                                                     Frame: [5,capture_locals,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3249,8 +3193,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [12999,13076]`if lookup_lines:↵   ...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           ReadLocalVariableNode SourceSection: [13002,13014]`lookup_lines`
                                             Frame: [4,lookup_lines,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3363,8 +3305,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Frame: [7,frame,Illegal]
                                             IfNode SourceSection: [13704,13935]`if isinstance(frame,...`
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 PythonCallBinary SourceSection: [13707,13738]`isinstance(frame, Fr...`
                                                   CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13707,13717]`isinstance`
@@ -3553,16 +3493,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             BlockNode SourceSection: None
                                               IfNode SourceSection: [14651,15177]`if (last_file is not...`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   AndNode SourceSection: [14655,14850]`last_file is not Non...`
                                                     AndNode SourceSection: None
                                                       AndNode SourceSection: None
                                                         AndNode SourceSection: None
                                                           AndNode SourceSection: None
                                                             NotNodeGen SourceSection: [14655,14676]`last_file is not Non...`
-                                                              IsBuiltinClassProfile SourceSection: None
-                                                                CachedDispatchFirst SourceSection: None
                                                               IsExpressionNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [14655,14664]`last_file`
                                                                   Frame: [2,last_file,Illegal]
@@ -3585,19 +3521,13 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                                   Frame: [9,frame,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                             YesNodeGen SourceSection: None
-                                                              IsBuiltinClassProfile SourceSection: None
-                                                                CachedDispatchFirst SourceSection: None
                                                           NotNodeGen SourceSection: [14729,14750]`last_line is not Non...`
-                                                            IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
                                                             IsExpressionNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [14729,14738]`last_line`
                                                                 Frame: [3,last_line,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ObjectLiteralNode SourceSection: [14746,14750]`None`
                                                           YesNodeGen SourceSection: None
-                                                            IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
                                                         BinaryComparisonNodeGen SourceSection: [14755,14780]`last_line == frame.l...`
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __eq__
@@ -3615,19 +3545,13 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                               Frame: [9,frame,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                         YesNodeGen SourceSection: None
-                                                          IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
                                                       NotNodeGen SourceSection: [14801,14822]`last_name is not Non...`
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         IsExpressionNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [14801,14810]`last_name`
                                                             Frame: [4,last_name,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ObjectLiteralNode SourceSection: [14818,14822]`None`
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                     BinaryComparisonNodeGen SourceSection: [14827,14850]`last_name == frame.n...`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __eq__
@@ -3645,8 +3569,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           Frame: [9,frame,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     YesNodeGen SourceSection: None
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [14869,14879]`count += 1`
                                                   Identifier: count
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3661,8 +3583,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 BlockNode SourceSection: None
                                                   IfNode SourceSection: [14914,15032]`if count > 3:↵      ...`
                                                     YesNodeGen SourceSection: None
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
                                                       BinaryComparisonNodeGen SourceSection: [14917,14926]`count > 3`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __gt__
@@ -3731,8 +3651,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Value: 0
                                               IfNode SourceSection: [15177,15229]`if count >= 3:↵     ...`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   BinaryComparisonNodeGen SourceSection: [15180,15190]`count >= 3`
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __ge__
@@ -3792,8 +3710,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                               IfNode SourceSection: [15372,15465]`if frame.line:↵     ...`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   GetAttributeNode SourceSection: [15375,15385]`frame.line`
                                                     GetFixedAttributeNode SourceSection: None
                                                       Key: line
@@ -3831,8 +3747,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 BlockNode SourceSection: None
                                               IfNode SourceSection: [15465,15647]`if frame.locals:↵   ...`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   GetAttributeNode SourceSection: [15468,15480]`frame.locals`
                                                     GetFixedAttributeNode SourceSection: None
                                                       Key: locals
@@ -3934,8 +3848,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [15683,15785]`if count > 3:↵      ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [15686,15695]`count > 3`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __gt__
@@ -4119,8 +4031,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       FunctionBodyNode SourceSection: [17472,19613]`if _seen is None:↵  ...`
                                         IfNode SourceSection: [17472,17524]`if _seen is None:↵  ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: [17475,17488]`_seen is None`
                                               ReadLocalVariableNode SourceSection: [17475,17480]`_seen`
                                                 Frame: [8,_seen,Illegal]
@@ -4153,16 +4063,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [17699,18163]`if (exc_value and ex...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             AndNode SourceSection: [17703,17801]`exc_value and exc_va...`
                                               AndNode SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [17703,17712]`exc_value`
                                                   Frame: [2,exc_value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 NotNodeGen SourceSection: [17717,17748]`exc_value.__cause__ ...`
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   IsExpressionNodeGen SourceSection: None
                                                     GetAttributeNode SourceSection: [17717,17736]`exc_value.__cause__`
                                                       GetFixedAttributeNode SourceSection: None
@@ -4176,17 +4082,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                     ObjectLiteralNode SourceSection: [17744,17748]`None`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                               NotNodeGen SourceSection: [17765,17801]`id(exc_value.__cause...`
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 ContainsNodeGen SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __contains__
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                   PythonCallUnary SourceSection: [17765,17788]`id(exc_value.__cause...`
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [17765,17767]`id`
@@ -4206,8 +4106,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [8,_seen,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [17816,18115]`cause = TracebackExc...`
                                             Identifier: cause
                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4283,16 +4181,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             ObjectLiteralNode SourceSection: [18150,18154]`None`
                                         IfNode SourceSection: [18163,18641]`if (exc_value and ex...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             AndNode SourceSection: [18167,18269]`exc_value and exc_va...`
                                               AndNode SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [18167,18176]`exc_value`
                                                   Frame: [2,exc_value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 NotNodeGen SourceSection: [18181,18214]`exc_value.__context_...`
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                                   IsExpressionNodeGen SourceSection: None
                                                     GetAttributeNode SourceSection: [18181,18202]`exc_value.__context_...`
                                                       GetFixedAttributeNode SourceSection: None
@@ -4306,17 +4200,11 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                     ObjectLiteralNode SourceSection: [18210,18214]`None`
                                                 YesNodeGen SourceSection: None
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
                                               NotNodeGen SourceSection: [18231,18269]`id(exc_value.__conte...`
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 ContainsNodeGen SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __contains__
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                   PythonCallUnary SourceSection: [18231,18256]`id(exc_value.__conte...`
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [18231,18233]`id`
@@ -4336,8 +4224,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [8,_seen,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [18284,18591]`context = TracebackE...`
                                             Identifier: context
                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4442,8 +4328,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           TernaryIfNode SourceSection: [18792,18846]`exc_value.__suppress...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [18826,18835]`exc_value`
                                                 Frame: [2,exc_value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4515,8 +4399,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [19242,19560]`if exc_type and issu...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             AndNode SourceSection: [19245,19291]`exc_type and issubcl...`
                                               ReadLocalVariableNode SourceSection: [19245,19253]`exc_type`
                                                 Frame: [1,exc_type,Illegal]
@@ -4533,8 +4415,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Identifier: SyntaxError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                           BlockNode SourceSection: None
                                             SetAttributeNodeGen SourceSection: [19350,19384]`self.filename = exc_...`
                                               Attribute: filename
@@ -4619,8 +4499,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [19560,19613]`if lookup_lines:↵   ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadLocalVariableNode SourceSection: [19563,19575]`lookup_lines`
                                               Frame: [6,lookup_lines,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -4816,8 +4694,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [19971,20043]`if self.__context__:...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             GetAttributeNode SourceSection: [19974,19990]`self.__context__`
                                               GetFixedAttributeNode SourceSection: None
                                                 Key: __context__
@@ -4845,8 +4721,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [20043,20108]`if self.__cause__:↵ ...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             GetAttributeNode SourceSection: [20046,20060]`self.__cause__`
                                               GetFixedAttributeNode SourceSection: None
                                                 Key: __cause__
@@ -5038,8 +4912,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         GeneratorIfNode SourceSection: [20756,20868]`if self.exc_type is ...`
                                           GeneratorAccessNode SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: [20759,20780]`self.exc_type is Non...`
                                               GetAttributeNode SourceSection: [20759,20772]`self.exc_type`
                                                 GetFixedAttributeNode SourceSection: None
@@ -5120,14 +4992,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [20951,21040]`if smod not in ("__m...`
                                           NotNodeGen SourceSection: [20954,20990]`smod not in ("__main...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ContainsNodeGen SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [20954,20958]`smod`
                                                 Frame: [2,smod,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -5156,8 +5024,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         GeneratorIfNode SourceSection: [21040,21249]`if not issubclass(se...`
                                           GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [21043,21085]`not issubclass(self....`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [21047,21085]`issubclass(self.exc_...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21047,21057]`issubclass`
@@ -5219,8 +5085,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [21277,21287]`"<string>"`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                         WriteGeneratorFrameVariableNodeGen SourceSection: [21296,21328]`lineno = str(self.li...`
                                           Identifier: lineno
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
@@ -5243,8 +5107,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [21325,21328]`'?'`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                         ExpressionStatementNode SourceSection: [21337,21392]`yield '  File "{}", ...`
                                           YieldNode SourceSection: [21337,21392]`yield '  File "{}", ...`
                                             flagSlot: 6
@@ -5290,8 +5152,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         GeneratorIfNode SourceSection: [21459,21964]`if badline is not No...`
                                           GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [21462,21481]`badline is not None`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [21462,21469]`badline`
                                                 Frame: [5,badline,Illegal]
@@ -5315,8 +5175,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             GeneratorIfNode SourceSection: [21548,21964]`if offset is not Non...`
                                               GeneratorAccessNode SourceSection: None
                                               NotNodeGen SourceSection: [21551,21569]`offset is not None`
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 IsExpressionNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNode SourceSection: [21551,21557]`offset`
                                                     Frame: [6,offset,Illegal]
@@ -5419,12 +5277,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                                       Frame: [0,c,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     YesNodeGen SourceSection: None
-                                                                      IsBuiltinClassProfile SourceSection: None
-                                                                        CachedDispatchFirst SourceSection: None
                                                                   StringLiteralNode SourceSection: [21868,21871]`' '`
                                                                   YesNodeGen SourceSection: None
-                                                                    IsBuiltinClassProfile SourceSection: None
-                                                                      CachedDispatchFirst SourceSection: None
                                                                 GeneratorAccessNode SourceSection: None
                                                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                               Identifier: c
@@ -5486,8 +5340,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [21982,22005]`"<no detail availabl...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                         ExpressionStatementNode SourceSection: [22014,22049]`yield "{}: {}\n".for...`
                                           YieldNode SourceSection: [22014,22049]`yield "{}: {}\n".for...`
                                             flagSlot: 13
@@ -5555,16 +5407,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         GeneratorIfNode SourceSection: [22555,22917]`if chain:↵          ...`
                                           GeneratorAccessNode SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [22558,22563]`chain`
                                               Frame: [2,chain,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           GeneratorIfNode SourceSection: [22577,22917]`if self.__cause__ is...`
                                             GeneratorAccessNode SourceSection: None
                                             NotNodeGen SourceSection: [22580,22606]`self.__cause__ is no...`
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               IsExpressionNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [22580,22594]`self.__cause__`
                                                   GetFixedAttributeNode SourceSection: None
@@ -5628,12 +5476,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             GeneratorIfNode SourceSection: [22719,22917]`elif (self.__context...`
                                               GeneratorAccessNode SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 AndNode SourceSection: [22725,22803]`self.__context__ is ...`
                                                   NotNodeGen SourceSection: [22725,22753]`self.__context__ is ...`
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     IsExpressionNodeGen SourceSection: None
                                                       GetAttributeNode SourceSection: [22725,22741]`self.__context__`
                                                         GetFixedAttributeNode SourceSection: None
@@ -5647,8 +5491,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                       ObjectLiteralNode SourceSection: [22749,22753]`None`
                                                   NotNodeGen SourceSection: [22774,22803]`not self.__suppress_...`
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     GetAttributeNode SourceSection: [22778,22803]`self.__suppress_cont...`
                                                       GetFixedAttributeNode SourceSection: None
                                                         Key: __suppress_context__
@@ -5660,8 +5502,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                               GeneratorBlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [22822,22869]`yield from self.__co...`
                                                   YieldFromNode SourceSection: [22822,22869]`yield from self.__co...`
@@ -5715,8 +5555,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         GeneratorIfNode SourceSection: [22917,23017]`if self.exc_tracebac...`
                                           GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [22920,22950]`self.exc_traceback i...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [22920,22938]`self.exc_traceback`
                                                 GetFixedAttributeNode SourceSection: None

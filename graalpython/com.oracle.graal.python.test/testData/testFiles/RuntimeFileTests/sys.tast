@@ -783,8 +783,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     WhileNode SourceSection: None
                                       WhileRepeatingNode SourceSection: None
                                         NotNodeGen SourceSection: [4731,4745]`tb is not None`
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [4731,4733]`tb`
                                               Frame: [1,tb,Illegal]
@@ -897,8 +895,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   IfNode SourceSection: [5005,5156]`if msg:↵            ...`
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ReadLocalVariableNode SourceSection: [5008,5011]`msg`
                                         Frame: [2,msg,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -1218,8 +1214,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           StringLiteralNode SourceSection: [5773,5791]`'PYTHONBREAKPOINT'`
                       IfNode SourceSection: [5797,6046]`if hookname is None ...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           OrNode SourceSection: [5800,5838]`hookname is None or ...`
                             IsExpressionNodeGen SourceSection: [5800,5816]`hookname is None`
                               ReadLocalVariableNode SourceSection: [5800,5808]`hookname`
@@ -1240,8 +1234,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               IntegerLiteralNode SourceSection: [5837,5838]`0`
                                 Value: 0
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                         BlockNode SourceSection: None
                           ExpressionStatementNode SourceSection: [5848,5960]`warnings.warn('Graal...`
                             PythonCallBinary SourceSection: [5848,5960]`warnings.warn('Graal...`
@@ -1261,8 +1253,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                             StringLiteralNode SourceSection: [5980,5995]`'pdb.set_trace'`
                         IfNode SourceSection: [6000,6046]`elif hookname == '0'...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [6005,6020]`hookname == '0'`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __eq__
@@ -1320,8 +1310,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                             ReadVariableFromFrameNodeGen SourceSection: None
                       IfNode SourceSection: [6100,6147]`if dot == '':↵      ...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [6103,6112]`dot == ''`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
@@ -1497,8 +1485,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                     FunctionBodyNode SourceSection: [6590,7102]`if value is None:↵  ...`
                       IfNode SourceSection: [6590,6627]`if value is None:↵  ...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           IsExpressionNodeGen SourceSection: [6593,6606]`value is None`
                             ReadLocalVariableNode SourceSection: [6593,6598]`value`
                               Frame: [0,value,Illegal]
@@ -1570,8 +1556,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                   StringLiteralNode SourceSection: [6856,6874]`'backslashreplace'`
                               IfNode SourceSection: [6884,7061]`if hasattr(stdout, '...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   PythonCallBinary SourceSection: [6887,6912]`hasattr(stdout, 'buf...`
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [6887,6894]`hasattr`

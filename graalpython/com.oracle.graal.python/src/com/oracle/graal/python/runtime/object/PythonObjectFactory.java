@@ -155,7 +155,6 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -167,7 +166,6 @@ import com.oracle.truffle.api.object.Shape;
 
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
-@ReportPolymorphism
 public abstract class PythonObjectFactory extends Node {
 
     public static PythonObjectFactory create() {

@@ -161,28 +161,20 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [1073,1595]`if pattern is not No...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         AndNode SourceSection: [1076,1115]`pattern is not None ...`
                                           NotNodeGen SourceSection: [1076,1095]`pattern is not None`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1076,1083]`pattern`
                                                 Frame: [2,pattern,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [1091,1095]`None`
                                           NotNodeGen SourceSection: [1100,1115]`pos is not None`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1100,1103]`pos`
                                                 Frame: [3,pos,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [1111,1115]`None`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [1129,1167]`msg = '%s at positio...`
                                           Identifier: msg
@@ -202,8 +194,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               PythonObjectFactoryNodeGen SourceSection: None
                                         IfNode SourceSection: [1180,1302]`if isinstance(patter...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [1183,1207]`isinstance(pattern, ...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [1183,1193]`isinstance`
@@ -277,14 +267,10 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         IfNode SourceSection: [1425,1537]`if newline in patter...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             ContainsNodeGen SourceSection: [1428,1446]`newline in pattern`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1428,1435]`newline`
                                                 Frame: [4,newline,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1208,8 +1194,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         SideEffect:
           IfNode SourceSection: [5581,7177]`if __name__ == "__ma...`
             YesNodeGen SourceSection: None
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               BinaryComparisonNodeGen SourceSection: [5584,5606]`__name__ == "__main_...`
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __eq__
@@ -1599,8 +1583,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                 CallUnaryMethodNodeGen SourceSection: None
                 CallQuaternaryMethodNodeGen SourceSection: None
                 YesNodeGen SourceSection: None
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
                 GetClassNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [7163,7176]`print("done")`
                 PythonCallUnary SourceSection: [7163,7176]`print("done")`

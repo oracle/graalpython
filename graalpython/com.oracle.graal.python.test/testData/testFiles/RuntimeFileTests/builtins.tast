@@ -149,8 +149,6 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [2342,2432]`if filename.startswi...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallUnary SourceSection: [2345,2370]`filename.startswith(...`
                           CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None

@@ -37,8 +37,6 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                   GeneratorIfNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                     YesNodeGen SourceSection: None
-                      IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                       PythonCallBinary SourceSection: [36,51]`condition(x, y)`
                         CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [36,45]`condition`

@@ -27,8 +27,8 @@ package com.oracle.graal.python.nodes.cell;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -38,11 +38,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -88,14 +87,9 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
     }
 
     @ImportStatic(PythonOptions.class)
-    @ReportPolymorphism
-    abstract static class WriteToCellNode extends Node {
+    abstract static class WriteToCellNode extends PNodeWithContext {
 
         public abstract void execute(PCell cell, Object value);
-
-        protected static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
-        }
 
         @Specialization(guards = "cell == cachedCell", limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption")
         void doWriteCached(@SuppressWarnings("unused") PCell cell, Object value,
@@ -118,6 +112,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
             }
         }
 
+        @Megamorphic
         @Specialization(replaces = {"doWriteCached", "doWriteCachedAssumption"})
         void doWriteGeneric(PCell cell, Object value) {
             if (value == NO_VALUE) {

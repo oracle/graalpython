@@ -50,13 +50,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ReportPolymorphism
 @GenerateUncached
 public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     public static CallTernaryMethodNode create() {
@@ -208,6 +207,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     "doBuiltinFunctionOIOCachedReverse", "doBuiltinFunctionCachedReverse", "doBuiltinFunctionOIOCtCachedReverse", "doBuiltinFunctionCtCachedReverse",
                     "doBuiltinMethodOIOCached", "doBuiltinMethodCached", "doBuiltinMethodOIOCtCached", "doBuiltinMethodCtCached", "callSelfMethodSingleContext",
                     "callSelfMethod"})
+    @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
                     @Cached CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {

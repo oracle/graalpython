@@ -43,8 +43,6 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                         WhileNode SourceSection: None
                           WhileRepeatingNode SourceSection: None
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               BooleanLiteralNode SourceSection: [24,28]`True`
                             WriteGeneratorFrameVariableNodeGen SourceSection: [38,52]`value = next()`
                               Identifier: value
@@ -66,8 +64,6 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [63,68]`h > 1`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __gt__

@@ -43,8 +43,6 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                         WhileNode SourceSection: None
                           WhileRepeatingNode SourceSection: None
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: [21,22]`x`
                                 Frame: [0,x,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -75,8 +73,6 @@ ModuleRootNode Name: <module 'while02'> SourceSection: [0,71]`def gen(x):↵   w
                                 GeneratorAccessNode SourceSection: None
                             GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [43,44]`x`
                               Frame: [0,x,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

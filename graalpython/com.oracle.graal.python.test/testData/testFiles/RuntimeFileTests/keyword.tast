@@ -148,16 +148,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                             IntegerLiteralNode SourceSection: [1082,1083]`0`
                               Value: 0
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                         StringLiteralNode SourceSection: [1088,1107]`"Python/graminit.c"`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                     IfNode SourceSection: [1112,1184]`if len(args) > 1: op...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [1115,1128]`len(args) > 1`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __gt__
@@ -220,8 +214,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       GetClassNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [1366,1425]`nl = format[0][len(f...`
                       Identifier: nl
@@ -229,8 +221,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         Frame: [7,nl,Illegal]
                       TernaryIfNode SourceSection: [1371,1425]`format[0][len(format...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [1409,1415]`format`
                             Frame: [5,format,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -289,14 +279,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                     Frame: [11,line,Illegal]
                               IfNode SourceSection: [1594,1764]`if '{1, "' in line:↵...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   ContainsNodeGen SourceSection: [1597,1612]`'{1, "' in line`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __contains__
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                     StringLiteralNode SourceSection: [1597,1604]`'{1, "'`
                                     ReadLocalVariableNode SourceSection: [1608,1612]`line`
                                       Frame: [11,line,Illegal]
@@ -317,8 +303,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   IfNode SourceSection: [1675,1764]`if match:↵          ...`
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       ReadLocalVariableNode SourceSection: [1678,1683]`match`
                                         Frame: [10,match,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -376,8 +360,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       GetClassNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [1764,1776]`lines.sort()`
                       PythonCallNodeGen SourceSection: [1764,1776]`lines.sort()`
@@ -509,8 +491,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       GetClassNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [14,<return_val>,Illegal]
@@ -521,8 +501,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
         SideEffect:
           IfNode SourceSection: [2207,2245]`if __name__ == "__ma...`
             YesNodeGen SourceSection: None
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               BinaryComparisonNodeGen SourceSection: [2210,2232]`__name__ == "__main_...`
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __eq__

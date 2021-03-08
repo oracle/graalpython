@@ -41,8 +41,6 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                     GeneratorBlockNode SourceSection: None
                       IfNode SourceSection: [47,81]`if f is None:â†µ      ...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           IsExpressionNodeGen SourceSection: [50,59]`f is None`
                             ReadGeneratorFrameVariableNode SourceSection: [50,51]`f`
                               Frame: [0,f,Illegal]
@@ -68,8 +66,6 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           NotNodeGen SourceSection: [87,100]`f is not None`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: [87,88]`f`
                                 Frame: [0,f,Illegal]

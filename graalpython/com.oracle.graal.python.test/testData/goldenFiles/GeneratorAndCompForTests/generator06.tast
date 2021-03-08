@@ -42,8 +42,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                       GeneratorIfNode SourceSection: [41,101]`if a():↵            ...`
                         GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           PythonCallNodeGen SourceSection: [44,47]`a()`
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [44,45]`a`
@@ -61,8 +59,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                       GeneratorIfNode SourceSection: [101,287]`if badline is not No...`
                         GeneratorAccessNode SourceSection: None
                         NotNodeGen SourceSection: [104,123]`badline is not None`
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           IsExpressionNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [104,111]`badline`
                               Identifier: badline
@@ -77,8 +73,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                           GeneratorIfNode SourceSection: [160,287]`if offset is not Non...`
                             GeneratorAccessNode SourceSection: None
                             NotNodeGen SourceSection: [163,181]`offset is not None`
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               IsExpressionNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [163,169]`offset`
                                   Identifier: offset
