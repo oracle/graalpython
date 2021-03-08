@@ -38,11 +38,13 @@
 # SOFTWARE.
 
 import platform
-import sys
 import unittest
 
+import sys
+
 # The platform.system() == 'Java' is to make it possible to run with Jython
-if platform.system() == 'Java' or sys.implementation.name == "graalpython":
+if (platform.system() == 'Java' or sys.implementation.name == "graalpython") and \
+        not __graalpython__.is_native:
     from java.util import Arrays
     from java.lang import StringBuilder
     import jarray
