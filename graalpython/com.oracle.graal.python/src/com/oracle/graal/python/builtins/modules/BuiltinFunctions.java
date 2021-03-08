@@ -1089,14 +1089,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             return getObjectArrayNode.execute(tuple);
         }
-
-        private PythonLanguage getPythonLanguage() {
-            if (languageRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                languageRef = lookupLanguageReference(PythonLanguage.class);
-            }
-            return languageRef.get();
-        }
     }
 
     // issubclass(class, classinfo)
