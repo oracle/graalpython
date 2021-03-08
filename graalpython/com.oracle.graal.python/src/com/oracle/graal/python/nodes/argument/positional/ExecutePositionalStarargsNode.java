@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -205,14 +204,14 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         static Object[] starargs(Object object,
                         @Cached PRaiseNode raise,
                         @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Cached GetNextWithoutFrameNode nextNode,
+                        @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             Object iterator = lib.getIterator(object);
             if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
                 ArrayList<Object> internalStorage = new ArrayList<>();
                 while (true) {
                     try {
-                        addToList(internalStorage, nextNode.executeWithGlobalState(iterator));
+                        addToList(internalStorage, nextNode.execute(null, iterator));
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile);
                         return toArray(internalStorage);

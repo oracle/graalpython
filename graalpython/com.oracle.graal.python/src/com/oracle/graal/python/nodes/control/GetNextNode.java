@@ -49,18 +49,13 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class GetNextNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object iterator);
@@ -184,26 +179,5 @@ public abstract class GetNextNode extends PNodeWithContext {
 
     public static GetNextNode getUncached() {
         return GetNextUncached.INSTANCE;
-    }
-
-    @GenerateUncached
-    public abstract static class GetNextWithoutFrameNode extends PNodeWithContext {
-
-        public abstract Object executeWithGlobalState(Object iterator);
-
-        private static Object checkResult(PRaiseNode raiseNode, ConditionProfile notAnIterator, Object result, Object iterator) {
-            if (notAnIterator.profile(result == PNone.NO_VALUE)) {
-                throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, __NEXT__);
-            }
-            return result;
-        }
-
-        @Specialization
-        Object doObject(Object iterator,
-                        @Cached LookupAndCallUnaryDynamicNode nextCall,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached("createBinaryProfile()") ConditionProfile notAnIterator) {
-            return checkResult(raiseNode, notAnIterator, nextCall.executeObject(iterator, __NEXT__), iterator);
-        }
     }
 }
