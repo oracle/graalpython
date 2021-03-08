@@ -52,19 +52,16 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CRLException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -125,6 +122,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateParsingException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
 public class SSLContextBuiltins extends PythonBuiltins {
@@ -629,24 +628,15 @@ public class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         Object storeStats(PSSLContext self) {
             try {
-                KeyStore keystore = self.getCAKeyStore();
-                Enumeration<String> aliases = keystore.aliases();
                 int x509 = 0, crl = 0, ca = 0;
-                while (aliases.hasMoreElements()) {
-                    String alias = aliases.nextElement();
-                    if (keystore.isCertificateEntry(alias)) {
-                        Certificate cert = keystore.getCertificate(alias);
-                        if (cert instanceof X509Certificate) {
-                            X509Certificate x509Cert = (X509Certificate) cert;
-                            boolean[] keyUsage = ((X509Certificate) cert).getKeyUsage();
-                            if (CertUtils.isCrl(keyUsage)) {
-                                crl++;
-                            } else {
-                                x509++;
-                                if (CertUtils.isCA(x509Cert, keyUsage)) {
-                                    ca++;
-                                }
-                            }
+                for (X509Certificate cert : self.getCACerts()) {
+                    boolean[] keyUsage = cert.getKeyUsage();
+                    if (CertUtils.isCrl(keyUsage)) {
+                        crl++;
+                    } else {
+                        x509++;
+                        if (CertUtils.isCA(cert, keyUsage)) {
+                            ca++;
                         }
                     }
                 }
@@ -995,16 +985,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
         Object getCerts(PSSLContext self, @SuppressWarnings("unused") boolean binary_form) {
             try {
                 List<PDict> result = new ArrayList<>();
-                KeyStore ks = self.getCAKeyStore();
-                Enumeration<String> aliases = ks.aliases();
-                while (aliases.hasMoreElements()) {
-                    X509Certificate cert = (X509Certificate) ks.getCertificate(aliases.nextElement());
+                for (X509Certificate cert : self.getCACerts()) {
                     if (CertUtils.isCA(cert, cert.getKeyUsage())) {
                         result.add(CertUtils.decodeCertificate(cert));
                     }
                 }
                 return factory().createList(result.toArray(new Object[result.size()]));
-            } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException ex) {
+            } catch (KeyStoreException | NoSuchAlgorithmException | IOException | CertificateParsingException ex) {
                 throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, ex);
             }
         }
@@ -1014,16 +1001,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
         Object getCertsBinary(PSSLContext self, @SuppressWarnings("unused") boolean binary_form) {
             try {
                 List<PBytes> result = new ArrayList<>();
-                KeyStore ks = self.getCAKeyStore();
-                Enumeration<String> aliases = ks.aliases();
-                while (aliases.hasMoreElements()) {
-                    X509Certificate cert = (X509Certificate) ks.getCertificate(aliases.nextElement());
+                for (X509Certificate cert : self.getCACerts()) {
                     if (CertUtils.isCA(cert, cert.getKeyUsage())) {
                         result.add(factory().createBytes(cert.getEncoded()));
                     }
                 }
                 return factory().createList(result.toArray(new Object[result.size()]));
-            } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException ex) {
+            } catch (KeyStoreException | NoSuchAlgorithmException | CertificateEncodingException ex) {
                 throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, ex);
             }
         }

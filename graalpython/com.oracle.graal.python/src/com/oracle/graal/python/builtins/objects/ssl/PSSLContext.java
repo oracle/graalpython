@@ -77,6 +77,7 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -124,7 +125,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public KeyStore getCAKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+    private KeyStore getCAKeyStore() throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         if (caKeystore == null) {
             caKeystore = KeyStore.getInstance("JKS");
 
@@ -140,6 +141,25 @@ public final class PSSLContext extends PythonBuiltinObject {
             chainKeystore.load(null);
         }
         return chainKeystore;
+    }
+
+    @TruffleBoundary
+    public List<X509Certificate> getCACerts() throws KeyStoreException, NoSuchAlgorithmException {
+        List<X509Certificate> result = new ArrayList<>();
+        if (caKeystore != null) {
+            Enumeration<String> aliases = caKeystore.aliases();
+            while (aliases.hasMoreElements()) {
+                X509Certificate cert = (X509Certificate) caKeystore.getCertificate(aliases.nextElement());
+                result.add(cert);
+            }
+        }
+        if (useDefaultTrustStore) {
+            X509ExtendedTrustManager tm = getDefaultTrustManager();
+            for (X509Certificate cert : tm.getAcceptedIssuers()) {
+                result.add(cert);
+            }
+        }
+        return result;
     }
 
     public SSLMethod getMethod() {
@@ -174,7 +194,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     void init() throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException, InvalidAlgorithmParameterException, IOException, CertificateException {
-        X509ExtendedTrustManager defaultTrustManager = getDefaultTrustManagers();
+        X509ExtendedTrustManager defaultTrustManager = getDefaultTrustManager();
         X509ExtendedTrustManager trustManager = getX509ExtendedTrustManager(getTrustManagerFactory(getCAKeyStore()).getTrustManagers());
         TrustManager tm = new DelegateTrustManager(trustManager, defaultTrustManager, verifyMode);
 
@@ -188,7 +208,7 @@ public final class PSSLContext extends PythonBuiltinObject {
         context.init(kms, new TrustManager[]{tm}, null);
     }
 
-    private X509ExtendedTrustManager getDefaultTrustManagers() throws KeyStoreException, NoSuchAlgorithmException {
+    private X509ExtendedTrustManager getDefaultTrustManager() throws KeyStoreException, NoSuchAlgorithmException {
         if (useDefaultTrustStore) {
             TrustManagerFactory tmf = getTrustManagerFactory();
             tmf.init((KeyStore) null);
