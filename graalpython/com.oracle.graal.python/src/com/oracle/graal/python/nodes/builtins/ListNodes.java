@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorInteropNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -78,6 +77,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -88,11 +88,11 @@ public abstract class ListNodes {
     @ImportStatic({PGuards.class, PythonOptions.class})
     public abstract static class ConstructListNode extends PNodeWithContext {
 
-        public final PList execute(Object value) {
-            return execute(PythonBuiltinClassType.PList, value);
+        public final PList execute(Frame frame, Object value) {
+            return execute(frame, PythonBuiltinClassType.PList, value);
         }
 
-        protected abstract PList execute(Object cls, Object value);
+        protected abstract PList execute(Frame frame, Object cls, Object value);
 
         @Specialization
         static PList listString(Object cls, String arg,
@@ -107,13 +107,12 @@ public abstract class ListNodes {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        static PList listIterable(Object cls, Object iterable,
+        static PList listIterable(VirtualFrame frame, Object cls, Object iterable,
                         @CachedLibrary("iterable") PythonObjectLibrary lib,
-                        @Cached CreateStorageFromIteratorInteropNode createStorageFromIteratorNode,
+                        @Cached SequenceStorageNodes.CreateStorageFromIteratorNode createStorageFromIteratorNode,
                         @Cached PythonObjectFactory factory) {
-
-            Object iterObj = lib.getIterator(iterable);
-            SequenceStorage storage = createStorageFromIteratorNode.execute(iterObj);
+            Object iterObj = lib.getIteratorWithFrame(iterable, frame);
+            SequenceStorage storage = createStorageFromIteratorNode.execute(frame, iterObj);
             return factory.createList(cls, storage);
         }
 
@@ -137,21 +136,21 @@ public abstract class ListNodes {
 
         @Child private ConstructListNode constructListNode;
 
-        public abstract PSequence execute(Object value);
+        public abstract PSequence execute(VirtualFrame frame, Object value);
 
         @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(value))", limit = "2")
-        protected PSequence doPList(PSequence value,
+        protected static PSequence doPList(PSequence value,
                         @SuppressWarnings("unused") @CachedLibrary("value") PythonObjectLibrary lib) {
             return value;
         }
 
         @Fallback
-        protected PSequence doGeneric(Object value) {
+        protected PSequence doGeneric(VirtualFrame frame, Object value) {
             if (constructListNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 constructListNode = insert(ConstructListNode.create());
             }
-            return constructListNode.execute(PythonBuiltinClassType.PList, value);
+            return constructListNode.execute(frame, PythonBuiltinClassType.PList, value);
         }
 
         public static FastConstructListNode create() {

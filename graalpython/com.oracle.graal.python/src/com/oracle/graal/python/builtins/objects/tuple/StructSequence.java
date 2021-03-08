@@ -242,13 +242,13 @@ public class StructSequence {
         }
 
         @Specialization(guards = "isNoValue(dict)")
-        public PTuple withoutDict(Object cls, Object sequence, @SuppressWarnings("unused") PNone dict,
+        public PTuple withoutDict(VirtualFrame frame, Object cls, Object sequence, @SuppressWarnings("unused") PNone dict,
                         @Cached FastConstructListNode fastConstructListNode,
                         @Cached ToArrayNode toArrayNode,
                         @Cached IsBuiltinClassProfile notASequenceProfile,
                         @Cached BranchProfile wrongLenProfile,
                         @Cached BranchProfile needsReallocProfile) {
-            Object[] src = sequenceToArray(sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
+            Object[] src = sequenceToArray(frame, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(src, wrongLenProfile, needsReallocProfile);
             for (int i = src.length; i < dst.length; ++i) {
                 dst[i] = PNone.NONE;
@@ -264,7 +264,7 @@ public class StructSequence {
                         @Cached BranchProfile wrongLenProfile,
                         @Cached BranchProfile needsReallocProfile,
                         @CachedLibrary(limit = "1") HashingStorageLibrary dictLib) {
-            Object[] src = sequenceToArray(sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
+            Object[] src = sequenceToArray(frame, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
             Object[] dst = processSequence(src, wrongLenProfile, needsReallocProfile);
             HashingStorage hs = dict.getDictStorage();
             ThreadState threadState = PArguments.getThreadState(frame);
@@ -281,10 +281,10 @@ public class StructSequence {
             throw raise(TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, type.getPrintName());
         }
 
-        private Object[] sequenceToArray(Object sequence, FastConstructListNode fastConstructListNode, ToArrayNode toArrayNode, IsBuiltinClassProfile notASequenceProfile) {
+        private Object[] sequenceToArray(VirtualFrame frame, Object sequence, FastConstructListNode fastConstructListNode, ToArrayNode toArrayNode, IsBuiltinClassProfile notASequenceProfile) {
             PSequence seq;
             try {
-                seq = fastConstructListNode.execute(sequence);
+                seq = fastConstructListNode.execute(frame, sequence);
             } catch (PException e) {
                 e.expect(TypeError, notASequenceProfile);
                 throw raise(TypeError, ErrorMessages.CONSTRUCTOR_REQUIRES_A_SEQUENCE);

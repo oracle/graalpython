@@ -701,7 +701,7 @@ public abstract class HashingStorage {
         try {
             while (true) {
                 Object next = nextNode.execute(frame, it);
-                PSequence element = createListNode.execute(next);
+                PSequence element = createListNode.execute(frame, next);
                 assert element != null;
                 // This constructs a new list using the builtin type. So, the object cannot
                 // be subclassed and we can directly call 'len()'.

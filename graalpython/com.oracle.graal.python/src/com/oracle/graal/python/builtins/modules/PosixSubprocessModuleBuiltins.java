@@ -122,7 +122,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached("createNotNormalized()") GetItemNode getItemNode) {
             PSequence argsSequence;
             try {
-                argsSequence = fastConstructListNode.execute(processArgs);
+                argsSequence = fastConstructListNode.execute(frame, processArgs);
             } catch (PException e) {
                 e.expect(TypeError, isBuiltinClassProfile);
                 throw raise(TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");

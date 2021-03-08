@@ -167,7 +167,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                 if (dirFunc != null) {
                     return callNode.execute(frame, dirFunc);
                 } else {
-                    return constructListNode.execute(dict);
+                    return constructListNode.execute(frame, dict);
                 }
             } else {
                 String name = getName(self, pol, hashLib, castToJavaStringNode);
