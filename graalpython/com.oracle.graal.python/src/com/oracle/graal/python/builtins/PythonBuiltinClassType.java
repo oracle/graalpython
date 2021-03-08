@@ -257,7 +257,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     UnicodeTranslateError("UnicodeTranslateError", BUILTINS, Flags.EXCEPTION),
     RecursionError("RecursionError", BUILTINS, Flags.EXCEPTION),
 
-    IOUnsupportedOperation("UnsupportedOperation", "_io", Flags.EXCEPTION),
+    IOUnsupportedOperation("UnsupportedOperation", "io", Flags.EXCEPTION),
 
     // warnings
     Warning("Warning", BUILTINS, Flags.EXCEPTION),
