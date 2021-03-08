@@ -38,10 +38,13 @@
 # SOFTWARE.
 
 import os
+from unittest import skipIf
+
 import sys
 
 if sys.implementation.name == "graalpython":
     import polyglot
+    from __graalpython__ import is_native
 
     def test_import():
         def some_function():
@@ -258,6 +261,7 @@ if sys.implementation.name == "graalpython":
         assert not polyglot.__key_info__(builtinObj, "__len__", "removable")
         assert not polyglot.__key_info__(builtinObj, "__len__", "insertable")
 
+    @skipIf(is_native, "not supported in native mode")
     def test_java_classpath():
         import java
         try:
@@ -270,6 +274,7 @@ if sys.implementation.name == "graalpython":
         except TypeError as e:
             assert "classpath argument 2 must be string, not int" in str(e)
 
+    @skipIf(is_native, "not supported in native mode")
     def test_host_lookup():
         import java
         try:
@@ -295,6 +300,7 @@ if sys.implementation.name == "graalpython":
 
         assert polyglot.eval(language="python", string="21 * 2") == 42
 
+    @skipIf(is_native, "not supported in native mode")
     def test_non_index_array_access():
         import java
         try:
@@ -305,6 +311,7 @@ if sys.implementation.name == "graalpython":
         except NotImplementedError as e:
             assert "host lookup is not allowed" in str(e)
 
+    @skipIf(is_native, "not supported in native mode")
     def test_direct_call_of_truffle_object_methods():
         import java
         try:
@@ -334,6 +341,7 @@ if sys.implementation.name == "graalpython":
         assert polyglot.__element_info__(mutableObj, 0, "modifiable")
         assert polyglot.__element_info__(mutableObj, 4, "insertable")
 
+    @skipIf(is_native, "not supported in native mode")
     def test_java_imports():
         import java
         try:
@@ -420,6 +428,7 @@ if sys.implementation.name == "graalpython":
             else:
                 assert False
 
+    @skipIf(is_native, "not supported in native mode")
     def test_foreign_object_does_not_leak_Javas_toString():
         try:
             from java.util import ArrayList
@@ -458,6 +467,7 @@ if sys.implementation.name == "graalpython":
             assert "getGlobal" in d
             assert d["getGlobal"]().getName() == d["GLOBAL_LOGGER_NAME"]
 
+    @skipIf(is_native, "not supported in native mode")
     def test_java_null_is_none():
         import java.lang.Integer as Integer
         x = Integer.getInteger("something_what_does_not_exists")
