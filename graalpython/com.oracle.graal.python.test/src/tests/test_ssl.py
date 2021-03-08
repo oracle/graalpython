@@ -41,7 +41,8 @@ import unittest
 import ssl
 import os
 import json
-
+import sys
+import subprocess
 
 def data_file(name):
     return os.path.join(os.path.dirname(__file__), "ssldata", name)
@@ -50,7 +51,38 @@ def data_file(name):
 class StringWrapper(str):
     pass
 
+def check_handshake(server_context, client_context, err = None):
+    hostname = 'localhost'
+    c_in = ssl.MemoryBIO()
+    c_out = ssl.MemoryBIO()
+    s_in = ssl.MemoryBIO()
+    s_out = ssl.MemoryBIO()
+    client = client_context.wrap_bio(c_in, c_out, server_hostname=hostname)
+    server = server_context.wrap_bio(s_in, s_out, server_side=True)
 
+    try:
+        for _ in range(5):
+            try:
+                client.do_handshake()
+            except ssl.SSLWantReadError:
+                pass
+            if c_out.pending:
+                s_in.write(c_out.read())
+            try:
+                server.do_handshake()
+            except ssl.SSLWantReadError:
+                pass
+            if s_out.pending:
+                c_in.write(s_out.read())
+    except Exception as e:
+        if err is None:
+            assert False
+        else:    
+            assert isinstance(e, err)
+    else:
+        if err is not None:
+            assert False
+                
 class CertTests(unittest.TestCase):
 
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -64,7 +96,7 @@ class CertTests(unittest.TestCase):
         except err as e:
             if errno != -1:
                 self.assertEqual(e.errno, errno)
-            if strerror is not None:    
+            if strerror is not None:
                 self.assertIn(strerror, e.strerror)
             self.assertIsInstance(type(e), type(err))
         else:
@@ -92,8 +124,7 @@ class CertTests(unittest.TestCase):
             assert False
             
     def check_load_verify_locations_cadata_bytes_error(self, cadata, errno=-1, strerror=None, err=ssl.SSLError):
-        try:            
-            
+        try:                        
             cadata = open(data_file(cadata)).read()
             cadata.replace("")
             self.ctx.load_verify_locations(cafile, capath, cadata)            
@@ -214,41 +245,33 @@ class CertTests(unittest.TestCase):
             assert False
         finally:    
             if certFile is not None:
-                os.environ["SSL_CERT_FILE"] = certFile
-            if certDir is not None:        
-                os.environ["SSL_CERT_DIR"] = certDir
-
-    def check_handshake(self, server_context, client_context, err = None):
-        hostname = 'localhost'
-        c_in = ssl.MemoryBIO()
-        c_out = ssl.MemoryBIO()
-        s_in = ssl.MemoryBIO()
-        s_out = ssl.MemoryBIO()
-        client = client_context.wrap_bio(c_in, c_out, server_hostname=hostname)
-        server = server_context.wrap_bio(s_in, s_out, server_side=True)
-        
-        try:
-            for _ in range(5):
-                try:
-                    client.do_handshake()
-                except ssl.SSLWantReadError:
-                    pass
-                if c_out.pending:
-                    s_in.write(c_out.read())
-                try:
-                    server.do_handshake()
-                except ssl.SSLWantReadError:
-                    pass
-                if s_out.pending:
-                    c_in.write(s_out.read())
-        except Exception as e:
-            if err is None:
-                assert False
+                env["SSL_CERT_FILE"] = certFile
+            else:
+                del env["SSL_CERT_FILE"]
+            if certDir is not None:
+                env["SSL_CERT_DIR"] = certDir
             else:    
-                assert isinstance(e, err)
-        else:
-            if err is not None:
-                assert False
+                del env["SSL_CERT_DIR"]
+
+    @unittest.skipIf(sys.implementation.name == 'cpython', "graalpython specific")
+    def test_load_default_verify_keystore(self):        
+        # execute with javax.net.ssl.trustStore=tests/ssldata/signing_keystore.jks
+        # the JKS keystore:
+        # - contains one trusted certificate, the same as in tests/ssldata/signing_ca.pem
+        # - password is testssl
+        curdir = os.path.abspath(os.path.dirname(__file__))
+        src = "import ssl, sys, os\n" \
+               "sys.path.append('" + curdir + "')\n" \
+               "from test_ssl import data_file, check_handshake\n" \
+               "server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)\n" \
+               "server_context.load_cert_chain(data_file('signed_cert.pem'))\n" \
+               "client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)\n" \
+               "check_handshake(server_context, client_context, ssl.SSLCertVerificationError)\n" \
+               "client_context.load_default_certs()\n" \
+               "check_handshake(server_context, client_context)\n"
+        env = os.environ.copy()
+        env['JAVA_TOOL_OPTIONS'] = "-Djavax.net.ssl.trustStore=" + curdir + "/ssldata/signing_keystore.jks"
+        subprocess.run([sys.executable, '-c', src], env=env)
 
     def test_verify_mode(self):
         signed_cert = data_file("signed_cert.pem")
@@ -269,22 +292,22 @@ class CertTests(unittest.TestCase):
         # no cert chain on server
         # openssl SSLError: [SSL: NO_SHARED_CIPHER] / jdk javax.net.ssl.SSLHandshakeException: No available authentication scheme
         client_context.verify_mode = ssl.CERT_NONE
-        self.check_handshake(server_context, client_context, ssl.SSLError)
+        check_handshake(server_context, client_context, ssl.SSLError)
         client_context.verify_mode = ssl.CERT_REQUIRED
-        self.check_handshake(server_context, client_context, ssl.SSLError)
+        check_handshake(server_context, client_context, ssl.SSLError)
         client_context.verify_mode = ssl.CERT_OPTIONAL
-        self.check_handshake(server_context, client_context, ssl.SSLError)
+        check_handshake(server_context, client_context, ssl.SSLError)
 
         # server provides cert, but client has noverify locations
         server_context.load_cert_chain(signed_cert)
 
         client_context.verify_mode = ssl.CERT_NONE
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
         client_context.verify_mode = ssl.CERT_REQUIRED
-        self.check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
         client_context.verify_mode = ssl.CERT_OPTIONAL
         # CERT_OPTIONAL in client mode has the same meaning as CERT_REQUIRED
-        self.check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
 
         client_context.check_hostname = True
 
@@ -292,24 +315,24 @@ class CertTests(unittest.TestCase):
             client_context.verify_mode = ssl.CERT_NONE
 
         client_context.verify_mode = ssl.CERT_REQUIRED
-        self.check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
 
         client_context.verify_mode = ssl.CERT_OPTIONAL
         # CERT_OPTIONAL in client mode has the same meaning as CERT_REQUIRED
-        self.check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
 
         # client provides cert, server verifies
         client_context.load_verify_locations(signing_ca)
         
         client_context.verify_mode = ssl.CERT_REQUIRED
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
         client_context.verify_mode = ssl.CERT_OPTIONAL
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
 
         # server provides wrong cert for CERT_OPTIONAL client
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         server_context.load_cert_chain(signed_cert2)        
-        self.check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
 
         ########################################################################
         # verify_mode - server
@@ -324,46 +347,46 @@ class CertTests(unittest.TestCase):
         # no cert chain on server and client
         # openssl SSLError: [SSL: NO_SHARED_CIPHER] / jdk javax.net.ssl.SSLHandshakeException: No available authentication scheme
         server_context.verify_mode = ssl.CERT_NONE
-        self.check_handshake(server_context, client_context, ssl.SSLError)
+        check_handshake(server_context, client_context, ssl.SSLError)
         server_context.verify_mode = ssl.CERT_REQUIRED
-        self.check_handshake(server_context, client_context, ssl.SSLError)
+        check_handshake(server_context, client_context, ssl.SSLError)
         server_context.verify_mode = ssl.CERT_OPTIONAL
-        self.check_handshake(server_context, client_context, ssl.SSLError)
+        check_handshake(server_context, client_context, ssl.SSLError)
         
         # no cert from client
         server_context.load_cert_chain(signed_cert)
 
         server_context.verify_mode = ssl.CERT_NONE
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
         server_context.verify_mode = ssl.CERT_REQUIRED
-        self.check_handshake(server_context, client_context, ssl.SSLError)
+        check_handshake(server_context, client_context, ssl.SSLError)
         server_context.verify_mode = ssl.CERT_OPTIONAL
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
 
         # client provides cert, but server has nothing to verify with
         client_context.load_cert_chain(signed_cert)
 
         server_context.verify_mode = ssl.CERT_NONE
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
         server_context.verify_mode = ssl.CERT_REQUIRED
-        self.check_handshake(server_context, client_context, ssl.SSLError)
+        check_handshake(server_context, client_context, ssl.SSLError)
         server_context.verify_mode = ssl.CERT_OPTIONAL
-        self.check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
 
         # client provides cert, server verifies
         server_context.load_verify_locations(signing_ca)
 
         server_context.verify_mode = ssl.CERT_NONE
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
         server_context.verify_mode = ssl.CERT_REQUIRED
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
         server_context.verify_mode = ssl.CERT_OPTIONAL
-        self.check_handshake(server_context, client_context)
+        check_handshake(server_context, client_context)
 
         # client provides wrong cert for CERT_OPTIONAL server
         client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         client_context.load_cert_chain(signed_cert2)
-        self.check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
 
 def get_cipher_list(cipher_string):
     context = ssl.SSLContext()
