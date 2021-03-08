@@ -3261,9 +3261,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    // directly called without landing function
     @Builtin(name = "PyObject_Call", parameterNames = {"callee", "args", "kwargs"})
     @GenerateNodeFactory
-    @ReportPolymorphism
     abstract static class PyObjectCallNode extends PythonTernaryBuiltinNode {
 
         @Specialization
@@ -3288,7 +3288,108 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
         }
+    }
 
+    // directly called without landing function
+    @Builtin(name = "PyObject_CallFunctionObjArgs", parameterNames = {"callable", "va_list"})
+    @GenerateNodeFactory
+    abstract static class PyObjectCallFunctionObjArgsNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(limit = "1")
+        static Object doGeneric(VirtualFrame frame, Object callableObj, Object vaList,
+                        @CachedLibrary("vaList") InteropLibrary argsArrayLib,
+                        @CachedLibrary(limit = "2") InteropLibrary argLib,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached CallNode callNode,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            if (argsArrayLib.hasArrayElements(vaList)) {
+                try {
+                    try {
+                        /*
+                         * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains
+                         * just 'PyObject *' and is terminated by 'NULL'. Hence, we allocate an
+                         * argument array with one element less than the va_list object says (since
+                         * the last element is expected to be 'NULL'; this is best effort). However,
+                         * we must also stop at the first 'NULL' element we encounter since a user
+                         * could pass several 'NULL'.
+                         */
+                        long arraySize = argsArrayLib.getArraySize(vaList);
+                        Object[] args = new Object[PInt.intValueExact(arraySize) - 1];
+                        for (int i = 0; i < args.length; i++) {
+                            try {
+                                Object object = argsArrayLib.readArrayElement(vaList, i);
+                                if (argLib.isNull(object)) {
+                                    break;
+                                }
+                                args[i] = asPythonObjectNode.execute(object);
+                            } catch (InvalidArrayIndexException e) {
+                                throw CompilerDirectives.shouldNotReachHere();
+                            }
+                        }
+                        Object callable = asPythonObjectNode.execute(callableObj);
+                        return toNewRefNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
+                    } catch (UnsupportedMessageException | OverflowException e) {
+                        // I think we can just assume that there won't be more than
+                        // Integer.MAX_VALUE arguments.
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                } catch (PException e) {
+                    // transformExceptionToNativeNode acts as a branch profile
+                    transformExceptionToNativeNode.execute(frame, e);
+                    return nullToSulongNode.execute(getNativeNullNode.execute());
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyObject_FastCallDict", parameterNames = {"callable", "argsArray", "kwargs"})
+    @GenerateNodeFactory
+    abstract static class PyObjectFastCallDictNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(limit = "1")
+        static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsArray, Object kwargsObj,
+                        @CachedLibrary("argsArray") InteropLibrary argsArrayLib,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached CastKwargsNode castKwargsNode,
+                        @Cached CallNode callNode,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            if (argsArrayLib.hasArrayElements(argsArray)) {
+                try {
+                    try {
+                        // consume all arguments of the va_list
+                        long arraySize = argsArrayLib.getArraySize(argsArray);
+                        Object[] args = new Object[PInt.intValueExact(arraySize)];
+                        for (int i = 0; i < args.length; i++) {
+                            try {
+                                args[i] = asPythonObjectNode.execute(argsArrayLib.readArrayElement(argsArray, i));
+                            } catch (InvalidArrayIndexException e) {
+                                throw CompilerDirectives.shouldNotReachHere();
+                            }
+                        }
+                        Object callable = asPythonObjectNode.execute(callableObj);
+                        PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
+                        return toNewRefNode.execute(callNode.execute(frame, callable, args, keywords));
+                    } catch (UnsupportedMessageException | OverflowException e) {
+                        // I think we can just assume that there won't be more than
+                        // Integer.MAX_VALUE arguments.
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                } catch (PException e) {
+                    // transformExceptionToNativeNode acts as a branch profile
+                    transformExceptionToNativeNode.execute(frame, e);
+                    return nullToSulongNode.execute(getNativeNullNode.execute());
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     @ReportPolymorphism
