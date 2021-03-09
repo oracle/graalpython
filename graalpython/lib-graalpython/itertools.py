@@ -527,11 +527,14 @@ class accumulate(object):
 
     Return series of accumulated sums."""
 
+    _marker = object()
+
     @__graalpython__.builtin_method
-    def __init__(self, iterable, func=None):
+    def __init__(self, iterable, func=None, *, initial=None):
         self.iterable = iter(iterable)
         self.func = func
-        self.total = None
+        self.total = accumulate._marker
+        self.initial = initial
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -539,16 +542,35 @@ class accumulate(object):
 
     @__graalpython__.builtin_method
     def __next__(self):
+        if self.initial is not None:
+            self.total = self.initial
+            self.initial = None
+            return self.total
         value = next(self.iterable)
-        if self.total is None:
+        if self.total is accumulate._marker:
             self.total = value
             return value
 
         if self.func is None:
-            self.total += value
+            self.total = self.total + value
         else:
             self.total = self.func(self.total, value)
         return self.total
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        if self.initial is not None:
+            it = chain((self.initial,), self.iterable)
+            return type(self), (it, self.func), None
+        elif self.total is None:
+            it = accumulate(chain((self.total,), self.iterable), self.func)
+            return islice, (it, 1, None)
+        else:
+            return type(self), (self.iterable, self.func), self.total
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        self.total = state
 
 
 class dropwhile(object):
