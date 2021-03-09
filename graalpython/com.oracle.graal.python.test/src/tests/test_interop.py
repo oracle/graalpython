@@ -522,6 +522,99 @@ if sys.implementation.name == "graalpython":
             assert isinstance(h, HashMap)
             assert isinstance(h, Map)
 
+    def test_is_type():
+        import java
+        from java.util.logging import Handler
+        from java.util import Set
+        from java.util.logging import LogRecord
+        from java.util.logging import Level
+        
+        assert java.is_type(Handler)
+        assert java.is_type(LogRecord)
+        assert java.is_type(Set)
+        assert java.is_type(Level)
+        
+        lr = LogRecord(Level.ALL, "message")
+        assert not java.is_type(lr)
+        assert not java.is_type(Level.ALL)
+        assert not java.is_type("ahoj")
+                
+    def test_extend_java_class_01():
+        from java.util.logging import Handler
+        from java.util.logging import LogRecord
+        from java.util.logging import Level
+
+        lr = LogRecord(Level.ALL, "The first message")
+
+        # extender object
+        class MyHandler (Handler):
+            "This is MyHandler doc"
+            counter = 0;
+            def isLoggable(self, logrecord):
+                self.counter = self.counter + 1
+                return self.__super__.isLoggable(logrecord)
+            def sayHello(self):
+                return 'Hello'  
+
+        h = MyHandler()
+        
+        # accessing extender object via this property
+        assert hasattr(h, 'this')
+        assert hasattr(h.this, 'sayHello')
+        assert hasattr(h.this, 'counter')
+        assert hasattr(h.this, 'isLoggable')
+        
+        #accessing java methods or methods from extender object directly
+        assert hasattr(h, 'close')
+        assert hasattr(h, 'flush')
+        assert hasattr(h, 'getEncoding')
+        assert hasattr(h, 'setEncoding')
+        
+        
+        assert h.this.counter == 0
+        assert h.isLoggable(lr)
+        assert h.this.counter == 1
+        assert h.isLoggable(lr)
+        assert h.isLoggable(lr)
+        assert h.this.counter == 3
+        
+        assert 'Hello' == h.this.sayHello()
+
+        h2 = MyHandler()
+        assert h2.this.counter == 0
+        assert h2.isLoggable(lr)
+        assert h2.this.counter == 1
+        assert h.this.counter == 3
+        
+    def test_extend_java_class_02():
+        from java.math import BigDecimal
+        try:
+            class MyDecimal(BigDecimal):
+                pass
+        except TypeError:
+            assert True
+        else:
+            assert False
+        
+    def test_extend_java_class_03():
+        #test of java constructor
+        from java.util.logging import LogRecord
+        from java.util.logging import Level
+        
+        class MyLogRecord(LogRecord):
+            def getLevel(self):
+                if self.__super__.getLevel() == Level.FINEST:
+                    self.__super__.setLevel(Level.WARNING)
+                return self.__super__.getLevel()
+        
+        message = "log message"
+        my_lr1 = MyLogRecord(Level.WARNING, message)
+        assert my_lr1.getLevel() == Level.WARNING
+        assert my_lr1.getMessage() == message
+        
+        my_lr2 = MyLogRecord(Level.FINEST, message)
+        assert my_lr2.getLevel() == Level.WARNING
+        
     def test_foreign_slice_setting():
         import java
         il = java.type("int[]")(20)

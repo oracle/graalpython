@@ -95,6 +95,8 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -103,6 +105,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleOptions;
@@ -116,6 +119,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
@@ -624,4 +630,53 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    @Builtin(name = "extend", minNumOfPositionalArgs = 1, doc = "Extends Java class and return HostAdapterCLass")
+    @GenerateNodeFactory
+    public abstract static class JavaExtendNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doIt(Object value) {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new UnsupportedOperationException(ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
+            }
+            if (ImageInfo.inImageRuntimeCode()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raise(SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
+            }
+
+            Env env = getContext().getEnv();
+            if (!isType(value, env)) {
+                throw raise(TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
+            }
+
+            final Class<?>[] types = new Class<?>[1];
+            types[0] = (Class<?>) env.asHostObject(value);
+            try {
+                return env.createHostAdapterClass(types);
+            } catch (Exception ex) {
+                throw raise(TypeError, ex.getMessage(), ex);
+            }
+        }
+
+        protected static boolean isType(Object obj, TruffleLanguage.Env env) {
+            return env.isHostObject(obj) && env.asHostObject(obj) instanceof Class<?>;
+        }
+
+    }
+
+    @Builtin(name = "super", minNumOfPositionalArgs = 1, doc = "Returns HostAdapter instance of the object or None")
+    @GenerateNodeFactory
+    public abstract static class JavaSuperNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object doIt(Object value) {
+            try {
+                return InteropLibrary.getUncached().readMember(value, "super");
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                return PNone.NONE;
+            }
+        }
+    }
+
 }
