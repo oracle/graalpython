@@ -41,6 +41,12 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
+ModuleType = type(sys)
+
+
+class SubModuleType(ModuleType):
+    pass
+
 
 def _reference_format_specifier_w_star(args):
     bytes_like = args[0]
@@ -403,7 +409,7 @@ class TestModsupport(CPyExtTestCase):
             va_end(va);
             return result;
         }
-        
+
         static PyObject* wrap_PyArg_VaParseTupleAndKeywords_SizeT(PyObject* argTuple) {
             PyObject* out0 = NULL;
             int out1 = 0;
@@ -439,3 +445,21 @@ class TestModsupport(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    # For some reason, some 'PyModule_*' functions are in 'modsupport.h'
+    test_PyModule_SetDocString = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (ModuleType("hello"), "hello doc"),
+            (SubModuleType("subhello"), "subhello doc"),
+        ),
+        code='''
+        static PyObject* wrap_PyModule_SetDocString(PyObject* object, char* doc) {
+            PyModule_SetDocString(object, (const char *)doc);
+            return PyObject_GetAttrString(object, "__doc__");
+        }
+        ''',
+        resultspec="O",
+        argspec='Os',
+        callfunction="wrap_PyModule_SetDocString",
+        arguments=["PyObject* object", "char* doc"],
+    )
