@@ -25,13 +25,23 @@ import sys
 
 
 class repeat():
+    """
+    repeat(object [,times]) -> create an iterator which returns the object\n\
+    for the specified number of times.  If not specified, returns the object\n\
+    endlessly.
+    """
     @__graalpython__.builtin_method
-    def __init__(self, obj, times=None):
-        self.obj = obj
-        self.times = times
+    def __init__(self, object, times=None):
+        self.element = object
         if times is not None and not isinstance(times, int):
             raise TypeError(f"integer argument expected, got {times.__class__.__name__}")
-        self.count = times if times and times > 0 else 0
+        if times is not None:
+            if times < 0:
+                self.cnt = 0
+            else:
+                self.cnt = times
+        else:
+            self.cnt = -1
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -39,27 +49,30 @@ class repeat():
 
     @__graalpython__.builtin_method
     def __next__(self):
-        if self.times is not None:
-            if self.count == 0:
-                raise StopIteration
-            self.count -= 1
-        return self.obj
+        if self.cnt == 0:
+            raise StopIteration
+        elif self.cnt > 0:
+            self.cnt -= 1
+        return self.element
 
     @__graalpython__.builtin_method
     def __length_hint__(self):
-        return self.count
+        if self.cnt == -1:
+            raise TypeError("len() of unsized object")
+        return self.cnt
 
     @__graalpython__.builtin_method
     def __reduce__(self):
-        if self.times is not None:
-            return (self, (self.obj, self.count))
-        return (self, (self.obj,))
+        if self.cnt >= 0:
+            return self, (self.element, self.cnt)
+        return self, (self.element,)
 
     @__graalpython__.builtin_method
     def __repr__(self):
-        if self.times is not None:
-            return "{}({}, {})".format(type(self).__name__, self.obj, self.count)
-        return "{}({})".format(type(self).__name__, self.obj)
+        if self.cnt == -1:
+            return "{}({})".format(type(self).__name__, self.element)
+        else:
+            return "{}({}, {})".format(type(self).__name__, self.element, self.cnt)
 
 
 class chain():
