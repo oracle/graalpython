@@ -159,11 +159,41 @@ class starmap():
 class islice(object):
     @__graalpython__.builtin_method
     def __init__(self, iterable, *args):
-        self._iterable = enumerate(iter(iterable))
-        slice = list(args)
-        if len(slice) >= 2 and slice[1] is None:
-             slice[1] = sys.maxsize
-        self._indexes = iter(range(*slice))
+        start = 0
+        stop = -1
+        step = 1
+        if len(args) not in [1, 2, 3]:
+            raise TypeError("islice(seq, stop) or islice(seq, start, stop[, step])")
+        if len(args) == 1:
+            if args[0] != None:
+                stop = int(args[0])
+        else:
+            if args[0] != None:
+                try:
+                    start = int(args[0])
+                except:
+                    start = -1
+            if args[1] != None:
+                try:
+                    stop = int(args[1])
+                except:
+                    raise ValueError("Stop argument for islice() must be None or ean integer: 0 <= x <= sys.maxsize.")
+        if start < 0 or stop < -1 or start > sys.maxsize or stop > sys.maxsize:
+            raise ValueError("Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.")
+        if len(args) == 3:
+            if args[2] != None:
+                try:
+                    step = int(args[2])
+                except:
+                    step = -1
+        if step < 1:
+            raise ValueError("Step for islice() must be a positive integer or None.")
+
+        self._it = iter(iterable)
+        self._next = start
+        self._stop = stop
+        self._step = step
+        self._cnt = 0
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -171,11 +201,46 @@ class islice(object):
 
     @__graalpython__.builtin_method
     def __next__(self):
-        index = next(self._indexes) # may raise StopIteration
-        while True:
-            i, element = next(self._iterable) # may raise StopIteration
-            if i == index:
-                return element
+        it = self._it
+        stop = self._stop
+        if not it:
+            raise StopIteration
+        while self._cnt < self._next:
+            try:
+                item = next(it)
+            except:
+                # C code uses any exception to clear the iterator
+                self._it = None
+                raise
+            self._cnt += 1
+        if stop != -1 and self._cnt >= stop:
+            self._it = None
+            raise StopIteration
+        try:
+            item = next(it)
+        except:
+            self._it = None
+            raise
+        self._cnt += 1
+        oldnext = self._next
+        self._next += self._step
+        if self._next < oldnext or (stop != -1 and self._next > stop):
+            self._next = stop
+        return item
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        if self._it is None:
+            return type(self), (iter([]), 0), 0
+        if self._stop == -1:
+            stop = None
+        else:
+            stop = self._stop
+        return type(self), (self._it, self._next, stop, self._step), self._cnt
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        self._cnt = int(state)
 
 
 class count(object):
