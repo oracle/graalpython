@@ -1091,8 +1091,8 @@ public abstract class TypeNodes {
                             baseSlots == null && typeSlots != null && length(((PSequence) typeSlots).getSequenceStorage(), getArrayNode) != 0) {
                 return true;
             }
-            Object typeNewMethod = LookupAttributeInMRONode.lookupSlowSkipPythonClasses(type, __NEW__);
-            Object baseNewMethod = LookupAttributeInMRONode.lookupSlowSkipPythonClasses(base, __NEW__);
+            Object typeNewMethod = LookupAttributeInMRONode.lookupSlowSkipPythonClassesNoForceTypeInRead(type, __NEW__);
+            Object baseNewMethod = LookupAttributeInMRONode.lookupSlowSkipPythonClassesNoForceTypeInRead(base, __NEW__);
             if (typeNewMethod != baseNewMethod) {
                 return true;
             }

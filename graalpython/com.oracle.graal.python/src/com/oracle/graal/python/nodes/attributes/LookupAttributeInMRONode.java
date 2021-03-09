@@ -406,8 +406,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     }
 
     @TruffleBoundary
-    public static Object lookupSlowSkipPythonClasses(Object klass, Object key) {
-        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), true);
+    public static Object lookupSlowSkipPythonClassesNoForceTypeInRead(Object klass, Object key) {
+        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
     }
 
     private static Object lookup(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
