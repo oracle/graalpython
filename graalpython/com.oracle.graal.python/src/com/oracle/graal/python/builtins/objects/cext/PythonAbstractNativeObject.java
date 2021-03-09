@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -188,20 +189,25 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @Exclusive @Cached ConditionProfile resultProfile,
                     @Exclusive @Cached ConditionProfile gotState,
                     @Cached IsBuiltinClassProfile isInt,
-                    @Cached WarnNode warnNode) {
-        if (isSubtypeNode.execute(plib.getLazyPythonClass(this), PythonBuiltinClassType.PInt)) {
-            if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
-                VirtualFrame frame = null;
-                if (gotState.profile(threadState != null)) {
-                    frame = PArguments.frameForCall(threadState);
+                    @Cached WarnNode warnNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (isSubtypeNode.execute(plib.getLazyPythonClass(this), PythonBuiltinClassType.PInt)) {
+                if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
+                    VirtualFrame frame = null;
+                    if (gotState.profile(threadState != null)) {
+                        frame = PArguments.frameForCall(threadState);
+                    }
+                    warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                    ErrorMessages.P_RETURNED_NON_P,
+                                    this, "__index__", "int", this, "int");
                 }
-                warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                ErrorMessages.P_RETURNED_NON_P,
-                                this, "__index__", "int", this, "int");
+                return this; // subclasses of 'int' should do early return
+            } else {
+                return asIndexWithState(threadState, plib, methodLib, resultLib, raise, isSubtypeNode, noIndex, resultProfile, gotState, isInt, warnNode);
             }
-            return this; // subclasses of 'int' should do early return
-        } else {
-            return asIndexWithState(threadState, plib, methodLib, resultLib, raise, isSubtypeNode, noIndex, resultProfile, gotState, isInt, warnNode);
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -210,14 +216,19 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached ToSulongNode toSulong,
                     @Exclusive @Cached ToJavaNode toJava,
-                    @Exclusive @Cached PCallCapiFunction callGetDictNode) {
-        Object javaDict = toJava.execute(callGetDictNode.call(FUN_PY_OBJECT_GENERIC_GET_DICT, toSulong.execute(this)));
-        if (javaDict instanceof PDict) {
-            return (PDict) javaDict;
-        } else if (javaDict == PNone.NO_VALUE) {
-            return null;
-        } else {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, javaDict);
+                    @Exclusive @Cached PCallCapiFunction callGetDictNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object javaDict = toJava.execute(callGetDictNode.call(FUN_PY_OBJECT_GENERIC_GET_DICT, toSulong.execute(this)));
+            if (javaDict instanceof PDict) {
+                return (PDict) javaDict;
+            } else if (javaDict == PNone.NO_VALUE) {
+                return null;
+            } else {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, javaDict);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -232,7 +243,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         @SuppressWarnings("unused")
         static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
                         @Exclusive @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass) {
+                        @Exclusive @Cached GilNode gil,
+                        @Exclusive @Cached("getNativeClassUncached(object, gil)") Object cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
             // happen. OTOH, CPython also has caches that can become invalid when someone just
@@ -244,7 +256,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         @SuppressWarnings("unused")
         static Object getNativeClassCached(PythonAbstractNativeObject object,
                         @Exclusive @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass,
+                        @Exclusive @Cached GilNode gil,
+                        @Exclusive @Cached("getNativeClassUncached(object, gil)") Object cachedClass,
                         @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
             // TODO same as for 'getNativeClassCachedIdentity'
             return cachedClass;
@@ -257,9 +270,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         static Object getNativeClassByMember(PythonAbstractNativeObject object,
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
-            // do not convert wrap 'object.object' since that is really the native pointer object
-            return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
+                        @Exclusive @Cached ProfileClassNode classProfile, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException {
+            boolean mustRelease = gil.acquire();
+            try {
+                // do not convert wrap 'object.object' since that is really the native pointer
+                // object
+                return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(guards = {"!lib.hasMembers(object.getPtr())"}, //
@@ -271,27 +290,38 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached CExtNodes.GetLLVMType getLLVMType,
                         @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
-            Object typedPtr = callGetObTypeNode.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyObject));
-            return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberName())));
+                        @Exclusive @Cached ProfileClassNode classProfile, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object typedPtr = callGetObTypeNode.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyObject));
+                return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberName())));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember", "getNativeClassByMemberAttachType"})
         static Object getNativeClass(PythonAbstractNativeObject object,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached AsPythonObjectNode toJavaNode,
-                        @Exclusive @Cached ProfileClassNode classProfile) {
-            // do not convert wrap 'object.object' since that is really the native pointer object
-            return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
+                        @Exclusive @Cached ProfileClassNode classProfile, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                // do not convert wrap 'object.object' since that is really the native pointer
+                // object
+                return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         static boolean isSame(InteropLibrary lib, PythonAbstractNativeObject cachedObject, PythonAbstractNativeObject object) {
             return lib.isIdentical(cachedObject.object, object.object, lib);
         }
 
-        public static Object getNativeClassUncached(PythonAbstractNativeObject object) {
+        public static Object getNativeClassUncached(PythonAbstractNativeObject object, GilNode gil) {
             // do not wrap 'object.object' since that is really the native pointer object
-            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNodeGen.getUncached());
+            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNodeGen.getUncached(), gil);
         }
 
     }
@@ -306,12 +336,17 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @Cached("createClassProfile()") ValueProfile otherProfile,
                     @CachedLibrary(limit = "1") InteropLibrary thisLib,
                     @CachedLibrary("this.object") InteropLibrary objLib,
-                    @CachedLibrary(limit = "1") InteropLibrary otherObjLib) {
-        Object profiled = otherProfile.profile(other);
-        if (profiled instanceof PythonAbstractNativeObject) {
-            return objLib.isIdentical(object, ((PythonAbstractNativeObject) profiled).object, otherObjLib);
+                    @CachedLibrary(limit = "1") InteropLibrary otherObjLib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object profiled = otherProfile.profile(other);
+            if (profiled instanceof PythonAbstractNativeObject) {
+                return objLib.isIdentical(object, ((PythonAbstractNativeObject) profiled).object, otherObjLib);
+            }
+            return otherInterop.isIdentical(profiled, this, thisLib);
+        } finally {
+            gil.release(mustRelease);
         }
-        return otherInterop.isIdentical(profiled, this, thisLib);
     }
 
     @ExportMessage
@@ -320,8 +355,13 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         @Specialization
         static TriState doPythonAbstractNativeObject(PythonAbstractNativeObject receiver, PythonAbstractNativeObject other,
                         @CachedLibrary("receiver.object") InteropLibrary objLib,
-                        @CachedLibrary(limit = "1") InteropLibrary otherObjectLib) {
-            return TriState.valueOf(objLib.isIdentical(receiver.object, other.object, otherObjectLib));
+                        @CachedLibrary(limit = "1") InteropLibrary otherObjectLib, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return TriState.valueOf(objLib.isIdentical(receiver.object, other.object, otherObjectLib));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Fallback
@@ -333,8 +373,13 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
     @ExportMessage(library = InteropLibrary.class)
     boolean isMetaObject(
-                    @Exclusive @Cached TypeNodes.IsTypeNode isType) {
-        return isType.execute(this);
+                    @Exclusive @Cached TypeNodes.IsTypeNode isType, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isType.execute(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -342,19 +387,24 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached IsSubtypeNode isSubtype) throws UnsupportedMessageException {
-        if (!isType.execute(this)) {
-            throw UnsupportedMessageException.create();
+                    @Cached IsSubtypeNode isSubtype, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (!isType.execute(this)) {
+                throw UnsupportedMessageException.create();
+            }
+            return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+        } finally {
+            gil.release(mustRelease);
         }
-        return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
     }
 
     @ExportMessage
     String getMetaSimpleName(
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
                     @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode,
-                    @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode) throws UnsupportedMessageException {
-        return getSimpleName(getMetaQualifiedName(isType, getTpNameNode, castToJavaStringNode));
+                    @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        return getSimpleName(getMetaQualifiedName(isType, getTpNameNode, castToJavaStringNode, gil));
     }
 
     @TruffleBoundary
@@ -370,15 +420,20 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     String getMetaQualifiedName(
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
                     @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode,
-                    @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode) throws UnsupportedMessageException {
-        if (!isType.execute(this)) {
-            throw UnsupportedMessageException.create();
-        }
-        // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+                    @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
         try {
-            return castToJavaStringNode.execute(getTpNameNode.execute(this, NativeMember.TP_NAME));
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere();
+            if (!isType.execute(this)) {
+                throw UnsupportedMessageException.create();
+            }
+            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+            try {
+                return castToJavaStringNode.execute(getTpNameNode.execute(this, NativeMember.TP_NAME));
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 }
