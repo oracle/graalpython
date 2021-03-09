@@ -593,10 +593,11 @@ class groupby(object):
     """
     @__graalpython__.builtin_method
     def __init__(self, iterable, key=None):
-        self._iterator = iter(iterable)
-        self._keyfunc = key
         self._marker = object()
         self._tgtkey = self._currkey = self._currvalue = self._marker
+        self._currgrouper = None
+        self._keyfunc = key
+        self._it = iter(iterable)
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -604,38 +605,42 @@ class groupby(object):
 
     @__graalpython__.builtin_method
     def __next__(self):
-        self._skip_to_next_iteration_group()
-        key = self._tgtkey = self._currkey
-        grouper = _grouper(self, key)
-        return (key, grouper)
-
-    @__graalpython__.builtin_method
-    def _skip_to_next_iteration_group(self):
+        self._currgrouper = None
+        marker = self._marker
         while True:
-            if self._currkey is self._marker:
+            if self._currkey is marker:
                 pass
-            elif self._tgtkey is self._marker:
+            elif self._tgtkey is marker:
                 break
             else:
                 if not self._tgtkey == self._currkey:
                     break
+            self._groupby_step()
 
-            newvalue = next(self._iterator)
-            if self._keyfunc is None:
-                newkey = newvalue
-            else:
-                newkey = self._keyfunc(newvalue)
+        self._tgtkey = self._currkey
+        grouper = _grouper(self, self._tgtkey)
+        return (self._currkey, grouper)
 
-            self._currkey = newkey
-            self._currvalue = newvalue
+    @__graalpython__.builtin_method
+    def _groupby_step(self):
+        newvalue = next(self._it)
+        if self._keyfunc is None:
+            newkey = newvalue
+        else:
+            newkey = self._keyfunc(newvalue)
+        self._currvalue = newvalue
+        self._currkey = newkey
 
 
 class _grouper():
     @__graalpython__.builtin_method
-    def __init__(self, groupby, tgtkey):
-        self.groupby = groupby
-        self.tgtkey = tgtkey
-        self._marker = groupby._marker
+    def __init__(self, parent, tgtkey):
+        if not isinstance(parent, groupby):
+            raise TypeError("incorrect usage of internal _grouper")
+        parent._currgouper = self
+        self._parent = parent
+        self._tgtkey = tgtkey
+        self._marker = parent._marker
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -643,24 +648,16 @@ class _grouper():
 
     @__graalpython__.builtin_method
     def __next__(self):
-        groupby = self.groupby
-        if groupby._currvalue is self._marker:
-            newvalue = next(groupby._iterator)
-            if groupby._keyfunc is None:
-                newkey = newvalue
-            else:
-                newkey = groupby._keyfunc(newvalue)
-            assert groupby._currvalue is self._marker
-            groupby._currkey = newkey
-            groupby._currvalue = newvalue
-
-        assert groupby._currkey is not self._marker
-        if not self.tgtkey == groupby._currkey:
-            raise StopIteration(None)
-        result = groupby._currvalue
-        groupby._currvalue = self._marker
-        groupby._currkey = self._marker
-        return result
+        gbo = self._parent
+        if gbo._currgouper != self:
+            raise StopIteration
+        if gbo._currvalue is self._marker:
+            gbo._groupby_step()
+        if not (self._tgtkey == gbo._currkey):
+            raise StopIteration
+        r = gbo._currvalue
+        gbo._currvalue = self._marker
+        return r
 
 
 class combinations():
