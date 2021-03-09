@@ -935,6 +935,7 @@ class cycle():
         self.saved = []
         self.iterable = iter(iterable)
         self.index = 0
+        self.firstpass = False
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -942,26 +943,42 @@ class cycle():
 
     @__graalpython__.builtin_method
     def __next__(self):
-        if self.index > 0:
-            if not self.saved:
-                raise StopIteration
-            if len(self.saved) > self.index:
-                obj = self.saved[self.index]
-                self.index += 1
-            else:
-                obj = self.saved[0]
-                self.index = 1
-        else:
+        if self.iterable:
             try:
                 obj = next(self.iterable)
             except StopIteration:
-                if not self.saved:
-                    raise
-                obj = self.saved[0]
-                self.index = 1
+                self.iterable = None
             else:
-                self.saved.append(obj)
+                if not self.firstpass:
+                    self.saved.append(obj)
+                return obj
+        if not self.saved:
+            raise StopIteration
+        obj = self.saved[self.index]
+        self.index += 1
+        if self.index >= len(self.saved):
+            self.index = 0
         return obj
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        if self.iterable is None:
+            it = iter(self.saved)
+            if self.index:
+                it.__setstate__(self.index)
+            return type(self), (it,), (self.saved, True)
+        return type(self), (self.iterable,), (self.saved, self.firstpass)
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        if (not isinstance(state, tuple) or
+            len(state) != 2 or
+            not isinstance(state[0], list) or
+            not isinstance(state[1], int)):
+            raise TypeError("invalid state tuple")
+        self.saved = state[0]
+        self.firstpass = state[1]
+        self.index = 0
 
 
 class compress():
