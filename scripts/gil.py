@@ -260,8 +260,8 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
         print("TO PROCESS: {} files".format(cnt))
     if check_style and not count:
         # running the checkstyle gate (twice)
-        for i in range(2):
-            os.system("mx python-gate --tags style,python-license")
+        # for i in range(2):
+        os.system("mx python-gate --tags style,python-license")
 
 
 if __name__ == '__main__':

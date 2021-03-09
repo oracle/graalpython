@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -105,8 +106,13 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ReadFieldNode readFieldNode) {
-        return readFieldNode.execute(lib.getDelegate(this), member);
+                    @Exclusive @Cached ReadFieldNode readFieldNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readFieldNode.execute(lib.getDelegate(this), member);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ImportStatic({SpecialMethodNames.class, PyGetSetDefWrapper.class})
@@ -163,18 +169,24 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
-                    @Exclusive @Cached FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException {
-        if (!DOC.equals(member)) {
-            throw UnsupportedMessageException.create();
-        }
-        Object delegate = lib.getDelegate(this);
-        if (delegate instanceof PythonObject) {
-            // Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
-            // circumvents any checks if the attribute may be written according to the common Python
-            // rules. So, directly write to the Python object's storage.
-            writeAttrToDynamicObjectNode.execute(((PythonObject) delegate).getStorage(), SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
-        } else {
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached FromCharPointerNode fromCharPointerNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (!DOC.equals(member)) {
+                throw UnsupportedMessageException.create();
+            }
+            Object delegate = lib.getDelegate(this);
+            if (delegate instanceof PythonObject) {
+                // Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
+                // circumvents any checks if the attribute may be written according to the common
+                // Python
+                // rules. So, directly write to the Python object's storage.
+                writeAttrToDynamicObjectNode.execute(((PythonObject) delegate).getStorage(), SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
