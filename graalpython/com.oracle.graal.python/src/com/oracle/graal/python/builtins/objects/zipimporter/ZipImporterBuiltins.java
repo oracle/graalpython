@@ -132,6 +132,12 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Override
+        public void close() throws IOException {
+            super.close();
+            in.close();
+        }
+
+        @Override
         public int read() throws IOException {
             if (readFirstLoc) {
                 // This expect that the bytes of the first LOC was consumed by this stream

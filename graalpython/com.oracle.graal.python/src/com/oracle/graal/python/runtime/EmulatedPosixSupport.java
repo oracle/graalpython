@@ -250,19 +250,21 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static final int S_IFDIR = 0040000;
     private static final int S_IFREG = 0100000;
 
-    private final PythonContext context;
     private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
-    public EmulatedPosixSupport(PythonContext context) {
-        this.context = context;
+    public EmulatedPosixSupport(PythonContext context, boolean useNfiForSocketFd) {
+        super(context, useNfiForSocketFd);
         setEnv(context.getEnv());
     }
 
     @Override
-    public void postInitialize() {
-        environ.putAll(System.getenv());
+    public void setEnv(Env env) {
+        super.setEnv(env);
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            environ.putAll(System.getenv());
+        }
     }
 
     @ExportMessage
@@ -459,7 +461,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     continue errfdsCheck;
                 }
             }
-            compatibilityIgnored("POSIX emultaion layer doesn't support waiting on exceptional conditions in select()");
+            compatibilityIgnored("POSIX emulation layer doesn't support waiting on exceptional conditions in select()");
             break;
         }
 
@@ -988,7 +990,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             // best effort
             canonical = file.getAbsoluteFile();
         }
-        return context.getResources().getInodeId(canonical.getPath());
+        return getInodeId(canonical.getPath());
     }
 
     @TruffleBoundary(allowInlining = true)

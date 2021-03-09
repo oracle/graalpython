@@ -107,12 +107,28 @@ int32_t set_inheritable(int32_t fd, int32_t inheritable) {
 int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
     int fixedFlags = flags;
     // TODO remove this once we properly synchronize constants between Java and C
-    if (flags & 64) {
-        fixedFlags &= ~64;
+
+#define WRONG_O_CLOEXEC 524288
+#define WRONG_O_APPEND 1024
+#define WRONG_O_TRUNC 512
+#define WRONG_O_EXCL 128
+#define WRONG_O_CREAT 64
+
+    fixedFlags &= ~(WRONG_O_CLOEXEC | WRONG_O_APPEND | WRONG_O_TRUNC | WRONG_O_EXCL | WRONG_O_CREAT);
+
+    if (flags & WRONG_O_CREAT) {
         fixedFlags |= O_CREAT;
     }
-    if (flags & 524288) {
-        fixedFlags &= ~524288;
+    if (flags & WRONG_O_EXCL) {
+        fixedFlags |= O_EXCL;
+    }
+    if (flags & WRONG_O_TRUNC) {
+        fixedFlags |= O_TRUNC;
+    }
+    if (flags & WRONG_O_APPEND) {
+        fixedFlags |= O_APPEND;
+    }
+    if (flags & WRONG_O_CLOEXEC) {
         fixedFlags |= O_CLOEXEC;
     }
     return openat(fixDirFd(dirFd), pathname, fixedFlags, mode);
@@ -199,7 +215,7 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
 
     struct timeval timeout = {timeoutSec, timeoutUsec};
 
-    int result = select(nfds, &readfdsSet, &writefdsSet, &errfdsSet, timeoutSec > 0 ? &timeout : NULL);
+    int result = select(nfds, &readfdsSet, &writefdsSet, &errfdsSet, timeoutSec >= 0 ? &timeout : NULL);
 
     // fill in the output parameter
     fill_select_result(readfds, readfdsLen, &readfdsSet, selected, 0);
@@ -322,7 +338,7 @@ int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) 
 }
 
 int32_t call_mkdirat(int32_t dirFd, const char *pathname, int32_t mode) {
-    return mkdirat(dirFd, pathname, mode);
+    return mkdirat(fixDirFd(dirFd), pathname, mode);
 }
 
 int32_t call_getcwd(char *buf, uint64_t size) {
@@ -403,7 +419,7 @@ int32_t call_futimens(int32_t fd, int64_t *timespec) {
 }
 
 int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
-    return renameat(oldDirFd, oldPath, newDirFd, newPath);
+    return renameat(fixDirFd(oldDirFd), oldPath, fixDirFd(newDirFd), newPath);
 }
 
 int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
@@ -426,7 +442,7 @@ int32_t call_fchmod(int32_t fd, int32_t mode) {
 }
 
 int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
-    return readlinkat(dirFd, path, buf, size);
+    return readlinkat(fixDirFd(dirFd), path, buf, size);
 }
 
 int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) {
@@ -506,31 +522,19 @@ int32_t call_system(const char *pathname) {
     return system(pathname);
 }
 
-void *call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
+int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
     void *result = mmap(NULL, length, prot, flags, fd, offset);
-    return result == MAP_FAILED ? NULL : result;
+    return result == MAP_FAILED ? 0 : (int64_t) result;
 }
 
-int32_t call_munmap(void* address, int64_t length) {
-    return munmap(address, length);
+int32_t call_munmap(int64_t address, int64_t length) {
+    return munmap((void *) address, length);
 }
 
-void call_msync(void* address, int64_t offset, int64_t length) {
+void call_msync(int64_t address, int64_t offset, int64_t length) {
     // TODO: can be generalized to also accept different flags,
     // but MS_SYNC and such seem to be defined to different values across systems
-    msync(address + offset, length, MS_SYNC);
-}
-
-int8_t read_byte(int8_t *address, int64_t index) {
-    return address[index];
-}
-
-void write_bytes(int8_t *address, int8_t* buffer, int64_t index, int32_t length) {
-    memcpy(address + index, buffer, length);
-}
-
-void read_bytes(int8_t *address, int8_t* buffer, int64_t index, int32_t length) {
-    memcpy(buffer, address + index, length);
+    msync(((int8_t *) address) + offset, length, MS_SYNC);
 }
 
 int32_t get_errno() {

@@ -522,6 +522,7 @@ if sys.implementation.name == "graalpython":
             assert isinstance(h, HashMap)
             assert isinstance(h, Map)
 
+    @skipIf(is_native, "not supported in native mode")
     def test_is_type():
         import java
         from java.util.logging import Handler
@@ -538,7 +539,8 @@ if sys.implementation.name == "graalpython":
         assert not java.is_type(lr)
         assert not java.is_type(Level.ALL)
         assert not java.is_type("ahoj")
-                
+
+    @skipIf(is_native, "not supported in native mode")
     def test_extend_java_class_01():
         from java.util.logging import Handler
         from java.util.logging import LogRecord
@@ -585,7 +587,8 @@ if sys.implementation.name == "graalpython":
         assert h2.isLoggable(lr)
         assert h2.this.counter == 1
         assert h.this.counter == 3
-        
+
+    @skipIf(is_native, "not supported in native mode")
     def test_extend_java_class_02():
         from java.math import BigDecimal
         try:
@@ -595,7 +598,8 @@ if sys.implementation.name == "graalpython":
             assert True
         else:
             assert False
-        
+
+    @skipIf(is_native, "not supported in native mode")
     def test_extend_java_class_03():
         #test of java constructor
         from java.util.logging import LogRecord

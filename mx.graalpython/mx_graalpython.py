@@ -1470,7 +1470,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
-                '-H:+DetectUserDirectoriesInImageHeap'
+                '-H:+DetectUserDirectoriesInImageHeap',
+                '-Dpolyglot.python.PosixModuleBackend=native'
             ],
             language='python',
         )
@@ -1787,7 +1788,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
         for var in ["CC", "CFLAGS", "LDFLAGS"]:
             env.pop(var, None)
-
+        args.insert(0, '--PosixModuleBackend=java')
         return do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
     def _dev_headers_dir(self):

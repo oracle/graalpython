@@ -43,9 +43,12 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
@@ -78,6 +81,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
 
+import sun.misc.Unsafe;
+
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
  * that the native access is allowed or to configure managed LLVM backend for NFI.
@@ -95,15 +100,28 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
 
+    private static final Unsafe UNSAFE = initUnsafe();
+
+    private static Unsafe initUnsafe() {
+        try {
+            return Unsafe.getUnsafe();
+        } catch (SecurityException se) {
+            try {
+                Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+                theUnsafe.setAccessible(true);
+                return (Unsafe) theUnsafe.get(Unsafe.class);
+            } catch (Exception e) {
+                throw new UnsupportedOperationException("Cannot initialize Unsafe for the native POSIX backend", e);
+            }
+        }
+    }
+
     private enum PosixNativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
-        read_byte("(pointer, sint64):sint8"),
-        read_bytes("(pointer, [sint8], sint64, sint32):void"),
-        write_bytes("(pointer, [sint8], sint64, sint32):void"),
-        call_mmap("(sint64, sint32, sint32, sint32, sint64):pointer"),
-        call_munmap("(pointer, sint64):sint32"),
-        call_msync("(pointer, sint64, sint64):void"),
+        call_mmap("(sint64, sint32, sint32, sint32, sint64):sint64"),
+        call_munmap("(sint64, sint64):sint32"),
+        call_msync("(sint64, sint64, sint64):void"),
         call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint32):sint32"),
@@ -268,7 +286,7 @@ public final class NFIPosixSupport extends PosixSupport {
             try {
                 posix.nfiLibrary = posix.context.getEnv().parseInternal(loadSrc).call();
             } catch (Throwable e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+                throw CompilerDirectives.shouldNotReachHere("Unable to load native posix support library", e);
             }
         }
 
@@ -298,18 +316,33 @@ public final class NFIPosixSupport extends PosixSupport {
     private volatile Object nfiLibrary;
     private final AtomicReferenceArray<Object> cachedFunctions;
 
-    private NFIPosixSupport(PythonContext context, String nfiBackend) {
+    public NFIPosixSupport(PythonContext context, String nfiBackend) {
+        assert nfiBackend.equals("native") || nfiBackend.equals("llvm");
         this.context = context;
         this.nfiBackend = nfiBackend;
         this.cachedFunctions = new AtomicReferenceArray<>(PosixNativeFunction.values().length);
+        setEnv(context.getEnv());
     }
 
-    public static NFIPosixSupport createNative(PythonContext context) {
-        return new NFIPosixSupport(context, "native");
-    }
-
-    public static NFIPosixSupport createLLVM(PythonContext context) {
-        return new NFIPosixSupport(context, "llvm");
+    @Override
+    public void setEnv(Env env) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            return;
+        }
+        // Java NIO (and TruffleFile) do not expect/support changing native working directory since
+        // it is inherently thread-unsafe operation. It is not defined how NIO behaves when native
+        // cwd changes, thus we need to prevent TruffleFile from resolving relative paths using
+        // NIO by setting Truffle cwd to a know value. This cannot be done lazily in chdir() because
+        // native cwd is global, but Truffle cwd is per context.
+        // TruffleFile will be unaware of the real working directory and keep resolving against the
+        // original working directory. This should not matter since we do not use TruffleFile for
+        // ordinary I/O when using NFI backend.
+        try {
+            TruffleFile truffleFile = context.getEnv().getInternalTruffleFile(".").getAbsoluteFile();
+            context.getEnv().setCurrentWorkingDirectory(truffleFile);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Unable to change Truffle working directory", e);
+        }
     }
 
     @ExportMessage
@@ -1139,10 +1172,10 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private static final class MMapHandle {
-        private final Object pointer;
+        private final long pointer;
         private final long length;
 
-        public MMapHandle(Object pointer, long length) {
+        public MMapHandle(long pointer, long length) {
             this.pointer = pointer;
             this.length = length;
         }
@@ -1151,39 +1184,39 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public Object mmap(long length, int prot, int flags, int fd, long offset,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Object address = invokeNode.call(this, PosixNativeFunction.call_mmap, length, prot, flags, fd, offset);
-        if (invokeNode.getResultInterop().isNull(address)) {
+        long address = invokeNode.callLong(this, PosixNativeFunction.call_mmap, length, prot, flags, fd, offset);
+        if (address == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return new MMapHandle(address, length);
     }
 
     @ExportMessage
-    public byte mmapReadByte(Object mmap, long index,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+    @SuppressWarnings("static-method")
+    public byte mmapReadByte(Object mmap, long index) {
         MMapHandle handle = (MMapHandle) mmap;
         if (index < 0 || index >= handle.length) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IndexOutOfBoundsException();
         }
-        return invokeNode.callByte(this, PosixNativeFunction.read_byte, handle.pointer, index);
+        return UNSAFE.getByte(handle.pointer + index);
     }
 
     @ExportMessage
-    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+    @SuppressWarnings("static-method")
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
         checkIndexAndLen(handle, index, length);
-        invokeNode.call(this, PosixNativeFunction.read_bytes, handle.pointer, wrap(bytes), index, length);
+        UNSAFE.copyMemory(null, handle.pointer + index, bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
         return length;
     }
 
     @ExportMessage
-    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+    @SuppressWarnings("static-method")
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) {
         MMapHandle handle = (MMapHandle) mmap;
         checkIndexAndLen(handle, index, length);
-        invokeNode.call(this, PosixNativeFunction.write_bytes, handle.pointer, wrap(bytes), index, length);
+        UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, handle.pointer + index, length);
     }
 
     @ExportMessage

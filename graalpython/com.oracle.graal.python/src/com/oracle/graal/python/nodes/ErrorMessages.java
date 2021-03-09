@@ -257,6 +257,7 @@ public abstract class ErrorMessages {
     public static final String FILE_OR_STREAM_IS_NOT_READABLE = "File or stream is not readable.";
     public static final String FILE_OR_STREAM_IS_NOT_SEEKABLE = "File or stream is not seekable.";
     public static final String FILE_OR_STREAM_IS_NOT_WRITABLE = "File or stream is not writable.";
+    public static final String FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT = "filedescriptor out of range in select()";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";

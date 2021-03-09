@@ -46,7 +46,4 @@ public abstract class PosixSupport {
     public void setEnv(@SuppressWarnings("unused") Env env) {
         // nop
     }
-
-    public void postInitialize() {
-    }
 }

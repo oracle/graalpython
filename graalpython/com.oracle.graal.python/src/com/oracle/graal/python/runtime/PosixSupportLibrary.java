@@ -114,6 +114,8 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int PROT_EXEC = 0x4; /* Page can be executed. */
     public static final int PROT_NONE = 0x0; /* Page can not be accessed. */
 
+    public static final int FD_SETSIZE = 1024;
+
     public abstract String getBackend(Object recevier);
 
     public abstract String strerror(Object receiver, int errorCode);
