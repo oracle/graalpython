@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -234,17 +235,22 @@ public final class PInt extends PythonBuiltinObject {
     public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState,
                     @Cached ConditionProfile gotState,
                     @Cached IsBuiltinClassProfile isInt,
-                    @Cached WarnNode warnNode) {
-        if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
-            VirtualFrame frame = null;
-            if (gotState.profile(threadState != null)) {
-                frame = PArguments.frameForCall(threadState);
+                    @Cached WarnNode warnNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
+                VirtualFrame frame = null;
+                if (gotState.profile(threadState != null)) {
+                    frame = PArguments.frameForCall(threadState);
+                }
+                warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                ErrorMessages.P_RETURNED_NON_P,
+                                this, "__index__", "int", this, "int");
             }
-            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                            ErrorMessages.P_RETURNED_NON_P,
-                            this, "__index__", "int", this, "int");
+            return this;
+        } finally {
+            gil.release(mustRelease);
         }
-        return this;
     }
 
     @ExportMessage
@@ -277,8 +283,13 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public double asJavaDoubleWithState(ThreadState threadState,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Cached CastToJavaDoubleNode castToDouble) {
-        return castToDouble.execute(lib.asIndexWithState(this, threadState));
+                    @Cached CastToJavaDoubleNode castToDouble, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return castToDouble.execute(lib.asIndexWithState(this, threadState));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @SuppressWarnings("static-method")
@@ -289,8 +300,13 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaLongExactNode castToLong) {
-        return castToLong.execute(this);
+                    @Cached CastToJavaLongExactNode castToLong, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return castToLong.execute(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @SuppressWarnings("static-method")
