@@ -246,9 +246,14 @@ class islice(object):
 class count(object):
     @__graalpython__.builtin_method
     def __init__(self, start=0, step=1):
-        if not isinstance(start, (int, float)) or \
-                not isinstance(step, (int, float)):
-            raise TypeError('a number is required')
+        valid_start = valid_step = False
+        for o in [start, step]:
+            if not isinstance(o, complex):
+                for mm in ["__index__", "__float__", "__int__"]:
+                    if hasattr(o, mm):
+                        break
+                else:
+                    raise TypeError("a number is required")
         self._cnt = start
         self._step = step
 
