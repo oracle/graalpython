@@ -865,47 +865,50 @@ class zip_longest():
     """
 
     @__graalpython__.builtin_method
+    def __new__(subtype, *args, fillvalue=None):
+        self = object.__new__(subtype)
+        self.fillvalue = fillvalue
+        self.tuplesize = len(args)
+        self.numactive = len(args)
+        self.ittuple = [iter(arg) for arg in args]
+        return self
+
+    @__graalpython__.builtin_method
     def __iter__(self):
         return self
 
     @__graalpython__.builtin_method
-    def _fetch(self, index):
-        it = self.iterators[index]
-        if it is not None:
-            try:
-                return next(it)
-            except StopIteration:
-                self.active -= 1
-                if self.active <= 0:
-                    # It was the last active iterator
-                    raise
-                self.iterators[index] = None
-        return self.fillvalue
-
-    @__graalpython__.builtin_method
     def __next__(self):
-        if self.active <= 0:
+        if not self.tuplesize:
             raise StopIteration
-        nb = len(self.iterators)
-        if nb == 0:
+        if not self.numactive:
             raise StopIteration
-        result = []
-        for index in range(nb):
-            result.append(self._fetch(index))
+        result = [None] * self.tuplesize
+        for idx, it in enumerate(self.ittuple):
+            if it is None:
+                item = self.fillvalue
+            else:
+                try:
+                    item = next(it)
+                except StopIteration:
+                    self.numactive -= 1
+                    if self.numactive == 0:
+                        raise StopIteration
+                    else:
+                        item = self.fillvalue
+                        self.ittuple[idx] = None
+                except:
+                    self.numactive = 0
+                    raise
+            result[idx] = item
         return tuple(result)
 
     @__graalpython__.builtin_method
-    def __new__(subtype, iter1, *args, fillvalue=None):
-        self = object.__new__(subtype)
-        self.fillvalue = fillvalue
-        self.active = len(args) + 1
-        self.iterators = [iter(iter1)] + [iter(arg) for arg in args]
-        return self
-
-    @__graalpython__.builtin_method
     def __reduce__(self):
-        return type(self), tuple([(it if it else tuple()) for it in self.iterators]), self.fillvalue
-
+        args = []
+        for elem in self.ittuple:
+            args.append(elem if elem is not None else tuple())
+        return type(self), tuple(args), self.fillvalue
 
     @__graalpython__.builtin_method
     def __setstate__(self, state):
