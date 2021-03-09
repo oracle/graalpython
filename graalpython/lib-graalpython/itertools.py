@@ -469,7 +469,7 @@ class accumulate(object):
         if self.func is None:
             self.total += value
         else:
-            self.total = self.func(total, value)
+            self.total = self.func(self.total, value)
         return self.total
 
 
@@ -888,7 +888,7 @@ class compress():
         # raise this. The shortest one stops first.
         while True:
             next_item = next(self.data)
-            next_selector = next(selectors)
+            next_selector = next(self.selectors)
             if next_selector:
                 return next_item
 
