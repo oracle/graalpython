@@ -64,15 +64,15 @@ class repeat():
     @__graalpython__.builtin_method
     def __reduce__(self):
         if self.cnt >= 0:
-            return self, (self.element, self.cnt)
-        return self, (self.element,)
+            return type(self), (self.element, self.cnt)
+        return type(self), (self.element,)
 
     @__graalpython__.builtin_method
     def __repr__(self):
         if self.cnt == -1:
-            return "{}({})".format(type(self).__name__, self.element)
+            return "{}({!r})".format(type(self).__name__, self.element)
         else:
-            return "{}({}, {})".format(type(self).__name__, self.element, self.cnt)
+            return "{}({!r}, {})".format(type(self).__name__, self.element, self.cnt)
 
 
 class chain():
