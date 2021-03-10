@@ -6,14 +6,14 @@ and provides extension points for the users when embedding GraalPython
 or other Truffle based languages into Java applications. See, for example,
 [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html).
 
-Python also provide OS abstraction, but exposes lower level interfaces, for instance,
+Python also provides OS abstraction, but exposes lower level interfaces, for instance,
 the OS module directly exposes some POSIX functions. On non-POSIX platforms,
 this interface is emulated to a degree.
 
 GraalPython provides two alternative implementations of the system related
 functionality offered by builtin modules such as `os` or `pwd`.
-Which implementation is used, can be controlled by option `PosixModuleBackend`:
-valid values are `native` and `emulated`.
+Which implementation is used can be controlled by option `PosixModuleBackend`:
+valid values are `native` and `java`.
 
 ## GraalPython's native backend
 
@@ -37,10 +37,11 @@ launcher inside GraalVM.
 Known limitations:
 
 * `os.fork` is not supported
+* `_posixsubprocess.fork_exec` does not support the `preexec_fn` parameter
 
 ## GraalPython's emulated backend
 
-The `emulated` backend uses the Truffle API abstraction and therefore supports
+The `java` backend uses the Truffle API abstraction and therefore supports
 custom Truffle providers related to system interfaces and sandboxing.
 Since the Truffle API abstraction is POSIX agnostic, it does not expose
 all the functionality necessary. Some functionality is emulated, and some
@@ -60,7 +61,7 @@ Known limitations of the emulated layer are:
 * Its state is disconnected from the actual OS state, which applies especially to:
   * *file descriptors*: Python level file descriptors are not usable in native code
   * *current working directory*: gets initialized to what was the actual current working
-    directory at the startup, but then it is maintained separately, i.e., `setwd` in Python
+    directory at the startup, but then it is maintained separately, i.e., `chdir` in Python
     does not change the actual current working directory of the process.
   * *umask*: similarly to current working directory, but it is always initialized
     to `0022` regardless of the actual system value at startup.

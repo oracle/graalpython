@@ -6,7 +6,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 ## Version 21.1.0
 
 * Added subclassing of Java classes in JVM mode
-* Use native posix functions in the GraalPython Launcher
+* Use native posix functions in the GraalPython Launcher (see [Operating System Interfaces](https://www.graalvm.org/reference-manual/python/OsInterface/) for details)
 
 ## Version 21.0.0
 
