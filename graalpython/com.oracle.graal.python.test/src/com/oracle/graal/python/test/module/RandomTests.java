@@ -27,17 +27,9 @@ package com.oracle.graal.python.test.module;
 
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import com.oracle.graal.python.test.PythonTests;
-
 public class RandomTests {
-    @Before
-    public void setUp() {
-        PythonTests.enterContext();
-    }
-
     @Test
     public void randomRandom() {
         String source = "import random\n" + //

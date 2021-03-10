@@ -98,20 +98,19 @@ public class PythonTests {
         executable = sb.toString();
     }
 
-    public static void enterContext(String... newArgs) {
-        enterContext(Collections.emptyMap(), newArgs);
+    public static Context enterContext(String... newArgs) {
+        return enterContext(Collections.emptyMap(), newArgs);
     }
 
-    public static void enterContext(Map<String, String> options, String[] args) {
+    public static Context enterContext(Map<String, String> options, String[] args) {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
         context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).options(options).arguments("python", args).option("python.Executable", executable).build();
         context.initialize("python");
-        if (prevContext != null) {
-            closeContext(prevContext);
-        }
+        assert prevContext == null;
         context.enter();
+        return context;
     }
 
     private static void closeContext(Context ctxt) {
@@ -290,11 +289,15 @@ public class PythonTests {
     }
 
     public static RootNode getParseResult(com.oracle.truffle.api.source.Source source, PrintStream out, PrintStream err) {
-        PythonTests.enterContext();
-        PythonContext ctx = PythonLanguage.getContext();
-        ctx.setOut(out);
-        ctx.setErr(err);
-        return (RootNode) ctx.getCore().getParser().parse(ParserMode.File, 0, ctx.getCore(), source, null, null);
+        enterContext();
+        try {
+            PythonContext ctx = PythonLanguage.getContext();
+            ctx.setOut(out);
+            ctx.setErr(err);
+            return (RootNode) ctx.getCore().getParser().parse(ParserMode.File, 0, ctx.getCore(), source, null, null);
+        } finally {
+            closeContext();
+        }
     }
 
     public static RootNode getParseResult(String code) {
@@ -336,6 +339,7 @@ public class PythonTests {
             throw new RuntimeException(e);
         } finally {
             flush(out, err);
+            closeContext();
         }
     }
 
@@ -345,6 +349,7 @@ public class PythonTests {
             return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             flush(out, err);
+            closeContext();
         }
     }
 
@@ -354,6 +359,7 @@ public class PythonTests {
             return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             flush(out, err);
+            closeContext();
         }
     }
 
@@ -363,6 +369,7 @@ public class PythonTests {
             return context.eval(source);
         } finally {
             flush(out, err);
+            closeContext();
         }
     }
 
@@ -377,6 +384,7 @@ public class PythonTests {
         } finally {
             cb.run();
             flush(out, err);
+            closeContext();
         }
     }
 

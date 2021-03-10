@@ -49,6 +49,7 @@ import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,6 +65,11 @@ public class CastToJavaUnsignedLongNodeTests {
     @Before
     public void setUp() {
         PythonTests.enterContext();
+    }
+
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
     @Test

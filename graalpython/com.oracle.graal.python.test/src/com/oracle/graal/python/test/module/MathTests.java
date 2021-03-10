@@ -25,18 +25,11 @@
  */
 package com.oracle.graal.python.test.module;
 
-import org.junit.*;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import com.oracle.graal.python.test.PythonTests;
-
-import static com.oracle.graal.python.test.PythonTests.*;
+import org.junit.Test;
 
 public class MathTests {
-    @Before
-    public void setUp() {
-        PythonTests.enterContext();
-    }
-
     @Test
     public void piAndE() {
         String source = "import math\n" + //
