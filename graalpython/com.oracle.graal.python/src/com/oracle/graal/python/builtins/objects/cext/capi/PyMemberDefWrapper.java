@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -102,8 +103,13 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ReadFieldNode readFieldNode) {
-        return readFieldNode.execute(lib.getDelegate(this), member);
+                    @Exclusive @Cached ReadFieldNode readFieldNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readFieldNode.execute(lib.getDelegate(this), member);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ImportStatic({SpecialMethodNames.class, PyMemberDefWrapper.class})
@@ -161,12 +167,17 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
-                    @Exclusive @Cached FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
-        if (!DOC.equals(member)) {
-            CompilerDirectives.transferToInterpreter();
-            throw UnsupportedMessageException.create();
+                    @Exclusive @Cached FromCharPointerNode fromCharPointerNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (!DOC.equals(member)) {
+                CompilerDirectives.transferToInterpreter();
+                throw UnsupportedMessageException.create();
+            }
+            setAttrNode.execute(lib.getDelegate(this), member, fromCharPointerNode.execute(value));
+        } finally {
+            gil.release(mustRelease);
         }
-        setAttrNode.execute(lib.getDelegate(this), member, fromCharPointerNode.execute(value));
     }
 
     @ExportMessage
