@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -80,22 +81,37 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public boolean isPointer(
-                        @Exclusive @Cached IsPointerNode pIsPointerNode) {
-            return pIsPointerNode.execute(this);
+                        @Exclusive @Cached IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return pIsPointerNode.execute(this);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @ExportMessage
         public long asPointer(
-                        @Exclusive @Cached PAsPointerNode pAsPointerNode) {
-            return pAsPointerNode.execute(this);
+                        @Exclusive @Cached PAsPointerNode pAsPointerNode, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return pAsPointerNode.execute(this);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @ExportMessage
         public void toNative(
                         @Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
-            setNativePointer(toPyObjectNode.execute(this));
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                invalidateNode.execute();
+                setNativePointer(toPyObjectNode.execute(this));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @ExportMessage
@@ -129,23 +145,28 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
-                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode) throws ArityException {
-            if (arguments.length != 3) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, arguments.length);
+                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode, @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (arguments.length != 3) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(3, arguments.length);
+                }
+
+                // convert args
+                Object receiver = toJavaNode.execute(arguments[0]);
+                Object starArgs = toJavaNode.execute(arguments[1]);
+                Object kwArgs = toJavaNode.execute(arguments[2]);
+
+                Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
+                Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+
+                // execute
+                return toSulongNode.execute(callNode.execute(null, lib.getDelegate(this), pArgs, kwArgsArray));
+            } finally {
+                gil.release(mustRelease);
             }
-
-            // convert args
-            Object receiver = toJavaNode.execute(arguments[0]);
-            Object starArgs = toJavaNode.execute(arguments[1]);
-            Object kwArgs = toJavaNode.execute(arguments[2]);
-
-            Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
-            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
-            PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
-
-            // execute
-            return toSulongNode.execute(callNode.execute(null, lib.getDelegate(this), pArgs, kwArgsArray));
         }
     }
 
@@ -166,15 +187,20 @@ public abstract class ManagedMethodWrappers {
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached ToSulongNode toSulongNode,
-                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode) throws ArityException, UnsupportedMessageException {
-            if (arguments.length != 1) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(1, arguments.length);
-            }
+                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode, @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedMessageException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (arguments.length != 1) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(1, arguments.length);
+                }
 
-            // convert args
-            Object varArgs = toJavaNode.execute(arguments[0]);
-            return toSulongNode.execute(executeNode.execute(lib.getDelegate(this), new Object[]{varArgs}));
+                // convert args
+                Object varArgs = toJavaNode.execute(arguments[0]);
+                return toSulongNode.execute(executeNode.execute(lib.getDelegate(this), new Object[]{varArgs}));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
