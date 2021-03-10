@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -69,9 +72,15 @@ public final class PyCFunctionDecorator implements TruffleObject {
     @ExportMessage
     Object execute(Object[] arguments,
                     @CachedLibrary("this.nativeFunction") InteropLibrary nativeFunctionLib,
-                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
-        Object res = nativeFunctionLib.execute(nativeFunction, arguments);
-        return resultConverterLib.execute(resultConverter, res);
+                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib, @Exclusive @Cached GilNode gil)
+                    throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object res = nativeFunctionLib.execute(nativeFunction, arguments);
+            return resultConverterLib.execute(resultConverter, res);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     public Object getNativeFunction() {
