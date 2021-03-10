@@ -1034,6 +1034,54 @@ class compress():
         return (type(self), (self.data, self.selectors))
 
 
+class _tee_dataobject:
+    LINKCELLS = 32
+
+    @__graalpython__.builtin_method
+    def __init__(self, it, values=None, nxt=None):
+        self.it = it
+        if values:
+            self.values = values
+            self.numread = len(values)
+            if self.numread == _tee_dataobject.LINKCELLS:
+                self.nextlink = nxt
+            elif self.numread > _tee_dataobject.LINKCELLS:
+                raise ValueError(f"_tee_dataobject should nove have more than {_tee_dataobject.LINKCELLS} links")
+            elif nxt is not None:
+                raise ValueError("_tee_dataobject shouldn't have a next if not full")
+        else:
+            self.values = [None] * _tee_dataobject.LINKCELLS
+            self.numread = 0
+        self.running = False
+        self.nextlink = nxt
+
+    @__graalpython__.builtin_method
+    def _jumplink(self):
+        if not self.nextlink:
+            self.nextlink = _tee_dataobject(self.it)
+        return self.nextlink
+
+    @__graalpython__.builtin_method
+    def __getitem__(self, i):
+        if i < self.numread:
+            return self.values[i]
+        else:
+            if self.running:
+                raise RuntimeError("cannot re-enter the tee iterator")
+            self.running = True
+            try:
+                value = next(self.it)
+            finally:
+                self.running = False
+            self.numread += 1
+            self.values[i] = value
+            return value
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), (self.it, self.values, self.nextlink)
+
+
 class _tee:
     # This uses a linked list of fixed size lists where
     # the last item in the fixed size list is a link to
@@ -1041,16 +1089,15 @@ class _tee:
     # traversed given fixed size list, it'll become a garbage
     # to be collected
     @__graalpython__.builtin_method
-    def __init__(self, it, buffer=None):
-        self.itemIndex = 0
-        if buffer is None:
-            # Support for direct creation of _tee from user code,
-            # where the ctor takes a single iterable object
-            self.it = iter(it)
-            self.buffer = [None] * 8
+    def __new__(cls, iterable):
+        it = iter(iterable)
+        if isinstance(it, _tee):
+            return it.__copy__()
         else:
-            self.it = it
-            self.buffer = buffer
+            to = object.__new__(_tee)
+            to.dataobj = _tee_dataobject(it)
+            to.index = 0
+        return to
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -1058,25 +1105,34 @@ class _tee:
 
     @__graalpython__.builtin_method
     def __next__(self):
-        # jump to the next buffer if necessary
-        lastIndex = len(self.buffer) - 1
-        if self.itemIndex == lastIndex:
-            if self.buffer[lastIndex] is None:
-                self.buffer[lastIndex] = [None] * 8
-            self.buffer = self.buffer[lastIndex]
-            self.itemIndex = 0
-        # take existing item from the buffer or advance the iterator
-        if self.buffer[self.itemIndex] is None:
-            result = next(self.it)
-            self.buffer[self.itemIndex] = result
-        else:
-            result = self.buffer[self.itemIndex]
-        self.itemIndex += 1
-        return result
+        if self.index >= _tee_dataobject.LINKCELLS:
+            self.dataobj = self.dataobj._jumplink()
+            self.index = 0
+        value = self.dataobj[self.index]
+        self.index += 1
+        return value
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), ((),), (self.dataobj, self.index)
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        if not isinstance(state, tuple) or len(state) != 2:
+            raise TypeError("state is not a 2-tuple")
+        if not isinstance(state[0], _tee_dataobject):
+            raise TypeError("state is not a _tee_dataobject")
+        self.dataobj = state[0]
+        if state[1] < 0 or state[1] > _tee_dataobject.LINKCELLS:
+            raise ValueError("Index out of range")
+        self.index = int(state[1])
 
     @__graalpython__.builtin_method
     def __copy__(self):
-        return _tee(self.it, self.buffer)
+        to = object.__new__(_tee)
+        to.dataobj = self.dataobj
+        to.index = self.index
+        return to
 
 
 def tee(iterable, n=2):
@@ -1084,12 +1140,12 @@ def tee(iterable, n=2):
         raise TypeError()
     if n < 0:
         raise ValueError("n must be >=0")
+    if n == 0:
+        return tuple()
     # if the iterator can be copied, use that instead of _tee
     # note: this works for _tee itself
     it = iter(iterable)
     copy = getattr(it, "__copy__", None)
-    if callable(copy):
-        return tuple([it] + [it.__copy__() for i in range(1, n)])
-    else:
-        queue = [None] * 8
-        return tuple(_tee(it, queue) for i in range(0, n))
+    if not callable(copy):
+        it = _tee(it)
+    return tuple([it] + [it.__copy__() for i in range(1, n)])
