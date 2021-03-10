@@ -3262,13 +3262,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
-    @Builtin(name = "PyObject_Call", parameterNames = {"callee", "args", "kwargs"})
+    @Builtin(name = "PyObject_Call", parameterNames = {"callee", "args", "kwargs", "single_arg"})
     @GenerateNodeFactory
-    abstract static class PyObjectCallNode extends PythonTernaryBuiltinNode {
-
+    abstract static class PyObjectCallNode extends PythonQuaternaryBuiltinNode {
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj,
-                        @Cached AsPythonObjectNode callableToJavaNode,
+        static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj, int singleArg,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CastArgsNode castArgsNode,
                         @Cached CastKwargsNode castKwargsNode,
                         @Cached CallNode callNode,
@@ -3278,8 +3277,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
 
             try {
-                Object callable = callableToJavaNode.execute(callableObj);
-                Object[] args = castArgsNode.execute(frame, argsObj);
+                Object callable = asPythonObjectNode.execute(callableObj);
+                Object[] args;
+                if (singleArg != 0) {
+                    args = new Object[]{asPythonObjectNode.execute(argsObj)};
+                } else {
+                    args = castArgsNode.execute(frame, argsObj);
+                }
                 PKeyword[] keywords = castKwargsNode.execute(kwargsObj);
                 return toNewRefNode.execute(callNode.execute(frame, callable, args, keywords));
             } catch (PException e) {

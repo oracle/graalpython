@@ -199,51 +199,38 @@ PyObject * PyVectorcall_Call(PyObject *callable, PyObject *tuple, PyObject *kwar
     return _Py_CheckFunctionResult(callable, result, NULL);
 }
 
-typedef PyObject *(*call_fun_t)(PyObject *, PyObject *, PyObject *);
+#define IS_SINGLE_ARG(_fmt) ((_fmt[0]) != '\0' && (_fmt[1]) == '\0')
+
+typedef PyObject *(*call_fun_t)(PyObject *, PyObject *, PyObject *, int32_t);
 UPCALL_TYPED_ID(PyObject_Call, call_fun_t);
 PyObject* PyObject_Call(PyObject* callable, PyObject* args, PyObject* kwargs) {
-	return _jls_PyObject_Call(native_to_java(callable), native_to_java(args), native_to_java(kwargs));
+	return _jls_PyObject_Call(native_to_java(callable), native_to_java(args), native_to_java(kwargs), 0);
 }
 
 PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
-	return _jls_PyObject_Call(native_to_java(callable), native_to_java(args), NULL);
+	return _jls_PyObject_Call(native_to_java(callable), native_to_java(args), NULL, 0);
 }
 
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     if (fmt == NULL || fmt[0] == '\0') {
-	    return _jls_PyObject_Call(native_to_java(callable), NULL, NULL);
+	    return _jls_PyObject_Call(native_to_java(callable), NULL, NULL, 0);
     }
     va_list va;
     va_start(va, fmt);
     PyObject* args = Py_VaBuildValue(fmt, va);
     va_end(va);
-
-    if (strlen(fmt) == 1) {
-        PyObject* singleArg = args;
-        args = PyTuple_New(1);
-        Py_XINCREF(singleArg);
-        PyTuple_SetItem(args, 0, singleArg);
-    }
-	return _jls_PyObject_Call(native_to_java(callable), native_to_java(args), NULL);
+	return _jls_PyObject_Call(native_to_java(callable), native_to_java(args), NULL, IS_SINGLE_ARG(fmt));
 }
 
 PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...) {
     if (fmt == NULL || fmt[0] == '\0') {
-	    return _jls_PyObject_Call(native_to_java(callable), NULL, NULL);
+	    return _jls_PyObject_Call(native_to_java(callable), NULL, NULL, 0);
     }
-
     va_list va;
     va_start(va, fmt);
     PyObject* args = Py_VaBuildValue(fmt, va);
     va_end(va);
-
-    if (strlen(fmt) == 1) {
-        PyObject* singleArg = args;
-        args = PyTuple_New(1);
-        Py_XINCREF(singleArg);
-        PyTuple_SetItem(args, 0, singleArg);
-    }
-	return _jls_PyObject_Call(native_to_java(callable), native_to_java(args), NULL);
+	return _jls_PyObject_Call(native_to_java(callable), native_to_java(args), NULL, IS_SINGLE_ARG(fmt));
 }
 
 typedef PyObject *(*call_fun_obj_args_t)(PyObject *, void *);
