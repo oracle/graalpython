@@ -130,25 +130,14 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     protected static class GetDelegate {
         @Specialization(guards = {"cachedWrapper == wrapper", "delegate != null"}, assumptions = "singleContextAssumption()")
         protected static Object getCachedDel(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
-                        @Exclusive @Cached GilNode gil,
-                        @Bind("gil.acquire()") boolean mustRelease,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
                         @Cached(value = "wrapper.getDelegatePrivate()", weak = true) Object delegate) {
-            try {
-                return delegate;
-            } finally {
-                gil.release(mustRelease);
-            }
+            return delegate;
         }
 
         @Specialization(replaces = "getCachedDel")
-        protected static Object getGenericDel(PythonNativeWrapper wrapper, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return wrapper.delegate;
-            } finally {
-                gil.release(mustRelease);
-            }
+        protected static Object getGenericDel(PythonNativeWrapper wrapper) {
+            return wrapper.delegate;
         }
     }
 
@@ -165,26 +154,15 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     protected static class GetNativePointer {
         @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption()", "cachedAssumption"})
         protected static Object getCachedPtr(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
-                        @Exclusive @Cached GilNode gil,
-                        @Bind("gil.acquire()") boolean mustRelease,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
                         @SuppressWarnings("unused") @Cached("wrapper.getHandleValidAssumption()") Assumption cachedAssumption,
                         @Cached(value = "wrapper.getNativePointerPrivate()", weak = true) Object nativePointer) {
-            try {
-                return nativePointer;
-            } finally {
-                gil.release(mustRelease);
-            }
+            return nativePointer;
         }
 
         @Specialization(replaces = "getCachedPtr")
-        protected static Object getGenericPtr(PythonNativeWrapper wrapper, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return wrapper.nativePointer;
-            } finally {
-                gil.release(mustRelease);
-            }
+        protected static Object getGenericPtr(PythonNativeWrapper wrapper) {
+            return wrapper.nativePointer;
         }
     }
 

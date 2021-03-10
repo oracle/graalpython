@@ -1736,8 +1736,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // reason for this is to avoid native pointer sharing. Handles are shared if the
                 // objects are equal but in this case we must not share because otherwise we would
                 // mess up the reference counts.
-                GilNode gil = GilNode.getUncached();
-                return GetNativePointer.getGenericPtr(this, gil) == GetNativePointer.getGenericPtr(other, gil);
+                return GetNativePointer.getGenericPtr(this) == GetNativePointer.getGenericPtr(other);
             }
             return false;
         }
