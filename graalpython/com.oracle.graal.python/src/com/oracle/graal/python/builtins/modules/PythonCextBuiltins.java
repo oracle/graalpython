@@ -3338,6 +3338,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                      */
                     long arraySize = argsArrayLib.getArraySize(vaList);
                     Object[] args = new Object[PInt.intValueExact(arraySize) - 1];
+                    int filled = 0;
                     for (int i = 0; i < args.length; i++) {
                         try {
                             Object object = argsArrayLib.readArrayElement(vaList, i);
@@ -3345,9 +3346,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
                                 break;
                             }
                             args[i] = asPythonObjectNode.execute(object);
+                            filled++;
                         } catch (InvalidArrayIndexException e) {
                             throw CompilerDirectives.shouldNotReachHere();
                         }
+                    }
+                    if (filled < args.length) {
+                        args = PythonUtils.arrayCopyOf(args, filled);
                     }
                     return callableLib.callObject(callable, frame, args);
                 } catch (UnsupportedMessageException | OverflowException e) {
