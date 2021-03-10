@@ -289,6 +289,10 @@ class permutations():
         if r is None:
             self.r = len(iterable)
         else:
+            if not isinstance(r, int):
+                raise TypeError("Expected int as r")
+            if r < 0:
+                raise ValueError("r must be non-negative")
             self.r = r
         n = len(iterable)
         n_minus_r = n - self.r
