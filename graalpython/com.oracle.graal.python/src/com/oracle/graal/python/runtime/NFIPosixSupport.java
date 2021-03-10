@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
+import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 
@@ -93,8 +95,6 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
-    private static final int PATH_MAX = 4096;
-    private static final int L_ctermid = 9;
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
@@ -869,8 +869,8 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public Object readlinkat(int dirFd, Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Buffer buffer = Buffer.allocate(PATH_MAX);
-        long n = invokeNode.callLong(this, PosixNativeFunction.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX);
+        Buffer buffer = Buffer.allocate(PATH_MAX.value);
+        long n = invokeNode.callLong(this, PosixNativeFunction.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX.value);
         if (n < 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -967,7 +967,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public String ctermid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        byte[] buf = new byte[L_ctermid];
+        byte[] buf = new byte[L_ctermid.value];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_ctermid, wrap(buf));
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);

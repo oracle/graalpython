@@ -26,6 +26,8 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -91,6 +93,8 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -125,35 +129,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
-    private static final int TMPFILE = 4259840;
-    private static final int TEMPORARY = 4259840;
-    private static final int SYNC = 1052672;
-    private static final int RSYNC = 1052672;
-    private static final int CLOEXEC = PosixSupportLibrary.O_CLOEXEC;
-    private static final int DIRECT = 16384;
-    private static final int DSYNC = 4096;
-    private static final int NDELAY = 2048;
-    private static final int NONBLOCK = 2048;
-    private static final int APPEND = PosixSupportLibrary.O_APPEND;
-    private static final int TRUNC = PosixSupportLibrary.O_TRUNC;
-    private static final int EXCL = PosixSupportLibrary.O_EXCL;
-    private static final int CREAT = PosixSupportLibrary.O_CREAT;
-    private static final int RDWR = PosixSupportLibrary.O_RDWR;
-    private static final int WRONLY = PosixSupportLibrary.O_WRONLY;
-    private static final int RDONLY = PosixSupportLibrary.O_RDONLY;
-
-    // TODO map Python's SEEK_SET, SEEK_CUR, SEEK_END values to the underlying OS values if they are
-    // different
-    private static final int SEEK_DATA = 3;
-    private static final int SEEK_HOLE = 4;
-
-    private static final int WNOHANG = 1;
-    private static final int WUNTRACED = 3;
-
-    private static final int F_OK = 0;
-    private static final int X_OK = 1;
-    private static final int W_OK = 2;
-    private static final int R_OK = 4;
 
     static final StructSequence.Descriptor STAT_RESULT_DESC = new StructSequence.Descriptor(
                     PythonBuiltinClassType.PStatResult,
@@ -213,33 +188,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     public PosixModuleBuiltins() {
-        builtinConstants.put("O_RDONLY", RDONLY);
-        builtinConstants.put("O_WRONLY", WRONLY);
-        builtinConstants.put("O_RDWR", RDWR);
-        builtinConstants.put("O_CREAT", CREAT);
-        builtinConstants.put("O_EXCL", EXCL);
-        builtinConstants.put("O_TRUNC", TRUNC);
-        builtinConstants.put("O_APPEND", APPEND);
-        builtinConstants.put("O_NONBLOCK", NONBLOCK);
-        builtinConstants.put("O_NDELAY", NDELAY);
-        builtinConstants.put("O_DSYNC", DSYNC);
-        builtinConstants.put("O_DIRECT", DIRECT);
-        builtinConstants.put("O_CLOEXEC", CLOEXEC);
-        builtinConstants.put("O_RSYNC", RSYNC);
-        builtinConstants.put("O_SYNC", SYNC);
-        builtinConstants.put("O_TEMPORARY", TEMPORARY);
-        builtinConstants.put("O_TMPFILE", TMPFILE);
+        addConstants(PosixConstants.openFlags);
+        addConstants(PosixConstants.waitOptions);
+        addConstants(PosixConstants.accessMode);
 
-        builtinConstants.put("SEEK_DATA", SEEK_DATA);
-        builtinConstants.put("SEEK_HOLE", SEEK_HOLE);
+        addConstant(PosixConstants.SEEK_DATA);
+        addConstant(PosixConstants.SEEK_HOLE);
+    }
 
-        builtinConstants.put("WNOHANG", WNOHANG);
-        builtinConstants.put("WUNTRACED", WUNTRACED);
+    private void addConstant(IntConstant c) {
+        if (c.defined) {
+            builtinConstants.put(c.name, c.getValueIfDefined());
+        }
+    }
 
-        builtinConstants.put("F_OK", F_OK);
-        builtinConstants.put("X_OK", X_OK);
-        builtinConstants.put("W_OK", W_OK);
-        builtinConstants.put("R_OK", R_OK);
+    private void addConstants(IntConstant[] constants) {
+        for (IntConstant c : constants) {
+            addConstant(c);
+        }
     }
 
     @Override
@@ -496,7 +462,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached BranchProfile errorProfile) {
-            int fixedFlags = flags | CLOEXEC;
+            int fixedFlags = flags | O_CLOEXEC.value;
             auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
             while (true) {
                 try {
@@ -740,6 +706,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    public static int mapPythonSeekWhenceToPosix(int pythonWhence) {
+        // See os.py
+        switch (pythonWhence) {
+            case 0:
+                return PosixConstants.SEEK_SET.value;
+            case 1:
+                return PosixConstants.SEEK_CUR.value;
+            case 2:
+                return PosixConstants.SEEK_END.value;
+            default:
+                return pythonWhence;
+        }
+    }
+
     @Builtin(name = "lseek", minNumOfPositionalArgs = 3, parameterNames = {"fd", "pos", "how"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "pos", conversionClass = OffsetConversionNode.class)
@@ -757,7 +737,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
             try {
-                return posixLib.lseek(getPosixSupport(), fd, pos, how);
+                return posixLib.lseek(getPosixSupport(), fd, pos, mapPythonSeekWhenceToPosix(how));
             } catch (PosixException e) {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -944,7 +924,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         protected static boolean isDefault(int dirFd) {
-            return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
+            return dirFd == AT_FDCWD.value;
         }
     }
 
@@ -1517,7 +1497,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         protected static boolean isDefault(int dirFd) {
-            return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
+            return dirFd == AT_FDCWD.value;
         }
     }
 
@@ -1609,7 +1589,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 // TODO CPython checks for ENOTSUP as well
                 if (e.getErrorCode() == OSErrorEnum.EOPNOTSUPP.getNumber() && !followSymlinks) {
-                    if (dirFd != PosixSupportLibrary.DEFAULT_DIR_FD) {
+                    if (dirFd != AT_FDCWD.value) {
                         throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chmod");
                     } else {
                         throw raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM, "chmod", "follow_symlinks");
@@ -2210,7 +2190,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     static int dirFdForAudit(int dirFd) {
-        return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd;
+        return dirFd == AT_FDCWD.value ? -1 : dirFd;
     }
 
     public static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
@@ -2266,13 +2246,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     /**
      * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the
-     * parameter is omitted, returns {@link PosixSupportLibrary#DEFAULT_DIR_FD}.
+     * parameter is omitted, returns {@link PosixConstants#AT_FDCWD}.
      */
     public abstract static class DirFdConversionNode extends ArgumentCastNodeWithRaise {
 
         @Specialization
         int doNone(@SuppressWarnings("unused") PNone value) {
-            return PosixSupportLibrary.DEFAULT_DIR_FD;
+            return AT_FDCWD.value;
         }
 
         @Specialization
