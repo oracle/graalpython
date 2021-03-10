@@ -132,6 +132,7 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
@@ -143,6 +144,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -539,26 +541,41 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @ExportMessage
-    boolean isPointer() {
-        return nativePointer != null;
+    boolean isPointer(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return nativePointer != null;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage(limit = "1")
     @SuppressWarnings("static-method")
     long asPointer(
-                    @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-        if (isPointer()) {
-            return interopLibrary.asPointer(nativePointer);
+                    @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (isPointer(gil)) {
+                return interopLibrary.asPointer(nativePointer);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
     void toNative(
-                    @Cached PCallHPyFunction callContextToNativeNode) {
-        if (!isPointer()) {
-            nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
+                    @Cached PCallHPyFunction callContextToNativeNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (!isPointer(gil)) {
+                nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -581,14 +598,24 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isMemberReadable(String key) {
-        return HPyContextMembers.getByName(key) != null;
+    boolean isMemberReadable(String key, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return HPyContextMembers.getByName(key) != null;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     Object readMember(String key,
-                    @Cached GraalHPyReadMemberNode readMemberNode) {
-        return readMemberNode.execute(this, key);
+                    @Cached GraalHPyReadMemberNode readMemberNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readMemberNode.execute(this, key);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
