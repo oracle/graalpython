@@ -346,7 +346,7 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
-    public static Object doAsciiString(String str) {
+    public static String doAsciiString(String str) {
         byte[] bytes = unicodeEscape(str);
         boolean hasSingleQuote = false;
         boolean hasDoubleQuote = false;

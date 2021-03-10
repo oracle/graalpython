@@ -76,30 +76,30 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        boolean isBuiltinFunction(PBuiltinMethod self) {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        static boolean isBuiltinFunction(PBuiltinMethod self) {
             return self.getSelf() instanceof PythonModule;
         }
 
-        boolean isBuiltinFunction(PMethod self) {
+        static boolean isBuiltinFunction(PMethod self) {
             return self.getSelf() instanceof PythonModule && self.getFunction() instanceof PFunction && ((PFunction) self.getFunction()).getEnclosingClassName() == null;
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
-        Object reprBuiltinFunction(VirtualFrame frame, PMethod self,
+        static Object reprBuiltinFunction(VirtualFrame frame, PMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
             // (tfel): this only happens for builtin modules ... I think
             return PythonUtils.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
-        String reprBuiltinFunction(VirtualFrame frame, PBuiltinMethod self,
+        static String reprBuiltinFunction(VirtualFrame frame, PBuiltinMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
             return PythonUtils.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)", limit = "3")
-        Object reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
+        static Object reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
                         @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
@@ -108,7 +108,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)", limit = "3")
-        Object reprBuiltinMethod(VirtualFrame frame, PMethod self,
+        static Object reprBuiltinMethod(VirtualFrame frame, PMethod self,
                         @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {

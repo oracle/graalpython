@@ -85,7 +85,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -810,7 +810,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         protected final String method = __STR__;
         @Child private LookupAndCallUnaryNode callStrNode;
         @Child private CastToListNode castToListNode;
-        @Child protected PythonUnaryBuiltinNode objectStrNode;
+        @Child private ObjectNodes.DefaultObjectReprNode defaultReprNode;
 
         @Specialization
         Object str(VirtualFrame frame, Object object,
@@ -860,7 +860,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 // Fall back to the generic impl
             }
-            return getObjectStrNode().call(frame, object);
+            return defaultRepr(frame, object);
         }
 
         @TruffleBoundary
@@ -888,12 +888,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             return castToListNode;
         }
 
-        protected PythonUnaryBuiltinNode getObjectStrNode() {
-            if (objectStrNode == null) {
+        protected String defaultRepr(VirtualFrame frame, Object object) {
+            if (defaultReprNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                objectStrNode = insert(ObjectBuiltinsFactory.StrNodeFactory.create());
+                defaultReprNode = insert(ObjectNodes.DefaultObjectReprNode.create());
             }
-            return objectStrNode;
+            return defaultReprNode.execute(frame, object);
         }
     }
 
@@ -901,15 +901,6 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
         protected final String method = __REPR__;
-
-        @Override
-        protected PythonUnaryBuiltinNode getObjectStrNode() {
-            if (objectStrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                objectStrNode = insert(ObjectBuiltinsFactory.ReprNodeFactory.create());
-            }
-            return objectStrNode;
-        }
     }
 
     @Builtin(name = __BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)

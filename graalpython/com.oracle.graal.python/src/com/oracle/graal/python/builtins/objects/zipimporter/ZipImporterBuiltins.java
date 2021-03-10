@@ -404,7 +404,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends StrNode {
+    abstract static class ReprNode extends StrNode {
 
     }
 

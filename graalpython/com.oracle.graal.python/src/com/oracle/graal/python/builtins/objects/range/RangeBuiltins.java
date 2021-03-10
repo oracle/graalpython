@@ -145,9 +145,9 @@ public class RangeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonBuiltinNode {
+    abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization(limit = "2")
-        public Object repr(PRange self,
+        public static Object repr(PRange self,
                         @CachedLibrary("self") PythonObjectLibrary pol) {
             return pol.asPString(self);
         }

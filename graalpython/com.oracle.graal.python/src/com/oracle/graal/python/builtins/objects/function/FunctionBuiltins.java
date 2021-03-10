@@ -79,10 +79,10 @@ public class FunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object reprFunction(PFunction self) {
+        static Object reprFunction(PFunction self) {
             return String.format("<function %s at 0x%x>", self.getQualname(), self.hashCode());
         }
     }

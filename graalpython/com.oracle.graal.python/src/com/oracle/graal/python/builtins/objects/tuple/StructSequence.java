@@ -53,8 +53,6 @@ import org.graalvm.collections.EconomicMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -67,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.DisabledNewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
@@ -84,7 +83,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -372,8 +370,7 @@ public class StructSequence {
         public String repr(VirtualFrame frame, PTuple self,
                         @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached BuiltinFunctions.ReprNode reprNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
+                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
             StringBuilder buf = PythonUtils.newStringBuilder();
             PythonUtils.append(buf, getFullyQualifiedClassNameNode.execute(frame, self));
             PythonUtils.append(buf, '(');
@@ -381,20 +378,16 @@ public class StructSequence {
             if (fieldNames.length > 0) {
                 PythonUtils.append(buf, fieldNames[0]);
                 PythonUtils.append(buf, '=');
-                PythonUtils.append(buf, castToStringNode.execute(reprNode.call(frame, getItemNode.execute(frame, tupleStore, 0))));
+                PythonUtils.append(buf, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, 0)));
                 for (int i = 1; i < fieldNames.length; i++) {
                     PythonUtils.append(buf, ", ");
                     PythonUtils.append(buf, fieldNames[i]);
                     PythonUtils.append(buf, '=');
-                    PythonUtils.append(buf, castToStringNode.execute(reprNode.call(frame, getItemNode.execute(frame, tupleStore, i))));
+                    PythonUtils.append(buf, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, i)));
                 }
             }
             PythonUtils.append(buf, ')');
             return PythonUtils.sbToString(buf);
-        }
-
-        protected static BuiltinFunctions.ReprNode createRepr() {
-            return BuiltinFunctionsFactory.ReprNodeFactory.create();
         }
     }
 

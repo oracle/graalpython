@@ -156,9 +156,9 @@ public class MethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object reprMethod(VirtualFrame frame, PMethod method,
+        static Object reprMethod(VirtualFrame frame, PMethod method,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode callReprNode,
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary pol) {

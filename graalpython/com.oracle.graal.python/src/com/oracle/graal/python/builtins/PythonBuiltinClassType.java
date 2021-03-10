@@ -856,9 +856,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     /**
-     * Must be kept in sync with
-     * {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.ReprNode
-     * TypeBuiltins.ReprNode}
+     * Must be kept in sync with TypeBuiltins.ReprNode
      */
     @ExportMessage
     String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {

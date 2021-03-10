@@ -187,7 +187,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(SpecialAttributeNames.class)
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static String repr(VirtualFrame frame, Object self,
                         @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,

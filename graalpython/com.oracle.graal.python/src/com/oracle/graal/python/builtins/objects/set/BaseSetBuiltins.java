@@ -101,7 +101,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
+    abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
         private static void fillItems(VirtualFrame frame, StringBuilder sb, LookupAndCallUnaryNode repr, HashingStorageLibrary.HashingStorageIterator<Object> iter) {
             boolean first = true;
             PythonUtils.append(sb, "{");

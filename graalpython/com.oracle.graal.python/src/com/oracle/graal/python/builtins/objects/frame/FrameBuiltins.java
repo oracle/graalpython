@@ -72,9 +72,9 @@ public final class FrameBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String repr(VirtualFrame frame, PFrame self,
+        static String repr(VirtualFrame frame, PFrame self,
                         @Cached GetCodeNode getCodeNode,
                         @Cached GetLinenoNode getLinenoNode) {
             PCode code = getCodeNode.executeObject(frame, self);

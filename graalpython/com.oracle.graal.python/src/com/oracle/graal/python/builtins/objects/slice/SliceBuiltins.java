@@ -70,10 +70,10 @@ public class SliceBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonBuiltinNode {
+    abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public String repr(PSlice self) {
+        static String repr(PSlice self) {
             return self.toString();
         }
     }

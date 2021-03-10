@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AsciiNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -66,7 +67,7 @@ public class FormatStringExpressionNode extends LiteralNode {
 
     @Child private BuiltinFunctions.FormatNode formatNode;
     @Child private BuiltinConstructors.StrNode strNode;
-    @Child private BuiltinFunctions.ReprNode reprNode;
+    @Child private ObjectNodes.ReprAsJavaStringNode reprNode;
     @Child private BuiltinFunctions.AsciiNode asciiNode;
 
     public FormatStringExpressionNode(ExpressionNode expression, ExpressionNode specifier, StringLiteralSSTNode.FormatStringConversionType conversionType) {
@@ -84,7 +85,7 @@ public class FormatStringExpressionNode extends LiteralNode {
                     result = getStrNode().executeWith(frame, result);
                     break;
                 case REPR_CONVERSION:
-                    result = getReprNode().call(frame, result);
+                    result = getReprAsJavaStringNode().execute(frame, result);
                     break;
                 case ASCII_CONVERSION:
                     result = getAsciiNode().call(frame, result);
@@ -122,10 +123,10 @@ public class FormatStringExpressionNode extends LiteralNode {
         return strNode;
     }
 
-    private BuiltinFunctions.ReprNode getReprNode() {
+    private ObjectNodes.ReprAsJavaStringNode getReprAsJavaStringNode() {
         if (reprNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            reprNode = insert(BuiltinFunctionsFactory.ReprNodeFactory.create());
+            reprNode = insert(ObjectNodes.ReprAsJavaStringNode.create());
         }
         return reprNode;
     }

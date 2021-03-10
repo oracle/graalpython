@@ -148,15 +148,15 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     // ref.__repr__
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class RefTypeReprNode extends PythonBuiltinNode {
+    abstract static class RefTypeReprNode extends PythonBuiltinNode {
         @Specialization(guards = "self.getObject() == null")
         @TruffleBoundary
-        public String repr(PReferenceType self) {
+        static String repr(PReferenceType self) {
             return String.format("<weakref at %s; dead>", self.hashCode());
         }
 
         @Specialization(guards = "self.getObject() != null")
-        public String repr(VirtualFrame frame, PReferenceType self,
+        static String repr(VirtualFrame frame, PReferenceType self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached TypeNodes.GetNameNode getNameNode) {
             Object object = self.getObject();

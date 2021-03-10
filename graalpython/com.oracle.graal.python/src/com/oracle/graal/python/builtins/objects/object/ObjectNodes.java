@@ -52,14 +52,17 @@ import static com.oracle.graal.python.nodes.ErrorMessages.SHOULD_RETURN_TYPE_A_N
 import static com.oracle.graal.python.nodes.ErrorMessages.SLOTNAMES_SHOULD_BE_A_NOT_B;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NEWOBJ_EX__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NEWOBJ__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTNAMES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_ELLIPSIS;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_BYTES;
@@ -97,11 +100,12 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithState;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -121,6 +125,7 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -700,23 +705,23 @@ public abstract class ObjectNodes {
      * The fully qualified name includes the name of the module (unless it is the
      * {@link BuiltinNames#BUILTINS} module).
      */
+    @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
-        public abstract String execute(VirtualFrame frame, Object cls);
+        public abstract String execute(Frame frame, Object cls);
 
-        @Specialization
-        String get(VirtualFrame frame, Object cls,
-                        @Cached("create(__MODULE__)") GetFixedAttributeNode readModuleNode,
-                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode,
-                        @Cached CastToJavaStringNode castModuleToStringNode,
-                        @Cached CastToJavaStringNode castNameToStringNode) {
-            Object moduleName = readModuleNode.executeObject(frame, cls);
-            String qualName = castNameToStringNode.execute(readQualNameNode.executeObject(frame, cls));
-            if (moduleName == PNone.NO_VALUE || BuiltinNames.BUILTINS.equals(moduleName)) {
+        @Specialization(limit = "3")
+        static String get(VirtualFrame frame, Object cls,
+                        @CachedLibrary("cls") PythonObjectLibrary lib,
+                        @Cached CastToJavaStringNode cast) {
+            Object moduleNameObject = lib.lookupAttribute(cls, frame, __MODULE__);
+            Object qualNameObject = lib.lookupAttribute(cls, frame, __QUALNAME__);
+            String qualName = cast.execute(qualNameObject);
+            if (moduleNameObject == PNone.NO_VALUE || BuiltinNames.BUILTINS.equals(moduleNameObject)) {
                 return qualName;
             }
             StringBuilder sb = PythonUtils.newStringBuilder();
-            PythonUtils.append(sb, castModuleToStringNode.execute(moduleName));
+            PythonUtils.append(sb, cast.execute(moduleNameObject));
             PythonUtils.append(sb, '.');
             PythonUtils.append(sb, qualName);
             return PythonUtils.sbToString(sb);
@@ -733,15 +738,91 @@ public abstract class ObjectNodes {
      * The fully qualified name includes the name of the module (unless it is the
      * {@link BuiltinNames#BUILTINS} module).
      */
+    @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
     public abstract static class GetFullyQualifiedClassNameNode extends PNodeWithContext {
-        public abstract String execute(VirtualFrame frame, Object self);
+        public abstract String execute(Frame frame, Object self);
 
         @Specialization
-        String get(VirtualFrame frame, Object self,
+        static String get(VirtualFrame frame, Object self,
                         @Cached GetClassNode getClass,
                         @Cached GetFullyQualifiedNameNode getFullyQualifiedNameNode) {
             return getFullyQualifiedNameNode.execute(frame, getClass.execute(self));
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code PyObject_Repr}.
+     * 
+     * The output can be either a {@link String} or a {@link PString}.
+     * 
+     * @see ReprAsJavaStringNode
+     */
+    @GenerateUncached
+    public abstract static class ReprAsObjectNode extends PNodeWithContext {
+        public abstract Object execute(Frame frame, Object object);
+
+        @Specialization(limit = "3")
+        Object repr(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary objLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Cached DefaultObjectReprNode defaultRepr,
+                        @Cached ConditionProfile hasRepr,
+                        @Cached ConditionProfile isString,
+                        @Cached ConditionProfile isPString) {
+            Object reprMethod = objLib.lookupAttributeOnType(obj, __REPR__);
+            if (hasRepr.profile(reprMethod != PNone.NO_VALUE)) {
+                Object result = methodLib.callUnboundMethod(reprMethod, frame, obj);
+                if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
+                    return result;
+                }
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.RETURNED_NON_STRING, __REPR__, obj);
+            } else {
+                return defaultRepr.execute(frame, obj);
+            }
+        }
+
+        public static ReprAsObjectNode create() {
+            return ObjectNodesFactory.ReprAsObjectNodeGen.create();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code PyObject_Repr}.
+     *
+     * The output is always coerced to a Java {@link String}
+     * 
+     * @see ReprAsObjectNode
+     */
+    @GenerateUncached
+    public abstract static class ReprAsJavaStringNode extends PNodeWithContext {
+        public abstract String execute(Frame frame, Object object);
+
+        @Specialization
+        static String repr(VirtualFrame frame, Object obj,
+                        @Cached ReprAsObjectNode reprNode,
+                        @Cached CastToJavaStringNode cast) {
+            return cast.execute(reprNode.execute(frame, obj));
+        }
+
+        public static ReprAsJavaStringNode create() {
+            return ObjectNodesFactory.ReprAsJavaStringNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class DefaultObjectReprNode extends PNodeWithContext {
+        public abstract String execute(Frame frame, Object object);
+
+        @Specialization
+        static String repr(VirtualFrame frame, Object self,
+                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode) {
+            String fqcn = getFullyQualifiedClassNameNode.execute(frame, self);
+            return PythonUtils.format("<%s object at 0x%x>", fqcn, PythonAbstractNativeObject.systemHashCode(self));
+        }
+
+        public static DefaultObjectReprNode create() {
+            return ObjectNodesFactory.DefaultObjectReprNodeGen.create();
         }
     }
 }

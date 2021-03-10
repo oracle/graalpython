@@ -258,7 +258,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         public static Object repr(PBytes self,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,

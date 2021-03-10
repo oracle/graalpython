@@ -211,9 +211,9 @@ public class CodeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class CodeReprNode extends PythonUnaryBuiltinNode {
+    abstract static class CodeReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object repr(PCode self) {
+        static Object repr(PCode self) {
             return self.toString();
         }
     }
