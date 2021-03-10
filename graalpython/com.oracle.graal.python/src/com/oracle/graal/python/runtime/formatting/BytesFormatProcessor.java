@@ -41,7 +41,6 @@
 package com.oracle.graal.python.runtime.formatting;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -51,15 +50,14 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -194,35 +192,23 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
     @Override
     protected InternalFormat.Formatter handleRemainingFormats(InternalFormat.Spec spec) {
-        Object arg, attribute;
         byte[] bytes;
         switch (spec.type) {
             case 'b':
             case 's':
                 // According to the spec: if object is Py_buffer, get the bytes directly, otherwise
                 // call __bytes__
-                arg = getArg();
-                bytes = asBytes(arg);
+                bytes = asBytes(getArg());
                 BytesFormatter fb = new BytesFormatter(raiseNode, buffer, spec);
                 fb.format(bytes);
                 return fb;
 
             case 'r':
-            case 'a': // ascii: from spec: should be equivalent to repr(x).encode('ascii',
-                      // 'backslashreplace')
-                arg = getArg();
-                attribute = lookupAttribute(arg, __REPR__);
-                if (attribute != PNone.NO_VALUE) {
-                    Object result = call(attribute, arg);
-                    if (PGuards.isString(result)) {
-                        bytes = BytesUtils.unicodeNonAsciiEscape(result.toString());
-                        fb = new BytesFormatter(raiseNode, buffer, spec);
-                        fb.format(bytes);
-                        return fb;
-                    }
-                }
-                throw raiseNode.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, __REPR__);
-
+            case 'a': // ascii
+                String result = ObjectNodes.AsciiNode.getUncached().execute(null, getArg());
+                fb = new BytesFormatter(raiseNode, buffer, spec);
+                fb.formatAsciiString(result);
+                return fb;
             default:
                 return null;
         }

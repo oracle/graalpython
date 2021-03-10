@@ -190,8 +190,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 int ch = p.codePointAt(i);
                 int len;
                 if (ch < 0x100) {
-                    BytesUtils.byteEscape(ch, 0, buf);
-                    len = 4;
+                    len = BytesUtils.byteEscape(ch, 0, buf);
                 } else {
                     len = BytesUtils.unicodeNonAsciiEscape(ch, 0, buf);
                 }
