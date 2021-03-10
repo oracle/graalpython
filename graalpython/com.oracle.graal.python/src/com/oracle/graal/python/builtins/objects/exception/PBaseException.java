@@ -315,7 +315,7 @@ public final class PBaseException extends PythonObject {
 
     @ExportMessage
     int getExceptionExitStatus(
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
                     @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (getExceptionType(lib) == ExceptionType.EXIT) {
