@@ -29,13 +29,6 @@ SEEK_SET = 0
 SEEK_CUR = 1
 SEEK_END = 2
 
-class BlockingIOError(OSError):
-    pass
-
-
-class UnsupportedOperation(OSError, ValueError):
-    pass
-
 
 class StdPrinter:
     def __init__(self, file_io):

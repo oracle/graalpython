@@ -363,6 +363,22 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     abstract static class GetIteratorWithState {
 
+        @Specialization(guards = "lib.isIterator(receiver)")
+        static Object doForeignIterator(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
+                        @SuppressWarnings("unused") @CachedLibrary("receiver") InteropLibrary lib) {
+            return receiver;
+        }
+
+        @Specialization(guards = "lib.hasIterator(receiver)")
+        static Object doForeignIterable(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.getIterator(receiver);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("foreign objects claims to have an iterator but doesn't");
+            }
+        }
+
         @Specialization(guards = "lib.hasArrayElements(receiver)")
         static PForeignArrayIterator doForeignArray(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
@@ -390,13 +406,20 @@ final class DefaultPythonObjectExports {
             }
         }
 
-        @Specialization(replaces = {"doForeignArray", "doBoxedString"})
-        static PythonBuiltinObject doGeneric(Object receiver, ThreadState threadState,
+        @Specialization(replaces = {"doForeignArray", "doBoxedString", "doForeignIterator", "doForeignIterable"})
+        static Object doGeneric(Object receiver, ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @CachedLibrary("receiver") InteropLibrary lib) {
-
-            if (lib.hasArrayElements(receiver)) {
+            if (lib.isIterator(receiver)) {
+                return receiver;
+            } else if (lib.hasIterator(receiver)) {
+                try {
+                    return lib.getIterator(receiver);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else if (lib.hasArrayElements(receiver)) {
                 return doForeignArray(receiver, threadState, factory, raiseNode, lib);
             } else if (lib.isString(receiver)) {
                 return doBoxedString(receiver, threadState, factory, lib);

@@ -56,6 +56,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import org.graalvm.polyglot.Context;
 import org.hamcrest.CoreMatchers;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,6 +73,11 @@ public class DirFdConversionNodeTests {
     @Before
     public void setUp() {
         PythonTests.enterContext();
+    }
+
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
     @Test

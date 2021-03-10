@@ -46,6 +46,7 @@ import java.math.BigInteger;
 
 import org.graalvm.polyglot.Context;
 import org.hamcrest.CoreMatchers;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -73,6 +74,11 @@ public class FileDescriptorConversionNodeTests {
     @Before
     public void setUp() {
         PythonTests.enterContext();
+    }
+
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
     @Test
