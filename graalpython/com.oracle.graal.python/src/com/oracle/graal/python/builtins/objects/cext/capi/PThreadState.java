@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -139,8 +141,13 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object readMember(String member,
-                    @Exclusive @Cached ThreadStateReadNode readNode) {
-        return readNode.execute(member);
+                    @Exclusive @Cached ThreadStateReadNode readNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readNode.execute(member);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ImportStatic(PThreadState.class)
@@ -297,8 +304,13 @@ public class PThreadState extends PythonNativeWrapper {
     @ExportMessage
     protected void writeMember(String member, Object value,
                     @Exclusive @Cached ThreadStateWriteNode writeNode,
-                    @Exclusive @Cached ToJavaNode toJavaNode) throws UnknownIdentifierException {
-        writeNode.execute(member, toJavaNode.execute(value));
+                    @Exclusive @Cached ToJavaNode toJavaNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            writeNode.execute(member, toJavaNode.execute(value));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -429,29 +441,44 @@ public class PThreadState extends PythonNativeWrapper {
     // TO POINTER / AS POINTER / TO NATIVE
     @ExportMessage
     protected boolean isPointer(
-                    @Exclusive @Cached IsPointerNode pIsPointerNode) {
-        return pIsPointerNode.execute(this);
+                    @Exclusive @Cached IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return pIsPointerNode.execute(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public long asPointer(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
-        Object nativePointer = lib.getNativePointer(this);
-        if (nativePointer instanceof Long) {
-            return (long) nativePointer;
+                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object nativePointer = lib.getNativePointer(this);
+            if (nativePointer instanceof Long) {
+                return (long) nativePointer;
+            }
+            return interopLibrary.asPointer(nativePointer);
+        } finally {
+            gil.release(mustRelease);
         }
-        return interopLibrary.asPointer(nativePointer);
     }
 
     @ExportMessage
     protected void toNative(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-        invalidateNode.execute();
-        if (!lib.isNative(this)) {
-            setNativePointer(toPyObjectNode.execute(this));
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            invalidateNode.execute();
+            if (!lib.isNative(this)) {
+                setNativePointer(toPyObjectNode.execute(this));
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -464,15 +491,26 @@ public class PThreadState extends PythonNativeWrapper {
     abstract static class GetTypeIDNode {
         @Specialization(assumptions = "singleNativeContextAssumption()")
         static Object doByteArray(@SuppressWarnings("unused") PThreadState receiver,
+                        @Exclusive @Cached GilNode gil,
+                        @Bind("gil.acquire()") boolean mustRelease,
                         @Exclusive @Cached("callGetThreadStateTypeIDUncached()") Object nativeType) {
-            // TODO(fa): use weak reference ?
-            return nativeType;
+            try {
+                // TODO(fa): use weak reference ?
+                return nativeType;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(replaces = "doByteArray")
         static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PThreadState receiver,
-                        @Exclusive @Cached PCallCapiFunction callUnaryNode) {
-            return callUnaryNode.call(FUN_GET_THREAD_STATE_TYPE_ID);
+                        @Exclusive @Cached PCallCapiFunction callUnaryNode, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return callUnaryNode.call(FUN_GET_THREAD_STATE_TYPE_ID);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         protected static Object callGetThreadStateTypeIDUncached() {
