@@ -86,9 +86,11 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class InitNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isNoValue(iterable)")
-        @SuppressWarnings("unused")
-        static PNone doNoValue(VirtualFrame frame, PSet self, PNone iterable) {
+        @Specialization(guards = "isNoValue(iterable)", limit = "1")
+        static PNone doNoValue(PSet self, @SuppressWarnings("unused") PNone iterable,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage newStorage = lib.clear(self.getDictStorage());
+            self.setDictStorage(newStorage);
             return PNone.NONE;
         }
 
