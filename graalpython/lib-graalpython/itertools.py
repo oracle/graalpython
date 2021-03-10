@@ -618,7 +618,7 @@ class filterfalse(object):
 
     @__graalpython__.builtin_method
     def __init__(self, func, sequence):
-        self.func = func or (lambda x: False)
+        self.func = func
         self.iterator = iter(sequence)
 
     @__graalpython__.builtin_method
@@ -629,8 +629,15 @@ class filterfalse(object):
     def __next__(self):
         while True:
             n = next(self.iterator)
-            if not self.func(n):
+            if self.func is None:
+                if not n:
+                    return n
+            elif not self.func(n):
                 return n
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), (self.func, self.iterator)
 
 
 class takewhile(object):
