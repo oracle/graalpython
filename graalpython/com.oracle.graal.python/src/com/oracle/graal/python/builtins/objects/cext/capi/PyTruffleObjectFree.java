@@ -45,9 +45,11 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -70,12 +72,17 @@ public class PyTruffleObjectFree implements TruffleObject {
 
     @ExportMessage
     Object execute(Object[] arguments,
-                    @Cached FreeNode freeNode) throws ArityException {
-        if (arguments.length != 1) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw ArityException.create(1, arguments.length);
+                    @Cached FreeNode freeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (arguments.length != 1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(1, arguments.length);
+            }
+            return freeNode.execute(arguments[0]);
+        } finally {
+            gil.release(mustRelease);
         }
-        return freeNode.execute(arguments[0]);
     }
 
     @GenerateUncached
