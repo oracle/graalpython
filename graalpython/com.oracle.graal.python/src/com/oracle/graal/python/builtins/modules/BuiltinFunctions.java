@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrN
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -1626,28 +1625,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // ascii(object)
     @Builtin(name = ASCII, minNumOfPositionalArgs = 1)
-    @ImportStatic(PGuards.class)
     @GenerateNodeFactory
-    public abstract static class AsciiNode extends PythonUnaryBuiltinNode {
+    abstract static class AsciiNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isString(obj)")
-        public static String asciiString(Object obj,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
-            try {
-                String str = castToJavaStringNode.execute(obj);
-                return BytesUtils.doAsciiString(str);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-        }
-
-        @Specialization(guards = "!isString(obj)")
-        public static String asciiGeneric(VirtualFrame frame, Object obj,
-                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
-            String repr = reprNode.execute(frame, obj);
-            byte[] bytes = BytesUtils.unicodeEscape(repr);
-            return PythonUtils.newString(bytes);
+        @Specialization
+        public static String ascii(VirtualFrame frame, Object obj,
+                        @Cached ObjectNodes.AsciiNode asciiNode) {
+            return asciiNode.execute(frame, obj);
         }
     }
 

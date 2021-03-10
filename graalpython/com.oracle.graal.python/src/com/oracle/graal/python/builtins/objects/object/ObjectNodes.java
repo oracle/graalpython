@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -121,6 +122,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -877,6 +879,35 @@ public abstract class ObjectNodes {
 
         public static StrAsJavaStringNode create() {
             return ObjectNodesFactory.StrAsJavaStringNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class AsciiNode extends PNodeWithContext {
+        public abstract String execute(Frame frame, Object object);
+
+        @Specialization(guards = "isString(obj)")
+        public static String asciiString(Object obj,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            try {
+                String str = castToJavaStringNode.execute(obj);
+                return BytesUtils.doAsciiString(str);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
+        }
+
+        @Specialization(guards = "!isString(obj)")
+        public static String asciiGeneric(VirtualFrame frame, Object obj,
+                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
+            String repr = reprNode.execute(frame, obj);
+            byte[] bytes = BytesUtils.unicodeEscape(repr);
+            return PythonUtils.newString(bytes);
+        }
+
+        public static AsciiNode create() {
+            return ObjectNodesFactory.AsciiNodeGen.create();
         }
     }
 }

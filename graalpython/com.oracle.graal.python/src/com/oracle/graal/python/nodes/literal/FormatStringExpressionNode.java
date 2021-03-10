@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AsciiNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -66,7 +65,7 @@ public class FormatStringExpressionNode extends LiteralNode {
     @Child private BuiltinFunctions.FormatNode formatNode;
     @Child private ObjectNodes.StrAsJavaStringNode strNode;
     @Child private ObjectNodes.ReprAsJavaStringNode reprNode;
-    @Child private BuiltinFunctions.AsciiNode asciiNode;
+    @Child private ObjectNodes.AsciiNode asciiNode;
 
     public FormatStringExpressionNode(ExpressionNode expression, ExpressionNode specifier, StringLiteralSSTNode.FormatStringConversionType conversionType) {
         this.expression = expression;
@@ -83,10 +82,10 @@ public class FormatStringExpressionNode extends LiteralNode {
                     result = getStrNode().execute(frame, result);
                     break;
                 case REPR_CONVERSION:
-                    result = getReprAsJavaStringNode().execute(frame, result);
+                    result = getReprNode().execute(frame, result);
                     break;
                 case ASCII_CONVERSION:
-                    result = getAsciiNode().call(frame, result);
+                    result = getAsciiNode().execute(frame, result);
                     break;
                 default:
                     break;
@@ -97,10 +96,10 @@ public class FormatStringExpressionNode extends LiteralNode {
         return result;
     }
 
-    private AsciiNode getAsciiNode() {
+    private ObjectNodes.AsciiNode getAsciiNode() {
         if (asciiNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            asciiNode = insert(BuiltinFunctionsFactory.AsciiNodeFactory.create());
+            asciiNode = insert(ObjectNodes.AsciiNode.create());
         }
         return asciiNode;
     }
@@ -121,7 +120,7 @@ public class FormatStringExpressionNode extends LiteralNode {
         return strNode;
     }
 
-    private ObjectNodes.ReprAsJavaStringNode getReprAsJavaStringNode() {
+    private ObjectNodes.ReprAsJavaStringNode getReprNode() {
         if (reprNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             reprNode = insert(ObjectNodes.ReprAsJavaStringNode.create());
