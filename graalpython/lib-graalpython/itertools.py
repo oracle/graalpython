@@ -1035,7 +1035,7 @@ class compress():
 
 
 class _tee_dataobject:
-    LINKCELLS = 32
+    LINKCELLS = 128
 
     @__graalpython__.builtin_method
     def __init__(self, it, values=None, nxt=None):
@@ -1045,12 +1045,14 @@ class _tee_dataobject:
             self.numread = len(values)
             if self.numread == _tee_dataobject.LINKCELLS:
                 self.nextlink = nxt
+                if nxt and not isinstance(nxt, _tee_dataobject):
+                    raise ValueError("_tee_dataobject next link must be a _tee_dataobject")
             elif self.numread > _tee_dataobject.LINKCELLS:
                 raise ValueError(f"_tee_dataobject should nove have more than {_tee_dataobject.LINKCELLS} links")
             elif nxt is not None:
                 raise ValueError("_tee_dataobject shouldn't have a next if not full")
         else:
-            self.values = [None] * _tee_dataobject.LINKCELLS
+            self.values = []
             self.numread = 0
         self.running = False
         self.nextlink = nxt
@@ -1062,10 +1064,12 @@ class _tee_dataobject:
         return self.nextlink
 
     @__graalpython__.builtin_method
-    def __getitem__(self, i):
+    def _getitem(self, i):
+        assert i < _tee_dataobject.LINKCELLS
         if i < self.numread:
             return self.values[i]
         else:
+            assert i == self.numread
             if self.running:
                 raise RuntimeError("cannot re-enter the tee iterator")
             self.running = True
@@ -1074,12 +1078,13 @@ class _tee_dataobject:
             finally:
                 self.running = False
             self.numread += 1
-            self.values[i] = value
+            self.values.append(value)
             return value
 
     @__graalpython__.builtin_method
     def __reduce__(self):
-        return type(self), (self.it, self.values, self.nextlink)
+        values = self.values[:self.numread]
+        return type(self), (self.it, values, self.nextlink)
 
 
 class _tee:
@@ -1108,7 +1113,7 @@ class _tee:
         if self.index >= _tee_dataobject.LINKCELLS:
             self.dataobj = self.dataobj._jumplink()
             self.index = 0
-        value = self.dataobj[self.index]
+        value = self.dataobj._getitem(self.index)
         self.index += 1
         return value
 
