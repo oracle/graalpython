@@ -1125,6 +1125,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
 
         self.assertRaises(RuntimeError, IgnoreGeneratorExit().close)
 
+    @support.impl_detail("async support", graalvm=False)
     def test_AsyncGenerator(self):
         class NonAGen1:
             def __aiter__(self): return self
