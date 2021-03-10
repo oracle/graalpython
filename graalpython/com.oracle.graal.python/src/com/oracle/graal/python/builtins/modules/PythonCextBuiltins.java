@@ -103,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -120,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.DirectUpcall
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseErrorResult;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseNode;
@@ -278,11 +280,14 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
@@ -3307,13 +3312,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary callableLib,
                         @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached GetLLVMType getLLVMType,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = asPythonObjectNode.execute(callableObj);
-                return toNewRefNode.execute(callFunction(frame, callable, vaList, argsArrayLib, argLib, callableLib, asPythonObjectNode));
+                return toNewRefNode.execute(callFunction(frame, callable, vaList, argsArrayLib, argLib, callableLib, toJavaNode, getLLVMType));
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -3325,7 +3332,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         InteropLibrary argsArrayLib,
                         InteropLibrary argLib,
                         PythonObjectLibrary callableLib,
-                        AsPythonObjectNode asPythonObjectNode) {
+                        CExtNodes.ToJavaNode toJavaNode,
+                        GetLLVMType getLLVMType) {
             if (argsArrayLib.hasArrayElements(vaList)) {
                 try {
                     /*
@@ -3339,15 +3347,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     long arraySize = argsArrayLib.getArraySize(vaList);
                     Object[] args = new Object[PInt.intValueExact(arraySize) - 1];
                     int filled = 0;
+                    Object llvmPyObjectPtrType = getLLVMType.execute(LLVMType.PyObject_ptr_t);
                     for (int i = 0; i < args.length; i++) {
                         try {
-                            Object object = argsArrayLib.readArrayElement(vaList, i);
+                            Object object = argsArrayLib.invokeMember(vaList, "get", i, llvmPyObjectPtrType);
                             if (argLib.isNull(object)) {
                                 break;
                             }
-                            args[i] = asPythonObjectNode.execute(object);
+                            args[i] = toJavaNode.execute(object);
                             filled++;
-                        } catch (InvalidArrayIndexException e) {
+                        } catch (ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
                             throw CompilerDirectives.shouldNotReachHere();
                         }
                     }
@@ -3377,6 +3386,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached GetAnyAttributeNode getAnyAttributeNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Cached GetLLVMType getLLVMType,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
@@ -3386,7 +3397,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 Object receiver = asPythonObjectNode.execute(receiverObj);
                 Object methodName = asPythonObjectNode.execute(methodNameObj);
                 Object method = getAnyAttributeNode.executeObject(frame, receiver, methodName);
-                return toNewRefNode.execute(PyObjectCallFunctionObjArgsNode.callFunction(frame, method, vaList, argsArrayLib, argLib, methodLib, asPythonObjectNode));
+                return toNewRefNode.execute(PyObjectCallFunctionObjArgsNode.callFunction(frame, method, vaList, argsArrayLib, argLib, methodLib, toJavaNode, getLLVMType));
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -3434,6 +3445,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsArray, Object kwargsObj,
                         @CachedLibrary("argsArray") InteropLibrary argsArrayLib,
+                        @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CastKwargsNode castKwargsNode,
                         @Cached CallNode callNode,
@@ -3449,7 +3461,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         Object[] args = new Object[PInt.intValueExact(arraySize)];
                         for (int i = 0; i < args.length; i++) {
                             try {
-                                args[i] = asPythonObjectNode.execute(argsArrayLib.readArrayElement(argsArray, i));
+                                args[i] = toJavaNode.execute(argsArrayLib.readArrayElement(argsArray, i));
                             } catch (InvalidArrayIndexException e) {
                                 throw CompilerDirectives.shouldNotReachHere();
                             }
@@ -3487,9 +3499,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!lib.isNull(argsObj)")
         static Object[] doNotNull(VirtualFrame frame, Object argsObj,
                         @Cached ExecutePositionalStarargsNode expandArgsNode,
-                        @Cached AsPythonObjectNode argsToJavaNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
                         @Shared("lib") @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
-            return expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
+            return expandArgsNode.executeWith(frame, asPythonObjectNode.execute(argsObj));
         }
     }
 
