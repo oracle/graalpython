@@ -26,7 +26,7 @@ to the underlying OS interface without any emulation layer in between.
 By default, this implementation bypasses the Truffle abstraction layer,
 therefore it is not sandboxed and does not support custom implementations
 of [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html)
-and other Truffle providers related to system interfaces.
+and other Polyglot API providers related to system interfaces.
 
 The native backend is chosen by default when GraalVM Python
 is started via the `graalpython` or any other Python related
@@ -43,10 +43,10 @@ Known limitations:
 
 ## Java backend
 
-The `java` backend uses the Truffle API abstraction and therefore supports
-custom Truffle providers related to system interfaces and sandboxing.
-Since the Truffle API abstraction is POSIX agnostic, it does not expose
-all the functionality necessary. Some functionality is emulated, and some
+The `java` backend uses the [Truffle abstraction layer](https://www.graalvm.org/graalvm-as-a-platform/language-implementation-framework/)
+and therefore supports custom Polyglot API providers related to system interfaces and sandboxing.
+Since this abstraction is POSIX agnostic, it does not expose
+all the necessary functionality. Some functionality is emulated, and some
 functionality is not supported at all.
 
 The java backend is the default when GraalVM Python is run via
