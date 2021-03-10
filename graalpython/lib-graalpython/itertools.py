@@ -155,6 +155,10 @@ class starmap():
         obj = next(self.iterable)
         return self.fun(*obj)
 
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), (self.fun, self.iterable)
+
 
 class islice(object):
     @__graalpython__.builtin_method
