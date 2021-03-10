@@ -379,11 +379,11 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class StrNode extends PythonUnaryBuiltinNode {
+    abstract static class StrNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        public String doit(PZipImporter self) {
+        String doit(PZipImporter self) {
             String archive = self.getArchive();
             String prefix = self.getPrefix();
             StringBuilder sb = new StringBuilder("<zipimporter object \"");

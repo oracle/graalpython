@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodesFactory.GetFullyQualifiedNameNodeGen;
@@ -810,6 +811,9 @@ public abstract class ObjectNodes {
         }
     }
 
+    /**
+     * Default repr for objects that don't override {@code __repr__}
+     */
     @GenerateUncached
     public abstract static class DefaultObjectReprNode extends PNodeWithContext {
         public abstract String execute(Frame frame, Object object);
@@ -823,6 +827,56 @@ public abstract class ObjectNodes {
 
         public static DefaultObjectReprNode create() {
             return ObjectNodesFactory.DefaultObjectReprNodeGen.create();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code PyObject_Str}.
+     *
+     * The output can be either a {@link String} or a {@link PString}.
+     *
+     * @see StrAsJavaStringNode
+     */
+    @GenerateUncached
+    public abstract static class StrAsObjectNode extends PNodeWithContext {
+        public abstract Object execute(Frame frame, Object object);
+
+        @Specialization(limit = "3")
+        static Object str(VirtualFrame frame, Object obj,
+                        @Cached ConditionProfile gotState,
+                        @CachedLibrary("obj") PythonObjectLibrary objLib) {
+            if (gotState.profile(frame != null)) {
+                return objLib.asPStringWithState(obj, PArguments.getThreadState(frame));
+            } else {
+                return objLib.asPString(obj);
+            }
+        }
+
+        public static StrAsObjectNode create() {
+            return ObjectNodesFactory.StrAsObjectNodeGen.create();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code PyObject_Str}.
+     *
+     * The output is always coerced to a Java {@link String}
+     *
+     * @see StrAsObjectNode
+     */
+    @GenerateUncached
+    public abstract static class StrAsJavaStringNode extends PNodeWithContext {
+        public abstract String execute(Frame frame, Object object);
+
+        @Specialization
+        static String str(VirtualFrame frame, Object obj,
+                        @Cached StrAsObjectNode strNode,
+                        @Cached CastToJavaStringNode cast) {
+            return cast.execute(strNode.execute(frame, obj));
+        }
+
+        public static StrAsJavaStringNode create() {
+            return ObjectNodesFactory.StrAsJavaStringNodeGen.create();
         }
     }
 }

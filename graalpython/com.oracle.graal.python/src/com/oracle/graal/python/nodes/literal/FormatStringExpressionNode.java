@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AsciiNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
@@ -66,7 +64,7 @@ public class FormatStringExpressionNode extends LiteralNode {
     private final StringLiteralSSTNode.FormatStringConversionType conversionType;
 
     @Child private BuiltinFunctions.FormatNode formatNode;
-    @Child private BuiltinConstructors.StrNode strNode;
+    @Child private ObjectNodes.StrAsJavaStringNode strNode;
     @Child private ObjectNodes.ReprAsJavaStringNode reprNode;
     @Child private BuiltinFunctions.AsciiNode asciiNode;
 
@@ -82,7 +80,7 @@ public class FormatStringExpressionNode extends LiteralNode {
         if (null != conversionType) {
             switch (conversionType) {
                 case STR_CONVERTION:
-                    result = getStrNode().executeWith(frame, result);
+                    result = getStrNode().execute(frame, result);
                     break;
                 case REPR_CONVERSION:
                     result = getReprAsJavaStringNode().execute(frame, result);
@@ -115,10 +113,10 @@ public class FormatStringExpressionNode extends LiteralNode {
         return formatNode;
     }
 
-    private BuiltinConstructors.StrNode getStrNode() {
+    private ObjectNodes.StrAsJavaStringNode getStrNode() {
         if (strNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            strNode = insert(BuiltinConstructorsFactory.StrNodeFactory.create(null));
+            strNode = insert(ObjectNodes.StrAsJavaStringNode.create());
         }
         return strNode;
     }
