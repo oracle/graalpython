@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -90,24 +91,39 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         boolean isPointer(
-                        @Cached IsPointerNode pIsPointerNode) {
-            return pIsPointerNode.execute(this);
+                        @Cached IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return pIsPointerNode.execute(this);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @ExportMessage
         long asPointer(
-                        @Cached PAsPointerNode pAsPointerNode) {
-            return pAsPointerNode.execute(this);
+                        @Cached PAsPointerNode pAsPointerNode, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return pAsPointerNode.execute(this);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @ExportMessage
         void toNative(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                setNativePointer(toPyObjectNode.execute(this));
+                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                invalidateNode.execute();
+                if (!lib.isNative(this)) {
+                    setNativePointer(toPyObjectNode.execute(this));
+                }
+            } finally {
+                gil.release(mustRelease);
             }
         }
 
@@ -163,20 +179,24 @@ public abstract class PyUnicodeWrappers {
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached SizeofWCharNode sizeofWcharNode,
-                        @Exclusive @Cached StringLenNode stringLenNode) throws UnknownIdentifierException {
+                        @Exclusive @Cached StringLenNode stringLenNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (isMemberReadable(member)) {
+                    int elementSize = (int) sizeofWcharNode.execute();
+                    PString s = getPString(lib);
+                    CharSequence content = s.getCharSequence();
 
-            if (isMemberReadable(member)) {
-                int elementSize = (int) sizeofWcharNode.execute();
-                PString s = getPString(lib);
-                CharSequence content = s.getCharSequence();
-
-                if (content instanceof NativeCharSequence) {
-                    // in this case, we can just return the pointer
-                    return ((NativeCharSequence) content).getPtr();
+                    if (content instanceof NativeCharSequence) {
+                        // in this case, we can just return the pointer
+                        return ((NativeCharSequence) content).getPtr();
+                    }
+                    return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(s, elementSize, stringLenNode.execute(s)), elementSize);
                 }
-                return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(s, elementSize, stringLenNode.execute(s)), elementSize);
+                throw UnknownIdentifierException.create(member);
+            } finally {
+                gil.release(mustRelease);
             }
-            throw UnknownIdentifierException.create(member);
         }
     }
 
@@ -221,19 +241,24 @@ public abstract class PyUnicodeWrappers {
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ConditionProfile storageProfile,
                         @Cached StringMaterializeNode materializeNode,
-                        @Cached SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
-            // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
-            int value = 0b000000000000000000000000_1_0_0_000_00;
-            PString delegate = getPString(lib);
-            if (onlyAscii(delegate, storageProfile, materializeNode)) {
-                value |= 0b1_0_000_00;
+                        @Cached SizeofWCharNode sizeofWcharNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+            boolean mustRelease = gil.acquire();
+            try {
+                // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
+                int value = 0b000000000000000000000000_1_0_0_000_00;
+                PString delegate = getPString(lib);
+                if (onlyAscii(delegate, storageProfile, materializeNode)) {
+                    value |= 0b1_0_000_00;
+                }
+                value |= (getKind(delegate, storageProfile, sizeofWcharNode) << 2) & 0b11100;
+                if (isMemberReadable(member)) {
+                    // it's a bit field; so we need to return the whole 32-bit word
+                    return value;
+                }
+                throw UnknownIdentifierException.create(member);
+            } finally {
+                gil.release(mustRelease);
             }
-            value |= (getKind(delegate, storageProfile, sizeofWcharNode) << 2) & 0b11100;
-            if (isMemberReadable(member)) {
-                // it's a bit field; so we need to return the whole 32-bit word
-                return value;
-            }
-            throw UnknownIdentifierException.create(member);
         }
 
         private boolean onlyAscii(PString value, ConditionProfile storageProfile, StringMaterializeNode stringMaterializeNode) {
