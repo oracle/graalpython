@@ -212,6 +212,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -229,6 +230,7 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -3300,53 +3302,122 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyObjectCallFunctionObjArgsNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "1")
-        static Object doGeneric(VirtualFrame frame, Object callableObj, Object vaList,
+        static Object doFunction(VirtualFrame frame, Object callableObj, Object vaList,
                         @CachedLibrary("vaList") InteropLibrary argsArrayLib,
-                        @CachedLibrary(limit = "2") InteropLibrary argLib,
+                        @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary callableLib,
                         @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached CallNode callNode,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object callable = asPythonObjectNode.execute(callableObj);
+                return toNewRefNode.execute(callFunction(frame, callable, vaList, argsArrayLib, argLib, callableLib, asPythonObjectNode));
+            } catch (PException e) {
+                // transformExceptionToNativeNode acts as a branch profile
+                transformExceptionToNativeNode.execute(frame, e);
+                return nullToSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        static Object callFunction(VirtualFrame frame, Object callable, Object vaList,
+                        InteropLibrary argsArrayLib,
+                        InteropLibrary argLib,
+                        PythonObjectLibrary callableLib,
+                        AsPythonObjectNode asPythonObjectNode) {
             if (argsArrayLib.hasArrayElements(vaList)) {
                 try {
-                    try {
-                        /*
-                         * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains
-                         * just 'PyObject *' and is terminated by 'NULL'. Hence, we allocate an
-                         * argument array with one element less than the va_list object says (since
-                         * the last element is expected to be 'NULL'; this is best effort). However,
-                         * we must also stop at the first 'NULL' element we encounter since a user
-                         * could pass several 'NULL'.
-                         */
-                        long arraySize = argsArrayLib.getArraySize(vaList);
-                        Object[] args = new Object[PInt.intValueExact(arraySize) - 1];
-                        for (int i = 0; i < args.length; i++) {
-                            try {
-                                Object object = argsArrayLib.readArrayElement(vaList, i);
-                                if (argLib.isNull(object)) {
-                                    break;
-                                }
-                                args[i] = asPythonObjectNode.execute(object);
-                            } catch (InvalidArrayIndexException e) {
-                                throw CompilerDirectives.shouldNotReachHere();
+                    /*
+                     * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains just
+                     * 'PyObject *' and is terminated by 'NULL'. Hence, we allocate an argument
+                     * array with one element less than the va_list object says (since the last
+                     * element is expected to be 'NULL'; this is best effort). However, we must also
+                     * stop at the first 'NULL' element we encounter since a user could pass several
+                     * 'NULL'.
+                     */
+                    long arraySize = argsArrayLib.getArraySize(vaList);
+                    Object[] args = new Object[PInt.intValueExact(arraySize) - 1];
+                    for (int i = 0; i < args.length; i++) {
+                        try {
+                            Object object = argsArrayLib.readArrayElement(vaList, i);
+                            if (argLib.isNull(object)) {
+                                break;
                             }
+                            args[i] = asPythonObjectNode.execute(object);
+                        } catch (InvalidArrayIndexException e) {
+                            throw CompilerDirectives.shouldNotReachHere();
                         }
-                        Object callable = asPythonObjectNode.execute(callableObj);
-                        return toNewRefNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
-                    } catch (UnsupportedMessageException | OverflowException e) {
-                        // I think we can just assume that there won't be more than
-                        // Integer.MAX_VALUE arguments.
-                        throw CompilerDirectives.shouldNotReachHere();
                     }
-                } catch (PException e) {
-                    // transformExceptionToNativeNode acts as a branch profile
-                    transformExceptionToNativeNode.execute(frame, e);
-                    return nullToSulongNode.execute(getNativeNullNode.execute());
+                    return callableLib.callObject(callable, frame, args);
+                } catch (UnsupportedMessageException | OverflowException e) {
+                    // I think we can just assume that there won't be more than
+                    // Integer.MAX_VALUE arguments.
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
             }
             throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyObject_CallMethodObjArgs", parameterNames = {"receiver", "method_name", "va_list"})
+    @GenerateNodeFactory
+    abstract static class PyObjectCallMethodObjArgsNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(limit = "1")
+        static Object doMethod(VirtualFrame frame, Object receiverObj, Object methodNameObj, Object vaList,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
+                        @CachedLibrary("vaList") InteropLibrary argsArrayLib,
+                        @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
+                        @Cached GetAnyAttributeNode getAnyAttributeNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+
+            try {
+                Object receiver = asPythonObjectNode.execute(receiverObj);
+                Object methodName = asPythonObjectNode.execute(methodNameObj);
+                Object method = getAnyAttributeNode.executeObject(frame, receiver, methodName);
+                return toNewRefNode.execute(PyObjectCallFunctionObjArgsNode.callFunction(frame, method, vaList, argsArrayLib, argLib, methodLib, asPythonObjectNode));
+            } catch (PException e) {
+                // transformExceptionToNativeNode acts as a branch profile
+                transformExceptionToNativeNode.execute(frame, e);
+                return nullToSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyObject_CallMethod", parameterNames = {"object", "method_name", "args", "single_arg"})
+    @GenerateNodeFactory
+    abstract static class PyObjectCallMethodNode extends PythonQuaternaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object receiverObj, String methodName, Object argsObj, int singleArg,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary objectLib,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached CastArgsNode castArgsNode,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+
+            try {
+                Object receiver = asPythonObjectNode.execute(receiverObj);
+                Object[] args;
+                if (singleArg != 0) {
+                    args = new Object[]{asPythonObjectNode.execute(argsObj)};
+                } else {
+                    args = castArgsNode.execute(frame, argsObj);
+                }
+                return toNewRefNode.execute(objectLib.lookupAndCallRegularMethod(receiver, frame, methodName, args));
+            } catch (PException e) {
+                // transformExceptionToNativeNode acts as a branch profile
+                transformExceptionToNativeNode.execute(frame, e);
+                return nullToSulongNode.execute(getNativeNullNode.execute());
+            }
         }
     }
 

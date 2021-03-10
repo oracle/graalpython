@@ -244,46 +244,41 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     return result;
 }
 
-UPCALL_ID(PyObject_CallMethod);
+typedef PyObject *(*call_method_t)(PyObject *, void *, void *, int32_t);
+UPCALL_TYPED_ID(PyObject_CallMethod, call_method_t);
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
-        args = Py_None;
-    } else {
-        va_list va;
-        va_start(va, fmt);
-        args = Py_VaBuildValue(fmt, va);
-        va_end(va);
+        return _jls_PyObject_CallMethod(native_to_java(object), polyglot_from_string(method, SRC_CS), NULL, 0);
     }
-    return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
+    va_list va;
+    va_start(va, fmt);
+    args = Py_VaBuildValue(fmt, va);
+    va_end(va);
+    return _jls_PyObject_CallMethod(native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args), IS_SINGLE_ARG(fmt));
 }
 
+typedef PyObject *(*call_meth_obj_args_t)(PyObject *, void *, void *);
+UPCALL_TYPED_ID(PyObject_CallMethodObjArgs, call_meth_obj_args_t);
 PyObject* PyObject_CallMethodObjArgs(PyObject *callable, PyObject *name, ...) {
     va_list vargs;
     va_start(vargs, name);
     // the arguments are given as a variable list followed by NULL
-    int argc = polyglot_get_array_size(vargs) - 1;
-    PyObject* args = PyTuple_New(argc);
-    for (int i = 0; i < argc; i++) {
-        PyObject *arg = va_arg(vargs, PyObject*);
-        Py_INCREF(arg);
-        PyTuple_SetItem(args, i, arg);
-    }
+    PyObject *result = _jls_PyObject_CallMethodObjArgs(native_to_java(callable), native_to_java(name), &vargs);
     va_end(vargs);
-    return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(callable), native_to_java(name), native_to_java(args));
+    return result;
 }
 
 PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     if (fmt == NULL || fmt[0] == '\0') {
-        args = Py_None;
-    } else {
-        va_list va;
-        va_start(va, fmt);
-        args = Py_VaBuildValue(fmt, va);
-        va_end(va);
+        return _jls_PyObject_CallMethod(native_to_java(object), polyglot_from_string(method, SRC_CS), NULL, 0);
     }
-    return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
+    va_list va;
+    va_start(va, fmt);
+    args = Py_VaBuildValue(fmt, va);
+    va_end(va);
+    return _jls_PyObject_CallMethod(native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args), IS_SINGLE_ARG(fmt));
 }
 
 typedef PyObject *(*fast_call_dict_fun_t)(PyObject *, void *, PyObject *);

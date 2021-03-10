@@ -1109,16 +1109,6 @@ def dict_from_list(lst):
     return d
 
 
-@may_raise
-def PyObject_CallMethod(rcvr, method, args):
-    # TODO(fa) that seems to be a workaround
-    if type(args) is tuple:
-        return getattr(rcvr, method)(*args)
-    elif args is not None:
-        return getattr(rcvr, method)(args)
-    return getattr(rcvr, method)()
-
-
 @may_raise(-1)
 def PyObject_DelItem(obj, key):
     del obj[key]
