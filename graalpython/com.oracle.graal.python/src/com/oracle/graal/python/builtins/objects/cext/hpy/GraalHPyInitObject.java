@@ -42,8 +42,10 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -94,30 +96,34 @@ public class GraalHPyInitObject implements TruffleObject {
     @ExportMessage
     @TruffleBoundary
     Object invokeMember(String key, Object[] arguments,
-                    @Cached HPyEnsureHandleNode ensureHandleNode) throws UnsupportedMessageException, ArityException {
+                    @Cached HPyEnsureHandleNode ensureHandleNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, ArityException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, arguments.length);
+            }
 
-        if (arguments.length != 1) {
-            throw ArityException.create(1, arguments.length);
+            switch (key) {
+                case SET_HPY_CONTEXT_NATIVE_TYPE:
+                    hpyContext.setHPyContextNativeType(arguments[0]);
+                    return 0;
+                case SET_HPY_NATIVE_TYPE:
+                    hpyContext.setHPyNativeType(arguments[0]);
+                    return 0;
+                case SET_HPY_ARRAY_NATIVE_TYPE:
+                    hpyContext.setHPyArrayNativeType(arguments[0]);
+                    return 0;
+                case SET_HPY_NULL_HANDLE:
+                    hpyContext.setNullHandle(ensureHandleNode.execute(hpyContext, arguments[0]));
+                    return 0;
+                case SET_WCHAR_SIZE:
+                    hpyContext.setWcharSize(((Number) arguments[0]).longValue());
+                    return 0;
+            }
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-
-        switch (key) {
-            case SET_HPY_CONTEXT_NATIVE_TYPE:
-                hpyContext.setHPyContextNativeType(arguments[0]);
-                return 0;
-            case SET_HPY_NATIVE_TYPE:
-                hpyContext.setHPyNativeType(arguments[0]);
-                return 0;
-            case SET_HPY_ARRAY_NATIVE_TYPE:
-                hpyContext.setHPyArrayNativeType(arguments[0]);
-                return 0;
-            case SET_HPY_NULL_HANDLE:
-                hpyContext.setNullHandle(ensureHandleNode.execute(hpyContext, arguments[0]));
-                return 0;
-            case SET_WCHAR_SIZE:
-                hpyContext.setWcharSize(((Number) arguments[0]).longValue());
-                return 0;
-        }
-        throw UnsupportedMessageException.create();
     }
 
 }
