@@ -1,36 +1,38 @@
 # Operating System Interfaces
 
 Truffle based GraalVM languages usually implement the system related
-functions using the Truffle API abstraction, which is OS independent
-and provides extension points for the users when embedding GraalPython
+functions using the [Truffle abstraction layer](https://www.graalvm.org/graalvm-as-a-platform/language-implementation-framework/), which is OS independent
+and provides extension points for the users when embedding GraalVM Python
 or other Truffle based languages into Java applications. See, for example,
 [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html).
 
-Python also provides OS abstraction, but exposes lower level interfaces, for instance,
-the OS module directly exposes some POSIX functions. On non-POSIX platforms,
+The Python standard library also provides OS abstraction, but exposes lower level interfaces,
+for instance, the OS module directly exposes some POSIX functions. On non-POSIX platforms,
 this interface is emulated to a degree.
 
-GraalPython provides two alternative implementations of the system related
-functionality offered by builtin modules such as `os` or `pwd`.
-Which implementation is used can be controlled by option `PosixModuleBackend`:
+GraalVM Python runtime provides two alternative implementations of the system related
+functionality offered by the builtin Python modules such as `os`.
+Which implementation is used can be controlled by the option `PosixModuleBackend`:
 valid values are `native` and `java`.
 
-## GraalPython's native backend
+## Native backend
 
 The `native` backend calls directly the POSIX API in mostly the same way
-as CPython (the reference Python implementation) does.
+as CPython, the reference Python implementation, does.
 
 This approach is the most compatible with CPython and provides bare access
 to the underlying OS interface without any emulation layer in between.
 
-By default, this implementation bypasses the Truffle API, therefore it is
-not sandboxed and does not support custom implementations
+By default, this implementation bypasses the Truffle abstraction layer,
+therefore it is not sandboxed and does not support custom implementations
 of [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html)
 and other Truffle providers related to system interfaces.
 
-GraalPython's native backend is chosen by default when GraalPython
-is started via the `graalpython` or any other GraalPython related
-launcher inside GraalVM.
+The native backend is chosen by default when GraalVM Python
+is started via the `graalpython` or any other Python related
+launcher inside GraalVM. The exception are Python related launchers
+with `-managed` suffix available only in GraalVM Enterprise
+(e.g., `graalpython-managed`), which by default use the `java` POSIX backend.
 
 ### Limitations of the native backend
 
@@ -39,7 +41,7 @@ Known limitations:
 * `os.fork` is not supported
 * `_posixsubprocess.fork_exec` does not support the `preexec_fn` parameter
 
-## GraalPython's emulated backend
+## Java backend
 
 The `java` backend uses the Truffle API abstraction and therefore supports
 custom Truffle providers related to system interfaces and sandboxing.
@@ -47,12 +49,13 @@ Since the Truffle API abstraction is POSIX agnostic, it does not expose
 all the functionality necessary. Some functionality is emulated, and some
 functionality is not supported at all.
 
-GraalPython's emulated backend is the default when GraalPython is run via
-the `Context` API, i.e., [embedded in Java applications](https://www.graalvm.org/reference-manual/embed-languages).
+The java backend is the default when GraalVM Python is run via
+the `Context` API, i.e., [embedded in Java applications](https://www.graalvm.org/reference-manual/embed-languages), or when it is launched using Python related launchers
+with `-managed` suffix available only in GraalVM Enterprise.
 
 ### Limitations of the emulated backend
 
-GraalPython can log info about known incompatibility of functions executed at runtime,
+GraalVM Python can log info about known incompatibility of functions executed at runtime,
 which includes the OS interface related functions. To turn on this logging use
 `--log.python.compatibility=FINE` or other desired logging level.
 
@@ -70,3 +73,15 @@ Known limitations of the emulated layer are:
 * `os.access` and any other functionality based on `faccessat` POSIX function does not support:
   * effective IDs
   * `follow_symlinks=False` unless the mode is only `F_OK`
+
+## Relation to Python native extensions
+
+Apart from operating system interfaces exposed as builtin Python level modules,
+Python native extensions executed via the GraalVM LLVM runtime may also access
+OS interfaces at the C level. How such accesses are handled depends on the
+GraalVM LLVM runtime configuration.
+
+At this point, the only combination where OS handles, such as file descriptors,
+can be shared between Python and the C code of Python extensions is with
+`native` PosixModuleBackend and `native` mode of GraalVM LLVM runtime.
+This combination is the default for the `graalpython` launcher.
