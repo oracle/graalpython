@@ -101,6 +101,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyCloseArrayWrapperNode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -116,6 +118,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -136,6 +140,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -2103,4 +2108,47 @@ public class GraalHPyNodes {
         }
     }
 
+    @GenerateUncached
+    public abstract static class HPyCastArgsNode extends Node {
+
+        public abstract Object[] execute(GraalHPyHandle argsHandle);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "argsHandle.isNull()")
+        static Object[] doNull(GraalHPyHandle argsHandle) {
+            return PythonUtils.EMPTY_OBJECT_ARRAY;
+        }
+
+        @Specialization(guards = "!argsHandle.isNull()")
+        static Object[] doNotNull(GraalHPyHandle argsHandle,
+                        @Cached ExecutePositionalStarargsInteropNode expandArgsNode) {
+            return expandArgsNode.executeWithGlobalState(argsHandle.getDelegate());
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HPyCastKwargsNode extends Node {
+
+        public abstract PKeyword[] execute(GraalHPyHandle kwargsHandle);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "kwargsHandle.isNull() || isEmptyDict(lenNode, delegate)", limit = "1")
+        static PKeyword[] doNoKeywords(GraalHPyHandle kwargsHandle,
+                        @Bind("kwargsHandle.getDelegate()") Object delegate,
+                        @Shared("lenNode") @Cached HashingCollectionNodes.LenNode lenNode) {
+            return PKeyword.EMPTY_KEYWORDS;
+        }
+
+        @Specialization(guards = {"!kwargsHandle.isNull()", "!isEmptyDict(lenNode, delegate)"}, limit = "1")
+        static PKeyword[] doKeywords(@SuppressWarnings("unused") GraalHPyHandle kwargsHandle,
+                        @Bind("kwargsHandle.getDelegate()") Object delegate,
+                        @Shared("lenNode") @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode) {
+            return expandKwargsNode.execute(delegate);
+        }
+
+        static boolean isEmptyDict(HashingCollectionNodes.LenNode lenNode, Object delegate) {
+            return delegate instanceof PDict && lenNode.execute((PDict) delegate) == 0;
+        }
+    }
 }

@@ -89,6 +89,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddLeg
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCastArgsNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCastKwargsNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateTypeFromSpecNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
@@ -106,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -1912,6 +1915,34 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(nativeContext, arguments[1]);
             return PInt.intValue(objectLib.isCallable(object));
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyIsCallTupleDict extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached HPyCastArgsNode castArgsNode,
+                        @Cached HPyCastKwargsNode castKwargsNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached CallNode callNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedTypeException {
+            checkArity(arguments, 4);
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object callable = asPythonObjectNode.execute(nativeContext, arguments[1]);
+            try {
+                Object[] args = castArgsNode.execute(ensureHandleNode.execute(nativeContext, arguments[2]));
+                PKeyword[] keywords = castKwargsNode.execute(ensureHandleNode.execute(nativeContext, arguments[3]));
+                return asHandleNode.execute(nativeContext, callNode.execute(callable, args, keywords));
+            } catch (PException e) {
+                // transformExceptionToNativeNode acts as a branch profile
+                transformExceptionToNativeNode.execute(nativeContext, e);
+                return nativeContext.getNullHandle();
+            }
         }
     }
 }
