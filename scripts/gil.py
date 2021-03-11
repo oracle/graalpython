@@ -59,6 +59,7 @@ GIL_NODE_IMPORT = "import com.oracle.graal.python.runtime.GilNode;"
 CACHED_IMPORT = "import com.oracle.truffle.api.dsl.Cached;"
 SHARED_IMPORT = "import com.oracle.truffle.api.dsl.Cached.Shared;"
 EXCLUSIVE_IMPORT = "import com.oracle.truffle.api.dsl.Cached.Exclusive;"
+SKIP_GIL = "// skip GIL"
 
 
 def find_end(match, source, is_class=False):
@@ -220,7 +221,7 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
             if add:
                 messages, shared = get_messages(source, PTRN_MESSAGE, sharing=sharing)
                 if len(messages) > 0:
-                    if 'GilNode gil' in source:
+                    if 'GilNode gil' in source or SKIP_GIL in source:
                         print("[skipping] {}".format(java_file))
                         continue
 
