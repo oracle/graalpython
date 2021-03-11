@@ -748,4 +748,5 @@ public abstract class ErrorMessages {
     public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
                     "is deprecated, and may be removed in a future version of Python.";
+    public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
 }

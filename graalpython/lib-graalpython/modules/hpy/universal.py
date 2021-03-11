@@ -38,7 +38,6 @@
 # SOFTWARE.
 
 import _imp
-from .devel import version
 
 def load_from_spec(spec):
     try:
@@ -48,5 +47,15 @@ def load_from_spec(spec):
             raise e.__cause__
         raise
 
+__version = None
 def get_version():
-    return (version.__version__, version.__git_revision__)
+    global __version
+    if not __version:
+        import os.path
+        import _io
+        path = os.path.join(os.path.dirname(__file__), "devel", "version.py")
+        ns = {}
+        with _io.FileIO(path, "r") as f:
+            exec(compile(f.readall(), path, "exec"), ns)
+        __version = (ns["__version__"], ns["__git_revision__"])
+    return __version
