@@ -67,6 +67,7 @@ import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -91,7 +92,6 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjAr
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeFactory;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -233,11 +233,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -412,7 +413,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Type extends NativeBuiltin {
 
         private static final String[] LOOKUP_MODULES = new String[]{
@@ -423,7 +423,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object doI(String typeName) {
+        Object doI(Object typeNameObject) {
+            String typeName = CastToJavaStringNode.getUncached().execute(typeNameObject);
             PythonCore core = getCore();
             for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
                 if (type.getName().equals(typeName)) {
@@ -499,7 +500,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "CreateBuiltinMethod", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateBuiltinMethodNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -508,10 +508,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 2, parameterNames = {"name", "callable", "wrapper", "type"})
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class CreateFunctionNode extends PythonBuiltinNode {
+    abstract static class CreateFunctionNode extends PythonQuaternaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PythonCextBuiltinsClinicProviders.CreateFunctionNodeClinicProviderGen.INSTANCE;
+        }
 
         abstract Object execute(String name, Object callable, Object wrapper, Object type);
 
@@ -612,11 +616,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static boolean isDecoratedManagedFunction(Object obj) {
             return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
         }
-
-        public static CreateFunctionNode create() {
-            return CreateFunctionNodeFactory.create(null);
-        }
-
     }
 
     @Builtin(name = "PyErr_Restore", minNumOfPositionalArgs = 3)
@@ -1419,24 +1418,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_AsWideChar", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
         @Child private UnicodeAsWideCharNode asWideCharNode;
 
         @Specialization
-        Object doUnicode(VirtualFrame frame, String s, long elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
-            return doUnicode(frame, s, elementSize, -1, errorMarker);
+        Object doUnicode(VirtualFrame frame, Object s, long elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker,
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
+            return doUnicode(frame, s, elementSize, -1, errorMarker, castStr);
         }
 
         @Specialization
-        Object doUnicode(VirtualFrame frame, String s, long elementSize, long elements, Object errorMarker) {
+        Object doUnicode(VirtualFrame frame, Object s, long elementSize, long elements, Object errorMarker,
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
             try {
                 if (asWideCharNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     asWideCharNode = insert(UnicodeAsWideCharNodeGen.create());
                 }
 
-                PBytes wchars = asWideCharNode.executeLittleEndian(s, elementSize, elements);
+                PBytes wchars = asWideCharNode.executeLittleEndian(castStr.execute(s), elementSize, elements);
                 if (wchars != null) {
                     return wchars;
                 } else {
@@ -1449,18 +1449,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doUnicode(VirtualFrame frame, String s, PInt elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
+        Object doUnicode(VirtualFrame frame, String s, PInt elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker,
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
             try {
-                return doUnicode(frame, s, elementSize.longValueExact(), -1, errorMarker);
+                return doUnicode(frame, s, elementSize.longValueExact(), -1, errorMarker, castStr);
             } catch (OverflowException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.INVALID_PARAMS);
             }
         }
 
         @Specialization
-        Object doUnicode(VirtualFrame frame, String s, PInt elementSize, PInt elements, Object errorMarker) {
+        Object doUnicode(VirtualFrame frame, String s, PInt elementSize, PInt elements, Object errorMarker,
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
             try {
-                return doUnicode(frame, s, elementSize.longValueExact(), elements.longValueExact(), errorMarker);
+                return doUnicode(frame, s, elementSize.longValueExact(), elements.longValueExact(), errorMarker, castStr);
             } catch (OverflowException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.INVALID_PARAMS);
             }
