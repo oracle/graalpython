@@ -314,9 +314,9 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         // n.b: do not replace the other two specializations here, because that would make the
         // uncached version pretty useless
-        @Specialization
+        @Specialization(guards = {"shouldTransition(self) || !isBuiltinString(key, profile)"})
         static HashingStorage generalize(DynamicObjectStorage self, Object key, Object value, ThreadState state,
-                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
+                        @Exclusive @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("self") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary newLib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isBuiltinKey,
