@@ -1121,52 +1121,67 @@ public class GraalHPyNodes {
 
         @Specialization(guards = {"hpyContext != null", "interopLibrary.isPointer(handle)"}, limit = "2")
         static GraalHPyHandle doPointer(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object handle,
-                        @CachedLibrary("handle") InteropLibrary interopLibrary,
-                        @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary("handle") InteropLibrary interopLibrary) {
             try {
-                return doLongOvfWithContext(hpyContext, interopLibrary.asPointer(handle), raiseNode);
+                return doLongOvfWithContext(hpyContext, interopLibrary.asPointer(handle));
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalStateException("");
+                throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
-        @Specialization(guards = "hpyContext == null")
+        @SuppressWarnings("unused")
+        @Specialization(guards = "handle == 0")
+        static GraalHPyHandle doNullInt(GraalHPyContext hpyContext, int handle) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "handle == 0")
+        static GraalHPyHandle doNullLong(GraalHPyContext hpyContext, long handle) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @Specialization(guards = "hpyContext == null", replaces = "doNullInt")
         static GraalHPyHandle doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext().getObjectForHPyHandle(handle);
         }
 
-        @Specialization(guards = "hpyContext == null", rewriteOn = OverflowException.class)
+        @Specialization(guards = "hpyContext == null", rewriteOn = OverflowException.class, replaces = "doNullLong")
         static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws OverflowException {
             return context.getHPyContext().getObjectForHPyHandle(PInt.intValueExact(handle));
         }
 
-        @Specialization(guards = "hpyContext == null", replaces = "doLong")
+        @Specialization(guards = "hpyContext == null", replaces = {"doLong", "doNullLong"})
         static GraalHPyHandle doLongOvf(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            return doLongOvfWithContext(context.getHPyContext(), handle, raiseNode);
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return doLongOvfWithContext(context.getHPyContext(), handle);
         }
 
-        @Specialization(guards = "hpyContext != null")
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"hpyContext != null", "handle == 0"})
+        static GraalHPyHandle doNullIntWithContext(GraalHPyContext hpyContext, int handle) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @Specialization(guards = "hpyContext != null", replaces = "doNullInt")
         static GraalHPyHandle doIntWithContext(GraalHPyContext hpyContext, int handle) {
             return hpyContext.getObjectForHPyHandle(handle);
         }
 
-        @Specialization(guards = "hpyContext != null", rewriteOn = OverflowException.class)
+        @Specialization(guards = "hpyContext != null", rewriteOn = OverflowException.class, replaces = "doNullLong")
         static GraalHPyHandle doLongWithContext(GraalHPyContext hpyContext, long handle) throws OverflowException {
             return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle));
         }
 
-        @Specialization(guards = "hpyContext != null", replaces = "doLongWithContext")
-        static GraalHPyHandle doLongOvfWithContext(GraalHPyContext hpyContext, long handle,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        @Specialization(guards = "hpyContext != null", replaces = {"doLongWithContext", "doNullLong"})
+        static GraalHPyHandle doLongOvfWithContext(GraalHPyContext hpyContext, long handle) {
             try {
                 return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle));
             } catch (OverflowException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "unknown handle: %d", handle);
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("unknown handle: " + handle);
             }
         }
     }
