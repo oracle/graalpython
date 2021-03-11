@@ -57,7 +57,8 @@ import mx_subst
 import mx_urlrewrites
 import mx_graalpython_bisect
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS, \
+    JAVA_DRIVER_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
     GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
@@ -65,7 +66,10 @@ from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, C
     CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
     PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, PythonParserBenchmarkSuite, \
     CONFIGURATION_INTERPRETER, CONFIGURATION_INTERPRETER_MULTI, CONFIGURATION_NATIVE_INTERPRETER, \
-    CONFIGURATION_NATIVE_INTERPRETER_MULTI
+    CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
+    GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
+    CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
+    CONFIGURATION_JAVA_EMBEDDING_MULTI
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -1529,9 +1533,25 @@ def _register_vms(namespace):
         '--experimental-options', '--engine.MultiTier=true',
     ]), SUITE, 10)
 
+    # java embedding driver
+    python_java_embedding_vm_registry.add_vm(
+        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_MULTI,
+                                extra_polyglot_args=['-multi-context']), SUITE, 10)
+    python_java_embedding_vm_registry.add_vm(
+        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED,
+                                extra_polyglot_args=['-multi-context', '-shared-engine']), SUITE, 10)
+    python_java_embedding_vm_registry.add_vm(
+        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI,
+                                extra_polyglot_args=['-multi-context', '-interpreter']), SUITE, 10)
+    python_java_embedding_vm_registry.add_vm(
+        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED,
+                                extra_polyglot_args=['-multi-context', '-interpreter', '-shared-engine']), SUITE, 10)
+
 
 def _register_bench_suites(namespace):
     for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
+        mx_benchmark.add_bm_suite(py_bench_suite)
+    for py_bench_suite in PythonJavaEmbeddingBenchmarkSuite.get_benchmark_suites(JAVA_DRIVER_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
     for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)

@@ -38,6 +38,7 @@ PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
 PATH_WARMUP = os.path.join(_BASE_PATH, 'warmup')
 PATH_INTEROP = os.path.join(_BASE_PATH, 'host_interop')
+PATH_JAVA_EMBEDDING = os.path.join(_BASE_PATH, 'java-embedding')
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -264,6 +265,20 @@ INTEROP_JAVA_BENCHMARKS = {
     'fannkuchredux3': [_INTEROP_JAVA_PACKAGE + 'PyFannkuchredux'] + MESO_BENCHMARKS['fannkuchredux3'],
 }
 
+JAVA_EMBEDDING_MESO_BENCHMARKS = {
+    'chaos': ITER_6 + WARMUP_2 + [],
+    'richards3': ITER_6 + WARMUP_2 + [],
+    'image-magix': ITER_6 + WARMUP_2 + [],
+    'raytrace-simple': ITER_6 + WARMUP_2 + [],
+}
+
+JAVA_EMBEDDING_MESO_BENCHMARKS_SMALL = {
+    'chaos': ITER_6 + WARMUP_2 + ['--', '1'],
+    'richards3': ITER_6 + WARMUP_2 + ['--', '2'],
+    'image-magix': ITER_6 + WARMUP_2 + ['--', '100'],
+    'raytrace-simple': ITER_6 + WARMUP_2 + ['--', '110', '110'],
+}
+
 # -------------------------------------------------------
 # Parameters for parsing bench marks
 # Parameters for parsing bench marks
@@ -301,6 +316,11 @@ BENCHMARKS = {
     "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
     "micro-small": [PATH_MICRO, MICRO_BENCHMARKS_SMALL],
     "meso-small": [PATH_MESO, MESO_BENCHMARKS_SMALL],
+}
+
+JAVA_DRIVER_BENCHMARKS = {
+    "java-embedding-meso": [PATH_MESO, JAVA_EMBEDDING_MESO_BENCHMARKS],
+    "java-embedding-meso-small": [PATH_MESO, JAVA_EMBEDDING_MESO_BENCHMARKS_SMALL],
 }
 
 WARMUP_BENCHMARKS = {
