@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
@@ -77,6 +78,10 @@ public class HashMapStorage extends HashingStorage {
         this.values = newHashMap(capacity);
     }
 
+    public HashMapStorage(Map<?, ?> map) {
+        this.values = newHashMap(map);
+    }
+
     public HashMapStorage() {
         this.values = newHashMap();
     }
@@ -93,6 +98,11 @@ public class HashMapStorage extends HashingStorage {
     @TruffleBoundary
     private static LinkedHashMap<Object, Object> newHashMap(int capacity) {
         return new LinkedHashMap<>(capacity);
+    }
+
+    @TruffleBoundary
+    private static LinkedHashMap<Object, Object> newHashMap(Map<?, ?> map) {
+        return new LinkedHashMap<>(map);
     }
 
     @TruffleBoundary

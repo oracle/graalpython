@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.util.HashMap;
 import java.util.List;
-
-import org.graalvm.collections.EconomicMap;
+import java.util.Map;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -70,7 +70,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        EconomicMap<String, Object> configOptions = EconomicMap.create();
+        Map<String, Object> configOptions = new HashMap<>();
         configOptions.put("WITH_THREAD", 1);
         core.lookupBuiltinModule("_sysconfig").setAttribute(CONFIG_OPTIONS, configOptions);
     }
@@ -88,8 +88,8 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
         PDict select(PythonModule self,
                         @SuppressWarnings("unused") Object[] arguments,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            EconomicMap<String, Object> configOptions = (EconomicMap<String, Object>) readNode.execute(self, CONFIG_OPTIONS);
-            return factory().createDict(configOptions);
+            Map<String, Object> configOptions = (Map<String, Object>) readNode.execute(self, CONFIG_OPTIONS);
+            return factory().createDictFromMap(configOptions);
         }
     }
 }
