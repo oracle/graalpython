@@ -146,11 +146,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void close(int fd,
+    final int close(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("close", "%d", fd);
         try {
-            lib.close(delegate, fd);
+            return lib.close(delegate, fd);
         } catch (PosixException e) {
             throw logException("close", e);
         }

@@ -135,6 +135,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -241,35 +242,40 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Cached PInteropSetAttributeNode setAttributeNode,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
         try {
-            String attrKey = getAttributeKey.execute(key);
-            if (attrKey != null) {
-                setAttributeNode.execute(this, attrKey, value);
-                return;
-            }
-
-            String itemKey = getItemKey.execute(key);
-            if (itemKey != null) {
-                setItemNode.execute(this, itemKey, value);
-                return;
-            }
-
-            if (this instanceof PythonObject) {
-                if (objectHasAttribute(this, key)) {
-                    setAttributeNode.execute(this, key, value);
+            try {
+                String attrKey = getAttributeKey.execute(key);
+                if (attrKey != null) {
+                    setAttributeNode.execute(this, attrKey, value);
                     return;
                 }
+
+                String itemKey = getItemKey.execute(key);
+                if (itemKey != null) {
+                    setItemNode.execute(this, itemKey, value);
+                    return;
+                }
+
+                if (this instanceof PythonObject) {
+                    if (objectHasAttribute(this, key)) {
+                        setAttributeNode.execute(this, key, value);
+                        return;
+                    }
+                }
+                if (isAbstractMapping(dataModelLibrary)) {
+                    setItemNode.execute(this, key, value);
+                } else {
+                    setAttributeNode.execute(this, key, value);
+                }
+            } catch (PException e) {
+                e.expectAttributeError(attrErrorProfile);
+                // TODO(fa) not accurate; distinguish between read-only and non-existing
+                throw UnknownIdentifierException.create(key);
             }
-            if (isAbstractMapping(dataModelLibrary)) {
-                setItemNode.execute(this, key, value);
-            } else {
-                setAttributeNode.execute(this, key, value);
-            }
-        } catch (PException e) {
-            e.expectAttributeError(attrErrorProfile);
-            // TODO(fa) not accurate; distinguish between read-only and non-existing
-            throw UnknownIdentifierException.create(key);
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -281,101 +287,126 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) throws UnknownIdentifierException {
-        String attrKey = getAttributeKey.execute(key);
-        Object attrGetattribute = null;
-        if (attrKey != null) {
-            try {
-                attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
-                return toForeign.executeConvert(callGetattributeNode.executeObject(attrGetattribute, this, attrKey));
-            } catch (PException e) {
-                // pass, we might be reading an item that starts with "@"
-            }
-        }
-
-        String itemKey = getItemKey.execute(key);
-        if (itemKey != null) {
-            return toForeign.executeConvert(getItemNode.execute(this, itemKey));
-        }
-
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
         try {
-            if (attrGetattribute == null) {
-                attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+            String attrKey = getAttributeKey.execute(key);
+            Object attrGetattribute = null;
+            if (attrKey != null) {
+                try {
+                    attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+                    return toForeign.executeConvert(callGetattributeNode.executeObject(attrGetattribute, this, attrKey));
+                } catch (PException e) {
+                    // pass, we might be reading an item that starts with "@"
+                }
             }
-            return toForeign.executeConvert(callGetattributeNode.executeObject(attrGetattribute, this, key));
-        } catch (PException e) {
-            // pass
-        }
-        if (dataModelLibrary.isSequence(this)) {
+
+            String itemKey = getItemKey.execute(key);
+            if (itemKey != null) {
+                return toForeign.executeConvert(getItemNode.execute(this, itemKey));
+            }
+
             try {
-                return toForeign.executeConvert(getItemNode.execute(this, key));
+                if (attrGetattribute == null) {
+                    attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+                }
+                return toForeign.executeConvert(callGetattributeNode.executeObject(attrGetattribute, this, key));
             } catch (PException e) {
                 // pass
             }
-        }
+            if (dataModelLibrary.isSequence(this)) {
+                try {
+                    return toForeign.executeConvert(getItemNode.execute(this, key));
+                } catch (PException e) {
+                    // pass
+                }
+            }
 
-        throw UnknownIdentifierException.create(key);
+            throw UnknownIdentifierException.create(key);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean hasArrayElements(
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) {
-        return dataModelLibrary.isSequence(this) && !isAbstractMapping(dataModelLibrary);
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return dataModelLibrary.isSequence(this) && !isAbstractMapping(dataModelLibrary);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public Object readArrayElement(long key,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (dataModelLibrary.isSequence(this)) {
-            try {
-                return toForeign.executeConvert(getItemNode.execute(this, key));
-            } catch (PException e) {
-                if (isAbstractMapping(dataModelLibrary)) {
-                    throw UnsupportedMessageException.create();
-                } else {
-                    // TODO(fa) refine exception handling
-                    // it's a sequence, so we assume the index is wrong
-                    throw InvalidArrayIndexException.create(key);
+                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (dataModelLibrary.isSequence(this)) {
+                try {
+                    return toForeign.executeConvert(getItemNode.execute(this, key));
+                } catch (PException e) {
+                    if (isAbstractMapping(dataModelLibrary)) {
+                        throw UnsupportedMessageException.create();
+                    } else {
+                        // TODO(fa) refine exception handling
+                        // it's a sequence, so we assume the index is wrong
+                        throw InvalidArrayIndexException.create(key);
+                    }
                 }
             }
-        }
 
-        throw UnsupportedMessageException.create();
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public void writeArrayElement(long key, Object value,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
-                    @Shared("setItemNode") @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (dataModelLibrary.isSequence(this)) {
-            try {
-                setItemNode.execute(this, key, value);
-            } catch (PException e) {
-                // TODO(fa) refine exception handling
-                // it's a sequence, so we assume the index is wrong
-                throw InvalidArrayIndexException.create(key);
+                    @Shared("setItemNode") @Cached PInteropSubscriptAssignNode setItemNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (dataModelLibrary.isSequence(this)) {
+                try {
+                    setItemNode.execute(this, key, value);
+                } catch (PException e) {
+                    // TODO(fa) refine exception handling
+                    // it's a sequence, so we assume the index is wrong
+                    throw InvalidArrayIndexException.create(key);
+                }
+            } else {
+                throw UnsupportedMessageException.create();
             }
-        } else {
-            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     public void removeArrayElement(long key,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
-                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (dataModelLibrary.isSequence(this)) {
-            try {
-                deleteItemNode.execute(this, key);
-            } catch (PException e) {
-                // TODO(fa) refine exception handling
-                // it's a sequence, so we assume the index is wrong
-                throw InvalidArrayIndexException.create(key);
+                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (dataModelLibrary.isSequence(this)) {
+                try {
+                    deleteItemNode.execute(this, key);
+                } catch (PException e) {
+                    // TODO(fa) refine exception handling
+                    // it's a sequence, so we assume the index is wrong
+                    throw InvalidArrayIndexException.create(key);
+                }
+            } else {
+                throw UnsupportedMessageException.create();
             }
-        } else {
-            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -394,29 +425,49 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode) {
-        return isInBounds(lib.length(this), getItemNode, idx);
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isInBounds(lib.length(this), getItemNode, idx);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(lib.length(this), getItemNode, idx);
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(lib.length(this), getItemNode, idx);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     private boolean isInBounds(int len, PInteropSubscriptNode getItemNode, long idx) {
@@ -439,51 +490,86 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberReadable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
-        // TODO write specialized nodes for the appropriate property
-        return (keyInfoNode.execute(this, member) & PKeyInfoNode.READABLE) != 0;
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // TODO write specialized nodes for the appropriate property
+            return (keyInfoNode.execute(this, member) & PKeyInfoNode.READABLE) != 0;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isMemberModifiable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
-        // TODO write specialized nodes for the appropriate property
-        return (keyInfoNode.execute(this, member) & PKeyInfoNode.MODIFIABLE) != 0;
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // TODO write specialized nodes for the appropriate property
+            return (keyInfoNode.execute(this, member) & PKeyInfoNode.MODIFIABLE) != 0;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isMemberInsertable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
-        // TODO write specialized nodes for the appropriate property
-        return (keyInfoNode.execute(this, member) & PKeyInfoNode.INSERTABLE) != 0;
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // TODO write specialized nodes for the appropriate property
+            return (keyInfoNode.execute(this, member) & PKeyInfoNode.INSERTABLE) != 0;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isMemberInvocable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
-        // TODO write specialized nodes for the appropriate property
-        return (keyInfoNode.execute(this, member) & PKeyInfoNode.INVOCABLE) != 0;
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // TODO write specialized nodes for the appropriate property
+            return (keyInfoNode.execute(this, member) & PKeyInfoNode.INVOCABLE) != 0;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isMemberRemovable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
-        // TODO write specialized nodes for the appropriate property
-        return (keyInfoNode.execute(this, member) & PKeyInfoNode.REMOVABLE) != 0;
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // TODO write specialized nodes for the appropriate property
+            return (keyInfoNode.execute(this, member) & PKeyInfoNode.REMOVABLE) != 0;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
-        // TODO write specialized nodes for the appropriate property
-        return (keyInfoNode.execute(this, member) & PKeyInfoNode.READ_SIDE_EFFECTS) != 0;
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // TODO write specialized nodes for the appropriate property
+            return (keyInfoNode.execute(this, member) & PKeyInfoNode.READ_SIDE_EFFECTS) != 0;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
-        // TODO write specialized nodes for the appropriate property
-        return (keyInfoNode.execute(this, member) & PKeyInfoNode.WRITE_SIDE_EFFECTS) != 0;
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // TODO write specialized nodes for the appropriate property
+            return (keyInfoNode.execute(this, member) & PKeyInfoNode.WRITE_SIDE_EFFECTS) != 0;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -493,22 +579,28 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached ConditionProfile profileGetattribute,
                     @Exclusive @Cached ConditionProfile profileMember,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attributeErrorProfile) throws UnknownIdentifierException, UnsupportedMessageException {
-        Object memberObj;
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attributeErrorProfile, @Exclusive @Cached GilNode gil)
+                    throws UnknownIdentifierException, UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
         try {
-            Object attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
-            if (profileGetattribute.profile(attrGetattribute == PNone.NO_VALUE)) {
+            Object memberObj;
+            try {
+                Object attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+                if (profileGetattribute.profile(attrGetattribute == PNone.NO_VALUE)) {
+                    throw UnknownIdentifierException.create(member);
+                }
+                memberObj = callGetattributeNode.executeObject(attrGetattribute, this, member);
+                if (profileMember.profile(memberObj == PNone.NO_VALUE)) {
+                    throw UnknownIdentifierException.create(member);
+                }
+            } catch (PException e) {
+                e.expect(AttributeError, attributeErrorProfile);
                 throw UnknownIdentifierException.create(member);
             }
-            memberObj = callGetattributeNode.executeObject(attrGetattribute, this, member);
-            if (profileMember.profile(memberObj == PNone.NO_VALUE)) {
-                throw UnknownIdentifierException.create(member);
-            }
-        } catch (PException e) {
-            e.expect(AttributeError, attributeErrorProfile);
-            throw UnknownIdentifierException.create(member);
+            return executeNode.execute(memberObj, arguments);
+        } finally {
+            gil.release(mustRelease);
         }
-        return executeNode.execute(memberObj, arguments);
     }
 
     @ExportMessage
@@ -519,8 +611,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object execute(Object[] arguments,
-                    @Exclusive @Cached PExecuteNode executeNode) throws UnsupportedMessageException {
-        return executeNode.execute(this, arguments);
+                    @Exclusive @Cached PExecuteNode executeNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            return executeNode.execute(this, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -532,36 +629,40 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
-                    @Cached TypeNodes.GetMroNode getMroNode) {
-
-        HashSet<String> keys = new HashSet<>();
-        Object klass = getClass.execute(this);
-        for (PythonAbstractClass o : getMroNode.execute(klass)) {
-            if (o instanceof PythonManagedClass) {
-                addKeysFromObject(keys, (PythonManagedClass) o, includeInternal);
+                    @Cached TypeNodes.GetMroNode getMroNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            HashSet<String> keys = new HashSet<>();
+            Object klass = getClass.execute(this);
+            for (PythonAbstractClass o : getMroNode.execute(klass)) {
+                if (o instanceof PythonManagedClass) {
+                    addKeysFromObject(keys, (PythonManagedClass) o, includeInternal);
+                }
+                // TODO handle native class
             }
-            // TODO handle native class
-        }
-        if (this instanceof PythonObject) {
-            addKeysFromObject(keys, (PythonObject) this, includeInternal);
-        }
-        if (includeInternal) {
-            // we use the internal flag to also return dictionary keys for mappings
-            if (isAbstractMapping(dataModelLibrary)) {
-                PList mapKeys = castToList.executeWithGlobalState(keysNode.executeObject(this, KEYS));
-                int len = lenNode.execute(mapKeys);
-                for (int i = 0; i < len; i++) {
-                    Object key = getItemNode.execute(mapKeys, i);
-                    if (key instanceof String) {
-                        keys.add("[" + (String) key);
-                    } else if (key instanceof PString) {
-                        keys.add("[" + ((PString) key).getValue());
+            if (this instanceof PythonObject) {
+                addKeysFromObject(keys, (PythonObject) this, includeInternal);
+            }
+            if (includeInternal) {
+                // we use the internal flag to also return dictionary keys for mappings
+                if (isAbstractMapping(dataModelLibrary)) {
+                    PList mapKeys = castToList.executeWithGlobalState(keysNode.executeObject(this, KEYS));
+                    int len = lenNode.execute(mapKeys);
+                    for (int i = 0; i < len; i++) {
+                        Object key = getItemNode.execute(mapKeys, i);
+                        if (key instanceof String) {
+                            keys.add("[" + (String) key);
+                        } else if (key instanceof PString) {
+                            keys.add("[" + ((PString) key).getValue());
+                        }
                     }
                 }
             }
-        }
 
-        return new Keys(keys.toArray(PythonUtils.EMPTY_STRING_ARRAY));
+            return new Keys(keys.toArray(PythonUtils.EMPTY_STRING_ARRAY));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -572,35 +673,40 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
                     @Exclusive @Cached PInteropDeleteItemNode delItemNode,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
         try {
-            String attrKey = getAttributeKey.execute(member);
-            if (attrKey != null) {
-                deleteAttributeNode.execute(this, attrKey);
-                return;
-            }
-
-            String itemKey = getItemKey.execute(member);
-            if (itemKey != null) {
-                delItemNode.execute(this, itemKey);
-                return;
-            }
-
-            if (this instanceof PythonObject) {
-                if (objectHasAttribute(this, member)) {
-                    deleteAttributeNode.execute(this, member);
+            try {
+                String attrKey = getAttributeKey.execute(member);
+                if (attrKey != null) {
+                    deleteAttributeNode.execute(this, attrKey);
                     return;
                 }
+
+                String itemKey = getItemKey.execute(member);
+                if (itemKey != null) {
+                    delItemNode.execute(this, itemKey);
+                    return;
+                }
+
+                if (this instanceof PythonObject) {
+                    if (objectHasAttribute(this, member)) {
+                        deleteAttributeNode.execute(this, member);
+                        return;
+                    }
+                }
+                if (isAbstractMapping(dataModelLibrary) && getDelItemNode.execute(this, __DELITEM__) != PNone.NO_VALUE) {
+                    delItemNode.execute(this, member);
+                } else {
+                    deleteAttributeNode.execute(this, member);
+                }
+            } catch (PException e) {
+                e.expectAttributeError(attrErrorProfile);
+                // TODO(fa) not accurate; distinguish between read-only and non-existing
+                throw UnknownIdentifierException.create(member);
             }
-            if (isAbstractMapping(dataModelLibrary) && getDelItemNode.execute(this, __DELITEM__) != PNone.NO_VALUE) {
-                delItemNode.execute(this, member);
-            } else {
-                deleteAttributeNode.execute(this, member);
-            }
-        } catch (PException e) {
-            e.expectAttributeError(attrErrorProfile);
-            // TODO(fa) not accurate; distinguish between read-only and non-existing
-            throw UnknownIdentifierException.create(member);
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -612,14 +718,24 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isInstantiable(
-                    @Cached TypeNodes.IsTypeNode isTypeNode) {
-        return isTypeNode.execute(this);
+                    @Cached TypeNodes.IsTypeNode isTypeNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isTypeNode.execute(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public Object instantiate(Object[] arguments,
-                    @Exclusive @Cached PExecuteNode executeNode) throws UnsupportedMessageException {
-        return executeNode.execute(this, arguments);
+                    @Exclusive @Cached PExecuteNode executeNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            return executeNode.execute(this, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @TruffleBoundary
@@ -654,28 +770,33 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Exclusive @Cached CastToJavaLongLossyNode toLong,
                     @Exclusive @Cached ConditionProfile ignoreOverflow,
-                    @Exclusive @Cached BranchProfile overflow) {
-        Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
-        if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
-            Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
-            // the following mimics typeobject.c#slot_sq_length()
-            // - PyNumber_Index is called first
-            // - checked if negative
-            // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
-            lenResult = lib.asIndexWithState(lenResult, state);
-            long longResult;
-            try {
-                longResult = toLong.execute(lenResult); // this is a lossy cast
-                if (ltZero.profile(longResult < 0)) {
-                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
+                    @Exclusive @Cached BranchProfile overflow, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
+            if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
+                Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
+                // the following mimics typeobject.c#slot_sq_length()
+                // - PyNumber_Index is called first
+                // - checked if negative
+                // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
+                lenResult = lib.asIndexWithState(lenResult, state);
+                long longResult;
+                try {
+                    longResult = toLong.execute(lenResult); // this is a lossy cast
+                    if (ltZero.profile(longResult < 0)) {
+                        throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
+                    }
+                } catch (CannotCastException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
                 }
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
+                return longToInt(longResult, overflow, ignoreOverflow, OverflowError, raiseNode, lenResult);
+            } else {
+                throw raiseNode.raiseHasNoLength(this);
             }
-            return longToInt(longResult, overflow, ignoreOverflow, OverflowError, raiseNode, lenResult);
-        } else {
-            throw raiseNode.raiseHasNoLength(this);
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -687,33 +808,38 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasBool,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
-        // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
-        // in the message impls in PNone and PInt
-        Object boolMethod = lib.lookupAttributeOnType(this, __BOOL__);
-        if (hasBool.profile(boolMethod != PNone.NO_VALUE)) {
-            // this inlines the work done in sq_nb_bool when __bool__ is used.
-            // when __len__ would be used, this is the same as the branch below
-            // calling __len__
-            Object result = methodLib.callUnboundMethodWithState(boolMethod, state, this);
-            try {
-                return castToBoolean.execute(result);
-            } catch (CannotCastException e) {
-                // cast node will act as a branch profile already for the compiler
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
-            }
-        } else {
-            Object lenAttr = lib.lookupAttributeOnType(this, __LEN__);
-            if (hasLen.profile(lenAttr != PNone.NO_VALUE)) {
-                if (gotState.profile(state == null)) {
-                    return lib.length(this) > 0;
-                } else {
-                    return lib.lengthWithState(this, state) > 0;
+                    @Shared("raise") @Cached PRaiseNode raiseNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
+            // in the message impls in PNone and PInt
+            Object boolMethod = lib.lookupAttributeOnType(this, __BOOL__);
+            if (hasBool.profile(boolMethod != PNone.NO_VALUE)) {
+                // this inlines the work done in sq_nb_bool when __bool__ is used.
+                // when __len__ would be used, this is the same as the branch below
+                // calling __len__
+                Object result = methodLib.callUnboundMethodWithState(boolMethod, state, this);
+                try {
+                    return castToBoolean.execute(result);
+                } catch (CannotCastException e) {
+                    // cast node will act as a branch profile already for the compiler
+                    throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
                 }
             } else {
-                // like CPython, anything else is true-ish
-                return true;
+                Object lenAttr = lib.lookupAttributeOnType(this, __LEN__);
+                if (hasLen.profile(lenAttr != PNone.NO_VALUE)) {
+                    if (gotState.profile(state == null)) {
+                        return lib.length(this) > 0;
+                    } else {
+                        return lib.lengthWithState(this, state) > 0;
+                    }
+                } else {
+                    // like CPython, anything else is true-ish
+                    return true;
+                }
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -723,25 +849,35 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode) {
-        Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
-        if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
-        }
-        Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(hashMethod, state, this);
-        // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
-        // hash call is always a plain long, forcibly and lossy read from memory.
+                    @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            return castUnsignedToJavaLongHashNode.execute(result);
-        } catch (CannotCastException e) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
+            Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
+            if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
+            }
+            Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(hashMethod, state, this);
+            // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
+            // hash call is always a plain long, forcibly and lossy read from memory.
+            try {
+                return castUnsignedToJavaLongHashNode.execute(result);
+            } catch (CannotCastException e) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     public boolean isSame(Object other,
-                    @Shared("isNode") @Cached IsNode isNode) {
-        return isNode.execute(this, other);
+                    @Shared("isNode") @Cached IsNode isNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isNode.execute(this, other);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -750,23 +886,28 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @CachedLibrary(limit = "3") PythonObjectLibrary resultLib,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("isNode") @Cached IsNode isNode) {
-        Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
-        if (eqMethod == PNone.NO_VALUE) {
-            // isNode specialization represents the branch profile
-            // c.f.: Python always falls back to identity comparison in this case
-            return isNode.execute(this, other) ? 1 : -1;
-        } else {
-            Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(eqMethod, state, this, other);
-            if (result == PNotImplemented.NOT_IMPLEMENTED || result == PNone.NO_VALUE) {
-                return -1;
+                    @Shared("isNode") @Cached IsNode isNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
+            if (eqMethod == PNone.NO_VALUE) {
+                // isNode specialization represents the branch profile
+                // c.f.: Python always falls back to identity comparison in this case
+                return isNode.execute(this, other) ? 1 : -1;
             } else {
-                if (gotState.profile(state == null)) {
-                    return resultLib.isTrue(result) ? 1 : 0;
+                Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(eqMethod, state, this, other);
+                if (result == PNotImplemented.NOT_IMPLEMENTED || result == PNone.NO_VALUE) {
+                    return -1;
                 } else {
-                    return resultLib.isTrueWithState(result, state) ? 1 : 0;
+                    if (gotState.profile(state == null)) {
+                        return resultLib.isTrue(result) ? 1 : 0;
+                    } else {
+                        return resultLib.isTrueWithState(result, state) ? 1 : 0;
+                    }
                 }
             }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -781,29 +922,34 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile resultProfile,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("intProfile") @Cached IsBuiltinClassProfile isInt,
-                    @Cached WarnNode warnNode) {
-        // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
-        // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
-        // and PythonAbstractNativeObject and dispatched polymorphically
-        Object indexMethod = lib.lookupAttributeOnType(this, __INDEX__);
-        if (noIndex.profile(indexMethod == PNone.NO_VALUE)) {
-            throw raise.raiseIntegerInterpretationError(this);
-        }
-
-        Object result = methodLib.callUnboundMethodWithState(indexMethod, state, this);
-        if (resultProfile.profile(!isSubtype.execute(resultLib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
-        }
-        if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
-            VirtualFrame frame = null;
-            if (gotState.profile(state != null)) {
-                frame = PArguments.frameForCall(state);
+                    @Cached WarnNode warnNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
+            // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
+            // and PythonAbstractNativeObject and dispatched polymorphically
+            Object indexMethod = lib.lookupAttributeOnType(this, __INDEX__);
+            if (noIndex.profile(indexMethod == PNone.NO_VALUE)) {
+                throw raise.raiseIntegerInterpretationError(this);
             }
-            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                            ErrorMessages.P_RETURNED_NON_P,
-                            this, "__index__", "int", result, "int");
+
+            Object result = methodLib.callUnboundMethodWithState(indexMethod, state, this);
+            if (resultProfile.profile(!isSubtype.execute(resultLib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+            }
+            if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
+                VirtualFrame frame = null;
+                if (gotState.profile(state != null)) {
+                    frame = PArguments.frameForCall(state);
+                }
+                warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                ErrorMessages.P_RETURNED_NON_P,
+                                this, "__index__", "int", result, "int");
+            }
+            return result;
+        } finally {
+            gil.release(mustRelease);
         }
-        return result;
     }
 
     @ExportMessage
@@ -811,16 +957,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Cached CastToJavaStringNode castToJavaStringNode) {
-        Object func = lib.lookupAttributeOnType(this, __FSPATH__);
-        if (func == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, this);
-        }
-        Object pathObject = methodLib.callUnboundMethodWithState(func, state, this);
+                    @Cached CastToJavaStringNode castToJavaStringNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            return castToJavaStringNode.execute(pathObject);
-        } catch (CannotCastException e) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, this, pathObject);
+            Object func = lib.lookupAttributeOnType(this, __FSPATH__);
+            if (func == PNone.NO_VALUE) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, this);
+            }
+            Object pathObject = methodLib.callUnboundMethodWithState(func, state, this);
+            try {
+                return castToJavaStringNode.execute(pathObject);
+            } catch (CannotCastException e) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, this, pathObject);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -829,8 +980,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("raise") @Cached PRaiseNode raise) {
-        return asPString(lib, this, state, isSubtypeNode, resultLib, raise);
+                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return asPString(lib, this, state, isSubtypeNode, resultLib, raise);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @Ignore
@@ -852,36 +1008,45 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
                     @Shared("intProfile") @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
-                    @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
-
-        Object filenoFunc = lib.lookupAttributeWithState(this, state, FILENO);
-        if (filenoFunc == PNone.NO_VALUE) {
-            noFilenoMethodProfile.enter();
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
-        }
-
-        Object result = methodLib.callObjectWithState(filenoFunc, state);
-        if (isIntProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
-            try {
-                return PInt.asFileDescriptor(castToJavaIntNode.execute(result), raiseNode);
-            } catch (PException e) {
-                e.expect(PythonBuiltinClassType.TypeError, isAttrError);
-                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+                    @Exclusive @Cached IsBuiltinClassProfile isAttrError, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object filenoFunc = lib.lookupAttributeWithState(this, state, FILENO);
+            if (filenoFunc == PNone.NO_VALUE) {
+                noFilenoMethodProfile.enter();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
             }
-        } else {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
+
+            Object result = methodLib.callObjectWithState(filenoFunc, state);
+            if (isIntProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
+                try {
+                    return PInt.asFileDescriptor(castToJavaIntNode.execute(result), raiseNode);
+                } catch (PException e) {
+                    e.expect(PythonBuiltinClassType.TypeError, isAttrError);
+                    throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+                }
+            } else {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     public Object lookupAttributeInternal(ThreadState state, String name, boolean strict,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached LookupAttributeNode lookup) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+                    @Exclusive @Cached LookupAttributeNode lookup, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return lookup.execute(frame, this, name, strict);
+        } finally {
+            gil.release(mustRelease);
         }
-        return lookup.execute(frame, this, name, strict);
     }
 
     @GenerateUncached
@@ -925,8 +1090,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAttributeOnTypeInternal(String name, boolean strict,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Exclusive @Cached LookupAttributeOnTypeNode lookup) {
-        return lookup.execute(lib.getLazyPythonClass(this), name, strict);
+                    @Exclusive @Cached LookupAttributeOnTypeNode lookup, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return lookup.execute(lib.getLazyPythonClass(this), name, strict);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @GenerateUncached
@@ -948,24 +1118,39 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object callObjectWithState(ThreadState state, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CallNode callNode) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+                    @Exclusive @Cached CallNode callNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return callNode.execute(frame, this, arguments);
+        } finally {
+            gil.release(mustRelease);
         }
-        return callNode.execute(frame, this, arguments);
     }
 
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Exclusive @Cached CallUnboundMethodNode call) {
-        return call.execute(state, this, false, receiver, arguments);
+                    @Exclusive @Cached CallUnboundMethodNode call, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return call.execute(state, this, false, receiver, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Exclusive @Cached CallUnboundMethodNode call) {
-        return call.execute(state, this, true, receiver, arguments);
+                    @Exclusive @Cached CallUnboundMethodNode call, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return call.execute(state, this, true, receiver, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @GenerateUncached
@@ -1002,17 +1187,27 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAndCallSpecialMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeOnTypeStrict(this, methodName);
-        return methodLib.callUnboundMethodWithState(method, state, this, arguments);
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object method = plib.lookupAttributeOnTypeStrict(this, methodName);
+            return methodLib.callUnboundMethodWithState(method, state, this, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public Object lookupAndCallRegularMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
-        return methodLib.callObjectWithState(method, state, arguments);
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
+            return methodLib.callObjectWithState(method, state, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -1021,24 +1216,29 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raise,
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
-                    @Exclusive @Cached ConditionProfile hasIntFunc) {
-        Object result = PNone.NO_VALUE;
-        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
-            result = lib.asIndex(this);
-        }
-        if (result == PNone.NO_VALUE) {
-            Object func = lib.lookupAttributeOnType(this, __INT__);
-            if (hasIntFunc.profile(func != PNone.NO_VALUE)) {
-                result = methodLib.callUnboundMethodWithState(func, state, this);
+                    @Exclusive @Cached ConditionProfile hasIntFunc, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object result = PNone.NO_VALUE;
+            if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+                result = lib.asIndex(this);
             }
             if (result == PNone.NO_VALUE) {
-                throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, this);
+                Object func = lib.lookupAttributeOnType(this, __INT__);
+                if (hasIntFunc.profile(func != PNone.NO_VALUE)) {
+                    result = methodLib.callUnboundMethodWithState(func, state, this);
+                }
+                if (result == PNone.NO_VALUE) {
+                    throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, this);
+                }
             }
+            if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
+                throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
+            }
+            return result;
+        } finally {
+            gil.release(mustRelease);
         }
-        if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
-        }
-        return result;
     }
 
     @ExportMessage
@@ -1047,16 +1247,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached ConditionProfile ignoreOverflow,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongLossyNode castToLong) {
-        Object result = lib.asIndexWithState(this, state);
-        long longResult;
+                    @Exclusive @Cached CastToJavaLongLossyNode castToLong, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            longResult = castToLong.execute(result); // this is a lossy cast
-        } catch (CannotCastException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
+            Object result = lib.asIndexWithState(this, state);
+            long longResult;
+            try {
+                longResult = castToLong.execute(result); // this is a lossy cast
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
+            }
+            return longToInt(longResult, overflow, ignoreOverflow, type, raise, result);
+        } finally {
+            gil.release(mustRelease);
         }
-        return longToInt(longResult, overflow, ignoreOverflow, type, raise, result);
     }
 
     private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, Object type, PRaiseNode raise, Object result) throws PException {
@@ -1084,27 +1289,31 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
                     @Exclusive @Cached ConditionProfile hasFloatFunc,
-                    @Shared("raise") @Cached PRaiseNode raise) {
+                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
 
-        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
-
-        Object func = lib.lookupAttributeOnType(this, __FLOAT__);
-        if (hasFloatFunc.profile(func != PNone.NO_VALUE)) {
-            Object result = methodLib.callUnboundMethodWithState(func, state, this);
-            if (result != PNone.NO_VALUE) {
-                try {
-                    return castToDouble.execute(result);
-                } catch (CannotCastException e) {
-                    throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, this, "__float__", result);
+            Object func = lib.lookupAttributeOnType(this, __FLOAT__);
+            if (hasFloatFunc.profile(func != PNone.NO_VALUE)) {
+                Object result = methodLib.callUnboundMethodWithState(func, state, this);
+                if (result != PNone.NO_VALUE) {
+                    try {
+                        return castToDouble.execute(result);
+                    } catch (CannotCastException e) {
+                        throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, this, "__float__", result);
+                    }
                 }
             }
-        }
 
-        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
-            return castToDouble.execute(lib.asIndex(this));
-        }
+            if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+                return castToDouble.execute(lib.asIndex(this));
+            }
 
-        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
+            throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -1112,22 +1321,26 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Exclusive @Cached CastToJavaLongExactNode castToLong,
-                    @Shared("raise") @Cached PRaiseNode raise) {
-
-        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
-
-        Object func = lib.lookupAttributeOnType(this, __INDEX__);
-        if (func == PNone.NO_VALUE) {
-            func = lib.lookupAttributeOnType(this, __INT__);
-            if (func == PNone.NO_VALUE) {
-                throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, this);
-            }
-        }
-        Object result = methodLib.callUnboundMethodWithState(func, state, this);
+                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            return castToLong.execute(result);
-        } catch (CannotCastException e) {
-            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, this, "__int__", result);
+            assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
+
+            Object func = lib.lookupAttributeOnType(this, __INDEX__);
+            if (func == PNone.NO_VALUE) {
+                func = lib.lookupAttributeOnType(this, __INT__);
+                if (func == PNone.NO_VALUE) {
+                    throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, this);
+                }
+            }
+            Object result = methodLib.callUnboundMethodWithState(func, state, this);
+            try {
+                return castToLong.execute(result);
+            } catch (CannotCastException e) {
+                throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, this, "__int__", result);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1153,22 +1366,27 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded) {
-        Object objType = plib.getLazyPythonClass(this);
-        PDict importedModules = PythonLanguage.getContext().getImportedModules();
-        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (dateTimeModuleLoaded.profile(module != null)) {
-            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
-                return true;
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object objType = plib.getLazyPythonClass(this);
+            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            if (dateTimeModuleLoaded.profile(module != null)) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
+                    return true;
+                }
             }
-        }
-        module = importedModules.getItem(TIME_MODULE_NAME);
-        if (timeModuleLoaded.profile(module != null)) {
-            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
-                return true;
+            module = importedModules.getItem(TIME_MODULE_NAME);
+            if (timeModuleLoaded.profile(module != null)) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                    return true;
+                }
             }
+            return false;
+        } finally {
+            gil.release(mustRelease);
         }
-        return false;
     }
 
     @ExportMessage
@@ -1179,36 +1397,41 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
-        Object objType = plib.getLazyPythonClass(this);
-        PDict importedModules = PythonLanguage.getContext().getImportedModules();
-        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (dateTimeModuleLoaded.profile(module != null)) {
-            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
-                try {
-                    int year = castToIntNode.execute(lib.readMember(this, "year"));
-                    int month = castToIntNode.execute(lib.readMember(this, "month"));
-                    int day = castToIntNode.execute(lib.readMember(this, "day"));
-                    return createLocalDate(year, month, day);
-                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                    throw UnsupportedMessageException.create();
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object objType = plib.getLazyPythonClass(this);
+            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            if (dateTimeModuleLoaded.profile(module != null)) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
+                    try {
+                        int year = castToIntNode.execute(lib.readMember(this, "year"));
+                        int month = castToIntNode.execute(lib.readMember(this, "month"));
+                        int day = castToIntNode.execute(lib.readMember(this, "day"));
+                        return createLocalDate(year, month, day);
+                    } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                        throw UnsupportedMessageException.create();
+                    }
                 }
             }
-        }
-        module = importedModules.getItem(TIME_MODULE_NAME);
-        if (timeModuleLoaded.profile(module != null)) {
-            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
-                try {
-                    int year = castToIntNode.execute(lib.readMember(this, "tm_year"));
-                    int month = castToIntNode.execute(lib.readMember(this, "tm_mon"));
-                    int day = castToIntNode.execute(lib.readMember(this, "tm_mday"));
-                    return createLocalDate(year, month, day);
-                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                    throw UnsupportedMessageException.create();
+            module = importedModules.getItem(TIME_MODULE_NAME);
+            if (timeModuleLoaded.profile(module != null)) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                    try {
+                        int year = castToIntNode.execute(lib.readMember(this, "tm_year"));
+                        int month = castToIntNode.execute(lib.readMember(this, "tm_mon"));
+                        int day = castToIntNode.execute(lib.readMember(this, "tm_mday"));
+                        return createLocalDate(year, month, day);
+                    } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                        throw UnsupportedMessageException.create();
+                    }
                 }
             }
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
@@ -1216,22 +1439,27 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded) {
-        Object objType = plib.getLazyPythonClass(this);
-        PDict importedModules = PythonLanguage.getContext().getImportedModules();
-        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (dateTimeModuleLoaded.profile(module != null)) {
-            if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
-                return true;
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object objType = plib.getLazyPythonClass(this);
+            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            if (dateTimeModuleLoaded.profile(module != null)) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
+                    return true;
+                }
             }
-        }
-        module = importedModules.getItem(TIME_MODULE_NAME);
-        if (timeModuleLoaded.profile(module != null)) {
-            if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
-                return true;
+            module = importedModules.getItem(TIME_MODULE_NAME);
+            if (timeModuleLoaded.profile(module != null)) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                    return true;
+                }
             }
+            return false;
+        } finally {
+            gil.release(mustRelease);
         }
-        return false;
     }
 
     @ExportMessage
@@ -1241,37 +1469,42 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
-        Object objType = plib.getLazyPythonClass(this);
-        PDict importedModules = PythonLanguage.getContext().getImportedModules();
-        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (dateTimeModuleLoaded.profile(module != null)) {
-            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
-                try {
-                    int hour = castToIntNode.execute(lib.readMember(this, "hour"));
-                    int min = castToIntNode.execute(lib.readMember(this, "minute"));
-                    int sec = castToIntNode.execute(lib.readMember(this, "second"));
-                    int micro = castToIntNode.execute(lib.readMember(this, "microsecond"));
-                    return createLocalTime(hour, min, sec, micro);
-                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                    throw UnsupportedMessageException.create();
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object objType = plib.getLazyPythonClass(this);
+            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            if (dateTimeModuleLoaded.profile(module != null)) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
+                    try {
+                        int hour = castToIntNode.execute(lib.readMember(this, "hour"));
+                        int min = castToIntNode.execute(lib.readMember(this, "minute"));
+                        int sec = castToIntNode.execute(lib.readMember(this, "second"));
+                        int micro = castToIntNode.execute(lib.readMember(this, "microsecond"));
+                        return createLocalTime(hour, min, sec, micro);
+                    } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                        throw UnsupportedMessageException.create();
+                    }
                 }
             }
-        }
-        module = importedModules.getItem(TIME_MODULE_NAME);
-        if (timeModuleLoaded.profile(module != null)) {
-            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
-                try {
-                    int hour = castToIntNode.execute(lib.readMember(this, "tm_hour"));
-                    int min = castToIntNode.execute(lib.readMember(this, "tm_min"));
-                    int sec = castToIntNode.execute(lib.readMember(this, "tm_sec"));
-                    return createLocalTime(hour, min, sec, 0);
-                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                    throw UnsupportedMessageException.create();
+            module = importedModules.getItem(TIME_MODULE_NAME);
+            if (timeModuleLoaded.profile(module != null)) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                    try {
+                        int hour = castToIntNode.execute(lib.readMember(this, "tm_hour"));
+                        int min = castToIntNode.execute(lib.readMember(this, "tm_min"));
+                        int sec = castToIntNode.execute(lib.readMember(this, "tm_sec"));
+                        return createLocalTime(hour, min, sec, 0);
+                    } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                        throw UnsupportedMessageException.create();
+                    }
                 }
             }
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
@@ -1280,51 +1513,56 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
                     @CachedLibrary(limit = "2") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded) {
-        Object objType = plib.getLazyPythonClass(this);
-        PDict importedModules = PythonLanguage.getContext().getImportedModules();
-        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (dateTimeModuleLoaded.profile(module != null)) {
-            if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
-                try {
-                    Object tzinfo = lib.readMember(this, "tzinfo");
-                    if (tzinfo != PNone.NONE) {
-                        Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
-                        if (delta != PNone.NONE) {
-                            return true;
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object objType = plib.getLazyPythonClass(this);
+            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            if (dateTimeModuleLoaded.profile(module != null)) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
+                    try {
+                        Object tzinfo = lib.readMember(this, "tzinfo");
+                        if (tzinfo != PNone.NONE) {
+                            Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
+                            if (delta != PNone.NONE) {
+                                return true;
+                            }
                         }
+                    } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
+                        return false;
                     }
-                } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
-                    return false;
-                }
-            } else if (isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
-                try {
-                    Object tzinfo = lib.readMember(this, "tzinfo");
-                    if (tzinfo != PNone.NONE) {
-                        Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
-                        if (delta != PNone.NONE) {
-                            return true;
+                } else if (isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
+                    try {
+                        Object tzinfo = lib.readMember(this, "tzinfo");
+                        if (tzinfo != PNone.NONE) {
+                            Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
+                            if (delta != PNone.NONE) {
+                                return true;
+                            }
                         }
+                    } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
+                        return false;
                     }
-                } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
-                    return false;
                 }
             }
-        }
-        module = importedModules.getItem(TIME_MODULE_NAME);
-        if (timeModuleLoaded.profile(module != null)) {
-            if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
-                try {
-                    Object tm_zone = lib.readMember(this, "tm_zone");
-                    if (tm_zone != PNone.NONE) {
-                        return true;
+            module = importedModules.getItem(TIME_MODULE_NAME);
+            if (timeModuleLoaded.profile(module != null)) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                    try {
+                        Object tm_zone = lib.readMember(this, "tm_zone");
+                        if (tm_zone != PNone.NONE) {
+                            return true;
+                        }
+                    } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                        return false;
                     }
-                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                    return false;
                 }
             }
+            return false;
+        } finally {
+            gil.release(mustRelease);
         }
-        return false;
     }
 
     @ExportMessage
@@ -1334,63 +1572,68 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
-        if (!lib.isTimeZone(this)) {
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (!lib.isTimeZone(this)) {
+                throw UnsupportedMessageException.create();
+            }
+            Object objType = plib.getLazyPythonClass(this);
+            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+            if (dateTimeModuleLoaded.profile(module != null)) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
+                    try {
+                        Object tzinfo = lib.readMember(this, "tzinfo");
+                        if (tzinfo != PNone.NONE) {
+                            Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
+                            if (delta != PNone.NONE) {
+                                int seconds = castToIntNode.execute(lib.readMember(delta, "seconds"));
+                                return createZoneId(seconds);
+                            }
+                        }
+                    } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
+                        throw UnsupportedMessageException.create();
+                    }
+                } else if (isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
+                    try {
+                        Object tzinfo = lib.readMember(this, "tzinfo");
+                        if (tzinfo != PNone.NONE) {
+                            Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
+                            if (delta != PNone.NONE) {
+                                int seconds = castToIntNode.execute(lib.readMember(delta, "seconds"));
+                                return createZoneId(seconds);
+                            }
+                        }
+                    } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
+                        throw UnsupportedMessageException.create();
+                    }
+                }
+            }
+            module = importedModules.getItem(TIME_MODULE_NAME);
+            if (timeModuleLoaded.profile(module != null)) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                    try {
+                        Object tm_zone = lib.readMember(this, "tm_zone");
+                        if (tm_zone != PNone.NONE) {
+                            Object tm_gmtoffset = lib.readMember(this, "tm_gmtoff");
+                            if (tm_gmtoffset != PNone.NONE) {
+                                int seconds = castToIntNode.execute(tm_gmtoffset);
+                                return createZoneId(seconds);
+                            }
+                            if (tm_zone instanceof String) {
+                                return createZoneId((String) tm_zone);
+                            }
+                        }
+                    } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                        throw UnsupportedMessageException.create();
+                    }
+                }
+            }
             throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        Object objType = plib.getLazyPythonClass(this);
-        PDict importedModules = PythonLanguage.getContext().getImportedModules();
-        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (dateTimeModuleLoaded.profile(module != null)) {
-            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
-                try {
-                    Object tzinfo = lib.readMember(this, "tzinfo");
-                    if (tzinfo != PNone.NONE) {
-                        Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
-                        if (delta != PNone.NONE) {
-                            int seconds = castToIntNode.execute(lib.readMember(delta, "seconds"));
-                            return createZoneId(seconds);
-                        }
-                    }
-                } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
-                    throw UnsupportedMessageException.create();
-                }
-            } else if (isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
-                try {
-                    Object tzinfo = lib.readMember(this, "tzinfo");
-                    if (tzinfo != PNone.NONE) {
-                        Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
-                        if (delta != PNone.NONE) {
-                            int seconds = castToIntNode.execute(lib.readMember(delta, "seconds"));
-                            return createZoneId(seconds);
-                        }
-                    }
-                } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
-                    throw UnsupportedMessageException.create();
-                }
-            }
-        }
-        module = importedModules.getItem(TIME_MODULE_NAME);
-        if (timeModuleLoaded.profile(module != null)) {
-            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
-                try {
-                    Object tm_zone = lib.readMember(this, "tm_zone");
-                    if (tm_zone != PNone.NONE) {
-                        Object tm_gmtoffset = lib.readMember(this, "tm_gmtoff");
-                        if (tm_gmtoffset != PNone.NONE) {
-                            int seconds = castToIntNode.execute(tm_gmtoffset);
-                            return createZoneId(seconds);
-                        }
-                        if (tm_zone instanceof String) {
-                            return createZoneId((String) tm_zone);
-                        }
-                    }
-                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
-                    throw UnsupportedMessageException.create();
-                }
-            }
-        }
-        throw UnsupportedMessageException.create();
     }
 
     @TruffleBoundary
@@ -1741,8 +1984,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         @ExportMessage
-        long getArraySize() {
-            return keys.length;
+        long getArraySize(@Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return keys.length;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @ExportMessage
@@ -1990,13 +2238,23 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(guards = "allowSideEffects")
         public static String doSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects,
-                        @Cached ToDisplaySideEffectingNode toDisplayCallnode) {
-            return toDisplayCallnode.execute(receiver);
+                        @Cached ToDisplaySideEffectingNode toDisplayCallnode, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return toDisplayCallnode.execute(receiver);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(guards = "!allowSideEffects")
-        public static String doNonSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects) {
-            return receiver.toStringBoundary();
+        public static String doNonSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return receiver.toStringBoundary();
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
     }
@@ -2013,13 +2271,23 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass) {
-        return getClass.execute(this);
+    public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getClass.execute(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    public int identityHashCode(@Cached ObjectNodes.GetIdentityHashNode getIdentityHashNode) {
-        return getIdentityHashNode.execute(this);
+    public int identityHashCode(@Cached ObjectNodes.GetIdentityHashNode getIdentityHashNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getIdentityHashNode.execute(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @TruffleBoundary
@@ -2031,14 +2299,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public TriState isIdenticalOrUndefined(Object otherInterop,
                     @Cached PForeignToPTypeNode convert,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                    @CachedLibrary("this") PythonObjectLibrary objectLib) {
-        Object other = convert.executeConvert(otherInterop);
-        if (this == other) {
-            return TriState.TRUE;
-        } else if (otherLib.hasIdentity(other)) {
-            return objectLib.isSame(this, other) ? TriState.TRUE : TriState.FALSE;
-        } else {
-            return TriState.UNDEFINED;
+                    @CachedLibrary("this") PythonObjectLibrary objectLib, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object other = convert.executeConvert(otherInterop);
+            if (this == other) {
+                return TriState.TRUE;
+            } else if (otherLib.hasIdentity(other)) {
+                return objectLib.isSame(this, other) ? TriState.TRUE : TriState.FALSE;
+            } else {
+                return TriState.UNDEFINED;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -2065,23 +2338,28 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            Object v = plib.getDelegatedValue(self);
-            Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(self, __ITER__));
-            if (iterMethod != PNone.NONE) {
-                if (iterMethod != PNone.NO_VALUE) {
-                    Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
-                    if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
-                        return iterObj;
-                    }
-                } else {
-                    Object getItemAttrObj = plib.lookupAttributeOnType(self, __GETITEM__);
-                    if (getItemAttrObj != PNone.NO_VALUE) {
-                        return factory.createSequenceIterator(v);
+                        @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object v = plib.getDelegatedValue(self);
+                Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(self, __ITER__));
+                if (iterMethod != PNone.NONE) {
+                    if (iterMethod != PNone.NO_VALUE) {
+                        Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
+                        if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
+                            return iterObj;
+                        }
+                    } else {
+                        Object getItemAttrObj = plib.lookupAttributeOnType(self, __GETITEM__);
+                        if (getItemAttrObj != PNone.NO_VALUE) {
+                            return factory.createSequenceIterator(v);
+                        }
                     }
                 }
+                throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, self);
+            } finally {
+                gil.release(mustRelease);
             }
-            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, self);
         }
     }
 }

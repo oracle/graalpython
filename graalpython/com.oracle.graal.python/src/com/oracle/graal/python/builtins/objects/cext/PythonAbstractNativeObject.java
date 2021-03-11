@@ -204,7 +204,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                 }
                 return this; // subclasses of 'int' should do early return
             } else {
-                return asIndexWithState(threadState, plib, methodLib, resultLib, raise, isSubtypeNode, noIndex, resultProfile, gotState, isInt, warnNode);
+                return asIndexWithState(threadState, plib, methodLib, resultLib, raise, isSubtypeNode, noIndex, resultProfile, gotState, isInt, warnNode, gil);
             }
         } finally {
             gil.release(mustRelease);

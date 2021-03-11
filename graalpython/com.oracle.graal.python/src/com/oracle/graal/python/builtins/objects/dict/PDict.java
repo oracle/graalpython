@@ -156,7 +156,7 @@ public final class PDict extends PHashingCollection {
             boolean mustRelease = gil.acquire();
             try {
                 // call the generic implementation in the superclass
-                return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow);
+                return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow, gil);
             } finally {
                 gil.release(mustRelease);
             }
