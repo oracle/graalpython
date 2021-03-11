@@ -1899,4 +1899,19 @@ public abstract class GraalHPyContextFunctions {
             return null;
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyIsCallable extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary objectLib) throws ArityException, UnsupportedTypeException {
+            checkArity(arguments, 2);
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object object = asPythonObjectNode.execute(nativeContext, arguments[1]);
+            return PInt.intValue(objectLib.isCallable(object));
+        }
+    }
 }
