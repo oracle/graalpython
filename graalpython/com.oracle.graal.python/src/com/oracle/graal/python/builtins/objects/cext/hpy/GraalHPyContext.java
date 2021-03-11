@@ -430,6 +430,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_HASH("ctx_Hash"),
         CTX_NUMBER_CHECK("ctx_Number_Check"),
         CTX_LENGTH("ctx_Length"),
+        CTX_TUPLE_CHECK("ctx_Tuple_Check"),
         CTX_TUPLE_FROMARRAY("ctx_Tuple_FromArray"),
         CTX_TUPLE_BUILDER_NEW("ctx_TupleBuilder_New"),
         CTX_TUPLE_BUILDER_SET("ctx_TupleBuilder_Set"),
@@ -972,6 +973,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_NUMBER_CHECK.ordinal()] = new GraalHPyIsNumber();
         members[HPyContextMember.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.LEN, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
         members[HPyContextMember.CTX_TUPLE_FROMARRAY.ordinal()] = new GraalHPyTupleFromArray();
+        members[HPyContextMember.CTX_TUPLE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PTuple);
 
         GraalHPyBuilderNew graalHPyBuilderNew = new GraalHPyBuilderNew();
         GraalHPyBuilderSet graalHPyBuilderSet = new GraalHPyBuilderSet();
