@@ -261,9 +261,7 @@ public final class PCode extends PythonBuiltinObject {
             if (identifier instanceof String) {
                 String varName = (String) identifier;
 
-                if (FrameSlotIDs.RETURN_SLOT_ID.equals(varName) || varName.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX)) {
-                    // pass
-                } else if (!varNameList.contains(varName)) {
+                if (!varNameList.contains(varName)) {
                     if (StringUtils.isIdentifier(varName)) {
                         if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
                             varNameList.add(varName);

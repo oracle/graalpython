@@ -16,22 +16,18 @@ ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(
                 DestructuringAssignmentNodeGen SourceSection: None
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <>temp0
-                    WriteLocalFrameSlotNodeGen SourceSection: None
-                      Frame: [0,<>temp0,Illegal]
+                    Frame: [0,<>temp0,Illegal]
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <>temp1
-                    WriteLocalFrameSlotNodeGen SourceSection: None
-                      Frame: [1,<>temp1,Illegal]
+                    Frame: [1,<>temp1,Illegal]
                   WriteNameNodeGen SourceSection: None
                     Identifier: a
-                    ReadLocalVariableNode SourceSection: None
+                    ReadLocalVariableNodeGen SourceSection: None
                       Frame: [0,<>temp0,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None
                   WriteNameNodeGen SourceSection: None
                     Identifier: b
-                    ReadLocalVariableNode SourceSection: None
+                    ReadLocalVariableNodeGen SourceSection: None
                       Frame: [1,<>temp1,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None
               ExpressionStatementNode SourceSection: [44,52]`print(b)`
                 PythonCallUnary SourceSection: [44,52]`print(b)`
                   CallUnaryMethodNodeGen SourceSection: None

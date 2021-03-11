@@ -42,29 +42,24 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                         ReadGlobalOrBuiltinNodeGen SourceSection: [36,45]`condition`
                           Identifier: condition
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [46,47]`x`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [46,47]`x`
                           Frame: [1,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [49,50]`y`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [49,50]`y`
                           Frame: [0,y,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: None
                       YieldNode SourceSection: None
                         flagSlot: 0
                         TupleLiteralNode SourceSection: None
-                          ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                          ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`x`
                             Frame: [1,x,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
+                          ReadGeneratorFrameVariableNodeGen SourceSection: [3,4]`x`
                             Frame: [1,x,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                     BlockNode SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: y
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,y,Illegal]
+                    Frame: [0,y,Illegal]
                   GetIteratorExpressionNodeGen SourceSection: [28,32]`seq2`
                     ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`seq2`
                       Identifier: seq2
@@ -77,8 +72,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     CachedDispatchFirst SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [1,x,Illegal]
+                  Frame: [1,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -88,9 +82,8 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [2,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

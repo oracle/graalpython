@@ -40,8 +40,7 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                             EmptyNode SourceSection: [43,47]`pass`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: d
-                            WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [0,d,Illegal]
+                            Frame: [0,d,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [35,36]`c`
                             Identifier: c
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -54,8 +53,7 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                           GetClassNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: b
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [1,b,Illegal]
+                          Frame: [1,b,Illegal]
                         ReadGlobalOrBuiltinNodeGen SourceSection: [27,28]`a`
                           Identifier: a
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -66,6 +64,5 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

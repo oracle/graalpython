@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS_
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
@@ -1289,7 +1289,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     public ReadNode makeTempLocalVariable() {
-        String tempName = TEMP_LOCAL_PREFIX + scopeEnvironment.getCurrentScope().getFrameDescriptor().getSize();
+        Object tempName = FrameSlotIDs.getTempLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().getSize());
         FrameSlot tempSlot = scopeEnvironment.createAndReturnLocal(tempName);
         return !scopeEnvironment.isInGeneratorScope()
                         ? ReadLocalVariableNode.create(tempSlot)

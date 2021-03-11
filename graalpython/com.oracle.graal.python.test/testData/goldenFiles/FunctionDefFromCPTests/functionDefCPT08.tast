@@ -41,21 +41,18 @@ ModuleRootNode Name: <module 'functionDefCPT08'> SourceSection: [0,26]`def f(foo
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: foo
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,foo,Illegal]
+                        Frame: [0,foo,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: kw
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,kw,Illegal]
+                        Frame: [1,kw,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                     FunctionBodyNode SourceSection: [22,26]`pass`
                       ExpressionStatementNode SourceSection: [22,26]`pass`
                         EmptyNode SourceSection: [22,26]`pass`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

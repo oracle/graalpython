@@ -64,17 +64,14 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                                       BinaryArithmeticExpression SourceSection: [13,16]`x*x`
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __mul__
-                                        ReadGeneratorFrameVariableNode SourceSection: [13,14]`x`
+                                        ReadGeneratorFrameVariableNodeGen SourceSection: [13,14]`x`
                                           Frame: [0,x,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: [15,16]`x`
+                                        ReadGeneratorFrameVariableNodeGen SourceSection: [15,16]`x`
                                           Frame: [0,x,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: x
-                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [0,x,Illegal]
+                                    Frame: [0,x,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -84,9 +81,8 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
-                                ReadGeneratorFrameVariableNode SourceSection: None
+                                ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
@@ -99,6 +95,5 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                               IntegerLiteralNode SourceSection: [32,34]`10`
                                 Value: 10
                           PythonObjectFactoryNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

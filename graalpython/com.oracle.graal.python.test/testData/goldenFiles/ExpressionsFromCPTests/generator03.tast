@@ -40,17 +40,15 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
                       BinaryArithmeticExpression SourceSection: [28,33]`x % 2`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
-                        ReadGeneratorFrameVariableNode SourceSection: [28,29]`x`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [28,29]`x`
                           Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [32,33]`2`
                           Value: 2
                       BinaryArithmeticExpression SourceSection: [37,42]`x % 3`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mod__
-                        ReadGeneratorFrameVariableNode SourceSection: [37,38]`x`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [37,38]`x`
                           Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [41,42]`3`
                           Value: 3
                       YesNodeGen SourceSection: None
@@ -60,17 +58,15 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
                       BinaryArithmeticExpression SourceSection: [1,5]`x**3`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __pow__
-                        ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`x`
                           Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [4,5]`3`
                           Value: 3
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,x,Illegal]
+                  Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -80,9 +76,8 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
