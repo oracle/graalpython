@@ -47,7 +47,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -73,21 +76,36 @@ public final class InteropMap implements TruffleObject {
 
     @ExportMessage(name = "readMember")
     @TruffleBoundary
-    Object getKey(String name) {
-        assert hasKey(name);
-        return data.get(name);
+    Object getKey(String name, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            assert hasKey(name, gil);
+            return data.get(name);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage(name = "isMemberReadable")
     @TruffleBoundary
-    boolean hasKey(String name) {
-        return data.containsKey(name);
+    boolean hasKey(String name, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return data.containsKey(name);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage(name = "getMembers")
     @TruffleBoundary
-    TruffleObject getKeys(@SuppressWarnings("unused") boolean includeInternal) {
-        return new InteropArray(data.keySet().toArray());
+    TruffleObject getKeys(@SuppressWarnings("unused") boolean includeInternal, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return new InteropArray(data.keySet().toArray());
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @TruffleBoundary
