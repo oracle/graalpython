@@ -1928,8 +1928,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    // Note: all the mmap related messages are behind Truffle boundary until GR-29663 is resolved
-
     public static final class MMapHandle {
         private static final MMapHandle NONE = new MMapHandle(null, 0);
         private SeekableByteChannel channel;
@@ -2011,7 +2009,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     final MMapHandle mmap(long length, int prot, int flags, int fd, long offset,
                     @Shared("defaultDirProfile") @Cached ConditionProfile isAnonymousProfile) throws PosixException {
         if (prot == PROT_NONE.value) {
@@ -2065,7 +2062,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     public byte mmapReadByte(Object mmap, long index,
                     @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
         if (mmap == MMapHandle.NONE) {
@@ -2083,7 +2079,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
                     @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
         if (mmap == MMapHandle.NONE) {
@@ -2118,7 +2113,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
                     @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
         if (mmap == MMapHandle.NONE) {
@@ -2127,8 +2121,9 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
         MMapHandle handle = (MMapHandle) mmap;
         try {
-            position(handle.channel, handle.offset + index);
-            int written = handle.channel.write(ByteBuffer.wrap(bytes, 0, length));
+            SeekableByteChannel channel = handle.channel;
+            position(channel, handle.offset + index);
+            int written = writeChannel(channel, bytes, length);
             if (written != length) {
                 throw posixException(OSErrorEnum.EIO);
             }
@@ -2139,9 +2134,13 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    @TruffleBoundary
+    private static int writeChannel(SeekableByteChannel channel, byte[] bytes, int length) throws IOException {
+        return channel.write(ByteBuffer.wrap(bytes, 0, length));
+    }
+
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    @TruffleBoundary
     public void mmapFlush(Object mmap, long offset, long length) {
         // Intentionally noop
         // If we had access to the underlying NIO FileChannel, we could explicitly set force(true)
@@ -2152,7 +2151,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     public void mmapUnmap(Object mmap, @SuppressWarnings("unused") long length) throws PosixException {
         if (mmap == MMapHandle.NONE) {
             return;
