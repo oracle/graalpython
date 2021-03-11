@@ -1106,8 +1106,9 @@ public abstract class PythonObjectLibrary extends Library {
      * Checks whether the receiver is a Foreign Object.
      *
      * @see DefaultPythonObjectExports#isForeignObject(Object,
-     *      com.oracle.truffle.api.interop.InteropLibrary, com.oracle.graal.python.runtime.GilNode) {@code DefaultPythonObjectExports}
-     *      implements the logic of how an unknown object is being checked.
+     *      com.oracle.truffle.api.interop.InteropLibrary, com.oracle.graal.python.runtime.GilNode)
+     *      {@code DefaultPythonObjectExports} implements the logic of how an unknown object is
+     *      being checked.
      *
      * @param receiver
      * @return True if the receiver is a Foreign Object
