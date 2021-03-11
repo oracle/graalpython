@@ -53,6 +53,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -73,12 +75,16 @@ public class FcntlModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(PythonCore core) {
-        builtinConstants.put("LOCK_SH", PosixSupportLibrary.LOCK_SH);
-        builtinConstants.put("LOCK_EX", PosixSupportLibrary.LOCK_EX);
-        builtinConstants.put("LOCK_NB", PosixSupportLibrary.LOCK_NB);
-        builtinConstants.put("LOCK_UN", PosixSupportLibrary.LOCK_UN);
-
-        builtinConstants.put("F_WRLCK", 42); // TODO
+        for (IntConstant c : PosixConstants.flockOperation) {
+            if (c.defined) {
+                builtinConstants.put(c.name, c.getValueIfDefined());
+            }
+        }
+        for (IntConstant c : PosixConstants.flockType) {
+            if (c.defined) {
+                builtinConstants.put(c.name, c.getValueIfDefined());
+            }
+        }
         super.initialize(core);
     }
 

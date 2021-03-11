@@ -42,11 +42,11 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.MAP_ANONYMOUS;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.MAP_PRIVATE;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.MAP_SHARED;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.PROT_READ;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.PROT_WRITE;
+import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
+import static com.oracle.graal.python.runtime.PosixConstants.MAP_PRIVATE;
+import static com.oracle.graal.python.runtime.PosixConstants.MAP_SHARED;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_READ;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_WRITE;
 import static com.oracle.graal.python.runtime.PosixSupportLibrary.ST_SIZE;
 
 import java.util.List;
@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -85,6 +86,18 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ACCESS_READ", PMMap.ACCESS_READ);
         builtinConstants.put("ACCESS_WRITE", PMMap.ACCESS_WRITE);
         builtinConstants.put("ACCESS_COPY", PMMap.ACCESS_COPY);
+
+        for (PosixConstants.IntConstant c : PosixConstants.mmapFlags) {
+            if (c.defined) {
+                builtinConstants.put(c.name, c.getValueIfDefined());
+            }
+        }
+
+        for (PosixConstants.IntConstant c : PosixConstants.mmapProtection) {
+            if (c.defined) {
+                builtinConstants.put(c.name, c.getValueIfDefined());
+            }
+        }
     }
 
     @Builtin(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "flags", "prot", "access", "offset"}, constructsClass = PythonBuiltinClassType.PMMap)
@@ -98,8 +111,8 @@ public class MMapModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "offset", conversion = ClinicConversion.Long, defaultValue = "0")
     public abstract static class MMapNode extends PythonClinicBuiltinNode {
         protected static final int ACCESS_ARG_DEFAULT = PMMap.ACCESS_DEFAULT;
-        protected static final int FLAGS_DEFAULT = MAP_SHARED;
-        protected static final int PROT_DEFAULT = PROT_WRITE | PROT_READ;
+        protected static final int FLAGS_DEFAULT = MAP_SHARED.value;
+        protected static final int PROT_DEFAULT = PROT_WRITE.value | PROT_READ.value;
 
         private static final int ANONYMOUS_FD = -1;
 
@@ -120,22 +133,22 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             int access = accessIn;
             switch (access) {
                 case PMMap.ACCESS_READ:
-                    flags = MAP_SHARED;
-                    prot = PROT_READ;
+                    flags = MAP_SHARED.value;
+                    prot = PROT_READ.value;
                     break;
                 case PMMap.ACCESS_WRITE:
-                    flags = MAP_SHARED;
-                    prot = PROT_READ | PROT_WRITE;
+                    flags = MAP_SHARED.value;
+                    prot = PROT_READ.value | PROT_WRITE.value;
                     break;
                 case PMMap.ACCESS_COPY:
-                    flags = MAP_PRIVATE;
-                    prot = PROT_READ | PROT_WRITE;
+                    flags = MAP_PRIVATE.value;
+                    prot = PROT_READ.value | PROT_WRITE.value;
                     break;
                 case PMMap.ACCESS_DEFAULT:
                     // map prot to access type
-                    if (((prot & PROT_READ) != 0) && ((prot & PROT_WRITE) != 0)) {
+                    if (((prot & PROT_READ.value) != 0) && ((prot & PROT_WRITE.value) != 0)) {
                         // ACCESS_DEFAULT
-                    } else if ((prot & PROT_WRITE) != 0) {
+                    } else if ((prot & PROT_WRITE.value) != 0) {
                         access = PMMap.ACCESS_WRITE;
                     } else {
                         access = PMMap.ACCESS_READ;
@@ -174,7 +187,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             int dupFd;
             if (fd == ANONYMOUS_FD) {
                 dupFd = ANONYMOUS_FD;
-                flags |= MAP_ANONYMOUS;
+                flags |= MAP_ANONYMOUS.value;
                 // TODO: CPython uses mapping to "/dev/zero" on systems that do not support
                 // MAP_ANONYMOUS, maybe this can be detected and handled by the POSIX layer
             } else {
