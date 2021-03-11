@@ -40,6 +40,7 @@
 # ankitv 10/10/13
 # Iterating by Sequence Index
 
+from collections.abc import MutableSet
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -315,6 +316,12 @@ def test_same_id():
     empty_ids = set([id(frozenset()) for i in range(100)])
     assert len(empty_ids) == 1
 
+def test_init():
+    s = {1, 2, 3}
+    s.__init__({4})
+    assert s == {4}
+    s.__init__()
+    assert s == set()
 
 def test_rich_compare():
     class TestRichSetCompare:
