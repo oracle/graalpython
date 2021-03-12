@@ -414,7 +414,9 @@ class GraalPythonVm(GraalPythonVmBase):
                                             extra_polyglot_args=extra_polyglot_args, env=env)
 
     def launcher_class(self):
-        return 'com.oracle.graal.python.shell.GraalPythonMain'
+        # We need to do it lazily because 'mx_graalpython' is importing this module
+        from mx_graalpython import GRAALPYTHON_MAIN_CLASS
+        return GRAALPYTHON_MAIN_CLASS
 
     def run_in_graalvm(self, cwd, args, extra_polyglot_args, host_vm):
         with environ(self._env or {}):
