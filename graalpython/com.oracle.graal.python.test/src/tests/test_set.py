@@ -485,3 +485,37 @@ def test_iter_changed_size():
 
     s = {1, 2}
     assert_raises(RuntimeError, iterate_and_update, s)
+
+# copied and modified test_collections.py#test_issue_4920
+# the original will always fail on graalpython due to different set order
+def test_MutableSet_pop():
+    class MySet(MutableSet):
+        __slots__=['__s']
+        def __init__(self,items=None):
+            if items is None:
+                items=[]
+            self.__s=set(items)
+        def __contains__(self,v):
+            return v in self.__s
+        def __iter__(self):
+            return iter(self.__s)
+        def __len__(self):
+            return len(self.__s)
+        def add(self,v):
+            result=v not in self.__s
+            self.__s.add(v)
+            return result
+        def discard(self,v):
+            result=v in self.__s
+            self.__s.discard(v)
+            return result
+        def __repr__(self):
+            return "MySet(%s)" % repr(list(self))
+    l = [5,43]
+    s = MySet(l)
+    v1 = s.pop()
+    assert v1 in l
+    v2 = s.pop()
+    assert v2 in l
+    assert v1 != v2
+    assert len(s) == 0

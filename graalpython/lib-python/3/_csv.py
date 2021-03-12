@@ -120,13 +120,15 @@ class Dialect(object):
         def set_char(x):
             if x is None:
                 return None
-            if isinstance(x, str) and len(x) <= 1:
+            if not isinstance(x, str):
+                raise TypeError('"%s" must be string, not %s' % (name, type(x).__name__))
+            if len(x) == 1:
                 return x
-            raise TypeError("%r must be a 1-character string" % (name,))
+            raise TypeError('"%s" must be a 1-character string' % (name,))
         def set_str(x):
             if isinstance(x, str):
                 return x
-            raise TypeError("%r must be a string" % (name,))
+            raise TypeError('"%s" must be a string' % (name))
         def set_quoting(x):
             if x in range(4):
                 return x
@@ -257,8 +259,7 @@ class Reader(object):
                 raise
 
             self.line_num += 1
-
-            if '\0' in line:
+            if isinstance(line, str) and '\0' in line or isinstance(line, bytes) and line.index(0) >=0:
                 raise Error("line contains NULL byte")
             pos = 0
             while pos < len(line):
@@ -504,16 +505,20 @@ class Writer(object):
 
 
     def writerow(self, row):
+        if row is None:
+            raise Error
+        
         dialect = self.dialect
-        try:
-            rowlen = len(row)
-        except TypeError:
-            raise Error("sequence expected")
 
         # join all fields in internal buffer
         self._join_reset()
         
+        fields = []
         for field in row:
+            fields.append(field)
+            
+        rowlen = len(fields)    
+        for field in fields:
             quoted = False
             if dialect.quoting == QUOTE_NONNUMERIC:
                 try:
@@ -526,6 +531,8 @@ class Writer(object):
                 quoted = True
 
             if field is None:
+                if dialect.quoting == QUOTE_NONE:
+                    raise Error
                 value = ""
             elif isinstance(field, float):
                 value = repr(field)
@@ -589,7 +596,7 @@ def field_size_limit(limit=undefined):
     old_limit = _field_limit
     
     if limit is not undefined:
-        if not isinstance(limit, (int, long)):
+        if not isinstance(limit, int):
             raise TypeError("int expected, got %s" %
                             (limit.__class__.__name__,))
         _field_limit = limit
