@@ -874,7 +874,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_LONG_FROMSSIZE_T.ordinal()] = fromSignedLong;
         members[HPyContextMember.CTX_LONG_FROMSIZE_T.ordinal()] = fromUnsignedLong;
         GraalHPyLongAsPrimitive asSignedLong = new GraalHPyLongAsPrimitive(1, Long.BYTES, true);
-        GraalHPyLongAsPrimitive asUnsignedLong = new GraalHPyLongAsPrimitive(0, Long.BYTES, true);
+        GraalHPyLongAsPrimitive asUnsignedLong = new GraalHPyLongAsPrimitive(0, Long.BYTES, true, true);
         GraalHPyLongAsPrimitive asUnsignedLongMask = new GraalHPyLongAsPrimitive(0, Long.BYTES, false);
         members[HPyContextMember.CTX_LONG_ASLONG.ordinal()] = asSignedLong;
         members[HPyContextMember.CTX_LONG_ASLONGLONG.ordinal()] = asSignedLong;
@@ -883,7 +883,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK.ordinal()] = asUnsignedLongMask;
         members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK.ordinal()] = asUnsignedLongMask;
         members[HPyContextMember.CTX_LONG_ASSIZE_T.ordinal()] = asUnsignedLong;
-        members[HPyContextMember.CTX_LONG_ASSSIZE_T.ordinal()] = asSignedLong;
+        members[HPyContextMember.CTX_LONG_ASSSIZE_T.ordinal()] = new GraalHPyLongAsPrimitive(1, Long.BYTES, true, true);
         members[HPyContextMember.CTX_NEW.ordinal()] = new GraalHPyNew();
         members[HPyContextMember.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
         members[HPyContextMember.CTX_CAST.ordinal()] = new GraalHPyCast();

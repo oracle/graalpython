@@ -420,23 +420,35 @@ public abstract class GraalHPyContextFunctions {
         private final int targetSize;
         private final int signed;
         private final boolean exact;
+        private final boolean requiresPInt;
 
         public GraalHPyLongAsPrimitive(int signed, int targetSize, boolean exact) {
+            this(signed, targetSize, exact, false);
+        }
+
+        public GraalHPyLongAsPrimitive(int signed, int targetSize, boolean exact, boolean requiresPInt) {
             this.targetSize = targetSize;
             this.signed = signed;
             this.exact = exact;
+            this.requiresPInt = requiresPInt;
         }
 
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
             try {
+                if (requiresPInt && !isSubtypeNode.execute(lib.getLazyPythonClass(object), PythonBuiltinClassType.PInt)) {
+                    throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                }
                 return asNativePrimitiveNode.execute(object, signed, targetSize, exact);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
