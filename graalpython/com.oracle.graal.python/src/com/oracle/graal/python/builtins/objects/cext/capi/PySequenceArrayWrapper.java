@@ -141,13 +141,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     final long getArraySize(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return objectLib.length(lib.getDelegate(this));
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
+        return objectLib.length(lib.getDelegate(this));
     }
 
     @ExportMessage
@@ -175,14 +170,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // also include the implicit null-terminator
-            return 0 <= identifier && identifier <= getArraySize(lib, objectLib, gil);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
+        // also include the implicit null-terminator
+        return 0 <= identifier && identifier <= getArraySize(lib, objectLib);
     }
 
     @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
@@ -316,13 +306,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return 0 <= index && index <= getArraySize(lib, objectLib, gil);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
+        return 0 <= index && index <= getArraySize(lib, objectLib);
     }
 
     @ExportMessage
@@ -407,15 +392,10 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     public void toNative(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ToNativeArrayNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                setNativePointer(toPyObjectNode.execute(this));
-            }
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        invalidateNode.execute();
+        if (!lib.isNative(this)) {
+            setNativePointer(toPyObjectNode.execute(this));
         }
     }
 
@@ -484,29 +464,19 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public boolean isPointer(
-                    @Cached IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return pIsPointerNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached IsPointerNode pIsPointerNode) {
+        return pIsPointerNode.execute(this);
     }
 
     @ExportMessage
     public long asPointer(
                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object nativePointer = lib.getNativePointer(this);
-            if (nativePointer instanceof Long) {
-                return (long) nativePointer;
-            }
-            return interopLibrary.asPointer(nativePointer);
-        } finally {
-            gil.release(mustRelease);
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnsupportedMessageException {
+        Object nativePointer = lib.getNativePointer(this);
+        if (nativePointer instanceof Long) {
+            return (long) nativePointer;
         }
+        return interopLibrary.asPointer(nativePointer);
     }
 
     @ExportMessage
@@ -518,13 +488,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     Object getNativeType(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached GetTypeIDNode getTypeIDNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return getTypeIDNode.execute(lib.getDelegate(this));
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached GetTypeIDNode getTypeIDNode) {
+        return getTypeIDNode.execute(lib.getDelegate(this));
     }
 
     @GenerateUncached
