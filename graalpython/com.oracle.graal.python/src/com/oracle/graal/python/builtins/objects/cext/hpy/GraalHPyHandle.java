@@ -38,16 +38,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -102,14 +101,9 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     void toNative(
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Exclusive @Cached("createCountingProfile()") ConditionProfile isNativeProfile, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (!isPointer(isNativeProfile)) {
-                id = context.getHPyContext().getHPyHandleForObject(this);
-            }
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached("createCountingProfile()") ConditionProfile isNativeProfile) {
+        if (!isPointer(isNativeProfile)) {
+            id = context.getHPyContext().getHPyHandleForObject(this);
         }
     }
 
@@ -123,25 +117,14 @@ public final class GraalHPyHandle implements TruffleObject {
     static class GetNativeType {
         @Specialization(assumptions = "singleContextAssumption()")
         static Object doSingleContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @Exclusive @Cached GilNode gil,
-                        @Bind("gil.acquire()") boolean mustRelease,
                         @Cached("getHPyNativeType()") Object hpyNativeType) {
-            try {
-                return hpyNativeType;
-            } finally {
-                gil.release(mustRelease);
-            }
+            return hpyNativeType;
         }
 
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @CachedContext(PythonLanguage.class) PythonContext context, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return context.getHPyContext().getHPyNativeType();
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.getHPyContext().getHPyNativeType();
         }
 
         static Object getHPyNativeType() {
