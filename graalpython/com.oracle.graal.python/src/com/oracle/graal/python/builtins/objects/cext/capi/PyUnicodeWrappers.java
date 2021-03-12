@@ -91,39 +91,24 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         boolean isPointer(
-                        @Cached IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return pIsPointerNode.execute(this);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Cached IsPointerNode pIsPointerNode) {
+            return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
         long asPointer(
-                        @Cached PAsPointerNode pAsPointerNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return pAsPointerNode.execute(this);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Cached PAsPointerNode pAsPointerNode) {
+            return pAsPointerNode.execute(this);
         }
 
         @ExportMessage
         void toNative(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                invalidateNode.execute();
-                if (!lib.isNative(this)) {
-                    setNativePointer(toPyObjectNode.execute(this));
-                }
-            } finally {
-                gil.release(mustRelease);
+                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!lib.isNative(this)) {
+                setNativePointer(toPyObjectNode.execute(this));
             }
         }
 
