@@ -805,7 +805,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return -1;
     }
 
-    public int getHPyHandleForObject(GraalHPyHandle object) {
+    public synchronized int getHPyHandleForObject(GraalHPyHandle object) {
         // find free association
         int handle = allocateHandle();
         if (handle == -1) {
@@ -824,7 +824,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return handle;
     }
 
-    public GraalHPyHandle getObjectForHPyHandle(int handle) {
+    public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
         // find free association
         return hpyHandleTable[handle];
     }
@@ -840,7 +840,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    public void releaseHPyHandleForObject(int handle) {
+    public synchronized void releaseHPyHandleForObject(int handle) {
         assert handle != 0 : "NULL handle cannot be released";
         assert hpyHandleTable[handle] != null : PythonUtils.format("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {

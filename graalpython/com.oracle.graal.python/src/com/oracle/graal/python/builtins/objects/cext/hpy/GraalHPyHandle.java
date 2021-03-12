@@ -201,15 +201,17 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
-        if (isPointer(isAllocatedProfile)) {
-            try {
-                hpyContext.releaseHPyHandleForObject((int) asPointer(isAllocatedProfile));
-                id = -1;
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("trying to release non-native handle that claims to be native");
+        synchronized (isAllocatedProfile) {
+            if (isPointer(isAllocatedProfile)) {
+                try {
+                    hpyContext.releaseHPyHandleForObject((int) asPointer(isAllocatedProfile));
+                    id = -1;
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("trying to release non-native handle that claims to be native");
+                }
             }
+            // nothing to do if the handle never got 'toNative'
         }
-        // nothing to do if the handle never got 'toNative'
     }
 }
