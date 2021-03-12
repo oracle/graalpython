@@ -219,6 +219,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Child private SetItemNode setItemNode;
         @Child private CheckFunctionResultNode checkResultNode;
+        @Child private CheckFunctionResultNode checkHPyResultNode;
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
 
         static class ImportException extends Exception {
@@ -338,7 +339,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
             }
             Object nativeResult = interop.execute(pyinitFunc, hpyContext);
-            getCheckResultNode().execute(context, initFuncName, nativeResult);
+            getCheckHPyResultNode().execute(context, initFuncName, nativeResult);
 
             Object result = HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
             if (!(result instanceof PythonModule)) {
@@ -492,6 +493,14 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 checkResultNode = insert(DefaultCheckFunctionResultNodeGen.create());
             }
             return checkResultNode;
+        }
+
+        private CheckFunctionResultNode getCheckHPyResultNode() {
+            if (checkHPyResultNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                checkHPyResultNode = insert(DefaultCheckFunctionResultNodeGen.create());
+            }
+            return checkHPyResultNode;
         }
 
         @TruffleBoundary
