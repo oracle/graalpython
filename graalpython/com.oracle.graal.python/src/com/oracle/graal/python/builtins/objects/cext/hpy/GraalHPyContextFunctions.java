@@ -148,6 +148,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.TruffleLogger;
@@ -248,6 +249,20 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    /**
+     * Creates an HPy module from a module definition structure:
+     * 
+     * <pre>
+     * typedef struct {
+     *     void *dummy;
+     *     const char* m_name;
+     *     const char* m_doc;
+     *     HPy_ssize_t m_size;
+     *     cpy_PyMethodDef *legacy_methods;
+     *     HPyDef **defines;
+     * } HPyModuleDef;
+     * </pre>
+     */
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyModuleCreate extends GraalHPyContextFunction {
 
@@ -266,20 +281,29 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached HPyAddLegacyMethodNode addLegacyMethodNode,
                         @Cached HPyAsHandleNode asHandleNode,
-                        @Cached PRaiseNode raiseNode) throws ArityException {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
 
             // call to type the pointer
             Object moduleDef = callFromHPyModuleDefNode.call(context, GRAAL_HPY_FROM_HPY_MODULE_DEF, arguments[1]);
 
-            assert ptrLib.hasMembers(moduleDef);
+            assert checkLayout(moduleDef);
 
             try {
-                String mName = castToJavaStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "m_name")));
+                String mName;
+                Object mDoc;
+                try {
+                    mName = castToJavaStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "m_name")));
 
-                // do not eagerly read the doc string; this turned out to be unnecessarily expensive
-                Object mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "m_doc"));
+                    // do not eagerly read the doc string; this turned out to be unnecessarily
+                    // expensive
+                    mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "m_doc"));
+                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot create module from definition because: %m", e);
+                }
 
                 // create the module object
                 PythonModule module = factory.createPythonModule(mName);
@@ -287,30 +311,36 @@ public abstract class GraalHPyContextFunctions {
                 // process HPy methods
                 Object moduleDefines = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_DEFINES, moduleDef);
                 if (!ptrLib.hasArrayElements(moduleDefines)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'defines' did not return an array");
                 }
 
-                long nModuleDefines = ptrLib.getArraySize(moduleDefines);
-                for (long i = 0; i < nModuleDefines; i++) {
-                    Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
-                    int kind = castToJavaIntNode.execute(callGetterNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
-                    switch (kind) {
-                        case GraalHPyDef.HPY_DEF_KIND_METH:
-                            Object methodDef = callGetterNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
-                            PBuiltinFunction fun = addFunctionNode.execute(context, null, methodDef);
-                            PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                            writeAttrToMethodNode.execute(method, SpecialAttributeNames.__MODULE__, mName);
-                            writeAttrNode.execute(module, fun.getName(), method);
-                            break;
-                        case GraalHPyDef.HPY_DEF_KIND_SLOT:
-                        case GraalHPyDef.HPY_DEF_KIND_MEMBER:
-                        case GraalHPyDef.HPY_DEF_KIND_GETSET:
-                            // silently ignore
-                            // TODO(fa): maybe we should log a warning
-                            break;
-                        default:
-                            assert false : "unknown definition kind";
+                try {
+                    long nModuleDefines = ptrLib.getArraySize(moduleDefines);
+                    for (long i = 0; i < nModuleDefines; i++) {
+                        Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
+                        int kind = castToJavaIntNode.execute(callGetterNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
+                        switch (kind) {
+                            case GraalHPyDef.HPY_DEF_KIND_METH:
+                                Object methodDef = callGetterNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
+                                PBuiltinFunction fun = addFunctionNode.execute(context, null, methodDef);
+                                PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                                writeAttrToMethodNode.execute(method, SpecialAttributeNames.__MODULE__, mName);
+                                writeAttrNode.execute(module, fun.getName(), method);
+                                break;
+                            case GraalHPyDef.HPY_DEF_KIND_SLOT:
+                            case GraalHPyDef.HPY_DEF_KIND_MEMBER:
+                            case GraalHPyDef.HPY_DEF_KIND_GETSET:
+                                // silently ignore
+                                // TODO(fa): maybe we should log a warning
+                                break;
+                            default:
+                                assert false : "unknown definition kind";
+                        }
                     }
+                } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                    // should not happen since we check if 'moduleDefines' has array elements
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
 
                 // process legacy methods
@@ -318,26 +348,45 @@ public abstract class GraalHPyContextFunctions {
                 // the field 'legacy_methods' may be 'NULL'
                 if (!ptrLib.isNull(legacyMethods)) {
                     if (!ptrLib.hasArrayElements(legacyMethods)) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'legacyMethods' did not return an array");
                     }
 
-                    long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
-                    for (long i = 0; i < nLegacyMethods; i++) {
-                        Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
+                    try {
+                        long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
+                        for (long i = 0; i < nLegacyMethods; i++) {
+                            Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
 
-                        PBuiltinFunction fun = addLegacyMethodNode.execute(context, legacyMethod);
-                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                        writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
-                        writeAttrNode.execute(module, fun.getName(), method);
+                            PBuiltinFunction fun = addLegacyMethodNode.execute(context, legacyMethod);
+                            PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                            writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
+                            writeAttrNode.execute(module, fun.getName(), method);
+                        }
+                    } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                        // should not happen since we check if 'legacyMethods' has array elements
+                        throw CompilerDirectives.shouldNotReachHere();
                     }
                 }
 
                 writeAttrNode.execute(module, SpecialAttributeNames.__DOC__, mDoc);
 
                 return asHandleNode.execute(context, module);
-            } catch (InteropException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "");
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(context, e);
+                return context.getNullHandle();
             }
+        }
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object moduleDef) {
+            String[] members = new String[]{"m_name", "m_doc", "m_size", "legacy_methods", "defines"};
+            InteropLibrary lib = InteropLibrary.getUncached(moduleDef);
+            for (String member : members) {
+                if (!lib.isMemberReadable(moduleDef, member)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
