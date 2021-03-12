@@ -1399,6 +1399,7 @@ class TestCollectionABCs(ABCTestCase):
         s &= WithSet('cdef')            # This used to fail
         self.assertEqual(set(s), set('cd'))
 
+    @support.impl_detail("relies on element order in a set", graalvm=False)
     def test_issue_4920(self):
         # MutableSet.pop() method did not work
         class MySet(MutableSet):
