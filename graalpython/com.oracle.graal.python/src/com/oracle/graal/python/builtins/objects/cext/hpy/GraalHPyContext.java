@@ -783,6 +783,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         Object[] members = new Object[HPyContextMember.VALUES.length];
         PythonCore core = context.getCore();
 
+        createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
+        
         createConstant(members, HPyContextMember.H_NONE, PNone.NONE);
         createConstant(members, HPyContextMember.H_TRUE, core.getTrue());
         createConstant(members, HPyContextMember.H_FALSE, core.getFalse());
@@ -1001,6 +1003,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_TRACKER_FORGET_ALL.ordinal()] = new GraalHPyTrackerCleanup(true);
         members[HPyContextMember.CTX_TRACKER_CLOSE.ordinal()] = new GraalHPyTrackerCleanup(false);
         return members;
+    }
+
+    private static void createIntConstant(Object[] members, HPyContextMember member, int value) {
+        members[member.ordinal()] = value;
     }
 
     private static void createConstant(Object[] members, HPyContextMember member, Object value) {
