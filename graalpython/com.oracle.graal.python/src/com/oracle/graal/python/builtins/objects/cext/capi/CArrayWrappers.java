@@ -75,44 +75,29 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         public boolean isPointer(
-                        @Exclusive @Cached IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return pIsPointerNode.execute(this);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Exclusive @Cached IsPointerNode pIsPointerNode) {
+            return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
         public long asPointer(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-            boolean mustRelease = gil.acquire();
-            try {
-                Object nativePointer = lib.getNativePointer(this);
-                if (nativePointer instanceof Long) {
-                    return (long) nativePointer;
-                }
-                return interopLibrary.asPointer(nativePointer);
-            } finally {
-                gil.release(mustRelease);
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+            Object nativePointer = lib.getNativePointer(this);
+            if (nativePointer instanceof Long) {
+                return (long) nativePointer;
             }
+            return interopLibrary.asPointer(nativePointer);
         }
 
         @ExportMessage
         public void toNative(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached AsCharPointerNode asCharPointerNode,
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                invalidateNode.execute();
-                if (!lib.isNative(this)) {
-                    setNativePointer(asCharPointerNode.execute(lib.getDelegate(this)));
-                }
-            } finally {
-                gil.release(mustRelease);
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!lib.isNative(this)) {
+                setNativePointer(asCharPointerNode.execute(lib.getDelegate(this)));
             }
         }
     }
@@ -147,25 +132,20 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         final Object readArrayElement(long index,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
-            boolean mustRelease = gil.acquire();
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
             try {
-                try {
-                    int idx = PInt.intValueExact(index);
-                    String s = (String) lib.getDelegate(this);
-                    if (idx >= 0 && idx < s.length()) {
-                        return s.charAt(idx);
-                    } else if (idx == s.length()) {
-                        return '\0';
-                    }
-                } catch (OverflowException e) {
-                    // fall through
+                int idx = PInt.intValueExact(index);
+                String s = (String) lib.getDelegate(this);
+                if (idx >= 0 && idx < s.length()) {
+                    return s.charAt(idx);
+                } else if (idx == s.length()) {
+                    return '\0';
                 }
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw InvalidArrayIndexException.create(index);
-            } finally {
-                gil.release(mustRelease);
+            } catch (OverflowException e) {
+                // fall through
             }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
         }
 
         @ExportMessage
@@ -176,25 +156,15 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        protected boolean hasNativeType(@Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return true;
-            } finally {
-                gil.release(mustRelease);
-            }
+        protected boolean hasNativeType() {
+            return true;
         }
 
         @ExportMessage
         protected Object getNativeType(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, ((String) lib.getDelegate(this)).length());
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
+            return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, ((String) lib.getDelegate(this)).length());
         }
     }
 
