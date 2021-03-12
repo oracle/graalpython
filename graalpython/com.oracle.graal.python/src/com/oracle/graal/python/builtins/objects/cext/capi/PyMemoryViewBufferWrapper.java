@@ -54,7 +54,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -278,44 +277,29 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isPointer(
-                    @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return pIsPointerNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+        return pIsPointerNode.execute(this);
     }
 
     @ExportMessage
     public long asPointer(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object nativePointer = lib.getNativePointer(this);
-            if (nativePointer instanceof Long) {
-                return (long) nativePointer;
-            }
-            return interopLibrary.asPointer(nativePointer);
-        } finally {
-            gil.release(mustRelease);
+                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+        Object nativePointer = lib.getNativePointer(this);
+        if (nativePointer instanceof Long) {
+            return (long) nativePointer;
         }
+        return interopLibrary.asPointer(nativePointer);
     }
 
     @ExportMessage
     protected void toNative(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                setNativePointer(toPyObjectNode.execute(this));
-            }
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        invalidateNode.execute();
+        if (!lib.isNative(this)) {
+            setNativePointer(toPyObjectNode.execute(this));
         }
     }
 
@@ -329,25 +313,14 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
     abstract static class GetNativeType {
         @Specialization(assumptions = "singleNativeContextAssumption()")
         static Object doByteArray(@SuppressWarnings("unused") PyMemoryViewBufferWrapper receiver,
-                        @Exclusive @Cached GilNode gil,
-                        @Bind("gil.acquire()") boolean mustRelease,
                         @Exclusive @Cached(value = "callGetThreadStateTypeIDUncached()") Object nativeType) {
-            try {
-                return nativeType;
-            } finally {
-                gil.release(mustRelease);
-            }
+            return nativeType;
         }
 
         @Specialization(replaces = "doByteArray")
         static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PyMemoryViewBufferWrapper receiver,
-                        @Exclusive @Cached CExtNodes.PCallCapiFunction callUnaryNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return callUnaryNode.call(FUN_GET_PY_BUFFER_TYPEID);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Exclusive @Cached CExtNodes.PCallCapiFunction callUnaryNode) {
+            return callUnaryNode.call(FUN_GET_PY_BUFFER_TYPEID);
         }
 
         protected static Object callGetThreadStateTypeIDUncached() {
