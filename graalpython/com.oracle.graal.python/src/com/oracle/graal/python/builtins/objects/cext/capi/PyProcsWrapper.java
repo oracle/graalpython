@@ -104,37 +104,22 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isPointer(
-                    @Cached IsPointerNode isPointerNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return isPointerNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached IsPointerNode isPointerNode) {
+        return isPointerNode.execute(this);
     }
 
     @ExportMessage
     protected long asPointer(
-                    @Exclusive @Cached PAsPointerNode pAsPointerNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return pAsPointerNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached PAsPointerNode pAsPointerNode) {
+        return pAsPointerNode.execute(this);
     }
 
     @ExportMessage
     protected void toNative(
                     @Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            invalidateNode.execute();
-            setNativePointer(toPyObjectNode.execute(this));
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        invalidateNode.execute();
+        setNativePointer(toPyObjectNode.execute(this));
     }
 
     @ExportLibrary(InteropLibrary.class)
