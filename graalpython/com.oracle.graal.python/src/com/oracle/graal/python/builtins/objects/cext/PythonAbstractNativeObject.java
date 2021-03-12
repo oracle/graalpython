@@ -355,13 +355,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         @Specialization
         static TriState doPythonAbstractNativeObject(PythonAbstractNativeObject receiver, PythonAbstractNativeObject other,
                         @CachedLibrary("receiver.object") InteropLibrary objLib,
-                        @CachedLibrary(limit = "1") InteropLibrary otherObjectLib, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return TriState.valueOf(objLib.isIdentical(receiver.object, other.object, otherObjectLib));
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @CachedLibrary(limit = "1") InteropLibrary otherObjectLib) {
+            return TriState.valueOf(objLib.isIdentical(receiver.object, other.object, otherObjectLib));
         }
 
         @Fallback
