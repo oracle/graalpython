@@ -234,48 +234,28 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     Object getNativeType(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                    @Cached GetSulongTypeNode getSulongTypeNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return getSulongTypeNode.execute(plib.getLazyPythonClass(lib.getDelegate(this)));
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached GetSulongTypeNode getSulongTypeNode) {
+        return getSulongTypeNode.execute(plib.getLazyPythonClass(lib.getDelegate(this)));
     }
 
     @ExportMessage
     boolean isPointer(
-                    @Cached IsPointerNode isPointerNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return isPointerNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached IsPointerNode isPointerNode) {
+        return isPointerNode.execute(this);
     }
 
     @ExportMessage
     long asPointer(
-                    @Exclusive @Cached PAsPointerNode pAsPointerNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return pAsPointerNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached PAsPointerNode pAsPointerNode) {
+        return pAsPointerNode.execute(this);
     }
 
     @ExportMessage
     void toNative(
                     @Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            invalidateNode.execute();
-            setNativePointer(toPyObjectNode.execute(this));
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        invalidateNode.execute();
+        setNativePointer(toPyObjectNode.execute(this));
     }
 
 }
