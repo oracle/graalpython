@@ -443,6 +443,27 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void futimes(int fd, Timeval[] timeval,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.futimes(nativePosixSupport, fd, timeval);
+    }
+
+    @ExportMessage
+    final void lutimes(Object filename, Timeval[] timeval,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.lutimes(nativePosixSupport, filename, timeval);
+    }
+
+    @ExportMessage
+    final void utimes(Object filename, Timeval[] timeval,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.utimes(nativePosixSupport, filename, timeval);
+    }
+
+    @ExportMessage
     final void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();

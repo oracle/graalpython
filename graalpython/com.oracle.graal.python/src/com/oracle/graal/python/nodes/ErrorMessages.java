@@ -602,6 +602,7 @@ public abstract class ErrorMessages {
     public static final String TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ = "type '%p' is not supported by the foreign object";
     public static final String TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION = "type() doesn't support MRO entry resolution; use types.new_class()";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
+    public static final String UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = "%s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
     public static final String UNHASHABLE_TYPE = "unhashable type: '%p'";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";
@@ -628,6 +629,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_STR_TYPE = "unsupported string type: %s";
     public static final String UNSUPPORTED_TARGET_SIZE = "Unsupported target size: %d";
     public static final String UNSUPPORTED_USE_OF_SYS_EXECUTABLE = "internal error: unsupported use of sys.executable";
+    public static final String UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS = "utime: cannot use dir_fd and follow_symlinks together on this platform";
     public static final String VALUE_EXPECTED = "%s value expected";
     public static final String VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = "value too large to fit into index-sized integer";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
