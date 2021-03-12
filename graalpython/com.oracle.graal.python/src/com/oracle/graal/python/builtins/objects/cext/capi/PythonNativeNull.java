@@ -38,13 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -77,13 +74,8 @@ public class PythonNativeNull implements TruffleObject {
 
     @ExportMessage(limit = "1")
     long asPointer(
-                    @CachedLibrary("this.getPtr()") InteropLibrary ptrInteropLib, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            return ptrInteropLib.asPointer(getPtr());
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @CachedLibrary("this.getPtr()") InteropLibrary ptrInteropLib) throws UnsupportedMessageException {
+        return ptrInteropLib.asPointer(getPtr());
     }
 
     @ExportMessage
@@ -111,14 +103,8 @@ public class PythonNativeNull implements TruffleObject {
 
     @ExportMessage(limit = "1")
     boolean isIdentical(Object other, InteropLibrary otherLib,
-                    @Exclusive @Cached GilNode gil,
-                    @Bind("gil.acquire()") boolean mustRelease,
                     @CachedLibrary("this.getPtr()") InteropLibrary lib) {
-        try {
-            return lib.isIdentical(ptr, other, otherLib);
-        } finally {
-            gil.release(mustRelease);
-        }
+        return lib.isIdentical(ptr, other, otherLib);
     }
 
     @SuppressWarnings({"unused", "static-method"})
