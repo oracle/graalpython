@@ -26,7 +26,7 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.set;
 
-import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -41,7 +41,7 @@ import com.oracle.truffle.api.object.Shape;
 public abstract class PBaseSet extends PHashingCollection {
 
     public PBaseSet(Object clazz, Shape instanceShape) {
-        super(clazz, instanceShape, EconomicMapStorage.create());
+        super(clazz, instanceShape, new EmptyStorage());
     }
 
     public PBaseSet(Object clazz, Shape instanceShape, HashingStorage set) {
