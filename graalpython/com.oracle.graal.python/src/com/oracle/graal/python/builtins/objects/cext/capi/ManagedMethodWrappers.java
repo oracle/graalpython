@@ -81,37 +81,22 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         public boolean isPointer(
-                        @Exclusive @Cached IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return pIsPointerNode.execute(this);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Exclusive @Cached IsPointerNode pIsPointerNode) {
+            return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
         public long asPointer(
-                        @Exclusive @Cached PAsPointerNode pAsPointerNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return pAsPointerNode.execute(this);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Exclusive @Cached PAsPointerNode pAsPointerNode) {
+            return pAsPointerNode.execute(this);
         }
 
         @ExportMessage
         public void toNative(
                         @Exclusive @Cached ToPyObjectNode toPyObjectNode,
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                invalidateNode.execute();
-                setNativePointer(toPyObjectNode.execute(this));
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            setNativePointer(toPyObjectNode.execute(this));
         }
 
         @ExportMessage
