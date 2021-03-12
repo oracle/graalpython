@@ -321,8 +321,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 logJavaException(e);
                 throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
-            } catch (RuntimeException e) {
-                throw reportImportError(e, name, path);
             }
         }
 
