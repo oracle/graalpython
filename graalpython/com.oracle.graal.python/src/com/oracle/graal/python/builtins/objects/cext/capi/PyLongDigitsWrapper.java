@@ -52,7 +52,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -220,29 +219,19 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     public boolean isPointer(
-                    @Cached IsPointerNode pIsPointerNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return pIsPointerNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached IsPointerNode pIsPointerNode) {
+        return pIsPointerNode.execute(this);
     }
 
     @ExportMessage
     public long asPointer(
                     @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object nativePointer = lib.getNativePointer(this);
-            if (nativePointer instanceof Long) {
-                return (long) nativePointer;
-            }
-            return interopLibrary.asPointer(nativePointer);
-        } finally {
-            gil.release(mustRelease);
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws UnsupportedMessageException {
+        Object nativePointer = lib.getNativePointer(this);
+        if (nativePointer instanceof Long) {
+            return (long) nativePointer;
         }
+        return interopLibrary.asPointer(nativePointer);
     }
 
     @ExportMessage
@@ -260,25 +249,14 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
 
         @Specialization(assumptions = "singleContextAssumption()")
         static Object doByteArray(@SuppressWarnings("unused") PyLongDigitsWrapper object,
-                        @Exclusive @Cached GilNode gil,
-                        @Bind("gil.acquire()") boolean mustRelease,
                         @Exclusive @Cached("callGetUInt32ArrayTypeIDUncached(object)") Object nativeType) {
-            try {
-                return nativeType;
-            } finally {
-                gil.release(mustRelease);
-            }
+            return nativeType;
         }
 
         @Specialization(replaces = "doByteArray")
         static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PyLongDigitsWrapper object,
-                        @Cached PCallCapiFunction callGetTypeIDNode, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return callGetTypeIDNode.call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Cached PCallCapiFunction callGetTypeIDNode) {
+            return callGetTypeIDNode.call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
         }
 
         protected static Assumption singleContextAssumption() {
