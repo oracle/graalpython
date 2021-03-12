@@ -84,14 +84,14 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     public void executeExcept(VirtualFrame frame, Throwable e) {
         if (exceptName != null) {
             if (e instanceof PException) {
-                exceptName.doWrite(frame, ((PException) e).getEscapedException());
+                exceptName.writeObject(frame, ((PException) e).getEscapedException());
             } else {
-                exceptName.doWrite(frame, e);
+                exceptName.writeObject(frame, e);
             }
         }
         body.executeVoid(frame);
         if (exceptName != null) {
-            exceptName.doWrite(frame, null);
+            exceptName.writeObject(frame, null);
         }
         throw ExceptionHandledException.INSTANCE;
     }
