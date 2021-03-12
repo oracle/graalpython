@@ -38,18 +38,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -121,20 +119,15 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
 
     @ExportMessage(limit = "2")
     long hashWithState(@SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary("this.getPointerObject()") InteropLibrary lib, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (lib.hasIdentity(object)) {
-                try {
-                    return lib.identityHashCode(object);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.shouldNotReachHere(e);
-                }
+                    @CachedLibrary("this.getPointerObject()") InteropLibrary lib) {
+        if (lib.hasIdentity(object)) {
+            try {
+                return lib.identityHashCode(object);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.shouldNotReachHere(e);
             }
-            return hashCodeBoundary(object);
-        } finally {
-            gil.release(mustRelease);
         }
+        return hashCodeBoundary(object);
     }
 
     @TruffleBoundary
