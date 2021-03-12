@@ -38,17 +38,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -183,32 +181,21 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     protected static class IsNative {
         @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption()", "cachedAssumption"})
         protected static boolean isCachedNative(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
-                        @Exclusive @Cached GilNode gil,
-                        @Bind("gil.acquire()") boolean mustRelease,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
                         @SuppressWarnings("unused") @Cached("wrapper.getHandleValidAssumption()") Assumption cachedAssumption,
                         @SuppressWarnings("unused") @Cached(value = "wrapper.getNativePointerPrivate()", weak = true) Object nativePointer) {
-            try {
-                return true;
-            } finally {
-                gil.release(mustRelease);
-            }
+            return true;
         }
 
         @Specialization(replaces = "isCachedNative")
         protected static boolean isNative(PythonNativeWrapper wrapper,
-                        @Cached ConditionProfile hasNativePointerProfile, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (hasNativePointerProfile.profile(wrapper.nativePointer != null)) {
-                    Assumption handleValidAssumption = wrapper.getHandleValidAssumption();
-                    // If an assumption exists, it must be valid
-                    return handleValidAssumption == null || isValid(handleValidAssumption);
-                }
-                return false;
-            } finally {
-                gil.release(mustRelease);
+                        @Cached ConditionProfile hasNativePointerProfile) {
+            if (hasNativePointerProfile.profile(wrapper.nativePointer != null)) {
+                Assumption handleValidAssumption = wrapper.getHandleValidAssumption();
+                // If an assumption exists, it must be valid
+                return handleValidAssumption == null || isValid(handleValidAssumption);
             }
+            return false;
         }
     }
 }
