@@ -768,6 +768,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached IsSubtypeNode isExcValueSubtypeNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary excValueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached CallNode callExceptionConstructorNode,
@@ -781,14 +783,20 @@ public abstract class GraalHPyContextFunctions {
                 return raiseNode.raise(SystemError, "exception %s not a BaseException subclass", errTypeObj);
             }
             try {
-                Object valueObj;
+                Object exception;
                 if (stringMode) {
-                    valueObj = fromCharPointerNode.execute(arguments[2]);
+                    Object valueObj = fromCharPointerNode.execute(arguments[2]);
+                    exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
                 } else {
-                    valueObj = asPythonObjectNode.execute(context, arguments[2]);
+                    Object valueObj = asPythonObjectNode.execute(context, arguments[2]);
+                    // If the exception value is already an exception object, just take it.
+                    if (isExcValueSubtypeNode.execute(excValueLib.getLazyPythonClass(valueObj), PBaseException)) {
+                        exception = valueObj;
+                    } else {
+                        exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
+                    }
                 }
 
-                Object exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
                 if (PGuards.isPBaseException(exception)) {
                     throw raiseNode.raiseExceptionObject((PBaseException) exception, langRef.get());
                 }
