@@ -139,10 +139,11 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class StrNode extends PythonUnaryBuiltinNode {
+    public abstract static class StrNode extends PythonUnaryBuiltinNode {
+        public static final Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
+
         @Specialization
         String str(double self) {
-            Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
             FloatFormatter f = new FloatFormatter(getRaiseNode(), spec);
             f.setMinFracDigits(1);
             return doFormat(self, f);
@@ -162,7 +163,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String doFormat(double d, FloatFormatter f) {
+        public static String doFormat(double d, FloatFormatter f) {
             return f.format(d).getResult();
         }
     }

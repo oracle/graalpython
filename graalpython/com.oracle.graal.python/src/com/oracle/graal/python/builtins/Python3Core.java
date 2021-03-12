@@ -124,6 +124,9 @@ import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONEncoderBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
@@ -438,6 +441,7 @@ public final class Python3Core implements PythonCore {
                         new CollectionsModuleBuiltins(),
                         new JavaModuleBuiltins(),
                         new JArrayModuleBuiltins(),
+                        new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
                         new SelectModuleBuiltins(),
@@ -496,7 +500,11 @@ public final class Python3Core implements PythonCore {
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
                         new WarningsModuleBuiltins(),
-                        new GraalPythonModuleBuiltins()));
+                        new GraalPythonModuleBuiltins(),
+
+                        // json
+                        new JSONScannerBuiltins(),
+                        new JSONEncoderBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
         }
