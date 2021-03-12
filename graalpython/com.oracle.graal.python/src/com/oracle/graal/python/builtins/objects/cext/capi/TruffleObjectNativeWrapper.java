@@ -181,24 +181,14 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     long asPointer(
-                    @Cached PAsPointerNode pAsPointerNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return pAsPointerNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached PAsPointerNode pAsPointerNode) {
+        return pAsPointerNode.execute(this);
     }
 
     @ExportMessage
     void toNative(
-                    @Cached ToNativeNode toNativeNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            toNativeNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached ToNativeNode toNativeNode) {
+        toNativeNode.execute(this);
     }
 
     @ExportMessage
@@ -208,12 +198,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     Object getNativeType(
-                    @Cached PGetDynamicTypeNode getDynamicTypeNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return getDynamicTypeNode.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached PGetDynamicTypeNode getDynamicTypeNode) {
+        return getDynamicTypeNode.execute(this);
     }
 }
