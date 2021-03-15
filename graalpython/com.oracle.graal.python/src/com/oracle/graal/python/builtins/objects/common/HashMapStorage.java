@@ -261,7 +261,7 @@ public class HashMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "1") HashingStorageLibrary newLib, @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                HashingStorage newStore = EconomicMapStorage.create(self.length());
+                HashingStorage newStore = EconomicMapStorage.create(self.length(gil));
                 thisLib.addAllToOther(self, newStore);
                 newLib.setItem(newStore, key, value);
                 return newStore;
