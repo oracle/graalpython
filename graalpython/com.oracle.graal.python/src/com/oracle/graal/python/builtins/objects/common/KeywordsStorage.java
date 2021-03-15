@@ -77,16 +77,9 @@ public class KeywordsStorage extends HashingStorage {
         return keywords;
     }
 
-    @Override
     @ExportMessage
     public int length() {
-        GilNode gil = GilNode.getUncached();
-        boolean mustRelease = gil.acquire();
-        try {
-            return keywords.length;
-        } finally {
-            gil.release(mustRelease);
-        }
+        return keywords.length;
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)

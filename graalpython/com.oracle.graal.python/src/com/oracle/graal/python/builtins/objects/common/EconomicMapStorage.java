@@ -804,7 +804,8 @@ public class EconomicMapStorage extends HashingStorage {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         StringBuilder builder = new StringBuilder();
-        builder.append("map(size=").append(length()).append(", {");
+        GilNode gil = GilNode.getUncached();
+        builder.append("map(size=").append(length(gil)).append(", {");
         String sep = "";
         MapCursor<DictKey, Object> cursor = map.getEntries();
         while (advance(cursor)) {

@@ -216,7 +216,7 @@ public class LocalsStorage extends HashingStorage {
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            HashingStorage result = generalize(lib);
+            HashingStorage result = generalize(lib, gil);
             if (gotState.profile(state != null)) {
                 return lib.setItemWithState(result, key, value, state);
             } else {
@@ -233,7 +233,7 @@ public class LocalsStorage extends HashingStorage {
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            HashingStorage result = generalize(lib);
+            HashingStorage result = generalize(lib, gil);
             if (gotState.profile(state != null)) {
                 return lib.delItemWithState(result, key, state);
             } else {
@@ -244,8 +244,8 @@ public class LocalsStorage extends HashingStorage {
         }
     }
 
-    private HashingStorage generalize(HashingStorageLibrary lib) {
-        HashingStorage result = EconomicMapStorage.create(length());
+    private HashingStorage generalize(HashingStorageLibrary lib, GilNode gil) {
+        HashingStorage result = EconomicMapStorage.create(length(gil));
         result = lib.addAllToOther(this, result);
         return result;
     }
