@@ -50,6 +50,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.LOCK_EX;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_NB;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_SH;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_UN;
+import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
 import static com.oracle.graal.python.runtime.PosixConstants.O_ACCMODE;
 import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
@@ -62,7 +63,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.O_SYNC;
 import static com.oracle.graal.python.runtime.PosixConstants.O_TMPFILE;
 import static com.oracle.graal.python.runtime.PosixConstants.O_TRUNC;
 import static com.oracle.graal.python.runtime.PosixConstants.O_WRONLY;
-import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_EXEC;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_NONE;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_READ;
@@ -1318,6 +1318,38 @@ public final class EmulatedPosixSupport extends PosixResources {
         String path = getFilePath(fd);
         TruffleFile file = getTruffleFile(path);
         setUTimeNode.execute(file, timespec, true);
+    }
+
+    @ExportMessage
+    public void futimes(int fd, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String path = getFilePath(fd);
+        TruffleFile file = getTruffleFile(path);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), true);
+    }
+
+    @ExportMessage
+    public void lutimes(Object filename, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String filenameStr = pathToJavaStr(filename);
+        TruffleFile file = getTruffleFile(filenameStr);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), false);
+    }
+
+    @ExportMessage
+    public void utimes(Object filename, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String filenameStr = pathToJavaStr(filename);
+        TruffleFile file = getTruffleFile(filenameStr);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), true);
+    }
+
+    private static long[] timevalToTimespec(Timeval[] timeval) {
+        if (timeval == null) {
+            return null;
+        }
+        return new long[]{timeval[0].getSeconds(), timeval[0].getMicroseconds() * 1000,
+                        timeval[1].getSeconds(), timeval[1].getMicroseconds() * 1000};
     }
 
     @GenerateUncached
