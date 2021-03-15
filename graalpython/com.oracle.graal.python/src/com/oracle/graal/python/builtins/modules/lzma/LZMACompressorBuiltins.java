@@ -170,11 +170,9 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("c") @Cached LZMANodes.CompressNode compress) {
-            synchronized (self) {
-                byte[] bytes = toBytes.execute(data.getSequenceStorage());
-                int len = lenNode.execute(data.getSequenceStorage());
-                return factory().createBytes(compress.compress(self, ctxt, bytes, len));
-            }
+            byte[] bytes = toBytes.execute(data.getSequenceStorage());
+            int len = lenNode.execute(data.getSequenceStorage());
+            return factory().createBytes(compress.compress(self, ctxt, bytes, len));
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
@@ -182,11 +180,9 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
                         @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("c") @Cached LZMANodes.CompressNode compress) {
-            synchronized (self) {
-                byte[] bytes = toBytes.execute(data);
-                int len = bytes.length;
-                return factory().createBytes(compress.compress(self, ctxt, bytes, len));
-            }
+            byte[] bytes = toBytes.execute(data);
+            int len = bytes.length;
+            return factory().createBytes(compress.compress(self, ctxt, bytes, len));
         }
 
         @SuppressWarnings("unused")
@@ -206,10 +202,8 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
         PBytes doit(LZMACompressor self,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached LZMANodes.CompressNode compress) {
-            synchronized (self) {
-                self.setFlushed();
-                return factory().createBytes(compress.flush(self, ctxt));
-            }
+            self.setFlushed();
+            return factory().createBytes(compress.flush(self, ctxt));
         }
 
         @SuppressWarnings("unused")

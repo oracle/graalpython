@@ -193,6 +193,11 @@ public abstract class SequenceNodes {
             return true;
         }
 
+        @Specialization
+        static boolean string(@SuppressWarnings("unused") String str) {
+            return true;
+        }
+
         @Fallback
         boolean notSeqence(Object obj) {
             if (lib.isMapping(obj)) {

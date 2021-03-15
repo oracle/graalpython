@@ -529,7 +529,7 @@ public class LZMANodes {
                 try {
                     optionsChain[i] = getFilterOptions(filters[i]);
                 } catch (UnsupportedOptionsException e) {
-                    raise(ValueError, "%s", getMessage(e));
+                    throw raise(ValueError, "%m", e);
                 }
 
             }

@@ -79,7 +79,6 @@ import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZ;
 import org.tukaani.xz.XZOutputStream;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -96,11 +95,9 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -266,10 +263,9 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class LZMACompressorNode extends PythonBuiltinNode {
 
         @Specialization
-        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see LZMACompressorBuiltins.InitNode
-            return factory().createLZMACompressor(cls, ctxt.getNFILZMASupport().isAvailable());
+            return factory().createLZMACompressor(cls, getContext().getNFILZMASupport().isAvailable());
         }
     }
 
@@ -279,10 +275,9 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class LZMADecompressorNode extends PythonBuiltinNode {
 
         @Specialization
-        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        LZMAObject doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see LZMADecompressorBuiltins.InitNode
-            return factory().createLZMADecompressor(cls, ctxt.getNFILZMASupport().isAvailable());
+            return factory().createLZMADecompressor(cls, getContext().getNFILZMASupport().isAvailable());
         }
     }
 

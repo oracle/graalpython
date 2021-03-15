@@ -186,22 +186,19 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
-            synchronized (self) {
-                byte[] bytes = toBytes.execute(data.getSequenceStorage());
-                int len = lenNode.execute(data.getSequenceStorage());
-                return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
-            }
+            byte[] bytes = toBytes.execute(data.getSequenceStorage());
+            int len = lenNode.execute(data.getSequenceStorage());
+            return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
+
         }
 
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doObject(LZMADecompressor self, Object data, int maxLength,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
-            synchronized (self) {
-                byte[] bytes = toBytes.execute(data);
-                int len = bytes.length;
-                return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
-            }
+            byte[] bytes = toBytes.execute(data);
+            int len = bytes.length;
+            return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
         }
 
         @SuppressWarnings("unused")
