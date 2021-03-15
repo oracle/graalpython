@@ -219,7 +219,7 @@ def main():
             cmd.append(testfile)
 
             print(" ".join(cmd))
-            p = subprocess.run(cmd, **kwargs)
+            p = subprocess.run(cmd, errors='backslashreplace', **kwargs)
             print("*stdout*")
             print(p.stdout)
             print("*stderr*")

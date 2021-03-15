@@ -229,7 +229,8 @@ class ProcessTestCase(BaseTestCase):
                      "time.sleep(3600)"],
                     # Some heavily loaded buildbots (sparc Debian 3.x) require
                     # this much time to start and print.
-                    timeout=3)
+                    # Graalpython: increased timeout for jvm launcher startup
+                    timeout=15)
             self.fail("Expected TimeoutExpired.")
         self.assertEqual(c.exception.output, b'BDFL')
 
@@ -683,6 +684,7 @@ class ProcessTestCase(BaseTestCase):
             # Gentoo sandboxes also force LD_PRELOAD and SANDBOX_* to exist.
             return ('VERSIONER' in n or '__CF' in n or  # MacOS
                     n == 'LD_PRELOAD' or n.startswith('SANDBOX') or # Gentoo
+                    n == 'PWD' or n == 'SHLVL' or # Graalpython bash launcher
                     n == 'LC_CTYPE') # Locale coercion triggered
 
         with subprocess.Popen([sys.executable, "-c",
@@ -1123,7 +1125,8 @@ class ProcessTestCase(BaseTestCase):
         self.assertIn("0.0001", str(c.exception))  # For coverage of __str__.
         # Some heavily loaded buildbots (sparc Debian 3.x) require this much
         # time to start.
-        self.assertEqual(p.wait(timeout=3), 0)
+        # Graalpython: increased timeout for jvm launcher startup
+        self.assertEqual(p.wait(timeout=15), 0)
 
     def test_invalid_bufsize(self):
         # an invalid type of the bufsize argument should raise
@@ -1495,7 +1498,8 @@ class RunFuncTestCase(BaseTestCase):
                      "time.sleep(3600)"),
                     # Some heavily loaded buildbots (sparc Debian 3.x) require
                     # this much time to start and print.
-                    timeout=3, stdout=subprocess.PIPE)
+                    # Graalpython: increased timeout for jvm launcher startup
+                    timeout=15, stdout=subprocess.PIPE)
         self.assertEqual(c.exception.output, b'BDFL')
         # output is aliased to stdout
         self.assertEqual(c.exception.stdout, b'BDFL')
@@ -1772,6 +1776,7 @@ class POSIXProcessTestCase(BaseTestCase):
         error_string = str(err)
         self.assertIn("non-zero exit status 2.", error_string)
 
+    @support.impl_detail("preexec support missing", graalvm=False)
     def test_preexec(self):
         # DISCLAIMER: Setting environment variables is *not* a good use
         # of a preexec_fn.  This is merely a test.
@@ -1783,6 +1788,7 @@ class POSIXProcessTestCase(BaseTestCase):
         with p:
             self.assertEqual(p.stdout.read(), b"apple")
 
+    @support.impl_detail("preexec support missing", graalvm=False)
     def test_preexec_exception(self):
         def raise_it():
             raise ValueError("What if two swallows carried a coconut?")
@@ -1825,6 +1831,7 @@ class POSIXProcessTestCase(BaseTestCase):
                         os.close(fd)
 
     @unittest.skipIf(not os.path.exists("/dev/zero"), "/dev/zero required.")
+    @support.impl_detail("preexec support missing", graalvm=False)
     def test_preexec_errpipe_does_not_double_close_pipes(self):
         """Issue16140: Don't double close pipes on preexec error."""
 
@@ -1838,6 +1845,7 @@ class POSIXProcessTestCase(BaseTestCase):
                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE, preexec_fn=raise_it)
 
+    @support.impl_detail("preexec support missing", graalvm=False)
     def test_preexec_gc_module_failure(self):
         # This tests the code that disables garbage collection if the child
         # process will execute any Python.
@@ -2285,6 +2293,7 @@ class POSIXProcessTestCase(BaseTestCase):
             for to_fds in itertools.permutations(range(3), 2):
                 self._check_swap_std_fds_with_one_closed(from_fds, to_fds)
 
+    @support.impl_detail("preexec support missing", graalvm=False)
     def test_surrogates_error_message(self):
         def prepare():
             raise ValueError("surrogate:\uDCff")
@@ -2691,6 +2700,7 @@ class POSIXProcessTestCase(BaseTestCase):
         finally:
             p.wait()
 
+    @support.impl_detail("relies on GC", graalvm=False)
     def test_zombie_fast_process_del(self):
         # Issue #12650: on Unix, if Popen.__del__() was called before the
         # process exited, it wouldn't be added to subprocess._active, and would
@@ -2715,6 +2725,7 @@ class POSIXProcessTestCase(BaseTestCase):
             # check that p is in the active processes list
             self.assertIn(ident, [id(o) for o in subprocess._active])
 
+    @support.impl_detail("relies on GC", graalvm=False)
     def test_leak_fast_process_del_killed(self):
         # Issue #12650: on Unix, if Popen.__del__() was called before the
         # process exited, and the process got killed by a signal, it would never
@@ -2757,6 +2768,7 @@ class POSIXProcessTestCase(BaseTestCase):
         else:
             self.assertNotIn(ident, [id(o) for o in subprocess._active])
 
+    @support.impl_detail("preexec support missing", graalvm=False)
     def test_close_fds_after_preexec(self):
         fd_status = support.findfile("fd_status.py", subdir="subprocessdata")
 
