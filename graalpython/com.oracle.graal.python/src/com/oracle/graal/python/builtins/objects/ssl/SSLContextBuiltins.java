@@ -247,7 +247,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WrapSocketNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") Object session,
+        Object wrap(PSSLContext context, PSocket sock, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             String serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
@@ -279,7 +279,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WrapBIONode extends PythonClinicBuiltinNode {
         @Specialization
-        Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") Object session,
+        Object wrap(PSSLContext context, PMemoryBIO incoming, PMemoryBIO outgoing, boolean serverSide, Object serverHostnameObj, Object owner, @SuppressWarnings("unused") PNone session,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             String serverHostname = null;
             if (!(serverHostnameObj instanceof PNone)) {
