@@ -330,7 +330,7 @@ public class HashMapStorage extends HashingStorage {
         boolean mustRelease = gil.acquire();
         try {
             Object arg = argIn;
-            for (Object key : keys()) {
+            for (Object key : keys(gil)) {
                 arg = node.execute(key, arg);
             }
             return arg;
