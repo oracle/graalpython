@@ -69,8 +69,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -480,8 +480,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     Thread.sleep(secs * 1000);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
+                    return;
                 }
-
                 secs = deadline - (long) timeSeconds();
             } while (secs >= 0);
         }
@@ -498,6 +498,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     Thread.sleep(millis, nanos);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
+                    return;
                 }
                 secs = deadline - timeSeconds();
             } while (secs >= 0);
