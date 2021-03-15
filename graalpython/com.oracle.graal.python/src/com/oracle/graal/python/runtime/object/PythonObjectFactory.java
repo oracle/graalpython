@@ -219,7 +219,7 @@ public abstract class PythonObjectFactory extends Node {
         return executeGetShape(cls, true);
     }
 
-    public synchronized final <T> T trace(T allocatedObject) {
+    public final synchronized <T> T trace(T allocatedObject) {
         executeTrace(allocatedObject, AllocationReporter.SIZE_UNKNOWN);
         return allocatedObject;
     }

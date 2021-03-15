@@ -77,6 +77,7 @@ public class KeywordsStorage extends HashingStorage {
         return keywords;
     }
 
+    @Override
     @ExportMessage
     public int length() {
         return keywords.length;
