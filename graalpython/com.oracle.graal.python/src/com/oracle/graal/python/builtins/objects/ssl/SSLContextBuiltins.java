@@ -850,9 +850,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
             try {
                 // if keyReader and certReader are from the same file, key is expected to come first
                 byte[] pkBytes = CertUtils.getEncodedPrivateKey(this, keyReader);
-                X509Certificate[] certs;
                 List<Object> certificates = new ArrayList<>();
-                LoadCertError result = getCertificates(certReader, certificates);
+                LoadCertError result = getCertificates(certReader, certificates, true);
                 switch (result) {
                     case BAD_BASE64_DECODE:
                     case BEGIN_CERTIFICATE_WITHOUT_END:
@@ -866,7 +865,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     default:
                         assert false : "not handled: " + result;
                 }
-                certs = certificates.toArray(new X509Certificate[certificates.size()]);
+                X509Certificate[] certs = certificates.toArray(new X509Certificate[certificates.size()]);
                 PrivateKey pk = CertUtils.createPrivateKey(this, pkBytes, certs[0]);
                 self.setCertChain(pk, PythonUtils.EMPTY_CHAR_ARRAY, certs);
             } catch (InvalidKeySpecException | IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | CRLException ex) {

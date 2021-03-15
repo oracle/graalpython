@@ -394,6 +394,11 @@ public final class CertUtils {
 
     @TruffleBoundary
     public static LoadCertError getCertificates(BufferedReader r, List<Object> result) throws IOException, CertificateException, CRLException {
+        return getCertificates(r, result, false);
+    }
+
+    @TruffleBoundary
+    public static LoadCertError getCertificates(BufferedReader r, List<Object> result, boolean onlyCertificates) throws IOException, CertificateException, CRLException {
         boolean sawBegin = false;
         boolean sawBeginCrl = false;
         StringBuilder certBuilder = new StringBuilder(2000);
@@ -435,9 +440,11 @@ public final class CertUtils {
         if (res != LoadCertError.NO_ERROR) {
             return res;
         }
-        res = add(dataCrl, l, decoder, factory::generateCRL);
-        if (res != LoadCertError.NO_ERROR) {
-            return res;
+        if (!onlyCertificates) {
+            res = add(dataCrl, l, decoder, factory::generateCRL);
+            if (res != LoadCertError.NO_ERROR) {
+                return res;
+            }
         }
         if (l.isEmpty()) {
             return LoadCertError.NO_CERT_DATA;
