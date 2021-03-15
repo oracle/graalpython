@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.nio.ByteBuffer;
 
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 
 /**
@@ -103,11 +104,11 @@ public class MemoryBIO {
      * 
      * @param capacity Required capacity in bytes
      */
-    public void ensureWriteCapacity(int capacity) {
+    public void ensureWriteCapacity(int capacity) throws OverflowException {
         if (bytes.length - writePosition < capacity) {
             int pending = getPending();
             if (bytes.length - pending < capacity) {
-                byte[] newBytes = new byte[capacity + pending];
+                byte[] newBytes = new byte[PythonUtils.addExact(capacity, pending)];
                 PythonUtils.arraycopy(bytes, readPosition, newBytes, 0, pending);
                 bytes = newBytes;
             } else {
@@ -138,7 +139,7 @@ public class MemoryBIO {
      * @param from Data to be written
      * @param length Lenght of data to be written
      */
-    public void write(byte[] from, int length) {
+    public void write(byte[] from, int length) throws OverflowException {
         ensureWriteCapacity(length);
         PythonUtils.arraycopy(from, 0, bytes, writePosition, Math.min(length, from.length));
         writePosition += length;

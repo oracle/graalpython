@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 
 import java.io.IOException;
@@ -57,7 +58,9 @@ import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -308,13 +311,14 @@ public class SSLEngineHelper {
         } catch (IOException e) {
             // TODO better error handling, distinguish SSL errors and socket errors
             throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SYSCALL, e.toString());
+        } catch (OverflowException | OutOfMemoryError e) {
+            throw PRaiseNode.raiseUncached(node, MemoryError);
         }
         // TODO handle other socket errors (NotYetConnected)
-        // TODO handle OOM
     }
 
     private static SSLEngineResult doUnwrap(SSLEngine engine, MemoryBIO networkInboundBIO, ByteBuffer targetBuffer, MemoryBIO applicationInboundBIO, boolean writeDirectlyToTarget)
-                    throws SSLException {
+                    throws SSLException, OverflowException {
         ByteBuffer readBuffer = networkInboundBIO.getBufferForReading();
         try {
             if (writeDirectlyToTarget) {
@@ -334,7 +338,7 @@ public class SSLEngineHelper {
         }
     }
 
-    private static SSLEngineResult doWrap(SSLEngine engine, ByteBuffer appInput, MemoryBIO networkOutboundBIO, int netBufferSize) throws SSLException {
+    private static SSLEngineResult doWrap(SSLEngine engine, ByteBuffer appInput, MemoryBIO networkOutboundBIO, int netBufferSize) throws SSLException, OverflowException {
         networkOutboundBIO.ensureWriteCapacity(netBufferSize);
         ByteBuffer writeBuffer = networkOutboundBIO.getBufferForWriting();
         try {
@@ -351,7 +355,7 @@ public class SSLEngineHelper {
         throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
     }
 
-    private static int obtainMoreInput(PNodeWithRaise node, SSLEngine engine, MemoryBIO networkInboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
+    private static int obtainMoreInput(PNodeWithRaise node, SSLEngine engine, MemoryBIO networkInboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException, OverflowException {
         if (socket != null) {
             if (socket.getSocket() == null) {
                 // TODO use raiseOsError with ENOTCONN

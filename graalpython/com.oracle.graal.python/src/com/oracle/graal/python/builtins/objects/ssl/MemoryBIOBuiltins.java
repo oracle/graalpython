@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
@@ -59,6 +60,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -131,6 +133,8 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
                 int len = lib.getBufferLength(buffer);
                 self.getBio().write(bytes, len);
                 return len;
+            } catch (OverflowException e) {
+                throw raise(MemoryError);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
