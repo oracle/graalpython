@@ -40,6 +40,8 @@ IS_OPENSSL_1_1_0 = not IS_LIBRESSL and ssl.OPENSSL_VERSION_INFO >= (1, 1, 0)
 IS_OPENSSL_1_1_1 = not IS_LIBRESSL and ssl.OPENSSL_VERSION_INFO >= (1, 1, 1)
 PY_SSL_DEFAULT_CIPHERS = sysconfig.get_config_var('PY_SSL_DEFAULT_CIPHERS')
 
+IS_GRAALVM_SSL = sys.implementation.name == 'graalpython'
+
 PROTOCOL_TO_TLS_VERSION = {}
 for proto, ver in (
     ("PROTOCOL_SSLv23", "SSLv3"),
@@ -236,7 +238,7 @@ def handle_error(prefix):
 
 def can_clear_options():
     # 0.9.8m or higher
-    return ssl._OPENSSL_API_VERSION >= (0, 9, 8, 13, 15)
+    return IS_GRAALVM_SSL or ssl._OPENSSL_API_VERSION >= (0, 9, 8, 13, 15)
 
 def no_sslv2_implies_sslv3_hello():
     # 0.9.7h or higher
@@ -537,6 +539,8 @@ class BasicSocketTests(unittest.TestCase):
         if not p2.endswith('\n' + ssl.PEM_FOOTER + '\n'):
             self.fail("DER-to-PEM didn't include correct footer:\n%r\n" % p2)
 
+    # We're not OpenSSL
+    @impl_detail("OpenSSL version", graalvm=False)
     def test_openssl_version(self):
         n = ssl.OPENSSL_VERSION_NUMBER
         t = ssl.OPENSSL_VERSION_INFO
@@ -1128,7 +1132,7 @@ class ContextTests(unittest.TestCase):
             self.assertNotIn("RC4", name)
             self.assertNotIn("3DES", name)
 
-    @unittest.skipIf(ssl.OPENSSL_VERSION_INFO < (1, 0, 2, 0, 0), 'OpenSSL too old')
+    @unittest.skipIf(not IS_GRAALVM_SSL and ssl.OPENSSL_VERSION_INFO < (1, 0, 2, 0, 0), 'OpenSSL too old')
     def test_get_ciphers(self):
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ctx.set_ciphers('AESGCM')
@@ -3806,7 +3810,7 @@ class ThreadedTests(unittest.TestCase):
                 self.assertIs(s.version(), None)
                 self.assertIs(s._sslobj, None)
                 s.connect((HOST, server.port))
-                if IS_OPENSSL_1_1_1 and has_tls_version('TLSv1_3'):
+                if IS_GRAALVM_SSL or IS_OPENSSL_1_1_1 and has_tls_version('TLSv1_3'):
                     self.assertEqual(s.version(), 'TLSv1.3')
                 elif ssl.OPENSSL_VERSION_INFO >= (1, 0, 2):
                     self.assertEqual(s.version(), 'TLSv1.2')

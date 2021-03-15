@@ -203,11 +203,10 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         loadDefaults();
         PythonModule module = core.lookupBuiltinModule("_ssl");
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        // TODO decide which values to pick
-        module.setAttribute("OPENSSL_VERSION_NUMBER", 269488287);
-        PTuple versionInfo = factory.createTuple(new int[]{1, 1, 1, 9, 15});
+        module.setAttribute("OPENSSL_VERSION_NUMBER", 0);
+        PTuple versionInfo = factory.createTuple(new int[]{0, 0, 0, 0, 0});
         module.setAttribute("OPENSSL_VERSION_INFO", versionInfo);
-        module.setAttribute("OPENSSL_VERSION", "Java");
+        module.setAttribute("OPENSSL_VERSION", "GraalVM JSSE");
         module.setAttribute("_DEFAULT_CIPHERS", DEFAULT_CIPHER_STRING);
         module.setAttribute("_OPENSSL_API_VERSION", versionInfo);
 
