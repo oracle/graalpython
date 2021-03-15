@@ -34,8 +34,6 @@ import java.util.concurrent.Semaphore;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
-import com.oracle.graal.python.builtins.objects.ssl.MemoryBIO;
-import com.oracle.graal.python.builtins.objects.ssl.PMemoryBIO;
 import org.graalvm.collections.EconomicMap;
 import org.tukaani.xz.FinishableOutputStream;
 
@@ -121,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.ssl.PMemoryBIO;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
@@ -1025,14 +1024,18 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, PSocket socket) {
-        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, socket));
+        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, socket, createMemoryBIO(), createMemoryBIO(), createMemoryBIO()));
     }
 
-    public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, MemoryBIO inbound, MemoryBIO outbound) {
-        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, inbound, outbound));
+    public PSSLSocket createSSLSocket(Object clazz, PSSLContext context, SSLEngine engine, PMemoryBIO inbound, PMemoryBIO outbound) {
+        return trace(new PSSLSocket(clazz, getShape(clazz), context, engine, null, inbound, outbound, createMemoryBIO()));
     }
 
     public PMemoryBIO createMemoryBIO(Object clazz) {
         return trace(new PMemoryBIO(clazz, getShape(clazz)));
+    }
+
+    public PMemoryBIO createMemoryBIO() {
+        return trace(new PMemoryBIO(PythonBuiltinClassType.PMemoryBIO, getShape(PythonBuiltinClassType.PMemoryBIO)));
     }
 }

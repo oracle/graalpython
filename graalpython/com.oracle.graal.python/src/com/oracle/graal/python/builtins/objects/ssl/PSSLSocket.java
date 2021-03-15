@@ -55,31 +55,24 @@ public final class PSSLSocket extends PythonBuiltinObject {
     private Object owner;
     private String serverHostname;
 
-    private final MemoryBIO networkInboundBIO;
-    private final MemoryBIO networkOutboundBIO;
-    private final MemoryBIO applicationInboundBIO = new MemoryBIO();
+    private final PMemoryBIO networkInboundBIO;
+    private final PMemoryBIO networkOutboundBIO;
+    private final PMemoryBIO applicationInboundBIO;
     // The connection needs to attempt the closing handshake before throwing the exception, so we
     // need to store it
     private SSLException exception;
 
     private boolean handshakeComplete = false;
 
-    public PSSLSocket(Object cls, Shape instanceShape, PSSLContext context, SSLEngine engine, PSocket socket) {
+    public PSSLSocket(Object cls, Shape instanceShape, PSSLContext context, SSLEngine engine, PSocket socket, PMemoryBIO networkInboundBIO, PMemoryBIO networkOutboundBIO,
+                    PMemoryBIO applicationInboundBIO) {
         super(cls, instanceShape);
         this.context = context;
         this.engine = engine;
         this.socket = socket;
-        this.networkInboundBIO = new MemoryBIO();
-        this.networkOutboundBIO = new MemoryBIO();
-    }
-
-    public PSSLSocket(Object cls, Shape instanceShape, PSSLContext context, SSLEngine engine, MemoryBIO networkInboundBIO, MemoryBIO networkOutboundBIO) {
-        super(cls, instanceShape);
-        this.context = context;
-        this.engine = engine;
-        this.socket = null;
         this.networkInboundBIO = networkInboundBIO;
         this.networkOutboundBIO = networkOutboundBIO;
+        this.applicationInboundBIO = applicationInboundBIO;
     }
 
     public PSSLContext getContext() {
@@ -102,15 +95,15 @@ public final class PSSLSocket extends PythonBuiltinObject {
         this.handshakeComplete = handshakeComplete;
     }
 
-    public MemoryBIO getNetworkInboundBIO() {
+    public PMemoryBIO getNetworkInboundBIO() {
         return networkInboundBIO;
     }
 
-    public MemoryBIO getNetworkOutboundBIO() {
+    public PMemoryBIO getNetworkOutboundBIO() {
         return networkOutboundBIO;
     }
 
-    public MemoryBIO getApplicationInboundBIO() {
+    public PMemoryBIO getApplicationInboundBIO() {
         return applicationInboundBIO;
     }
 

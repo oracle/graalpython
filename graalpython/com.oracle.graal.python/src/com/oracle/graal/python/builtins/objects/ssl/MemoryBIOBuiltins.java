@@ -90,7 +90,7 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
     abstract static class PendingNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int getPending(PMemoryBIO self) {
-            return self.getBio().getPending();
+            return self.getPending();
         }
     }
 
@@ -99,7 +99,7 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
     abstract static class EOFNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean eof(PMemoryBIO self) {
-            return self.getBio().isEOF();
+            return self.isEOF();
         }
     }
 
@@ -110,7 +110,7 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
         @Specialization
         PBytes read(PMemoryBIO self, int size) {
             int len = size >= 0 ? size : Integer.MAX_VALUE;
-            return factory().createBytes(self.getBio().read(len));
+            return factory().createBytes(self.read(len));
         }
 
         @Override
@@ -125,13 +125,13 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.isBuffer(buffer)", limit = "3")
         int write(PMemoryBIO self, Object buffer,
                         @CachedLibrary("buffer") PythonObjectLibrary lib) {
-            if (self.getBio().didWriteEOF()) {
+            if (self.didWriteEOF()) {
                 throw raise(SSLError, "cannot write() after write_eof()");
             }
             try {
                 byte[] bytes = lib.getBufferBytes(buffer);
                 int len = lib.getBufferLength(buffer);
-                self.getBio().write(bytes, len);
+                self.write(bytes, len);
                 return len;
             } catch (OverflowException e) {
                 throw raise(MemoryError);
@@ -152,7 +152,7 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
     abstract static class WriteEOFNode extends PythonUnaryBuiltinNode {
         @Specialization
         static PNone writeEOF(PMemoryBIO self) {
-            self.getBio().writeEOF();
+            self.writeEOF();
             return PNone.NONE;
         }
     }

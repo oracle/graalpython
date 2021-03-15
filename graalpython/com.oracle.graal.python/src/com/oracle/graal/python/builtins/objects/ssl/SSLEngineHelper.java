@@ -98,7 +98,7 @@ public class SSLEngineHelper {
         loop(node, socket, EMPTY_BUFFER, EMPTY_BUFFER, Operation.SHUTDOWN);
     }
 
-    private static void putAsMuchAsPossible(ByteBuffer target, MemoryBIO sourceBIO) {
+    private static void putAsMuchAsPossible(ByteBuffer target, PMemoryBIO sourceBIO) {
         ByteBuffer source = sourceBIO.getBufferForReading();
         int remaining = Math.min(source.remaining(), target.remaining());
         int oldLimit = source.limit();
@@ -116,9 +116,9 @@ public class SSLEngineHelper {
     }
 
     private static void loop(PNodeWithRaise node, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, Operation op) {
-        MemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
-        MemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
-        MemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
+        PMemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
+        PMemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
+        PMemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
         if (op == Operation.READ && applicationInboundBIO.getPending() > 0) {
             // Flush leftover data from previous read
             putAsMuchAsPossible(targetBuffer, applicationInboundBIO);
@@ -317,7 +317,7 @@ public class SSLEngineHelper {
         // TODO handle other socket errors (NotYetConnected)
     }
 
-    private static SSLEngineResult doUnwrap(SSLEngine engine, MemoryBIO networkInboundBIO, ByteBuffer targetBuffer, MemoryBIO applicationInboundBIO, boolean writeDirectlyToTarget)
+    private static SSLEngineResult doUnwrap(SSLEngine engine, PMemoryBIO networkInboundBIO, ByteBuffer targetBuffer, PMemoryBIO applicationInboundBIO, boolean writeDirectlyToTarget)
                     throws SSLException, OverflowException {
         ByteBuffer readBuffer = networkInboundBIO.getBufferForReading();
         try {
@@ -338,7 +338,7 @@ public class SSLEngineHelper {
         }
     }
 
-    private static SSLEngineResult doWrap(SSLEngine engine, ByteBuffer appInput, MemoryBIO networkOutboundBIO, int netBufferSize) throws SSLException, OverflowException {
+    private static SSLEngineResult doWrap(SSLEngine engine, ByteBuffer appInput, PMemoryBIO networkOutboundBIO, int netBufferSize) throws SSLException, OverflowException {
         networkOutboundBIO.ensureWriteCapacity(netBufferSize);
         ByteBuffer writeBuffer = networkOutboundBIO.getBufferForWriting();
         try {
@@ -355,7 +355,7 @@ public class SSLEngineHelper {
         throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
     }
 
-    private static int obtainMoreInput(PNodeWithRaise node, SSLEngine engine, MemoryBIO networkInboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException, OverflowException {
+    private static int obtainMoreInput(PNodeWithRaise node, SSLEngine engine, PMemoryBIO networkInboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException, OverflowException {
         if (socket != null) {
             if (socket.getSocket() == null) {
                 // TODO use raiseOsError with ENOTCONN
@@ -406,7 +406,7 @@ public class SSLEngineHelper {
         }
     }
 
-    private static void emitOutputOrRaiseWantWrite(PNodeWithRaise node, MemoryBIO networkOutboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
+    private static void emitOutputOrRaiseWantWrite(PNodeWithRaise node, PMemoryBIO networkOutboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
         if (socket != null && networkOutboundBIO.getPending() > 0) {
             if (socket.getSocket() == null) {
                 // TODO use raiseOsError with ENOTCONN
