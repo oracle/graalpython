@@ -102,7 +102,6 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     // Taken from CPython
     static final String DEFAULT_CIPHER_STRING = "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK";
 
-    private static boolean defaultsInitializedAtRuntime;
     private static List<SSLProtocol> supportedProtocols;
     private static SSLProtocol minimumVersion;
     private static SSLProtocol maximumVersion;
@@ -147,32 +146,28 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     }
 
     private static synchronized void loadDefaults() {
-        if (!defaultsInitializedAtRuntime) {
+        if (ImageInfo.inImageBuildtimeCode()) {
             // The values are dependent on system properties, don't bake them into the image
-            if (ImageInfo.inImageBuildtimeCode()) {
-                supportedProtocols = new ArrayList<>();
-            } else {
-                try {
-                    SSLContext context = SSLContext.getInstance("TLS");
-                    context.init(null, null, null);
-                    List<SSLProtocol> protocols = new ArrayList<>(SSLProtocol.values().length);
-                    for (SSLProtocol protocol : SSLProtocol.values()) {
-                        if (tryProtocolAvailability(context, protocol)) {
-                            protocols.add(protocol);
-                        }
-                    }
-                    supportedProtocols = Collections.unmodifiableList(protocols);
-                    if (!supportedProtocols.isEmpty()) {
-                        minimumVersion = supportedProtocols.get(0);
-                        maximumVersion = supportedProtocols.get(supportedProtocols.size() - 1);
-                    }
-                } catch (NoSuchAlgorithmException | KeyManagementException | PException e) {
-                    // This module is not essential for the interpreter to function, so don't fail
-                    // at startup, let it fail, when it gets used
-                    supportedProtocols = new ArrayList<>();
+            throw new AssertionError("SSL module initialized at build time");
+        }
+        try {
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, null, null);
+            List<SSLProtocol> protocols = new ArrayList<>(SSLProtocol.values().length);
+            for (SSLProtocol protocol : SSLProtocol.values()) {
+                if (tryProtocolAvailability(context, protocol)) {
+                    protocols.add(protocol);
                 }
-                defaultsInitializedAtRuntime = true;
             }
+            supportedProtocols = Collections.unmodifiableList(protocols);
+            if (!supportedProtocols.isEmpty()) {
+                minimumVersion = supportedProtocols.get(0);
+                maximumVersion = supportedProtocols.get(supportedProtocols.size() - 1);
+            }
+        } catch (NoSuchAlgorithmException | KeyManagementException | PException e) {
+            // This module is not essential for the interpreter to function, so don't fail
+            // at startup, let it fail, when it gets used
+            supportedProtocols = new ArrayList<>();
         }
     }
 
