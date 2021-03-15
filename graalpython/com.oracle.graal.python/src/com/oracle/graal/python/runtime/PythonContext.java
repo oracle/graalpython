@@ -877,7 +877,7 @@ public final class PythonContext {
                     // the threading module above. So we just interrupt them. Their exit is handled
                     // in the acquireGil function, which will be interrupted for these threads
                     disposeThread(thread);
-                    for (int i = 0; i < 100; i++) {
+                    for (int i = 0; i < 100 && thread.isAlive(); i++) {
                         thread.interrupt();
                         thread.join(2);
                     }
