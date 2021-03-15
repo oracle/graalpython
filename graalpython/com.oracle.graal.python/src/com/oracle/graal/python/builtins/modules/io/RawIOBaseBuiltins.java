@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.append;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.createStream;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.toByteArray;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -138,7 +138,7 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonObjectLibrary asBytes,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
                         @Cached ConditionProfile isBuffer) {
-            ByteArrayOutputStream chunks = createStream();
+            ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
                 Object data = libSelf.lookupAndCallRegularMethod(self, frame, READ, IOModuleBuiltins.DEFAULT_BUFFER_SIZE);
                 // TODO _PyIO_trap_eintr [GR-23297]
