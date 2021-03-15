@@ -679,13 +679,11 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
     public static final String CANNOT_INTERN_P = "can't intern %p";
-    public static final String UNKNOWN_ERROR = "unknown error";
 
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
     public static final String SSL_PEM_LIB = "[SSL] PEM lib";
     public static final String X509_PEM_LIB = "[X509] PEM lib";
-    public static final String SSL_ERROR = "SSL error: %s";
     public static final String NO_CIPHER_CAN_BE_SELECTED = "No cipher can be selected.";
     public static final String HANDSHAKE_NOT_DONE_YET = "handshake not done yet";
     public static final String S_CHANNEL_BINDING_NOT_IMPLEMENTED = "'%s' channel binding type not implemented";
@@ -694,11 +692,9 @@ public abstract class ErrorMessages {
     public static final String SSL_ERROR_EOF = "EOF occurred in violation of protocol";
     public static final String SSL_PEM_NO_START_LINE = "[PEM: NO_START_LINE] no start line";
     public static final String CA_FILE_PATH_DATA_CANNOT_BE_ALL_OMMITED = "cafile, capath and cadata cannot be all omitted";
-    public static final String SSL_CTX_NOT_SERVER_CONTEXT = "SSLContext is not a server context.";
     public static final String EMPTY_CERTIFICATE_DATA = "Empty certificate data";
     public static final String NOT_ENOUGH_DATA = "not enough data";
     public static final String KEY_VALUES_MISMATCH = "[X509: KEY_VALUES_MISMATCH] key values mismatch";
-    public static final String KEY_TYPE_MISMATCH = "[X509: X509_R_KEY_TYPE_MISMATCH] key type mismatch";
     public static final String BAD_BASE64_DECODE = "[PEM: BAD_BASE64_DECODE] bad base64 decode";
     public static final String NO_CERTIFICATE_OR_CRL_FOUND = "[X509: NO_CERTIFICATE_OR_CRL_FOUND] no certificate or crl found";
     public static final String CERTIFICATE_VERIFY_FAILED = "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: %s";
