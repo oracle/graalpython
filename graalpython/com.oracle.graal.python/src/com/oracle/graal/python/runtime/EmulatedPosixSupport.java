@@ -50,6 +50,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.LOCK_EX;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_NB;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_SH;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_UN;
+import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
 import static com.oracle.graal.python.runtime.PosixConstants.O_ACCMODE;
 import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
@@ -62,7 +63,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.O_SYNC;
 import static com.oracle.graal.python.runtime.PosixConstants.O_TMPFILE;
 import static com.oracle.graal.python.runtime.PosixConstants.O_TRUNC;
 import static com.oracle.graal.python.runtime.PosixConstants.O_WRONLY;
-import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_EXEC;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_NONE;
 import static com.oracle.graal.python.runtime.PosixConstants.PROT_READ;
@@ -1537,6 +1537,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                 throw posixException(OSErrorEnum.ESRCH);
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw posixException(OSErrorEnum.EINTR);
         }
     }
@@ -1836,6 +1837,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             pr.waitFor();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new IOException(e);
         }
         // TODO python-specific, missing location
