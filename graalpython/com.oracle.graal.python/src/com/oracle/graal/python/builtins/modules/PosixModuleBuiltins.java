@@ -37,6 +37,7 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -192,6 +193,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         addConstants(PosixConstants.openFlags);
         addConstants(PosixConstants.waitOptions);
         addConstants(PosixConstants.accessMode);
+        addConstants(PosixConstants.rtld);
 
         addConstant(PosixConstants.SEEK_DATA);
         addConstant(PosixConstants.SEEK_HOLE);
@@ -212,7 +214,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        builtinConstants.put("_have_functions", core.factory().createList());
+        ArrayList<String> haveFunctions = new ArrayList<>();
+        Collections.addAll(haveFunctions, "HAVE_FACCESSAT", "HAVE_FCHDIR", "HAVE_FCHMOD", "HAVE_FCHMODAT", "HAVE_FDOPENDIR", "HAVE_FSTATAT", "HAVE_FTRUNCATE", "HAVE_FUTIMES", "HAVE_LUTIMES",
+                        "HAVE_MKDIRAT", "HAVE_OPENAT", "HAVE_READLINKAT", "HAVE_RENAMEAT", "HAVE_SYMLINKAT", "HAVE_UNLINKAT");
+        // Not implemented yet:
+        // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
+        // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN", "HAVE_LSTAT",
+        // "HAVE_MEMFD_CREATE", "HAVE_MKFIFOAT", "HAVE_MKNODAT",
+        if (PosixConstants.HAVE_FUTIMENS.value) {
+            haveFunctions.add("HAVE_FUTIMENS");
+        }
+        if (PosixConstants.HAVE_UTIMENSAT.value) {
+            haveFunctions.add("HAVE_UTIMENSAT");
+        }
+        builtinConstants.put("_have_functions", core.factory().createList(haveFunctions.toArray()));
         builtinConstants.put("environ", core.factory().createDict());
 
         StructSequence.initType(core, STAT_RESULT_DESC);
