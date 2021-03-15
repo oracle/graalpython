@@ -103,10 +103,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [469,480]`_f.__code__`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [469,480]`_f.__code__`
+            GetFixedAttributeNode SourceSection: None
               Key: __code__
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -123,10 +122,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [506,519]`type.__dict__`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [506,519]`type.__dict__`
+            GetFixedAttributeNode SourceSection: None
               Key: __dict__
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -143,10 +141,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [544,562]`sys.implementation`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [544,562]`sys.implementation`
+            GetFixedAttributeNode SourceSection: None
               Key: implementation
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -414,10 +411,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [832,839]`_C()._m`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [832,839]`_C()._m`
+            GetFixedAttributeNode SourceSection: None
               Key: _m
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -448,10 +444,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [899,908]`[].append`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [899,908]`[].append`
+            GetFixedAttributeNode SourceSection: None
               Key: append
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -466,10 +461,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [974,989]`object.__init__`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [974,989]`object.__init__`
+            GetFixedAttributeNode SourceSection: None
               Key: __init__
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -486,10 +480,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [1016,1032]`object().__str__`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [1016,1032]`object().__str__`
+            GetFixedAttributeNode SourceSection: None
               Key: __str__
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -508,10 +501,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [1062,1070]`str.join`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [1062,1070]`str.join`
+            GetFixedAttributeNode SourceSection: None
               Key: join
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -529,10 +521,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           GetItemNodeGen SourceSection: [1105,1130]`dict.__dict__['fromk...`
-            GetAttributeNodeGen SourceSection: None
-              GetFixedAttributeNodeGen SourceSection: None
+            GetAttributeNode SourceSection: None
+              GetFixedAttributeNode SourceSection: None
                 Key: __dict__
-                CachedDispatchFirst SourceSection: None
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
                 IsBuiltinClassProfile SourceSection: None
@@ -596,10 +587,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     Identifier: type
                     IsBuiltinClassProfile SourceSection: None
                       CachedDispatchFirst SourceSection: None
-                  GetAttributeNodeGen SourceSection: [1277,1288]`tb.tb_frame`
-                    GetFixedAttributeNodeGen SourceSection: None
+                  GetAttributeNode SourceSection: [1277,1288]`tb.tb_frame`
+                    GetFixedAttributeNode SourceSection: None
                       Key: tb_frame
-                      CachedDispatchFirst SourceSection: None
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __getattribute__
                       IsBuiltinClassProfile SourceSection: None
@@ -628,10 +618,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [1393,1414]`FunctionType.__code_...`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [1393,1414]`FunctionType.__code_...`
+            GetFixedAttributeNode SourceSection: None
               Key: __code__
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -648,10 +637,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [1444,1468]`FunctionType.__globa...`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [1444,1468]`FunctionType.__globa...`
+            GetFixedAttributeNode SourceSection: None
               Key: __globals__
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -801,8 +789,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [1845,1897]`if exec_body is not ...`
                       NotNodeGen SourceSection: [1848,1869]`exec_body is not Non...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [1848,1857]`exec_body`
                             Frame: [3,exec_body,Illegal]
@@ -820,8 +806,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       BlockNode SourceSection: None
                     IfNode SourceSection: [1897,1970]`if resolved_bases is...`
                       NotNodeGen SourceSection: [1900,1927]`resolved_bases is no...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [1900,1914]`resolved_bases`
                             Frame: [4,resolved_bases,Illegal]
@@ -951,8 +935,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             BlockNode SourceSection: None
                               IfNode SourceSection: [2217,2273]`if isinstance(base, ...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   PythonCallBinary SourceSection: [2220,2242]`isinstance(base, typ...`
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2220,2230]`isinstance`
@@ -968,8 +950,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 BlockNode SourceSection: None
                               IfNode SourceSection: [2273,2343]`if not hasattr(base,...`
                                 NotNodeGen SourceSection: [2276,2312]`not hasattr(base, "_...`
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   PythonCallBinary SourceSection: [2280,2312]`hasattr(base, "__mro...`
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2280,2287]`hasattr`
@@ -1001,8 +981,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 BooleanLiteralNode SourceSection: [2400,2404]`True`
                               IfNode SourceSection: [2413,2625]`if not isinstance(ne...`
                                 NotNodeGen SourceSection: [2416,2447]`not isinstance(new_b...`
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   PythonCallBinary SourceSection: [2420,2447]`isinstance(new_base,...`
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2420,2430]`isinstance`
@@ -1090,8 +1068,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       BlockNode SourceSection: None
                     IfNode SourceSection: [2625,2666]`if not updated:↵    ...`
                       NotNodeGen SourceSection: [2628,2639]`not updated`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ReadLocalVariableNode SourceSection: [2632,2639]`updated`
                           Frame: [2,updated,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -1172,8 +1148,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                   FunctionBodyNode SourceSection: [3130,3753]`if kwds is None:↵   ...`
                     IfNode SourceSection: [3130,3240]`if kwds is None:↵   ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         IsExpressionNodeGen SourceSection: [3133,3145]`kwds is None`
                           ReadLocalVariableNode SourceSection: [3133,3137]`kwds`
                             Frame: [2,kwds,Illegal]
@@ -1199,14 +1173,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [3240,3405]`if 'metaclass' in kw...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         ContainsNodeGen SourceSection: [3243,3262]`'metaclass' in kwds`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __contains__
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           StringLiteralNode SourceSection: [3243,3254]`'metaclass'`
                           ReadLocalVariableNode SourceSection: [3258,3262]`kwds`
                             Frame: [2,kwds,Illegal]
@@ -1224,8 +1194,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           StringLiteralNode SourceSection: [3288,3299]`'metaclass'`
                       IfNode SourceSection: [3319,3405]`if bases:↵          ...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           ReadLocalVariableNode SourceSection: [3322,3327]`bases`
                             Frame: [1,bases,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1253,8 +1221,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [3405,3618]`if isinstance(meta, ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [3408,3430]`isinstance(meta, typ...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3408,3418]`isinstance`
@@ -1284,8 +1250,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       BlockNode SourceSection: None
                     IfNode SourceSection: [3618,3732]`if hasattr(meta, '__...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [3621,3649]`hasattr(meta, '__pre...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3621,3628]`hasattr`
@@ -1412,8 +1376,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               IfNode SourceSection: [3917,3980]`if issubclass(winner...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   PythonCallBinary SourceSection: [3920,3949]`issubclass(winner, b...`
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3920,3930]`issubclass`
@@ -1429,8 +1391,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 BlockNode SourceSection: None
                               IfNode SourceSection: [3980,4090]`if issubclass(base_m...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   PythonCallBinary SourceSection: [3983,4012]`issubclass(base_meta...`
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3983,3993]`issubclass`
@@ -1621,10 +1581,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNode SourceSection: [5128,5131]`doc`
                                           Frame: [4,doc,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [5135,5147]`fget.__doc__`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [5135,5147]`fget.__doc__`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: __doc__
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -1633,8 +1592,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Frame: [1,fget,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                     SetAttributeNodeGen SourceSection: [5156,5188]`self.overwrite_doc =...`
                                       Attribute: overwrite_doc
                                       ReadLocalVariableNode SourceSection: [5156,5160]`self`
@@ -1721,8 +1678,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   FunctionBodyNode SourceSection: [5374,5623]`if instance is None:...`
                                     IfNode SourceSection: [5374,5597]`if instance is None:...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [5377,5393]`instance is None`
                                           ReadLocalVariableNode SourceSection: [5377,5385]`instance`
                                             Frame: [1,instance,Illegal]
@@ -1731,12 +1686,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [5407,5477]`if self.__isabstract...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [5410,5435]`self.__isabstractmet...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [5410,5435]`self.__isabstractmet...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __isabstractmethod__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1762,13 +1714,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           NoValueNode SourceSection: None
                                       IfNode SourceSection: [5508,5597]`elif self.fget is No...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
                                           IsExpressionNodeGen SourceSection: [5513,5530]`self.fget is None`
-                                            GetAttributeNodeGen SourceSection: [5513,5522]`self.fget`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [5513,5522]`self.fget`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: fget
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1855,13 +1804,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   FunctionBodyNode SourceSection: [5673,5785]`if self.fset is None...`
                                     IfNode SourceSection: [5673,5759]`if self.fset is None...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [5676,5693]`self.fset is None`
-                                          GetAttributeNodeGen SourceSection: [5676,5685]`self.fset`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [5676,5685]`self.fset`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: fset
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1940,13 +1886,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   FunctionBodyNode SourceSection: [5831,5939]`if self.fdel is None...`
                                     IfNode SourceSection: [5831,5920]`if self.fdel is None...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         IsExpressionNodeGen SourceSection: [5834,5851]`self.fdel is None`
-                                          GetAttributeNodeGen SourceSection: [5834,5843]`self.fdel`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [5834,5843]`self.fdel`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: fdel
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2026,12 +1969,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         Frame: [2,fdoc,Illegal]
                                       TernaryIfNode SourceSection: [5984,6028]`fget.__doc__ if self...`
                                         YesNodeGen SourceSection: None
-                                          IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [6000,6018]`self.overwrite_doc`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [6000,6018]`self.overwrite_doc`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: overwrite_doc
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2039,10 +1979,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ReadLocalVariableNode SourceSection: [6000,6004]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [5984,5996]`fget.__doc__`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [5984,5996]`fget.__doc__`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: __doc__
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2068,10 +2007,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNode SourceSection: [6057,6061]`fget`
                                           Frame: [1,fget,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [6063,6072]`self.fset`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6063,6072]`self.fset`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: fset
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2079,10 +2017,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadLocalVariableNode SourceSection: [6063,6067]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [6074,6083]`self.fdel`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6074,6083]`self.fdel`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: fdel
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2094,10 +2031,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadLocalVariableNode SourceSection: [6085,6089]`fdoc`
                                             Frame: [2,fdoc,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [6093,6105]`self.__doc__`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [6093,6105]`self.__doc__`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: __doc__
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2106,17 +2042,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                     SetAttributeNodeGen SourceSection: [6115,6156]`result.overwrite_doc...`
                                       Attribute: overwrite_doc
                                       ReadLocalVariableNode SourceSection: [6115,6121]`result`
                                         Frame: [3,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [6138,6156]`self.overwrite_doc`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [6138,6156]`self.overwrite_doc`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: overwrite_doc
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2192,10 +2125,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadLocalVariableNode SourceSection: [6230,6234]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [6236,6245]`self.fget`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6236,6245]`self.fget`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: fget
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2206,10 +2138,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNode SourceSection: [6247,6251]`fset`
                                           Frame: [1,fset,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [6253,6262]`self.fdel`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6253,6262]`self.fdel`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: fdel
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2217,10 +2148,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadLocalVariableNode SourceSection: [6253,6257]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [6264,6276]`self.__doc__`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6264,6276]`self.__doc__`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: __doc__
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2233,10 +2163,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       ReadLocalVariableNode SourceSection: [6286,6292]`result`
                                         Frame: [2,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [6309,6327]`self.overwrite_doc`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [6309,6327]`self.overwrite_doc`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: overwrite_doc
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2312,10 +2241,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadLocalVariableNode SourceSection: [6402,6406]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [6408,6417]`self.fget`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6408,6417]`self.fget`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: fget
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2323,10 +2251,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadLocalVariableNode SourceSection: [6408,6412]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [6419,6428]`self.fset`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6419,6428]`self.fset`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: fset
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2337,10 +2264,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNode SourceSection: [6430,6434]`fdel`
                                           Frame: [1,fdel,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [6436,6448]`self.__doc__`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6436,6448]`self.__doc__`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: __doc__
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2353,10 +2279,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       ReadLocalVariableNode SourceSection: [6458,6464]`result`
                                         Frame: [2,result,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetAttributeNodeGen SourceSection: [6481,6499]`self.overwrite_doc`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [6481,6499]`self.overwrite_doc`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: overwrite_doc
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2472,10 +2397,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IsExpressionNodeGen SourceSection: [6663,6693]`gen.__class__ is Gen...`
-                                        GetAttributeNodeGen SourceSection: [6663,6676]`gen.__class__`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [6663,6676]`gen.__class__`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: __class__
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2570,10 +2494,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         PythonCallUnary SourceSection: [6852,6876]`self.__wrapped.send(...`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [6852,6866]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [6852,6866]`self.__wrapped`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _GeneratorWrapper__wrapped
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2653,10 +2576,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [6924,6938]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [6924,6938]`self.__wrapped`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _GeneratorWrapper__wrapped
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2710,10 +2632,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         PythonCallNodeGen SourceSection: [6992,7014]`self.__wrapped.close...`
                                           CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [6992,7006]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [6992,7006]`self.__wrapped`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _GeneratorWrapper__wrapped
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2775,18 +2696,16 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNodeGen SourceSection: [7067,7089]`self.__wrapped.gi_co...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7067,7089]`self.__wrapped.gi_co...`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: gi_code
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [7067,7081]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [7067,7081]`self.__wrapped`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _GeneratorWrapper__wrapped
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2848,18 +2767,16 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNodeGen SourceSection: [7143,7166]`self.__wrapped.gi_fr...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7143,7166]`self.__wrapped.gi_fr...`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: gi_frame
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [7143,7157]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [7143,7157]`self.__wrapped`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _GeneratorWrapper__wrapped
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2921,18 +2838,16 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNodeGen SourceSection: [7222,7247]`self.__wrapped.gi_ru...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7222,7247]`self.__wrapped.gi_ru...`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: gi_running
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [7222,7236]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [7222,7236]`self.__wrapped`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _GeneratorWrapper__wrapped
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2994,18 +2909,16 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNodeGen SourceSection: [7305,7332]`self.__wrapped.gi_yi...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7305,7332]`self.__wrapped.gi_yi...`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: gi_yieldfrom
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 CachedDispatchFirst SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [7305,7319]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [7305,7319]`self.__wrapped`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _GeneratorWrapper__wrapped
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3117,10 +3030,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7474,7478]`next`
                                             Identifier: next
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [7479,7493]`self.__wrapped`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7479,7493]`self.__wrapped`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _GeneratorWrapper__wrapped
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3168,12 +3080,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   FunctionBodyNode SourceSection: [7527,7597]`if self.__isgen:↵   ...`
                                     IfNode SourceSection: [7527,7586]`if self.__isgen:↵   ...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [7530,7542]`self.__isgen`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [7530,7542]`self.__isgen`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: _GeneratorWrapper__isgen
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -3186,10 +3095,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNodeGen SourceSection: [7563,7577]`self.__wrapped`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7563,7577]`self.__wrapped`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _GeneratorWrapper__wrapped
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3260,8 +3168,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                   FunctionBodyNode SourceSection: [7711,9866]`if not callable(func...`
                     IfNode SourceSection: [7711,7803]`if not callable(func...`
                       NotNodeGen SourceSection: [7714,7732]`not callable(func)`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallUnary SourceSection: [7718,7732]`callable(func)`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7718,7726]`callable`
@@ -3283,14 +3189,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       BlockNode SourceSection: None
                     IfNode SourceSection: [7803,8984]`if (func.__class__ i...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [7807,7903]`func.__class__ is Fu...`
                           IsExpressionNodeGen SourceSection: [7807,7837]`func.__class__ is Fu...`
-                            GetAttributeNodeGen SourceSection: [7807,7821]`func.__class__`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [7807,7821]`func.__class__`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __class__
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -3304,10 +3207,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Identifier: FunctionType
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IsExpressionNodeGen SourceSection: [7850,7903]`getattr(func, '__cod...`
-                            GetAttributeNodeGen SourceSection: [7850,7891]`getattr(func, '__cod...`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [7850,7891]`getattr(func, '__cod...`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __class__
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -3328,25 +3230,21 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Identifier: CodeType
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [7915,7948]`co_flags = func.__co...`
                           Identifier: co_flags
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,co_flags,Illegal]
-                          GetAttributeNodeGen SourceSection: [7926,7948]`func.__code__.co_fla...`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [7926,7948]`func.__code__.co_fla...`
+                            GetFixedAttributeNode SourceSection: None
                               Key: co_flags
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
-                            GetAttributeNodeGen SourceSection: [7926,7939]`func.__code__`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [7926,7939]`func.__code__`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __code__
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -3358,8 +3256,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 ReadFromCellNodeGen SourceSection: None
                         IfNode SourceSection: [8067,8205]`if co_flags & 0x180:...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryArithmeticExpression SourceSection: [8070,8086]`co_flags & 0x180`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __and__
@@ -3381,8 +3277,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           BlockNode SourceSection: None
                         IfNode SourceSection: [8205,8984]`if co_flags & 0x20:↵...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryArithmeticExpression SourceSection: [8208,8223]`co_flags & 0x20`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __and__
@@ -3396,10 +3290,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Identifier: co
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [2,co,Illegal]
-                              GetAttributeNodeGen SourceSection: [8283,8296]`func.__code__`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [8283,8296]`func.__code__`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: __code__
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -3418,10 +3311,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 ReadFromCellNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [8325,8719]`CodeType(↵          ...`
                                 CallNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8351,8365]`co.co_argcount`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8351,8365]`co.co_argcount`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_argcount
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3429,10 +3321,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8351,8353]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8367,8387]`co.co_kwonlyargcount...`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8367,8387]`co.co_kwonlyargcount...`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_kwonlyargcount
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3440,10 +3331,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8367,8369]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8389,8402]`co.co_nlocals`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8389,8402]`co.co_nlocals`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_nlocals
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3451,10 +3341,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8389,8391]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8420,8435]`co.co_stacksize`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8420,8435]`co.co_stacksize`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_stacksize
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3465,10 +3354,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 BinaryArithmeticExpression SourceSection: [8453,8472]`co.co_flags | 0x100`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __or__
-                                  GetAttributeNodeGen SourceSection: [8453,8464]`co.co_flags`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [8453,8464]`co.co_flags`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: co_flags
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -3478,10 +3366,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [8467,8472]`0x100`
                                     Value: 256
-                                GetAttributeNodeGen SourceSection: [8524,8534]`co.co_code`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8524,8534]`co.co_code`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_code
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3489,10 +3376,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8524,8526]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8552,8564]`co.co_consts`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8552,8564]`co.co_consts`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_consts
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3500,10 +3386,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8552,8554]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8566,8577]`co.co_names`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8566,8577]`co.co_names`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_names
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3511,10 +3396,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8566,8568]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8579,8593]`co.co_varnames`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8579,8593]`co.co_varnames`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_varnames
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3522,10 +3406,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8579,8581]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8595,8609]`co.co_filename`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8595,8609]`co.co_filename`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_filename
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3533,10 +3416,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8595,8597]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8627,8637]`co.co_name`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8627,8637]`co.co_name`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_name
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3544,10 +3426,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8627,8629]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8639,8656]`co.co_firstlineno`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8639,8656]`co.co_firstlineno`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_firstlineno
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3555,10 +3436,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8639,8641]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8658,8670]`co.co_lnotab`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8658,8670]`co.co_lnotab`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_lnotab
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3566,10 +3446,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8658,8660]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8672,8686]`co.co_freevars`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8672,8686]`co.co_freevars`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_freevars
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3577,10 +3456,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8672,8674]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [8704,8718]`co.co_cellvars`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                GetAttributeNode SourceSection: [8704,8718]`co.co_cellvars`
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: co_cellvars
-                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -3696,14 +3574,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadFromCellNodeGen SourceSection: None
                                     IfNode SourceSection: [9135,9361]`if (coro.__class__ i...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         OrNode SourceSection: [9139,9251]`coro.__class__ is Co...`
                                           IsExpressionNodeGen SourceSection: [9139,9170]`coro.__class__ is Co...`
-                                            GetAttributeNodeGen SourceSection: [9139,9153]`coro.__class__`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [9139,9153]`coro.__class__`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __class__
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3716,10 +3591,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           AndNode SourceSection: [9186,9251]`coro.__class__ is Ge...`
                                             IsExpressionNodeGen SourceSection: [9186,9217]`coro.__class__ is Ge...`
-                                              GetAttributeNodeGen SourceSection: [9186,9200]`coro.__class__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9186,9200]`coro.__class__`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __class__
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3733,18 +3607,16 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             BinaryArithmeticExpression SourceSection: [9222,9251]`coro.gi_code.co_flag...`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __and__
-                                              GetAttributeNodeGen SourceSection: [9222,9243]`coro.gi_code.co_flag...`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9222,9243]`coro.gi_code.co_flag...`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: co_flags
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [9222,9234]`coro.gi_code`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [9222,9234]`coro.gi_code`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: gi_code
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3755,11 +3627,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               IntegerLiteralNode SourceSection: [9246,9251]`0x100`
                                                 Value: 256
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       FrameReturnNode SourceSection: [9341,9352]`return coro`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -3771,8 +3639,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [9361,9835]`if (isinstance(coro,...`
                                       YesNodeGen SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
                                         AndNode SourceSection: [9365,9474]`isinstance(coro, _co...`
                                           PythonCallBinary SourceSection: [9365,9409]`isinstance(coro, _co...`
                                             CallBinaryMethodNodeGen SourceSection: None
@@ -3782,10 +3648,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ReadLocalVariableNode SourceSection: [9376,9380]`coro`
                                               Frame: [2,coro,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [9382,9408]`_collections_abc.Gen...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [9382,9408]`_collections_abc.Gen...`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: Generator
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3796,8 +3661,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [9426,9474]`not isinstance(coro,...`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [9430,9474]`isinstance(coro, _co...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [9430,9440]`isinstance`
@@ -3806,10 +3669,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadLocalVariableNode SourceSection: [9441,9445]`coro`
                                                 Frame: [2,coro,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [9447,9473]`_collections_abc.Cor...`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [9447,9473]`_collections_abc.Cor...`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: Coroutine
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3820,8 +3682,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadFromCellNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                       FrameReturnNode SourceSection: [9677,9707]`return _GeneratorWra...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -3895,8 +3755,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         GeneratorIfNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [9904,9916]`n[:1] != '_'`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __ne__

@@ -78,10 +78,9 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                                         EmptyNode SourceSection: [59,63]`pass`
                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: None
-                          GetAttributeNodeGen SourceSection: [35,56]`modname.BaseClassNam...`
-                            GetFixedAttributeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [35,56]`modname.BaseClassNam...`
+                            GetFixedAttributeNode SourceSection: None
                               Key: BaseClassName
-                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None

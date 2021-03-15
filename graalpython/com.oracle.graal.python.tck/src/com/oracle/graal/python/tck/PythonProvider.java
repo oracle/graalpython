@@ -41,19 +41,24 @@
 package com.oracle.graal.python.tck;
 
 import static org.graalvm.polyglot.tck.TypeDescriptor.ANY;
-import static org.graalvm.polyglot.tck.TypeDescriptor.ARRAY;
 import static org.graalvm.polyglot.tck.TypeDescriptor.BOOLEAN;
-import static org.graalvm.polyglot.tck.TypeDescriptor.EXECUTABLE;
-import static org.graalvm.polyglot.tck.TypeDescriptor.HOST_OBJECT;
-import static org.graalvm.polyglot.tck.TypeDescriptor.NATIVE_POINTER;
+import static org.graalvm.polyglot.tck.TypeDescriptor.DATE;
+import static org.graalvm.polyglot.tck.TypeDescriptor.DURATION;
+import static org.graalvm.polyglot.tck.TypeDescriptor.EXCEPTION;
+import static org.graalvm.polyglot.tck.TypeDescriptor.ITERABLE;
+import static org.graalvm.polyglot.tck.TypeDescriptor.META_OBJECT;
 import static org.graalvm.polyglot.tck.TypeDescriptor.NULL;
 import static org.graalvm.polyglot.tck.TypeDescriptor.NUMBER;
 import static org.graalvm.polyglot.tck.TypeDescriptor.OBJECT;
 import static org.graalvm.polyglot.tck.TypeDescriptor.STRING;
-import static org.graalvm.polyglot.tck.TypeDescriptor.INSTANTIABLE;
+import static org.graalvm.polyglot.tck.TypeDescriptor.TIME;
+import static org.graalvm.polyglot.tck.TypeDescriptor.TIME_ZONE;
 import static org.graalvm.polyglot.tck.TypeDescriptor.array;
+import static org.graalvm.polyglot.tck.TypeDescriptor.iterable;
+import static org.graalvm.polyglot.tck.TypeDescriptor.iterator;
 import static org.graalvm.polyglot.tck.TypeDescriptor.executable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.intersection;
+import static org.graalvm.polyglot.tck.TypeDescriptor.instantiable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.union;
 
 import java.io.IOException;
@@ -77,13 +82,61 @@ public class PythonProvider implements LanguageProvider {
 
     private static final String ID = "python";
 
-    // in Python, boolean inherits from integer
-    private static final TypeDescriptor PNUMBER = TypeDescriptor.union(NUMBER, BOOLEAN);
-    private static final TypeDescriptor NUMBER_OBJECT = TypeDescriptor.union(NUMBER, BOOLEAN, OBJECT, array(ANY));
-    private static final TypeDescriptor PSEQUENCE_OBJECT = TypeDescriptor.union(array(ANY), STRING);
+    private static final TypeDescriptor INT = intersection(OBJECT, NUMBER);
+    // as per interop contract, we cannot be boolean and number at the same time
+    private static final TypeDescriptor BOOL = intersection(OBJECT, BOOLEAN);
+    private static final TypeDescriptor FLOAT = intersection(OBJECT, NUMBER);
+    private static final TypeDescriptor COMPLEX = intersection(OBJECT);
+    private static final TypeDescriptor NONE = intersection(OBJECT, NULL);
+    private static final TypeDescriptor STR = intersection(OBJECT, STRING, ITERABLE, array(STRING));
+    private static final TypeDescriptor BYTES = intersection(OBJECT, ITERABLE, array(INT));
+    private static final TypeDescriptor BYTEARRAY = intersection(OBJECT, ITERABLE, array(INT));
+    private static final TypeDescriptor DICT = dict(ANY, ANY);
+    private static final TypeDescriptor SET = set(ANY);
+    private static final TypeDescriptor LIST = list(ANY);
+    private static final TypeDescriptor TUPLE = tuple(ANY);
+    private static final TypeDescriptor DATETIME_DATE = intersection(OBJECT, DATE);
+    private static final TypeDescriptor DATETIME_TIME = intersection(OBJECT, TIME);
+    private static final TypeDescriptor DATETIME_DATETIME = intersection(OBJECT, DATE, TIME);
+    private static final TypeDescriptor DATETIME_TIMEZONE = intersection(OBJECT, TIME_ZONE);
+    private static final TypeDescriptor DATETIME_TIMEDELTA = intersection(OBJECT, DURATION);
+    private static final TypeDescriptor BASE_EXCEPTION = intersection(OBJECT, EXCEPTION);
 
-    // Python types are just objects
-    private static final TypeDescriptor PYTHON_TYPE = TypeDescriptor.union(OBJECT, INSTANTIABLE);
+    private static final TypeDescriptor type(TypeDescriptor instance, boolean varargs, TypeDescriptor... params) {
+        return intersection(OBJECT, instantiable(instance, varargs, params), executable(instance, varargs, params), META_OBJECT);
+    }
+
+    private static final TypeDescriptor list(TypeDescriptor componentType) {
+        return intersection(OBJECT, iterable(componentType), array(componentType));
+    }
+
+    private static final TypeDescriptor tuple(TypeDescriptor componentType) {
+        return intersection(OBJECT, iterable(componentType), array(componentType));
+    }
+
+    private static final TypeDescriptor dict(TypeDescriptor keyType, @SuppressWarnings("unused") TypeDescriptor valueType) {
+        return intersection(OBJECT, iterable(keyType));
+    }
+
+    private static final TypeDescriptor set(TypeDescriptor componentType) {
+        return intersection(OBJECT, iterable(componentType));
+    }
+
+    private static final TypeDescriptor iter(TypeDescriptor componentType) {
+        return intersection(OBJECT, iterable(componentType), iterator(componentType));
+    }
+
+    private static final TypeDescriptor lambda(TypeDescriptor returnType, TypeDescriptor... argTypes) {
+        return intersection(OBJECT, executable(returnType, argTypes));
+    }
+
+    private static final TypeDescriptor function(TypeDescriptor returnType, TypeDescriptor... argTypes) {
+        return intersection(OBJECT, executable(returnType, argTypes));
+    }
+
+    private static final TypeDescriptor generator(TypeDescriptor componentType) {
+        return intersection(OBJECT, iterator(componentType));
+    }
 
     public String getId() {
         return ID;
@@ -110,34 +163,59 @@ public class PythonProvider implements LanguageProvider {
     }
 
     public Collection<? extends Snippet> createValueConstructors(Context context) {
-        List<Snippet> snippets = new ArrayList<>();
-        final TypeDescriptor noType = intersection();
-        final TypeDescriptor allTypes = intersection(noType, NULL, BOOLEAN, NUMBER, STRING, HOST_OBJECT, NATIVE_POINTER, OBJECT, ARRAY, EXECUTABLE);
         // @formatter:off
-        addValueSnippet(context, snippets, "BooleanType:True",  BOOLEAN,    "lambda: True");
-        addValueSnippet(context, snippets, "BooleanType:False", BOOLEAN,    "lambda: False");
-        addValueSnippet(context, snippets, "NoneType",          NULL,       "lambda: None");
-        addValueSnippet(context, snippets, "IntType",           NUMBER,     "lambda: 1");
-        addValueSnippet(context, snippets, "FloatType",         NUMBER,     "lambda: 1.1");
-        addValueSnippet(context, snippets, "ComplexType",       OBJECT,     "lambda: 1.0j");
-        addValueSnippet(context, snippets, "StringType",        STRING,     "lambda: 'spam'");
-        addValueSnippet(context, snippets, "TupleType:Empty",   array(allTypes),                     "lambda: ()");
-        addValueSnippet(context, snippets, "TupleType:Number",  array(NUMBER),                  "lambda: (1, 2.1)");
-        addValueSnippet(context, snippets, "TupleType:String",  array(STRING),                  "lambda: ('foo', 'bar')");
-        addValueSnippet(context, snippets, "TupleType:Mixed",   array(union(NUMBER, STRING)),   "lambda: ('foo', 1)");
-        addValueSnippet(context, snippets, "ListType:Empty",    array(allTypes),                     "lambda: []");
-        addValueSnippet(context, snippets, "ListType:Number",   array(NUMBER),                  "lambda: [1, 2.1]");
-        addValueSnippet(context, snippets, "ListType:String",   array(STRING),                  "lambda: ['foo', 'bar']");
-        addValueSnippet(context, snippets, "ListType:Mixed",    array(union(NUMBER, STRING)),   "lambda: ['foo', 1]");
-        addValueSnippet(context, snippets, "DictType:Empty",    OBJECT,     "lambda: {}");
-        addValueSnippet(context, snippets, "DictType:KeyString",   OBJECT,     "lambda: {'Bacon':1, 'Ham': 0}");
-        addValueSnippet(context, snippets, "DictType:KeyNumber",   OBJECT,     "lambda: {1: 'Bacon', 0: 'Ham'}");
-
-        // TODO remove '*args' from following value constructors once this is fixed in Truffle TCK
-        addValueSnippet(context, snippets, "LambdaType:Id",     intersection(OBJECT, executable(ANY, ANY)),     "lambda: lambda x, *args: x");
-        addValueSnippet(context, snippets, "LambdaType:+1",     intersection(OBJECT, executable(NUMBER, NUMBER)),     "lambda: lambda x, *args: x + 1");
-
+        Object[] values = new Object[] {
+            "BaseException", BASE_EXCEPTION, "BaseException()",
+            "NoneType", NONE, "None",
+            "bool:True", BOOL, "True",
+            "bool:False", BOOL, "False",
+            "int", INT, "1",
+            "float", FLOAT, "1.1",
+            "complex", COMPLEX, "1.0j",
+            "str", STR, "class pstr(str):\n pass\npstr('hello world')",
+            "bytes", BYTES, "b'1234'",
+            "bytearray", BYTEARRAY, "bytearray([1,4,2])",
+            "list", LIST, "[1, object(), 'q']",
+            "list:int", list(INT), "[1,2,3]",
+            "list:str", list(STR), "['a', 'b', 'c']",
+            "tuple", TUPLE, "(1, object(), 'q')",
+            "tuple:int", tuple(INT), "(1,2,3)",
+            "tuple:str", tuple(STR), "('a', 'b', 'c')",
+            "dict", DICT, "{object(): 'q'}",
+            "dict:int-str", dict(INT, STR), "{1: 'q'}",
+            "dict:str-int", dict(STR, INT), "{'q': 1}",
+            "set", SET, "{object(), 'q', 12}",
+            "datetime", DATETIME_DATETIME, "import datetime; datetime.datetime.now()",
+            "date", DATETIME_DATE, "import datetime; datetime.date.today()",
+            "time", DATETIME_TIME, "import datetime; datetime.datetime.now().time()",
+            "timedelta", DATETIME_TIMEDELTA, "import datetime; datetime.timedelta(hours=2)",
+            "timezone", DATETIME_TIMEZONE, "import datetime; datetime.timezone(datetime.timedelta(hours=2))",
+            "type:builtin", type(OBJECT, false), "object",
+            "type:user", type(OBJECT, false), "class type_user():\n    pass\ntype_user",
+            // TODO remove '*args' from following value constructors once this is fixed in Truffle TCK
+            "lambda:id", lambda(ANY, ANY), "lambda x, *args: x",
+            "lambda:+1", lambda(NUMBER, NUMBER), "lambda x, *args: x + 1",
+            "iter", iter(ANY), "iter([1, 'q', object()])",
+            "iter:int", iter(INT), "iter([1, 2, 3])",
+            "function:id", function(ANY, ANY), "def function_id(x, *args):\n    return x\nfunction_id",
+            "function:+1", function(NUMBER, NUMBER), "def function_add1(x, *args):\n    return x + 1\nfunction_add1",
+            "generator:any", generator(ANY), "def generator_any():\n    yield object()\ngenerator_any()",
+            "generator:number", generator(NUMBER), "def generator_number():\n    yield 12\ngenerator_number()"
+        };
         // @formatter:on
+
+        List<Snippet> snippets = new ArrayList<>();
+        for (int i = 0; i < values.length; i += 3) {
+            String snippet = (String) values[i + 2];
+            String delim = ";";
+            if (snippet.contains("\n")) {
+                delim = "\n";
+            }
+            String[] parts = snippet.split(delim);
+            parts[parts.length - 1] = "lambda: " + parts[parts.length - 1];
+            snippet = String.join(delim, parts);
+            addValueSnippet(context, snippets, (String) values[i], (TypeDescriptor) values[i + 1], snippet);
+        }
         return snippets;
     }
 
@@ -145,32 +223,25 @@ public class PythonProvider implements LanguageProvider {
         List<Snippet> snippets = new ArrayList<>();
 
         // @formatter:off
+        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "+ str", "lambda x, y: x + y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "+ list", "lambda x, y: x + y", array(ANY), PNoListCoercionVerifier.INSTANCE, array(ANY), array(ANY));
 
-        // addition
-        addExpressionSnippet(context, snippets, "+",     "lambda x, y: x + y",  NUMBER_OBJECT, PNUMBER, PNUMBER);
-        addExpressionSnippet(context, snippets, "+",     "lambda x, y: x + y",  array(ANY), PNoListCoercionVerifier.INSTANCE, array(ANY), array(ANY));
+        addExpressionSnippet(context, snippets, "-", "lambda x, y: x - y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        // substraction
-        addExpressionSnippet(context, snippets, "-",     "lambda x, y: x - y",  NUMBER_OBJECT, PNUMBER, PNUMBER);
+        addExpressionSnippet(context, snippets, "/", "lambda x, y: x / y", NUMBER, PDivByZeroVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        // multiplication
-        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  NUMBER_OBJECT, PNoArrayVerifier.INSTANCE, PNUMBER, PNUMBER);
-        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  PSEQUENCE_OBJECT, PSequenceMultiplicationVerifier.INSTANCE, PNUMBER, PSEQUENCE_OBJECT);
-        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  PSEQUENCE_OBJECT, PSequenceMultiplicationVerifier.INSTANCE, PSEQUENCE_OBJECT, PNUMBER);
+        addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY)));
 
-        // division
-        addExpressionSnippet(context, snippets, "/",     "lambda x, y: x / y",  NUMBER_OBJECT, PDivByZeroVerifier.INSTANCE, PNUMBER, PNUMBER);
+        addExpressionSnippet(context, snippets, "==", "lambda x, y: x == y", BOOLEAN, ANY, ANY);
+        addExpressionSnippet(context, snippets, "!=", "lambda x, y: x != y", BOOLEAN, ANY, ANY);
+        addExpressionSnippet(context, snippets, ">", "lambda x, y: x > y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, ">=", "lambda x, y: x >= y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "<", "lambda x, y: x < y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
+        addExpressionSnippet(context, snippets, "<=", "lambda x, y: x <= y", BOOLEAN, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        // comparison
-        addExpressionSnippet(context, snippets, ">",     "lambda x, y: x > y",  BOOLEAN, PNUMBER, PNUMBER);
-        addExpressionSnippet(context, snippets, ">=",     "lambda x, y: x > y",  BOOLEAN, PNUMBER, PNUMBER);
-        addExpressionSnippet(context, snippets, "<",     "lambda x, y: x > y",  BOOLEAN, PNUMBER, PNUMBER);
-        addExpressionSnippet(context, snippets, "<=",     "lambda x, y: x > y",  BOOLEAN, PNUMBER, PNUMBER);
-
-        // dictionaries
-        addExpressionSnippet(context, snippets, "dict", "lambda: { 'x': 4 }", OBJECT);
-        addExpressionSnippet(context, snippets, "dict", "lambda: { 'a': 1, 'b': 2, 'c': 3 }", OBJECT, new PDictMemberVerifier(arr("get", "keys", "update"), arr("a", "b", "c")));
-
+        addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
+        addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
         // @formatter:on
         return snippets;
     }
@@ -180,103 +251,49 @@ public class PythonProvider implements LanguageProvider {
 
         // @formatter:off
 
-        // simple statements
         addStatementSnippet(context, snippets, "assert", "def gen_assert(v):\n" +
                                                          "    assert v or not v\n\n" +
                                                          "gen_assert", NULL, ANY);
-        addStatementSnippet(context, snippets, "pass", "def gen_pass():\n" +
-                                                         "    pass\n\n" +
-                                                         "gen_pass", NULL);
+
         addStatementSnippet(context, snippets, "return", "def gen_return(x):\n" +
                                                          "    return x\n\n" +
                                                          "gen_return", ANY, ANY);
-        addStatementSnippet(context, snippets, "yield", "def gen_yield0(last):\n" +
-                                                      "    def gen(last):\n" +
-                                                      "        yield True\n" +
-                                                      "        yield False\n" +
-                                                      "        yield last\n" +
-                                                      "        return None\n" +
-                                                      "    obj = gen(last)\n" +
-                                                      "    return [next(gen(last)), next(obj), next(obj), next(obj)]\n" +
-                                                      "gen_yield0", array(ANY), ANY);
 
-        // compound statements
+        addStatementSnippet(context, snippets, "if", "def gen_if(p):\n" +
+                                                     "   if p:\n" +
+                                                     "      return True\n" +
+                                                     "   else:\n" +
+                                                     "      return False\n\n" +
+                                                     "gen_if", BOOLEAN, ANY);
 
-        // if
-        addStatementSnippet(context, snippets, "if", "lambda p: True if p else False\n\n", BOOLEAN, ANY);
-
-        // for
         addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
                                                       "    for x in l:\n" +
                                                       "        return x\n\n" +
-                                                      "gen_for", ANY, PSEQUENCE_OBJECT);
+                                                      "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY), STRING));
 
-        addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
-                                                      "    first = None\n" +
-                                                      "    for x in l:\n" +
-                                                      "        first = x\n" +
-                                                      "        break\n" +
-                                                      "    return first\n\n" +
-                                                      "gen_for", ANY, PSEQUENCE_OBJECT);
-
-        // while
-        addStatementSnippet(context, snippets, "while", "def gen_while(l):\n" +
-                                                      "    cnt = 0\n" +
-                                                      "    while l:\n" +
-                                                      "        cnt = cnt + 1\n" +
-                                                      "        break\n" +
-                                                      "    return cnt\n\n" +
-                                                      "gen_while", NUMBER, ANY);
-
-        // try
-        addStatementSnippet(context, snippets, "try-finally", "def gen_tryfinally():\n" +
+        // any exception honours the finally block, but non-exception cannot be raised
+        addStatementSnippet(context, snippets, "try-finally", "def gen_tryfinally(exc):\n" +
+                                                      "    cannot_raise = None\n" +
                                                       "    try:\n" +
-                                                      "        raise BaseException()\n" +
-                                                      "        return None\n" +
+                                                    "          raise exc\n" +
+                                                      "    except TypeError as e:\n" +
+                                                      "        cannot_raise = e\n" +
                                                       "    finally:\n" +
-                                                      "        return True\n" +
-                                                      "gen_tryfinally", BOOLEAN);
-        addStatementSnippet(context, snippets, "try-except", "def gen_tryexcept():\n" +
-                                                      "    class CustomException(BaseException):\n" +
-                                                      "        def __init__():\n" +
-                                                      "            super('custom error message')\n" +
-                                                      "    try:\n" +
-                                                      "        raise CustomException()\n" +
-                                                      "        return None\n" +
-                                                      "    except BaseException as e:\n" +
-                                                      "        return str(e) == 'custom error message'\n" +
-                                                      "gen_tryexcept", BOOLEAN);
-        addStatementSnippet(context, snippets, "try-except-else", "def gen_tryexceptelse0():\n" +
-                                                      "    e = None\n" +
-                                                      "    try:\n" +
-                                                      "        raise BaseException()\n" +
-                                                      "        e = None\n" +
-                                                      "    except BaseException as ex:\n" +
-                                                      "        e = True\n" +
-                                                      "    else:\n" +
-                                                      "        e = None\n" +
-                                                      "    return e\n" +
-                                                      "gen_tryexceptelse0", BOOLEAN);
-        addStatementSnippet(context, snippets, "try-except-else", "def gen_tryexceptelse1():\n" +
-                                                      "    e = None\n" +
-                                                      "    try:\n" +
-                                                      "        e = None\n" +
-                                                      "    except BaseException as ex:\n" +
-                                                      "        e = None\n" +
-                                                      "    else:\n" +
-                                                      "        e = True\n" +
-                                                      "    return e\n" +
-                                                      "gen_tryexceptelse1", BOOLEAN);
+                                                      "        if cannot_raise:\n" +
+                                                      "            raise cannot_raise\n" +
+                                                      "        else:\n" +
+                                                      "            return True\n" +
+                                                      "gen_tryfinally", BOOLEAN, EXCEPTION);
 
-        // class definition
-        addStatementSnippet(context, snippets, "class", "class Custom0:\n" +
-                                                      "    def __init__(self, val):\n" +
-                                                      "        self.val = val\n" +
-                                                      "Custom0", PYTHON_TYPE, ANY);
-        addStatementSnippet(context, snippets, "class", "class Custom1:\n" +
-                                                      "    def __call__(self, val):\n" +
-                                                      "        return val\n" +
-                                                      "Custom1()", ANY, ANY);
+        // any exception can be caught, but non-exceptions cannot be raised
+        addStatementSnippet(context, snippets, "try-except", "def gen_tryexcept(exc):\n" +
+                                                      "    try:\n" +
+                                                      "        raise exc\n" +
+                                                      "    except TypeError as e:\n" +
+                                                      "        raise e\n" +
+                                                      "    except:\n" +
+                                                      "        return True\n" +
+                                                      "gen_tryexcept", BOOLEAN, EXCEPTION);
 
         // @formatter:on
 
@@ -330,87 +347,6 @@ public class PythonProvider implements LanguageProvider {
     private abstract static class PResultVerifier implements ResultVerifier {
     }
 
-    private static class PSequenceMultiplicationVerifier extends PResultVerifier {
-
-        public void accept(SnippetRun snippetRun) throws PolyglotException {
-            List<? extends Value> parameters = snippetRun.getParameters();
-            assert parameters.size() == 2;
-
-            Value par0 = parameters.get(0);
-            Value par1 = parameters.get(1);
-
-            // Just restrict 'number' to integer value space
-            if (isSequence(par0) && isNumber(par1)) {
-                if (!hasMemoryError(snippetRun)) {
-                    if (isInteger(par1) || isNegativeNumber(par1)) {
-                        ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-                    } else {
-                        if (snippetRun.getException() == null) {
-                            throw new AssertionError("<sequence> * <non-integer> should give an error.");
-                        }
-                    }
-                }
-            } else if (isNumber(par0) && isSequence(par1)) {
-                if (!hasMemoryError(snippetRun)) {
-                    if (isInteger(par0) || isNegativeNumber(par0)) {
-                        ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-                    } else {
-                        if (snippetRun.getException() == null) {
-                            throw new AssertionError("<non-integer> * <sequence> should give an error.");
-                        }
-                    }
-                }
-            } else if (isNumber(par0) && isMapping(par1) || isNumber(par1) && isMapping(par0)) {
-                if (snippetRun.getException() != null) {
-                    throw new AssertionError("Multipliation with mapping should give an error.");
-                }
-            } else if (isSequence(par0) && isSequence(par1)) {
-                if (snippetRun.getException() == null) {
-                    throw new AssertionError("<sequence> * <sequence> should give an error.");
-                } else {
-                    throw snippetRun.getException();
-                }
-            } else if (!(isNumber(par0) && isScalarVector(par1) || isScalarVector(par0) && isNumber(par1))) {
-                ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-            }
-        }
-
-        protected static boolean isScalarVector(Value val) {
-            return isNumber(val) && val.hasArrayElements() && val.getArraySize() == 1 && !isMapping(val);
-        }
-
-        protected static boolean isNumber(Value par0) {
-            return par0.isNumber() || par0.isBoolean();
-        }
-
-        protected static boolean isNegativeNumber(Value par0) {
-            return par0.isNumber() && par0.fitsInLong() && par0.asLong() < 0L;
-        }
-
-        protected static boolean isSequence(Value par0) {
-            return !isNumber(par0) && (par0.isString() || (par0.hasArrayElements() && !isMapping(par0)));
-        }
-
-        protected static boolean isMapping(Value par0) {
-            return par0.hasMembers() && par0.getMetaObject().toString().contains("dict");
-        }
-
-        private static boolean hasMemoryError(SnippetRun snippetRun) {
-            PolyglotException exception = snippetRun.getException();
-            if (exception != null && exception.isGuestException()) {
-                return "MemoryError".equals(exception.getMessage()) || exception.getMessage().contains("OverflowError");
-            }
-            return false;
-        }
-
-        private static boolean isInteger(Value par0) {
-            return (par0.isNumber() && par0.fitsInInt() || par0.isBoolean());
-        }
-
-        private static final PSequenceMultiplicationVerifier INSTANCE = new PSequenceMultiplicationVerifier();
-
-    }
-
     /**
      * Only accepts exact matches of types.
      */
@@ -438,35 +374,6 @@ public class PythonProvider implements LanguageProvider {
     }
 
     /**
-     * Foreign objects may be array-ish and boxed (e.g. if they have just one element). In this
-     * case, we still treat them as arrays.
-     */
-    private static class PNoArrayVerifier extends PResultVerifier {
-
-        public void accept(SnippetRun snippetRun) throws PolyglotException {
-            List<? extends Value> parameters = snippetRun.getParameters();
-            assert parameters.size() == 2;
-
-            Value par0 = parameters.get(0);
-            Value par1 = parameters.get(1);
-
-            if (isNumber(par0) && isNumber(par1)) {
-                if (!(par0.hasArrayElements() || par1.hasArrayElements())) {
-                    ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-                }
-            } else {
-                ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-            }
-        }
-
-        private static boolean isNumber(Value val) {
-            return val.isNumber() || val.isBoolean();
-        }
-
-        private static final PNoArrayVerifier INSTANCE = new PNoArrayVerifier();
-    }
-
-    /**
      * Only accepts exact matches of types.
      */
     private static class PDivByZeroVerifier extends PResultVerifier {
@@ -486,41 +393,4 @@ public class PythonProvider implements LanguageProvider {
 
         private static final PDivByZeroVerifier INSTANCE = new PDivByZeroVerifier();
     }
-
-    /**
-     * Only accepts exact matches of types.
-     */
-    private static class PDictMemberVerifier extends PResultVerifier {
-
-        private final String[] expectedMembers;
-        private final String[] unexpectedMembers;
-
-        public PDictMemberVerifier(String[] expectedMembers, String[] unexpectedMembers) {
-            this.expectedMembers = expectedMembers;
-            this.unexpectedMembers = unexpectedMembers;
-        }
-
-        public void accept(SnippetRun snippetRun) throws PolyglotException {
-            ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
-
-            Value result = snippetRun.getResult();
-            if (result.hasMembers()) {
-                for (String expectedMember : expectedMembers) {
-                    if (!result.hasMember(expectedMember)) {
-                        throw new AssertionError("Expected member missing: " + expectedMember);
-                    }
-                }
-                for (String unexpectedMember : unexpectedMembers) {
-                    if (result.hasMember(unexpectedMember)) {
-                        throw new AssertionError("Unexpected member present: " + unexpectedMember);
-                    }
-                }
-            }
-        }
-    }
-
-    private static String[] arr(String... strings) {
-        return strings;
-    }
-
 }

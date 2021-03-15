@@ -84,6 +84,12 @@ def open(name, flags):
 
 class PosixTests(unittest.TestCase):
 
+    def test_platform_constants(self):
+        if sys.platform == 'darwin':
+            self.assertEqual(8, posix.O_APPEND)
+        else:
+            self.assertEqual(0x400, posix.O_APPEND)
+
     def test_uname(self):
         # just like cpython, a simple smoke test
         uname = posix.uname()

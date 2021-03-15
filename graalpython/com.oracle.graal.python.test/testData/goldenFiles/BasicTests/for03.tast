@@ -17,8 +17,6 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):â
                   Identifier: x
               IfNode SourceSection: [22,43]`if x == 1:â†µ    break...`
                 YesNodeGen SourceSection: None
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
                   BinaryComparisonNodeGen SourceSection: [25,31]`x == 1`
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __eq__

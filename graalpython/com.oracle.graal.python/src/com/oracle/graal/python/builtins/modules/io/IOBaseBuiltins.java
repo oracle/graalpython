@@ -97,6 +97,9 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PIOBase)
 public class IOBaseBuiltins extends PythonBuiltins {
 
+    // taken from usr/include/stdio.h
+    public static final int BUFSIZ = 8192;
+
     static final String IOBASE_CLOSED = "__IOBase_closed";
     static final String CLOSED = "closed";
     static final String SEEKABLE = "seekable";
@@ -275,8 +278,9 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = SEEK, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
-        Object seek(@SuppressWarnings("unused") PythonObject self) {
+        Object seek(PythonObject self, Object args) {
             throw unsupported(getRaiseNode(), SEEK);
         }
     }
@@ -398,7 +402,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READLINE, minNumOfPositionalArgs = 2, parameterNames = {"$self", "size"})
+    @Builtin(name = READLINE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
     @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ImportStatic(IOBaseBuiltins.class)
     @GenerateNodeFactory

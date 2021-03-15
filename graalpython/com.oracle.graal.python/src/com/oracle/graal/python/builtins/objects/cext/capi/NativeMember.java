@@ -226,6 +226,7 @@ public enum NativeMember {
 
     // PyDateTime_Date
     DATETIME_DATA("data"),
+    DATETIME_TZINFO("tzinfo"),
 
     // PySetObject
     SET_USED("used", PRIMITIVE),

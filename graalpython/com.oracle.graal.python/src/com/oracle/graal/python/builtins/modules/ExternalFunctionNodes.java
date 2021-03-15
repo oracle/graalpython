@@ -52,12 +52,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToBorrowedRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -378,6 +380,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ExternalFunctionInvokeNode externalInvokeNode;
         @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
         @Child private ReadIndexedArgumentNode readCallableNode;
+        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         private final String name;
 
@@ -465,6 +468,14 @@ public abstract class ExternalFunctionNodes {
             return readCallableNode;
         }
 
+        protected ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
+            if (releaseNativeWrapperNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
+            }
+            return releaseNativeWrapperNode;
+        }
+
         @Override
         public boolean isCloningAllowed() {
             return true;
@@ -498,7 +509,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
-        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         public MethKeywordsRoot(PythonLanguage language, String name) {
             super(language, name);
@@ -522,20 +532,15 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[1]);
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+            releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
         @Override
         public Signature getSignature() {
             return SIGNATURE;
-        }
-
-        private ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
-            if (releaseNativeWrapperNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
-            }
-            return releaseNativeWrapperNode;
         }
     }
 
@@ -544,7 +549,6 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
-        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
 
         public MethVarargsRoot(PythonLanguage language, String name) {
             super(language, name);
@@ -566,20 +570,14 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[1]);
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
         public Signature getSignature() {
             return SIGNATURE;
-        }
-
-        private ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
-            if (releaseNativeWrapperNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
-            }
-            return releaseNativeWrapperNode;
         }
     }
 
@@ -598,6 +596,11 @@ public abstract class ExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelfNode.execute(frame);
             return new Object[]{self, PNone.NONE};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
         @Override
@@ -624,6 +627,13 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelfNode.execute(frame);
             Object arg = readArgNode.execute(frame);
             return new Object[]{self, arg};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
@@ -665,6 +675,14 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+            releaseNativeWrapperNode.execute(cArguments[3]);
+        }
+
+        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -690,6 +708,13 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelfNode.execute(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             return new Object[]{self, factory.createTuple(args), args.length};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
@@ -723,9 +748,13 @@ public abstract class ExternalFunctionNodes {
             try {
                 return new Object[]{self, asSsizeTNode.executeLong(frame, arg, 1, Long.BYTES)};
             } catch (UnexpectedResultException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
+                throw CompilerDirectives.shouldNotReachHere();
             }
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
         @Override
@@ -741,6 +770,7 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
+        @Child private PCallCapiFunction callFreeNode;
 
         GetAttrFuncRootNode(PythonLanguage language, String name) {
             super(language, name);
@@ -762,6 +792,20 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
+            ensureCallFreeNode().call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, cArguments[1]);
+        }
+
+        private PCallCapiFunction ensureCallFreeNode() {
+            if (callFreeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFreeNode = insert(PCallCapiFunction.create());
+            }
+            return callFreeNode;
+        }
+
+        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -775,6 +819,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
+        @Child private PCallCapiFunction callFreeNode;
 
         SetAttrFuncRootNode(PythonLanguage language, String name) {
             super(language, name);
@@ -795,6 +840,22 @@ public abstract class ExternalFunctionNodes {
             // TODO we should use 'CStringWrapper' for 'arg1' but it does currently not support
             // PString
             return new Object[]{self, asCharPointerNode.execute(arg1), arg2};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            ensureCallFreeNode().call(NativeCAPISymbol.FUN_PY_TRUFFLE_FREE, cArguments[1]);
+            releaseNativeWrapperNode.execute(cArguments[2]);
+        }
+
+        private PCallCapiFunction ensureCallFreeNode() {
+            if (callFreeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFreeNode = insert(PCallCapiFunction.create());
+            }
+            return callFreeNode;
         }
 
         @Override
@@ -831,9 +892,15 @@ public abstract class ExternalFunctionNodes {
                 Object arg2 = readArg2Node.execute(frame);
                 return new Object[]{self, arg1, asSsizeTNode.executeInt(frame, arg2, 1, Integer.BYTES)};
             } catch (UnexpectedResultException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
+                throw CompilerDirectives.shouldNotReachHere();
             }
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
@@ -870,9 +937,15 @@ public abstract class ExternalFunctionNodes {
                 Object arg2 = readArg2Node.execute(frame);
                 return new Object[]{self, asSsizeTNode.executeLong(frame, arg1, 1, Long.BYTES), arg2};
             } catch (UnexpectedResultException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
+                throw CompilerDirectives.shouldNotReachHere();
             }
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
         @Override
@@ -916,6 +989,13 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+        }
+
+        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -953,6 +1033,14 @@ public abstract class ExternalFunctionNodes {
 
         Object[] getArguments(Object arg0, Object arg1, Object arg2) {
             return new Object[]{arg0, arg1, arg2};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+            releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
         @Override
@@ -1016,6 +1104,13 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
+        }
+
+        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1037,6 +1132,11 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             return new Object[]{readSelfNode.execute(frame)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
         @Override
@@ -1086,8 +1186,6 @@ public abstract class ExternalFunctionNodes {
             }
         };
 
-        @Child private ReleaseNativeWrapperNode releaseSelfNode;
-
         public GetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
         }
@@ -1100,20 +1198,12 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
-            ensureReleaseSelfNode().execute(cArguments[0]);
+            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
         @Override
         public Signature getSignature() {
             return SIGNATURE;
-        }
-
-        private ReleaseNativeWrapperNode ensureReleaseSelfNode() {
-            if (releaseSelfNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                releaseSelfNode = insert(ReleaseNativeWrapperNodeGen.create());
-            }
-            return releaseSelfNode;
         }
 
         public static RootCallTarget getOrCreateCallTarget(PythonLanguage lang, String name) {
@@ -1138,8 +1228,6 @@ public abstract class ExternalFunctionNodes {
         };
 
         @Child private ReadIndexedArgumentNode readArgNode;
-        @Child private ReleaseNativeWrapperNode releaseSelfNode;
-        @Child private ReleaseNativeWrapperNode releaseArgNode;
 
         public SetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
@@ -1154,8 +1242,9 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
-            ensureReleaseSelfNode().execute(cArguments[0]);
-            ensureReleaseArgNode().execute(cArguments[1]);
+            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
+            releaseNativeWrapperNode.execute(cArguments[0]);
+            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
@@ -1169,22 +1258,6 @@ public abstract class ExternalFunctionNodes {
                 readArgNode = insert(ReadIndexedArgumentNode.create(1));
             }
             return readArgNode;
-        }
-
-        private ReleaseNativeWrapperNode ensureReleaseSelfNode() {
-            if (releaseSelfNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                releaseSelfNode = insert(ReleaseNativeWrapperNodeGen.create());
-            }
-            return releaseSelfNode;
-        }
-
-        private ReleaseNativeWrapperNode ensureReleaseArgNode() {
-            if (releaseArgNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                releaseArgNode = insert(ReleaseNativeWrapperNodeGen.create());
-            }
-            return releaseArgNode;
         }
 
         public static RootCallTarget getOrCreateCallTarget(PythonLanguage lang, String name) {

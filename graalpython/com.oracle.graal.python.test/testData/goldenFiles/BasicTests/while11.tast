@@ -15,8 +15,6 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
               WhileNode SourceSection: None
                 WhileRepeatingNode SourceSection: None
                   YesNodeGen SourceSection: None
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     BinaryComparisonNodeGen SourceSection: [16,26]`iters < 40`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __lt__
@@ -30,8 +28,6 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
                     WhileNode SourceSection: None
                       WhileRepeatingNode SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [38,48]`iters < 10`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __lt__
@@ -44,8 +40,6 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
                         BlockNode SourceSection: None
                           IfNode SourceSection: [58,94]`if False:↵          ...`
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               BooleanLiteralNode SourceSection: [61,66]`False`
                             BreakNode SourceSection: [80,85]`break`
                             BlockNode SourceSection: None

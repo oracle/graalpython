@@ -39,11 +39,11 @@ def call_generator(num, iteration):
     return item
 
 
-def measure(num):
-    last_item = call_generator(num, 10000)
+def measure(num, iteration):
+    last_item = call_generator(num, iteration)
 
     print("Last item ", last_item)
 
 
-def __benchmark__(num):
-    measure(num)
+def __benchmark__(num, it=10000):
+    measure(num, it)

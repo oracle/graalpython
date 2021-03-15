@@ -40,6 +40,49 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_DIR;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_LNK;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_REG;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_UNKNOWN;
+import static com.oracle.graal.python.runtime.PosixConstants.F_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_EX;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_NB;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_SH;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_UN;
+import static com.oracle.graal.python.runtime.PosixConstants.O_ACCMODE;
+import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
+import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
+import static com.oracle.graal.python.runtime.PosixConstants.O_DIRECT;
+import static com.oracle.graal.python.runtime.PosixConstants.O_EXCL;
+import static com.oracle.graal.python.runtime.PosixConstants.O_NDELAY;
+import static com.oracle.graal.python.runtime.PosixConstants.O_RDONLY;
+import static com.oracle.graal.python.runtime.PosixConstants.O_RDWR;
+import static com.oracle.graal.python.runtime.PosixConstants.O_SYNC;
+import static com.oracle.graal.python.runtime.PosixConstants.O_TMPFILE;
+import static com.oracle.graal.python.runtime.PosixConstants.O_TRUNC;
+import static com.oracle.graal.python.runtime.PosixConstants.O_WRONLY;
+import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_EXEC;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_NONE;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_READ;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_WRITE;
+import static com.oracle.graal.python.runtime.PosixConstants.R_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_CUR;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_DATA;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_END;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_HOLE;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_SET;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFBLK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFCHR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFDIR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFIFO;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFLNK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFSOCK;
+import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
+import static com.oracle.graal.python.runtime.PosixConstants.W_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.X_OK;
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
 import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
 import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
@@ -60,7 +103,11 @@ import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
 import static java.lang.Math.addExact;
 import static java.lang.Math.multiplyExact;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -73,7 +120,6 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
@@ -88,10 +134,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -99,6 +146,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -115,12 +163,17 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -168,33 +221,6 @@ import com.sun.security.auth.UnixNumericGroupPrincipal;
 @ExportLibrary(PosixSupportLibrary.class)
 @SuppressWarnings("unused")
 public final class EmulatedPosixSupport extends PosixResources {
-    private static final int TMPFILE = 4259840;
-    private static final int TEMPORARY = 4259840;
-    private static final int SYNC = 1052672;
-    private static final int RSYNC = 1052672;
-    private static final int DIRECT = 16384;
-    private static final int DSYNC = 4096;
-    private static final int NDELAY = 2048;
-    private static final int NONBLOCK = 2048;
-    private static final int APPEND = 1024;
-    private static final int TRUNC = 512;
-    private static final int EXCL = 128;
-    private static final int CREAT = 64;
-    private static final int RDWR = 2;
-    private static final int WRONLY = 1;
-    private static final int RDONLY = 0;
-
-    private static final int SEEK_SET = 0;
-    private static final int SEEK_CUR = 1;
-    private static final int SEEK_END = 2;
-
-    private static final int WNOHANG = 1;
-    private static final int WUNTRACED = 3;
-
-    private static final int F_OK = 0;
-    private static final int X_OK = 1;
-    private static final int W_OK = 2;
-    private static final int R_OK = 4;
 
     private static final PosixFilePermission[][] otherBitsToPermission = new PosixFilePermission[][]{
                     new PosixFilePermission[]{},
@@ -227,21 +253,21 @@ public final class EmulatedPosixSupport extends PosixResources {
                     new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE},
     };
 
-    private static final int S_IFIFO = 0010000;
-    private static final int S_IFCHR = 0020000;
-    private static final int S_IFBLK = 0060000;
-    private static final int S_IFSOCK = 0140000;
-    private static final int S_IFLNK = 0120000;
-    private static final int S_IFDIR = 0040000;
-    private static final int S_IFREG = 0100000;
-
-    private final PythonContext context;
+    private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
-    public EmulatedPosixSupport(PythonContext context) {
-        this.context = context;
+    public EmulatedPosixSupport(PythonContext context, boolean useNfiForSocketFd) {
+        super(context, useNfiForSocketFd);
         setEnv(context.getEnv());
+    }
+
+    @Override
+    public void setEnv(Env env) {
+        super.setEnv(env);
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            environ.putAll(System.getenv());
+        }
     }
 
     @ExportMessage
@@ -255,17 +281,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     public static class Getpid {
         @Specialization(rewriteOn = Exception.class)
         @TruffleBoundary
-        static long getPid(EmulatedPosixSupport receiver, @Exclusive @Cached GilNode gil) throws Exception {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (ImageInfo.inImageRuntimeCode()) {
-                    return ProcessProperties.getProcessID();
-                }
-                TruffleFile statFile = receiver.context.getPublicTruffleFileRelaxed("/proc/self/stat");
-                return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
-            } finally {
-                gil.release(mustRelease);
+        static long getPid(EmulatedPosixSupport receiver) throws Exception {
+            if (ImageInfo.inImageRuntimeCode()) {
+                return ProcessProperties.getProcessID();
             }
+            TruffleFile statFile = receiver.context.getPublicTruffleFileRelaxed("/proc/self/stat");
+            return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
         }
 
         @Specialization(replaces = "getPid")
@@ -278,53 +299,38 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public int umask(int umask, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            int prev = currentUmask;
-            currentUmask = umask & 00777;
-            if (hasDefaultUmask) {
-                compatibilityInfo("Returning default umask '%o' (ignoring the real umask value set in the OS)", prev);
-            }
-            hasDefaultUmask = false;
-            return umask;
-        } finally {
-            gil.release(mustRelease);
+    public int umask(int umask) {
+        int prev = currentUmask;
+        currentUmask = umask & 00777;
+        if (hasDefaultUmask) {
+            compatibilityInfo("Returning default umask '%o' (ignoring the real umask value set in the OS)", prev);
         }
+        hasDefaultUmask = false;
+        return umask;
     }
 
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
     public String strerror(int errorCode,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            OSErrorEnum err = OSErrorEnum.fromNumber(errorCode);
-            if (err == null) {
-                errorBranch.enter();
-                return "Invalid argument";
-            }
-            return err.getMessage();
-        } finally {
-            gil.release(mustRelease);
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) {
+        OSErrorEnum err = OSErrorEnum.fromNumber(errorCode);
+        if (err == null) {
+            errorBranch.enter();
+            return "Invalid argument";
         }
+        return err.getMessage();
     }
 
     @ExportMessage(name = "close")
-    public int closeMessage(int fd, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+    public int closeMessage(int fd) throws PosixException {
+        // TODO: to be replaced with super.close once the super class is merged with this class
         try {
-            // TODO: to be replaced with super.close once the super class is merged with this class
-            try {
-                if (!removeFD(fd)) {
-                    throw posixException(OSErrorEnum.EBADF);
-                }
-                return 0;
-            } catch (IOException ignored) {
-                return -1;
+            if (!removeFD(fd)) {
+                throw posixException(OSErrorEnum.EBADF);
             }
-        } finally {
-            gil.release(mustRelease);
+            return 0;
+        } catch (IOException ignored) {
+            return -1;
         }
     }
 
@@ -332,22 +338,17 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"unused", "static-method"})
     public int openat(int dirFd, Object path, int flags, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String pathname = pathToJavaStr(path);
+        TruffleFile file = resolvePath(dirFd, pathname, defaultDirFdPofile);
+        Set<StandardOpenOption> options = flagsToOptions(flags);
+        FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes(mode & ~currentUmask);
         try {
-            String pathname = pathToJavaStr(path);
-            TruffleFile file = resolvePath(dirFd, pathname, defaultDirFdPofile);
-            Set<StandardOpenOption> options = flagsToOptions(flags);
-            FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes(mode & ~currentUmask);
-            try {
-                return openTruffleFile(file, options, attributes);
-            } catch (Exception e) {
-                errorBranch.enter();
-                ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-                throw posixException(errAndMsg);
-            }
-        } finally {
-            gil.release(mustRelease);
+            return openTruffleFile(file, options, attributes);
+        } catch (Exception e) {
+            errorBranch.enter();
+            ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
+            throw posixException(errAndMsg);
         }
     }
 
@@ -371,22 +372,17 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public long write(int fd, Buffer data,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
+        Channel channel = getFileChannel(fd, channelClassProfile);
+        if (!(channel instanceof WritableByteChannel)) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.EBADF);
+        }
         try {
-            Channel channel = getFileChannel(fd, channelClassProfile);
-            if (!(channel instanceof WritableByteChannel)) {
-                errorBranch.enter();
-                throw posixException(OSErrorEnum.EBADF);
-            }
-            try {
-                return doWriteOp(data.getByteBuffer(), (WritableByteChannel) channel);
-            } catch (Exception e) {
-                errorBranch.enter();
-                throw posixException(OSErrorEnum.fromException(e));
-            }
-        } finally {
-            gil.release(mustRelease);
+            return doWriteOp(data.getByteBuffer(), (WritableByteChannel) channel);
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
@@ -399,15 +395,15 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"unused", "static-method"})
     public Buffer read(int fd, long length,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                    @Cached ReadFromChannelNode readNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Channel channel = getFileChannel(fd, channelClassProfile);
-            ByteSequenceStorage array = readNode.execute(channel, (int) length);
-            return new Buffer(array.getInternalByteArray(), array.length());
-        } finally {
-            gil.release(mustRelease);
+                    @Cached ReadFromChannelNode readNode,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
+        Channel channel = getFileChannel(fd, channelClassProfile);
+        if (channel == null) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.EBADF);
         }
+        ByteSequenceStorage array = readNode.execute(channel, (int) length);
+        return new Buffer(array.getInternalByteArray(), array.length());
     }
 
     @Override
@@ -452,108 +448,104 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @TruffleBoundary
-    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            SelectableChannel[] readChannels = getSelectableChannels(readfds);
-            SelectableChannel[] writeChannels = getSelectableChannels(writefds);
-            SelectableChannel[] errChannels = getSelectableChannels(errorfds);
+    public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException {
+        SelectableChannel[] readChannels = getSelectableChannels(readfds);
+        SelectableChannel[] writeChannels = getSelectableChannels(writefds);
+        // Java doesn't support any exceptional conditions we could apply on errfds, report a
+        // warning if errfds is not a subset of readfds & writefds
+        errfdsCheck: for (int fd : errorfds) {
+            for (int fd2 : readfds) {
+                if (fd == fd2) {
+                    continue errfdsCheck;
+                }
+            }
+            for (int fd2 : writefds) {
+                if (fd == fd2) {
+                    continue errfdsCheck;
+                }
+            }
+            compatibilityIgnored("POSIX emulation layer doesn't support waiting on exceptional conditions in select()");
+            break;
+        }
 
-            boolean[] wasBlocking = new boolean[readChannels.length + writeChannels.length + errChannels.length];
-            int i = 0;
+        boolean[] wasBlocking = new boolean[readChannels.length + writeChannels.length];
+        int i = 0;
 
+        for (SelectableChannel channel : readChannels) {
+            wasBlocking[i++] = channel.isBlocking();
+        }
+        for (SelectableChannel channel : writeChannels) {
+            wasBlocking[i++] = channel.isBlocking();
+        }
+
+        final int readOps = SelectionKey.OP_READ | SelectionKey.OP_ACCEPT;
+        final int writeOps = SelectionKey.OP_WRITE;
+
+        try (Selector selector = Selector.open()) {
             for (SelectableChannel channel : readChannels) {
-                wasBlocking[i++] = channel.isBlocking();
+                channel.configureBlocking(false);
+                channel.register(selector, readOps & channel.validOps());
             }
+
             for (SelectableChannel channel : writeChannels) {
-                wasBlocking[i++] = channel.isBlocking();
-            }
-            for (SelectableChannel channel : errChannels) {
-                wasBlocking[i++] = channel.isBlocking();
+                channel.configureBlocking(false);
+                channel.register(selector, writeOps);
             }
 
-            try (Selector selector = Selector.open()) {
-                for (SelectableChannel channel : readChannels) {
-                    channel.configureBlocking(false);
-                    channel.register(selector, (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT) & channel.validOps());
-                }
-
-                for (SelectableChannel channel : writeChannels) {
-                    channel.configureBlocking(false);
-                    channel.register(selector, SelectionKey.OP_WRITE);
-                }
-
-                for (SelectableChannel channel : errChannels) {
-                    // TODO(fa): not sure if these ops are representing "exceptional condition
-                    // pending"
-                    channel.configureBlocking(false);
-                    channel.register(selector, SelectionKey.OP_CONNECT);
-                }
-
-                // IMPORTANT: The meaning of the timeout value is slightly different: 'timeout ==
-                // 0.0'
-                // means we should not block and return immediately, for which we use selectNow().
-                // 'timeout == None' means we should wait indefinitely, i.e., we need to pass 0 to
-                // the
-                // Java API.
-                long timeoutMs;
-                boolean useSelectNow = false;
-                if (timeout == null) {
-                    timeoutMs = 0;
-                } else {
-                    try {
-                        timeoutMs = addExact(multiplyExact(timeout.getSeconds(), 1000L), timeout.getMicroseconds() / 1000L);
-                    } catch (ArithmeticException ex) {
-                        throw posixException(OSErrorEnum.EINVAL);
-                    }
-                    if (timeoutMs == 0) {
-                        useSelectNow = true;
-                    }
-                }
-                int selected = useSelectNow ? selector.selectNow() : selector.select(timeoutMs);
-
-                // remove non-selected channels from given lists
-                boolean[] resReadfds = createSelectedMap(readfds, readChannels, selector, SelectionKey::isReadable);
-                boolean[] resWritefds = createSelectedMap(writefds, writeChannels, selector, SelectionKey::isWritable);
-                boolean[] resErrfds = createSelectedMap(errorfds, errChannels, selector, key -> key.isAcceptable() || key.isConnectable());
-
-                assert selected == countSelected(resReadfds) + countSelected(resWritefds) + countSelected(resErrfds);
-                return new SelectResult(resReadfds, resWritefds, resErrfds);
-            } catch (IOException e) {
-                throw posixException(OSErrorEnum.fromException(e));
-            } finally {
-                i = 0;
+            // IMPORTANT: The meaning of the timeout value is slightly different: 'timeout == 0.0'
+            // means we should not block and return immediately, for which we use selectNow().
+            // 'timeout == None' means we should wait indefinitely, i.e., we need to pass 0 to the
+            // Java API.
+            long timeoutMs;
+            boolean useSelectNow = false;
+            if (timeout == null) {
+                timeoutMs = 0;
+            } else {
                 try {
-                    for (SelectableChannel channel : readChannels) {
-                        if (wasBlocking[i++]) {
-                            channel.configureBlocking(true);
-                        }
-                    }
-                    for (SelectableChannel channel : writeChannels) {
-                        if (wasBlocking[i++]) {
-                            channel.configureBlocking(true);
-                        }
-                    }
-                    for (SelectableChannel channel : errChannels) {
-                        if (wasBlocking[i++]) {
-                            channel.configureBlocking(true);
-                        }
-                    }
-                } catch (IOException e) {
-                    // We didn't manage to restore the blocking status, ignore
+                    timeoutMs = addExact(multiplyExact(timeout.getSeconds(), 1000L), timeout.getMicroseconds() / 1000L);
+                } catch (ArithmeticException ex) {
+                    throw posixException(OSErrorEnum.EINVAL);
+                }
+                if (timeoutMs == 0) {
+                    useSelectNow = true;
                 }
             }
+            int selected = useSelectNow ? selector.selectNow() : selector.select(timeoutMs);
+
+            // remove non-selected channels from given lists
+            boolean[] resReadfds = createSelectedMap(readfds, readChannels, selector, readOps);
+            boolean[] resWritefds = createSelectedMap(writefds, writeChannels, selector, writeOps);
+            boolean[] resErrfds = new boolean[errorfds.length];
+
+            assert selected == countSelected(resReadfds) + countSelected(resWritefds) + countSelected(resErrfds);
+            return new SelectResult(resReadfds, resWritefds, resErrfds);
+        } catch (IOException e) {
+            throw posixException(OSErrorEnum.fromException(e));
         } finally {
-            gil.release(mustRelease);
+            i = 0;
+            try {
+                for (SelectableChannel channel : readChannels) {
+                    if (wasBlocking[i++]) {
+                        channel.configureBlocking(true);
+                    }
+                }
+                for (SelectableChannel channel : writeChannels) {
+                    if (wasBlocking[i++]) {
+                        channel.configureBlocking(true);
+                    }
+                }
+            } catch (IOException e) {
+                // We didn't manage to restore the blocking status, ignore
+            }
         }
     }
 
-    private static boolean[] createSelectedMap(int[] fds, SelectableChannel[] channels, Selector selector, Function<SelectionKey, Boolean> selectedPredicate) {
+    private static boolean[] createSelectedMap(int[] fds, SelectableChannel[] channels, Selector selector, int op) {
         boolean[] result = new boolean[fds.length];
         for (int i = 0; i < channels.length; i++) {
             SelectableChannel channel = channels[i];
             SelectionKey selectionKey = channel.keyFor(selector);
-            result[i] = selectedPredicate.apply(selectionKey);
+            result[i] = (selectionKey.readyOps() & op) != 0;
         }
         return result;
     }
@@ -597,94 +589,104 @@ public final class EmulatedPosixSupport extends PosixResources {
     public long lseek(int fd, long offset, int how,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Exclusive @Cached ConditionProfile noFile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Channel channel = getFileChannel(fd, channelClassProfile);
-            if (noFile.profile(!(channel instanceof SeekableByteChannel))) {
-                throw posixException(OSErrorEnum.ESPIPE);
-            }
-            SeekableByteChannel fc = (SeekableByteChannel) channel;
-            try {
-                return setPosition(offset, how, fc);
-            } catch (Exception e) {
-                errorBranch.enter();
-                throw posixException(OSErrorEnum.fromException(e));
-            }
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached ConditionProfile notSupported,
+                    @Exclusive @Cached ConditionProfile noFile,
+                    @Exclusive @Cached ConditionProfile notSeekable) throws PosixException {
+        Channel channel = getFileChannel(fd, channelClassProfile);
+        if (noFile.profile(channel == null)) {
+            throw posixException(OSErrorEnum.EBADF);
         }
+        if (notSeekable.profile(!(channel instanceof SeekableByteChannel))) {
+            throw posixException(OSErrorEnum.ESPIPE);
+        }
+        SeekableByteChannel fc = (SeekableByteChannel) channel;
+        long newPos;
+        try {
+            newPos = setPosition(offset, how, fc);
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+        if (notSupported.profile(newPos < 0)) {
+            if (newPos == -2) {
+                throw new UnsupportedPosixFeatureException("SEEK_HOLE and SEEK_DATA are not supported");
+            } else {
+                throw new UnsupportedPosixFeatureException("emulated lseek cannot seek beyond the file size. " +
+                                "Please enable native posix support using " +
+                                "the following option '--python.PosixModuleBackend=native'");
+            }
+        }
+        return newPos;
     }
 
+    /*-
+     * There are two main differences between emulated lseek and native lseek:
+     *      1- native lseek allows setting position beyond file size.
+     *      2- native lseek current position doesn't change after file truncate, i.e. position stays beyond file size.
+     * XXX: we do not currently track the later case, which might produce inconsistent results compare to native lseek.
+     */
     @TruffleBoundary(allowInlining = true)
     private static long setPosition(long pos, int how, SeekableByteChannel fc) throws IOException {
-        switch (how) {
-            case SEEK_CUR:
-                fc.position(fc.position() + pos);
-                break;
-            case SEEK_END:
-                fc.position(fc.size() + pos);
-                break;
-            case SEEK_SET:
-                fc.position(pos);
-                break;
-            default:
-                throw new IllegalArgumentException();
+        long newPos;
+        if (how == SEEK_CUR.value) {
+            newPos = pos + fc.position();
+        } else if (how == SEEK_END.value) {
+            newPos = pos + fc.size();
+        } else if (how == SEEK_SET.value) {
+            newPos = pos;
+        } else if ((SEEK_DATA.defined && how == SEEK_DATA.getValueIfDefined()) ||
+                        (SEEK_HOLE.defined && how == SEEK_HOLE.getValueIfDefined())) {
+            return -2;
+        } else {
+            throw new IllegalArgumentException();
         }
-        return fc.position();
+        fc.position(newPos);
+        long p = fc.position();
+        return p != newPos ? -1 : p;
     }
 
     @ExportMessage(name = "ftruncate")
-    public void ftruncateMessage(int fd, long length, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+    public void ftruncateMessage(int fd, long length,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
+        // TODO: will merge with super.ftruncate once the super class is merged with this class
+        Object ret;
         try {
-            // TODO: will merge with super.ftruncate once the super class is merged with this class
-            try {
-                ftruncate(fd, length);
-            } catch (Exception e) {
-                throw posixException(OSErrorEnum.fromException(e));
-            }
-        } finally {
-            gil.release(mustRelease);
+            ret = ftruncate(fd, length);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+        if (ret == null) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.EBADF);
         }
     }
 
     @ExportMessage(name = "fsync")
-    public void fsyncMessage(int fd, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (!fsync(fd)) {
-                throw posixException(OSErrorEnum.ENOENT);
-            }
-        } finally {
-            gil.release(mustRelease);
+    public void fsyncMessage(int fd) throws PosixException {
+        if (!fsync(fd)) {
+            throw posixException(OSErrorEnum.ENOENT);
         }
     }
 
     @ExportMessage
     final void flock(int fd, int operation,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            Channel channel = getFileChannel(fd, channelClassProfile);
-            if (channel == null) {
-                errorBranch.enter();
-                throw posixException(OSErrorEnum.EBADFD);
+                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
+        Channel channel = getFileChannel(fd, channelClassProfile);
+        if (channel == null) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.EBADFD);
+        }
+        // TODO: support other types, throw unsupported feature exception otherwise (GR-28740)
+        if (channel instanceof FileChannel) {
+            FileChannel fc = (FileChannel) channel;
+            FileLock lock = getFileLock(fd);
+            try {
+                lock = doLockOperation(operation, fc, lock);
+            } catch (IOException e) {
+                throw posixException(OSErrorEnum.fromException(e));
             }
-            // TODO: support other types, throw unsupported feature exception otherwise (GR-28740)
-            if (channel instanceof FileChannel) {
-                FileChannel fc = (FileChannel) channel;
-                FileLock lock = getFileLock(fd);
-                try {
-                    lock = doLockOperation(operation, fc, lock);
-                } catch (IOException e) {
-                    throw posixException(OSErrorEnum.fromException(e));
-                }
-                setFileLock(fd, lock);
-            }
-        } finally {
-            gil.release(mustRelease);
+            setFileLock(fd, lock);
         }
     }
 
@@ -692,14 +694,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static FileLock doLockOperation(int operation, FileChannel fc, FileLock oldLock) throws IOException {
         FileLock lock = oldLock;
         if (lock == null) {
-            if ((operation & PosixSupportLibrary.LOCK_SH) != 0) {
-                if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+            if ((operation & LOCK_SH.value) != 0) {
+                if ((operation & LOCK_NB.value) != 0) {
                     lock = fc.tryLock(0, Long.MAX_VALUE, true);
                 } else {
                     lock = fc.lock(0, Long.MAX_VALUE, true);
                 }
-            } else if ((operation & PosixSupportLibrary.LOCK_EX) != 0) {
-                if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+            } else if ((operation & LOCK_EX.value) != 0) {
+                if ((operation & LOCK_NB.value) != 0) {
                     lock = fc.tryLock();
                 } else {
                     lock = fc.lock();
@@ -708,12 +710,12 @@ public final class EmulatedPosixSupport extends PosixResources {
                 // not locked, that's ok
             }
         } else {
-            if ((operation & PosixSupportLibrary.LOCK_UN) != 0) {
+            if ((operation & LOCK_UN.value) != 0) {
                 lock.release();
                 lock = null;
-            } else if ((operation & PosixSupportLibrary.LOCK_EX) != 0) {
+            } else if ((operation & LOCK_EX.value) != 0) {
                 if (lock.isShared()) {
-                    if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+                    if ((operation & LOCK_NB.value) != 0) {
                         FileLock newLock = fc.tryLock();
                         if (newLock != null) {
                             lock = newLock;
@@ -731,26 +733,21 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public boolean getBlocking(int fd,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            PSocket socket = getSocket(fd);
-            if (socket != null) {
-                return SocketBuiltins.GetBlockingNode.get(socket);
-            }
-            Channel fileChannel = getFileChannel(fd, channelClassProfile);
-            if (fileChannel instanceof SelectableChannel) {
-                return getBlocking((SelectableChannel) fileChannel);
-            }
-            if (fileChannel == null) {
-                throw posixException(OSErrorEnum.EBADFD);
-            }
-            // If the file channel is not selectable, we assume it to be blocking
-            // Note: Truffle does not seem to provide API to get selectable channel for files
-            return true;
-        } finally {
-            gil.release(mustRelease);
+                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
+        PSocket socket = getSocket(fd);
+        if (socket != null) {
+            return SocketBuiltins.GetBlockingNode.get(socket);
         }
+        Channel fileChannel = getFileChannel(fd, channelClassProfile);
+        if (fileChannel instanceof SelectableChannel) {
+            return getBlocking((SelectableChannel) fileChannel);
+        }
+        if (fileChannel == null) {
+            throw posixException(OSErrorEnum.EBADFD);
+        }
+        // If the file channel is not selectable, we assume it to be blocking
+        // Note: Truffle does not seem to provide API to get selectable channel for files
+        return true;
     }
 
     @TruffleBoundary
@@ -762,37 +759,32 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
     public void setBlocking(int fd, boolean blocking,
-                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
         try {
-            try {
-                PSocket socket = getSocket(fd);
-                if (socket != null) {
-                    SocketUtils.setBlocking(socket, blocking);
+            PSocket socket = getSocket(fd);
+            if (socket != null) {
+                SocketUtils.setBlocking(socket, blocking);
+                return;
+            }
+            Channel fileChannel = getFileChannel(fd, channelClassProfile);
+            if (fileChannel instanceof SelectableChannel) {
+                setBlocking((SelectableChannel) fileChannel, blocking);
+            }
+            if (fileChannel != null) {
+                if (blocking) {
+                    // Already blocking
                     return;
                 }
-                Channel fileChannel = getFileChannel(fd, channelClassProfile);
-                if (fileChannel instanceof SelectableChannel) {
-                    setBlocking((SelectableChannel) fileChannel, blocking);
-                }
-                if (fileChannel != null) {
-                    if (blocking) {
-                        // Already blocking
-                        return;
-                    }
-                    throw new PosixException(OSErrorEnum.EPERM.getNumber(), "Emulated posix support does not support non-blocking mode for regular files.");
-                }
-
-            } catch (PosixException e) {
-                throw e;
-            } catch (Exception e) {
-                throw posixException(OSErrorEnum.fromException(e));
+                throw new PosixException(OSErrorEnum.EPERM.getNumber(), "Emulated posix support does not support non-blocking mode for regular files.");
             }
-            // if we reach this point, it's an invalid FD
-            throw posixException(OSErrorEnum.EBADFD);
-        } finally {
-            gil.release(mustRelease);
+
+        } catch (PosixException e) {
+            throw e;
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
         }
+        // if we reach this point, it's an invalid FD
+        throw posixException(OSErrorEnum.EBADFD);
     }
 
     @TruffleBoundary
@@ -802,36 +794,26 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public int[] getTerminalSize(int fd, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (getFileChannel(fd) == null) {
-                throw posixException(OSErrorEnum.EBADF);
-            }
-            return new int[]{context.getOption(PythonOptions.TerminalWidth), context.getOption(PythonOptions.TerminalHeight)};
-        } finally {
-            gil.release(mustRelease);
+    public int[] getTerminalSize(int fd) throws PosixException {
+        if (getFileChannel(fd) == null) {
+            throw posixException(OSErrorEnum.EBADF);
         }
+        return new int[]{context.getOption(PythonOptions.TerminalWidth), context.getOption(PythonOptions.TerminalHeight)};
     }
 
     @ExportMessage
     public long[] fstatat(int dirFd, Object path, boolean followSymlinks,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String pathname = pathToJavaStr(path);
+        TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
+        LinkOption[] linkOptions = getLinkOptions(followSymlinks);
         try {
-            String pathname = pathToJavaStr(path);
-            TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
-            LinkOption[] linkOptions = getLinkOptions(followSymlinks);
-            try {
-                return fstat(f, linkOptions);
-            } catch (Exception e) {
-                errorBranch.enter();
-                ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-                throw posixException(errAndMsg);
-            }
-        } finally {
-            gil.release(mustRelease);
+            return fstat(f, linkOptions);
+        } catch (Exception e) {
+            errorBranch.enter();
+            ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
+            throw posixException(errAndMsg);
         }
     }
 
@@ -840,29 +822,24 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Exclusive @Cached BranchProfile nullPathProfile,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            String path = getFilePath(fd);
-            if (path == null) {
-                nullPathProfile.enter();
-                Channel fileChannel = getFileChannel(fd, channelClassProfile);
-                if (fileChannel == null) {
-                    errorBranch.enter();
-                    throw posixException(OSErrorEnum.EBADF);
-                }
-                return fstatWithoutPath(fileChannel);
-            }
-            TruffleFile f = getTruffleFile(path);
-            try {
-                return fstat(f, new LinkOption[0]);
-            } catch (Exception e) {
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String path = getFilePath(fd);
+        if (path == null) {
+            nullPathProfile.enter();
+            Channel fileChannel = getFileChannel(fd, channelClassProfile);
+            if (fileChannel == null) {
                 errorBranch.enter();
-                ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-                throw posixException(errAndMsg);
+                throw posixException(OSErrorEnum.EBADF);
             }
-        } finally {
-            gil.release(mustRelease);
+            return fstatWithoutPath(fileChannel);
+        }
+        TruffleFile f = getTruffleFile(path);
+        try {
+            return fstat(f, new LinkOption[0]);
+        } catch (Exception e) {
+            errorBranch.enter();
+            ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
+            throw posixException(errAndMsg);
         }
     }
 
@@ -999,14 +976,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static int fileTypeBitsFromAttributes(TruffleFile.Attributes attributes) {
         int mode = 0;
         if (attributes.get(IS_REGULAR_FILE)) {
-            mode |= S_IFREG;
+            mode |= S_IFREG.value;
         } else if (attributes.get(IS_DIRECTORY)) {
-            mode |= S_IFDIR;
+            mode |= S_IFDIR.value;
         } else if (attributes.get(IS_SYMBOLIC_LINK)) {
-            mode |= S_IFLNK;
+            mode |= S_IFLNK.value;
         } else {
             // TODO: differentiate these
-            mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
+            mode |= S_IFSOCK.value | S_IFBLK.value | S_IFCHR.value | S_IFIFO.value;
         }
         return mode;
     }
@@ -1020,7 +997,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             // best effort
             canonical = file.getAbsoluteFile();
         }
-        return context.getResources().getInodeId(canonical.getPath());
+        return getInodeId(canonical.getPath());
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -1093,106 +1070,76 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void unlinkat(int dirFd, Object path, @SuppressWarnings("unused") boolean rmdir,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            String pathname = pathToJavaStr(path);
-            TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
-            if (f.exists(LinkOption.NOFOLLOW_LINKS)) {
-                // we cannot check this if the file does not exist
-                boolean isDirectory = f.isDirectory(LinkOption.NOFOLLOW_LINKS);
-                if (isDirectory != rmdir) {
-                    errorBranch.enter();
-                    throw posixException(isDirectory ? OSErrorEnum.EISDIR : OSErrorEnum.ENOTDIR);
-                }
-            }
-            try {
-                f.delete();
-            } catch (Exception e) {
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String pathname = pathToJavaStr(path);
+        TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
+        if (f.exists(LinkOption.NOFOLLOW_LINKS)) {
+            // we cannot check this if the file does not exist
+            boolean isDirectory = f.isDirectory(LinkOption.NOFOLLOW_LINKS);
+            if (isDirectory != rmdir) {
                 errorBranch.enter();
-                throw posixException(OSErrorEnum.fromException(e));
+                throw posixException(isDirectory ? OSErrorEnum.EISDIR : OSErrorEnum.ENOTDIR);
             }
-        } finally {
-            gil.release(mustRelease);
+        }
+        try {
+            f.delete();
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
     @ExportMessage
     public void symlinkat(Object target, int linkDirFd, Object link,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String linkPath = pathToJavaStr(link);
+        TruffleFile linkFile = resolvePath(linkDirFd, linkPath, defaultDirFdPofile);
+        String targetPath = pathToJavaStr(target);
+        TruffleFile targetFile = getTruffleFile(targetPath);
         try {
-            String linkPath = pathToJavaStr(link);
-            TruffleFile linkFile = resolvePath(linkDirFd, linkPath, defaultDirFdPofile);
-            String targetPath = pathToJavaStr(target);
-            TruffleFile targetFile = getTruffleFile(targetPath);
-            try {
-                linkFile.createSymbolicLink(targetFile);
-            } catch (Exception e) {
-                errorBranch.enter();
-                throw posixException(OSErrorEnum.fromException(e));
-            }
-        } finally {
-            gil.release(mustRelease);
+            linkFile.createSymbolicLink(targetFile);
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
     @ExportMessage
     public void mkdirat(int dirFd, Object path, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String pathStr = pathToJavaStr(path);
+        TruffleFile linkFile = resolvePath(dirFd, pathStr, defaultDirFdPofile);
         try {
-            String pathStr = pathToJavaStr(path);
-            TruffleFile linkFile = resolvePath(dirFd, pathStr, defaultDirFdPofile);
-            try {
-                linkFile.createDirectory();
-            } catch (Exception e) {
-                errorBranch.enter();
-                throw posixException(OSErrorEnum.fromException(e));
-            }
-        } finally {
-            gil.release(mustRelease);
+            linkFile.createDirectory();
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
     @ExportMessage
-    public Object getcwd(@Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return context.getEnv().getCurrentWorkingDirectory().toString();
-        } finally {
-            gil.release(mustRelease);
-        }
+    public Object getcwd() {
+        return context.getEnv().getCurrentWorkingDirectory().toString();
     }
 
     @ExportMessage
     public void chdir(Object path,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            chdirStr(pathToJavaStr(path), errorBranch);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
+        chdirStr(pathToJavaStr(path), errorBranch);
     }
 
     @ExportMessage
     public void fchdir(int fd,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Exclusive @Cached BranchProfile asyncProfile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            String path = getFilePath(fd);
-            if (path == null) {
-                errorBranch.enter();
-                throw posixException(OSErrorEnum.EBADF);
-            }
-            chdirStr(path, errorBranch);
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached BranchProfile asyncProfile) throws PosixException {
+        String path = getFilePath(fd);
+        if (path == null) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.EBADF);
         }
+        chdirStr(path, errorBranch);
     }
 
     private void chdirStr(String pathStr, BranchProfile errorBranch) throws PosixException {
@@ -1222,18 +1169,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @TruffleBoundary
-    public boolean isatty(int fd, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (isStandardStream(fd)) {
-                return context.getOption(PythonOptions.TerminalIsInteractive);
-            } else {
-                // These two files are explicitly specified by POSIX
-                String path = getFilePath(fd);
-                return path != null && (path.equals("/dev/tty") || path.equals("/dev/console"));
-            }
-        } finally {
-            gil.release(mustRelease);
+    public boolean isatty(int fd) {
+        if (isStandardStream(fd)) {
+            return context.getOption(PythonOptions.TerminalIsInteractive);
+        } else {
+            // These two files are explicitly specified by POSIX
+            String path = getFilePath(fd);
+            return path != null && (path.equals("/dev/tty") || path.equals("/dev/console"));
         }
     }
 
@@ -1255,29 +1197,19 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public Object opendir(Object path,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            return opendirImpl(pathToJavaStr(path), errorBranch);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        return opendirImpl(pathToJavaStr(path), errorBranch);
     }
 
     @ExportMessage
     public Object fdopendir(int fd,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            String path = getFilePath(fd);
-            if (path == null) {
-                errorBranch.enter();
-                throw posixException(OSErrorEnum.ENOENT);
-            }
-            return opendirImpl(path, errorBranch);
-        } finally {
-            gil.release(mustRelease);
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
+        String path = getFilePath(fd);
+        if (path == null) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.ENOENT);
         }
+        return opendirImpl(path, errorBranch);
     }
 
     private EmulatedDirStream opendirImpl(String path, BranchProfile errorBranch) throws PosixException {
@@ -1294,140 +1226,98 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     @SuppressWarnings("static-method")
     public void closedir(Object dirStreamObj,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) {
+        EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
         try {
-            EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
-            try {
-                dirStream.dirStream.close();
-            } catch (IOException e) {
-                errorBranch.enter();
-                LOGGER.log(Level.WARNING, "Closing a directory threw an exception", e);
-            }
-        } finally {
-            gil.release(mustRelease);
+            dirStream.dirStream.close();
+        } catch (IOException e) {
+            errorBranch.enter();
+            LOGGER.log(Level.WARNING, "Closing a directory threw an exception", e);
         }
     }
 
     @ExportMessage
     @TruffleBoundary
     @SuppressWarnings("static-method")
-    public Object readdir(Object dirStreamObj, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
-            if (dirStream.iterator.hasNext()) {
-                return dirStream.iterator.next();
-            } else {
-                return null;
-            }
-        } finally {
-            gil.release(mustRelease);
+    public Object readdir(Object dirStreamObj) {
+        EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
+        if (dirStream.iterator.hasNext()) {
+            return dirStream.iterator.next();
+        } else {
+            return null;
         }
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public Object dirEntryGetName(Object dirEntry, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            TruffleFile file = (TruffleFile) dirEntry;
-            return file.getName();
-        } finally {
-            gil.release(mustRelease);
-        }
+    public Object dirEntryGetName(Object dirEntry) {
+        TruffleFile file = (TruffleFile) dirEntry;
+        return file.getName();
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public Object dirEntryGetPath(Object dirEntry, Object scandirPath, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
+    public Object dirEntryGetPath(Object dirEntry, Object scandirPath) {
+        TruffleFile file = (TruffleFile) dirEntry;
+        // Given that scandirPath must have been successfully channeled via opendir, we can assume
+        // that it is a valid path
+        TruffleFile dir = context.getPublicTruffleFileRelaxed(pathToJavaStr(scandirPath));
+        // We let the filesystem handle the proper concatenation of the two paths
+        return dir.resolve(file.getName()).getPath();
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    @SuppressWarnings("static-method")
+    public long dirEntryGetInode(Object dirEntry) throws PosixException {
+        TruffleFile file = (TruffleFile) dirEntry;
         try {
-            TruffleFile file = (TruffleFile) dirEntry;
-            // Given that scandirPath must have been successfully channeled via opendir, we can
-            // assume
-            // that it is a valid path
-            TruffleFile dir = context.getPublicTruffleFileRelaxed(pathToJavaStr(scandirPath));
-            // We let the filesystem handle the proper concatenation of the two paths
-            return dir.resolve(file.getName()).getPath();
-        } finally {
-            gil.release(mustRelease);
+            Attributes attributes = file.getAttributes(Collections.singletonList(UNIX_INODE), LinkOption.NOFOLLOW_LINKS);
+            return attributes.get(UNIX_INODE);
+        } catch (UnsupportedOperationException e) {
+            return getEmulatedInode(file);
+        } catch (IOException e) {
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
     @ExportMessage
     @TruffleBoundary
     @SuppressWarnings("static-method")
-    public long dirEntryGetInode(Object dirEntry, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+    public int dirEntryGetType(Object dirEntry) {
+        TruffleFile file = (TruffleFile) dirEntry;
         try {
-            TruffleFile file = (TruffleFile) dirEntry;
-            try {
-                Attributes attributes = file.getAttributes(Collections.singletonList(UNIX_INODE), LinkOption.NOFOLLOW_LINKS);
-                return attributes.get(UNIX_INODE);
-            } catch (UnsupportedOperationException e) {
-                return getEmulatedInode(file);
-            } catch (IOException e) {
-                throw posixException(OSErrorEnum.fromException(e));
+            Attributes attrs = file.getAttributes(Arrays.asList(IS_DIRECTORY, IS_SYMBOLIC_LINK, IS_REGULAR_FILE), LinkOption.NOFOLLOW_LINKS);
+            if (attrs.get(IS_DIRECTORY)) {
+                return DT_DIR.value;
+            } else if (attrs.get(IS_SYMBOLIC_LINK)) {
+                return DT_LNK.value;
+            } else if (attrs.get(IS_REGULAR_FILE)) {
+                return DT_REG.value;
             }
-        } finally {
-            gil.release(mustRelease);
+        } catch (IOException e) {
+            LOGGER.log(Level.FINE, "Silenced exception in dirEntryGetType", e);
+            // The caller will re-try using stat, which can throw PosixException and it should get
+            // the same error again
         }
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    @SuppressWarnings("static-method")
-    public int dirEntryGetType(Object dirEntry, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            TruffleFile file = (TruffleFile) dirEntry;
-            try {
-                Attributes attrs = file.getAttributes(Arrays.asList(IS_DIRECTORY, IS_SYMBOLIC_LINK, IS_REGULAR_FILE), LinkOption.NOFOLLOW_LINKS);
-                if (attrs.get(IS_DIRECTORY)) {
-                    return PosixSupportLibrary.DT_DIR;
-                } else if (attrs.get(IS_SYMBOLIC_LINK)) {
-                    return PosixSupportLibrary.DT_LNK;
-                } else if (attrs.get(IS_REGULAR_FILE)) {
-                    return PosixSupportLibrary.DT_REG;
-                }
-            } catch (IOException e) {
-                LOGGER.log(Level.FINE, "Silenced exception in dirEntryGetType", e);
-                // The caller will re-try using stat, which can throw PosixException and it should
-                // get
-                // the same error again
-            }
-            return PosixSupportLibrary.DT_UNKNOWN;
-        } finally {
-            gil.release(mustRelease);
-        }
+        return DT_UNKNOWN.value;
     }
 
     @ExportMessage
     public void utimensat(int dirFd, Object path, long[] timespec, boolean followSymlinks,
                     @Shared("setUTime") @Cached SetUTimeNode setUTimeNode,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            String pathStr = pathToJavaStr(path);
-            TruffleFile file = resolvePath(dirFd, pathStr, defaultDirFdPofile);
-            setUTimeNode.execute(file, timespec, followSymlinks);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String pathStr = pathToJavaStr(path);
+        TruffleFile file = resolvePath(dirFd, pathStr, defaultDirFdPofile);
+        setUTimeNode.execute(file, timespec, followSymlinks);
     }
 
     @ExportMessage
     public void futimens(int fd, long[] timespec,
-                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            String path = getFilePath(fd);
-            TruffleFile file = getTruffleFile(path);
-            setUTimeNode.execute(file, timespec, true);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String path = getFilePath(fd);
+        TruffleFile file = getTruffleFile(path);
+        setUTimeNode.execute(file, timespec, true);
     }
 
     @GenerateUncached
@@ -1483,128 +1373,101 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         try {
-            try {
-                TruffleFile newFile = resolvePath(newDirFd, pathToJavaStr(newPath), defaultDirFdPofile);
-                if (newFile.isDirectory()) {
-                    throw posixException(OSErrorEnum.EISDIR);
-                }
-                TruffleFile oldFile = resolvePath(oldDirFd, pathToJavaStr(oldPath), defaultDirFdPofile);
-                oldFile.move(newFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (Exception e) {
-                throw posixException(OSErrorEnum.fromException(e));
+            TruffleFile newFile = resolvePath(newDirFd, pathToJavaStr(newPath), defaultDirFdPofile);
+            if (newFile.isDirectory()) {
+                throw posixException(OSErrorEnum.EISDIR);
             }
-        } finally {
-            gil.release(mustRelease);
+            TruffleFile oldFile = resolvePath(oldDirFd, pathToJavaStr(oldPath), defaultDirFdPofile);
+            oldFile.move(newFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
     @ExportMessage
     public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @Shared("errorBranch") @Cached BranchProfile errBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (effectiveIds) {
-                errBranch.enter();
-                throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
-            }
-            TruffleFile file = null;
-            try {
-                file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
-            } catch (PosixException e) {
-                // When the dirFd is invalid descriptor, we just return false, like the real
-                // faccessat
-                return false;
-            }
-            if (!file.exists(getLinkOptions(followSymlinks))) {
-                return false;
-            }
-            if (mode == F_OK) {
-                // we are supposed to just check the existence
-                return true;
-            }
-            if (!followSymlinks) {
-                // TruffleFile#isExecutable/isReadable/isWriteable does not support LinkOptions, but
-                // that's probably because Java NIO does not support NOFOLLOW_LINKS in permissions
-                // check
-                errBranch.enter();
-                throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
-            }
-            boolean result = true;
-            if ((mode & X_OK) != 0) {
-                result = result && file.isExecutable();
-            }
-            if ((mode & R_OK) != 0) {
-                result = result && file.isReadable();
-            }
-            if ((mode & W_OK) != 0) {
-                result = result && file.isWritable();
-            }
-            return result;
-        } finally {
-            gil.release(mustRelease);
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) {
+        if (effectiveIds) {
+            errBranch.enter();
+            throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
         }
+        TruffleFile file = null;
+        try {
+            file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
+        } catch (PosixException e) {
+            // When the dirFd is invalid descriptor, we just return false, like the real faccessat
+            return false;
+        }
+        if (!file.exists(getLinkOptions(followSymlinks))) {
+            return false;
+        }
+        if (mode == F_OK.value) {
+            // we are supposed to just check the existence
+            return true;
+        }
+        if (!followSymlinks) {
+            // TruffleFile#isExecutable/isReadable/isWriteable does not support LinkOptions, but
+            // that's probably because Java NIO does not support NOFOLLOW_LINKS in permissions check
+            errBranch.enter();
+            throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
+        }
+        boolean result = true;
+        if ((mode & X_OK.value) != 0) {
+            result = result && file.isExecutable();
+        }
+        if ((mode & R_OK.value) != 0) {
+            result = result && file.isReadable();
+        }
+        if ((mode & W_OK.value) != 0) {
+            result = result && file.isWritable();
+        }
+        return result;
     }
 
     @ExportMessage
     public void fchmodat(int dirFd, Object path, int mode, boolean followSymlinks,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        TruffleFile file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
+        Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
         try {
-            TruffleFile file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
-            Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
-            try {
-                file.setPosixPermissions(permissions, getLinkOptions(followSymlinks));
-            } catch (Exception e) {
-                throw posixException(OSErrorEnum.fromException(e));
-            }
-        } finally {
-            gil.release(mustRelease);
+            file.setPosixPermissions(permissions, getLinkOptions(followSymlinks));
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
     @ExportMessage
-    public void fchmod(int fd, int mode, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+    public void fchmod(int fd, int mode) throws PosixException {
+        String path = getFilePath(fd);
+        if (path == null) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        TruffleFile file = getTruffleFile(path);
+        Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
         try {
-            String path = getFilePath(fd);
-            if (path == null) {
-                throw posixException(OSErrorEnum.EBADF);
-            }
-            TruffleFile file = getTruffleFile(path);
-            Set<PosixFilePermission> permissions = modeToPosixFilePermissions(mode);
-            try {
-                file.setPosixPermissions(permissions);
-            } catch (Exception e) {
-                throw posixException(OSErrorEnum.fromException(e));
-            }
-        } finally {
-            gil.release(mustRelease);
+            file.setPosixPermissions(permissions);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
     @ExportMessage
     public Object readlinkat(int dirFd, Object path,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        TruffleFile file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
         try {
-            TruffleFile file = resolvePath(dirFd, pathToJavaStr(path), defaultDirFdPofile);
-            try {
-                TruffleFile canonicalFile = file.getCanonicalFile();
-                if (file.equals(canonicalFile)) {
-                    throw posixException(OSErrorEnum.EINVAL);
-                }
-                return canonicalFile.getPath();
-            } catch (PosixException e) {
-                throw e;
-            } catch (Exception e) {
-                throw posixException(OSErrorEnum.fromException(e));
+            TruffleFile canonicalFile = file.getCanonicalFile();
+            if (file.equals(canonicalFile)) {
+                throw posixException(OSErrorEnum.EINVAL);
             }
-        } finally {
-            gil.release(mustRelease);
+            return canonicalFile.getPath();
+        } catch (PosixException e) {
+            throw e;
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
@@ -1614,78 +1477,67 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void kill(long pid, int signal,
                     @Cached ReadAttributeFromObjectNode readSignalNode,
-                    @Cached IsNode isNode, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO looking up the signal values by name is probably not compatible with CPython
-            // (the user might change the value of _signal.SIGKILL, but kill(pid, 9) should still
-            // work
-            PythonModule signalModule = context.getCore().lookupBuiltinModule("_signal");
-            for (String name : TERMINATION_SIGNALS) {
-                Object value = readSignalNode.execute(signalModule, name);
-                if (isNode.execute(signal, value)) {
-                    try {
-                        sigterm((int) pid);
-                    } catch (IndexOutOfBoundsException e) {
-                        throw posixException(OSErrorEnum.ESRCH);
-                    }
-                    return;
-                }
-            }
-            for (String name : KILL_SIGNALS) {
-                Object value = readSignalNode.execute(signalModule, name);
-                if (isNode.execute(signal, value)) {
-                    try {
-                        sigkill((int) pid);
-                    } catch (IndexOutOfBoundsException e) {
-                        throw posixException(OSErrorEnum.ESRCH);
-                    }
-                    return;
-                }
-            }
-            Object dfl = readSignalNode.execute(signalModule, "SIG_DFL");
-            if (isNode.execute(signal, dfl)) {
+                    @Cached IsNode isNode) throws PosixException {
+        // TODO looking up the signal values by name is probably not compatible with CPython
+        // (the user might change the value of _signal.SIGKILL, but kill(pid, 9) should still work
+        PythonModule signalModule = context.getCore().lookupBuiltinModule("_signal");
+        for (String name : TERMINATION_SIGNALS) {
+            Object value = readSignalNode.execute(signalModule, name);
+            if (isNode.execute(signal, value)) {
                 try {
-                    sigdfl((int) pid);
+                    sigterm((int) pid);
                 } catch (IndexOutOfBoundsException e) {
                     throw posixException(OSErrorEnum.ESRCH);
                 }
                 return;
             }
-            throw new UnsupportedPosixFeatureException("Sending arbitrary signals to child processes. Can only send some kill and term signals.");
-        } finally {
-            gil.release(mustRelease);
         }
+        for (String name : KILL_SIGNALS) {
+            Object value = readSignalNode.execute(signalModule, name);
+            if (isNode.execute(signal, value)) {
+                try {
+                    sigkill((int) pid);
+                } catch (IndexOutOfBoundsException e) {
+                    throw posixException(OSErrorEnum.ESRCH);
+                }
+                return;
+            }
+        }
+        Object dfl = readSignalNode.execute(signalModule, "SIG_DFL");
+        if (isNode.execute(signal, dfl)) {
+            try {
+                sigdfl((int) pid);
+            } catch (IndexOutOfBoundsException e) {
+                throw posixException(OSErrorEnum.ESRCH);
+            }
+            return;
+        }
+        throw new UnsupportedPosixFeatureException("Sending arbitrary signals to child processes. Can only send some kill and term signals.");
     }
 
     @ExportMessage
-    public long[] waitpid(long pid, int options, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
+    public long[] waitpid(long pid, int options) throws PosixException {
         try {
-            try {
-                if (options == 0) {
-                    int exitStatus = waitpid((int) pid);
-                    return new long[]{pid, exitStatus};
-                } else if (options == WNOHANG) {
-                    // TODO: simplify once the super class is merged with this class
-                    int[] res = exitStatus((int) pid);
-                    return new long[]{res[0], res[1]};
-                } else {
-                    throw new UnsupportedPosixFeatureException("Only 0 or WNOHANG are supported for waitpid");
-                }
-            } catch (IndexOutOfBoundsException e) {
-                if (pid < -1) {
-                    throw new UnsupportedPosixFeatureException("Process groups are not supported.");
-                } else if (pid <= 0) {
-                    throw posixException(OSErrorEnum.ECHILD);
-                } else {
-                    throw posixException(OSErrorEnum.ESRCH);
-                }
-            } catch (InterruptedException e) {
-                throw posixException(OSErrorEnum.EINTR);
+            if (options == 0) {
+                int exitStatus = waitpid((int) pid);
+                return new long[]{pid, exitStatus};
+            } else if (options == WNOHANG.value) {
+                // TODO: simplify once the super class is merged with this class
+                int[] res = exitStatus((int) pid);
+                return new long[]{res[0], res[1]};
+            } else {
+                throw new UnsupportedPosixFeatureException("Only 0 or WNOHANG are supported for waitpid");
             }
-        } finally {
-            gil.release(mustRelease);
+        } catch (IndexOutOfBoundsException e) {
+            if (pid < -1) {
+                throw new UnsupportedPosixFeatureException("Process groups are not supported.");
+            } else if (pid <= 0) {
+                throw posixException(OSErrorEnum.ECHILD);
+            } else {
+                throw posixException(OSErrorEnum.ESRCH);
+            }
+        } catch (InterruptedException e) {
+            throw posixException(OSErrorEnum.EINTR);
         }
     }
 
@@ -1741,99 +1593,122 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public long getuid() {
+        String osName = System.getProperty("os.name");
+        if (osName.contains("Linux")) {
+            return new com.sun.security.auth.module.UnixSystem().getUid();
+        }
+        return 1000;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getppid() {
+        throw new UnsupportedPosixFeatureException("Emulated getppid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getsid(long pid) {
+        throw new UnsupportedPosixFeatureException("Emulated getsid not supported");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public String ctermid() {
+        return "/dev/tty";
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public void setenv(Object name, Object value, boolean overwrite) {
+        String nameStr = pathToJavaStr(name);
+        String valueStr = pathToJavaStr(value);
+        if (overwrite) {
+            environ.put(nameStr, valueStr);
+        } else {
+            environ.putIfAbsent(nameStr, valueStr);
+        }
+    }
+
+    @ExportMessage
     @TruffleBoundary
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep, @Exclusive @Cached GilNode gil) throws PosixException {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO there are a few arguments we ignore, we should throw an exception or report a
-            // compatibility warning
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException {
 
-            if (!context.isExecutableAccessAllowed()) {
-                // TODO is this check relevant to NFI backend as well?
-                // TODO raise an exception instead of returning an invalid pid
-                return -1;
-            }
+        // TODO there are a few arguments we ignore, we should throw an exception or report a
+        // compatibility warning
 
-            // TODO do we need to do this check (and the isExecutable() check later)?
-            TruffleFile cwdFile = cwd == null ? context.getEnv().getCurrentWorkingDirectory() : getTruffleFile(pathToJavaStr(cwd));
-            if (!cwdFile.exists()) {
-                throw posixException(OSErrorEnum.ENOENT);
-            }
-
-            HashMap<String, String> envMap = null;
-            if (env != null) {
-                envMap = new HashMap<>(env.length);
-                for (Object o : env) {
-                    String str = pathToJavaStr(o);
-                    String[] strings = str.split("=", 2);
-                    if (strings.length == 2) {
-                        envMap.put(strings[0], strings[1]);
-                    } else {
-                        throw new UnsupportedPosixFeatureException("Only key=value environment variables are supported");
-                    }
-                }
-            }
-
-            String[] argStrings;
-            if (args.length == 0) {
-                // Posix execv() function distinguishes between the name of the file to be executed
-                // and
-                // the arguments. It is only a convention that the first argument is the filename of
-                // the
-                // executable and is not even mandatory, i.e. it is possible to exec a program with
-                // no
-                // arguments at all, but some programs fail by printing "A NULL argv[0] was passed
-                // through an exec system call".
-                // https://stackoverflow.com/questions/36673765/why-can-the-execve-system-call-run-bin-sh-without-any-argv-arguments-but-not
-                // Java's Process API uses the first argument as the executable name so we always
-                // need
-                // to provide it.
-                argStrings = new String[1];
-            } else {
-                argStrings = new String[args.length];
-                for (int i = 0; i < args.length; ++i) {
-                    argStrings[i] = pathToJavaStr(args[i]);
-                }
-            }
-
-            IOException firstError = null;
-            for (Object o : executables) {
-                String path = pathToJavaStr(o);
-                TruffleFile executableFile = cwdFile.resolve(path);
-                if (executableFile.isExecutable()) {
-                    argStrings[0] = path;
-                    try {
-                        return exec(argStrings, cwdFile, envMap, stdinWriteFd, stdinReadFd, stdoutWriteFd, stdoutReadFd, stderrWriteFd, errPipeWriteFd, stderrReadFd);
-                    } catch (IOException ex) {
-                        if (firstError == null) {
-                            firstError = ex;
-                        }
-                    }
-                } else {
-                    LOGGER.finest(() -> "_posixsubprocess.fork_exec not executable: " + executableFile);
-                }
-            }
-
-            // TODO we probably do not need to use the pipe at all, CPython uses it to pass errno
-            // from
-            // the child to the parent which then raises an OSError. Since we are still in the
-            // parent,
-            // we could just throw an exception.
-            // However, there is no errno if the executables array is empty - CPython raises
-            // SubprocessError in that case
-            if (errPipeWriteFd != -1) {
-                handleIOError(errPipeWriteFd, firstError);
-            }
-            // TODO returning -1 is not correct - we should either throw an exception directly or
-            // use
-            // the pipe to pretend that there is a child - in which case we should return a valid
-            // pid_t
-            // (and pretend that the child exited in the upcoming waitpid call)
-            return -1;
-        } finally {
-            gil.release(mustRelease);
+        // TODO do we need to do this check (and the isExecutable() check later)?
+        TruffleFile cwdFile = cwd == null ? context.getEnv().getCurrentWorkingDirectory() : getTruffleFile(pathToJavaStr(cwd));
+        if (!cwdFile.exists()) {
+            throw posixException(OSErrorEnum.ENOENT);
         }
+
+        HashMap<String, String> envMap = null;
+        if (env != null) {
+            envMap = new HashMap<>(env.length);
+            for (Object o : env) {
+                String str = pathToJavaStr(o);
+                String[] strings = str.split("=", 2);
+                if (strings.length == 2) {
+                    envMap.put(strings[0], strings[1]);
+                } else {
+                    throw new UnsupportedPosixFeatureException("Only key=value environment variables are supported");
+                }
+            }
+        }
+
+        String[] argStrings;
+        if (args.length == 0) {
+            // Posix execv() function distinguishes between the name of the file to be executed and
+            // the arguments. It is only a convention that the first argument is the filename of the
+            // executable and is not even mandatory, i.e. it is possible to exec a program with no
+            // arguments at all, but some programs fail by printing "A NULL argv[0] was passed
+            // through an exec system call".
+            // https://stackoverflow.com/questions/36673765/why-can-the-execve-system-call-run-bin-sh-without-any-argv-arguments-but-not
+            // Java's Process API uses the first argument as the executable name so we always need
+            // to provide it.
+            argStrings = new String[1];
+        } else {
+            argStrings = new String[args.length];
+            for (int i = 0; i < args.length; ++i) {
+                argStrings[i] = pathToJavaStr(args[i]);
+            }
+        }
+
+        IOException firstError = null;
+        for (Object o : executables) {
+            String path = pathToJavaStr(o);
+            TruffleFile executableFile = cwdFile.resolve(path);
+            if (executableFile.isExecutable()) {
+                argStrings[0] = path;
+                try {
+                    return exec(argStrings, cwdFile, envMap, stdinWriteFd, stdinReadFd, stdoutWriteFd, stdoutReadFd, stderrWriteFd, errPipeWriteFd, stderrReadFd);
+                } catch (IOException ex) {
+                    if (firstError == null) {
+                        firstError = ex;
+                    }
+                }
+            } else {
+                LOGGER.finest(() -> "_posixsubprocess.fork_exec not executable: " + executableFile);
+            }
+        }
+
+        // TODO we probably do not need to use the pipe at all, CPython uses it to pass errno from
+        // the child to the parent which then raises an OSError. Since we are still in the parent,
+        // we could just throw an exception.
+        // However, there is no errno if the executables array is empty - CPython raises
+        // SubprocessError in that case
+        if (errPipeWriteFd != -1) {
+            handleIOError(errPipeWriteFd, firstError);
+        }
+        // TODO returning -1 is not correct - we should either throw an exception directly or use
+        // the pipe to pretend that there is a child - in which case we should return a valid pid_t
+        // (and pretend that the child exited in the upcoming waitpid call)
+        return -1;
     }
 
     private int exec(String[] argStrings, TruffleFile cwd, Map<String, String> env,
@@ -1919,6 +1794,410 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    @ExportMessage
+    public void execv(Object pathname, Object[] args) throws PosixException {
+        assert args.length > 0;
+        String[] cmd = new String[args.length];
+        // ProcessBuilder does not accept separate executable name, we must overwrite the 0-th
+        // argument
+        cmd[0] = pathToJavaStr(pathname);
+        for (int i = 1; i < cmd.length; ++i) {
+            cmd[i] = pathToJavaStr(args[i]);
+        }
+        try {
+            execvInternal(cmd);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+        throw CompilerDirectives.shouldNotReachHere("Execv must not return normally");
+    }
+
+    @TruffleBoundary
+    private void execvInternal(String[] cmd) throws IOException {
+        TruffleProcessBuilder builder = context.getEnv().newProcessBuilder(cmd);
+        builder.clearEnvironment(true);
+        builder.environment(environ);
+        Process pr = builder.start();
+        // TODO how do env.out()/err() relate to FDs 1, 2? What about stdin?
+        // Also, native execv 'kills' all threads
+        BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+        OutputStream stream = context.getEnv().out();
+        String line;
+        while ((line = bfr.readLine()) != null) {
+            stream.write(line.getBytes());
+            stream.write("\n".getBytes());
+        }
+        BufferedReader stderr = new BufferedReader(new InputStreamReader(pr.getErrorStream()));
+        OutputStream errStream = context.getEnv().err();
+        while ((line = stderr.readLine()) != null) {
+            errStream.write(line.getBytes());
+            errStream.write("\n".getBytes());
+        }
+        try {
+            pr.waitFor();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
+        // TODO python-specific, missing location
+        throw new PythonExitException(null, pr.exitValue());
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public int system(Object commandObj) {
+        String cmd = pathToJavaStr(commandObj);
+        LOGGER.fine(() -> "os.system: " + cmd);
+
+        String[] command;
+        String osProperty = System.getProperty("os.name");
+        if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).startsWith("windows")) {
+            command = new String[]{"cmd.exe", "/c", cmd};
+        } else {
+            command = new String[]{(environ.getOrDefault("SHELL", "sh")), "-c", cmd};
+        }
+        Env env = context.getEnv();
+        try {
+            TruffleProcessBuilder pb = context.getEnv().newProcessBuilder(command);
+            pb.directory(env.getCurrentWorkingDirectory());
+            PipePump stdout = null, stderr = null;
+            boolean stdsArePipes = !context.getOption(PythonOptions.TerminalIsInteractive);
+            if (stdsArePipes) {
+                pb.redirectInput(Redirect.PIPE);
+                pb.redirectOutput(Redirect.PIPE);
+                pb.redirectError(Redirect.PIPE);
+            } else {
+                pb.inheritIO(true);
+            }
+            Process proc = pb.start();
+            if (stdsArePipes) {
+                proc.getOutputStream().close(); // stdin will be closed
+                stdout = new PipePump(cmd + " [stdout]", proc.getInputStream(), env.out());
+                stderr = new PipePump(cmd + " [stderr]", proc.getErrorStream(), env.err());
+                stdout.start();
+                stderr.start();
+            }
+            int exitStatus = proc.waitFor();
+            if (stdsArePipes) {
+                stdout.finish();
+                stderr.finish();
+            }
+            return exitStatus;
+        } catch (IOException | InterruptedException e) {
+            return -1;
+        }
+    }
+
+    // TODO merge with ProcessWrapper
+    static class PipePump extends Thread {
+        private static final int MAX_READ = 8192;
+        private final InputStream in;
+        private final OutputStream out;
+        private final byte[] buffer;
+        private volatile boolean finish;
+
+        public PipePump(String name, InputStream in, OutputStream out) {
+            this.setName(name);
+            this.in = in;
+            this.out = out;
+            this.buffer = new byte[MAX_READ];
+            this.finish = false;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (!finish || in.available() > 0) {
+                    if (Thread.interrupted()) {
+                        finish = true;
+                    }
+                    int read = in.read(buffer, 0, Math.min(MAX_READ, in.available()));
+                    if (read == -1) {
+                        return;
+                    }
+                    out.write(buffer, 0, read);
+                }
+            } catch (IOException e) {
+            }
+        }
+
+        public void finish() {
+            finish = true;
+            // Make ourselves max priority to flush data out as quickly as possible
+            setPriority(Thread.MAX_PRIORITY);
+            Thread.yield();
+        }
+    }
+
+    public static final class MMapHandle {
+        private static final MMapHandle NONE = new MMapHandle(null, 0);
+        private SeekableByteChannel channel;
+        private final long offset;
+
+        public MMapHandle(SeekableByteChannel channel, long offset) {
+            this.channel = channel;
+            this.offset = offset;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return String.format("Emulated mmap [channel=%s, offset=%d]", channel, offset);
+        }
+    }
+
+    private static final class AnonymousMap implements SeekableByteChannel {
+        private final byte[] data;
+
+        private boolean open = true;
+        private int cur;
+
+        public AnonymousMap(int cap) {
+            this.data = new byte[cap];
+        }
+
+        @Override
+        public boolean isOpen() {
+            return open;
+        }
+
+        @Override
+        public void close() throws IOException {
+            open = false;
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            int nread = Math.min(dst.remaining(), data.length - cur);
+            dst.put(data, cur, nread);
+            return nread;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            int nwrite = Math.min(src.remaining(), data.length - cur);
+            src.get(data, cur, nwrite);
+            return nwrite;
+        }
+
+        @Override
+        public long position() throws IOException {
+            return cur;
+        }
+
+        @Override
+        public SeekableByteChannel position(long newPosition) throws IOException {
+            if (newPosition < 0 || newPosition >= data.length) {
+                throw new IllegalArgumentException();
+            }
+            cur = (int) newPosition;
+            return this;
+        }
+
+        @Override
+        public long size() throws IOException {
+            return data.length;
+        }
+
+        @Override
+        public SeekableByteChannel truncate(long size) throws IOException {
+            for (int i = 0; i < size; i++) {
+                data[i] = 0;
+            }
+            return this;
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    final MMapHandle mmap(long length, int prot, int flags, int fd, long offset,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile isAnonymousProfile) throws PosixException {
+        if (prot == PROT_NONE.value) {
+            return MMapHandle.NONE;
+        }
+
+        // Note: the profile is not really defaultDirProfile, but it's good to share...
+        if (isAnonymousProfile.profile((flags & MAP_ANONYMOUS.value) != 0)) {
+            try {
+                return new MMapHandle(new AnonymousMap(PythonUtils.toIntExact(length)), 0);
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new UnsupportedPosixFeatureException(String.format("Anonymous mapping in mmap for memory larger than %d", Integer.MAX_VALUE));
+            }
+        }
+
+        String path = getFilePath(fd);
+        TruffleFile file = getTruffleFile(path);
+        Set<StandardOpenOption> options = mmapProtToOptions(prot);
+
+        // we create a new channel, the file may be closed but the mmap object should still work
+        SeekableByteChannel fileChannel;
+        try {
+            fileChannel = newByteChannel(file, options);
+            position(fileChannel, offset);
+            return new MMapHandle(fileChannel, offset);
+        } catch (IOException e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @TruffleBoundary
+    private static Set<StandardOpenOption> mmapProtToOptions(int prot) {
+        HashSet<StandardOpenOption> options = new HashSet<>();
+        if ((prot & PROT_READ.value) != 0) {
+            options.add(StandardOpenOption.READ);
+        }
+        if ((prot & PROT_WRITE.value) != 0) {
+            options.add(StandardOpenOption.WRITE);
+        }
+        if ((prot & PROT_EXEC.value) != 0) {
+            throw new UnsupportedPosixFeatureException("mmap: flag PROT_EXEC is not supported");
+        }
+        return options;
+    }
+
+    @TruffleBoundary
+    private static SeekableByteChannel newByteChannel(TruffleFile file, Set<StandardOpenOption> options) throws IOException {
+        return file.newByteChannel(options);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public byte mmapReadByte(Object mmap, long index,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        ByteBuffer readingBuffer = allocateByteBuffer(1);
+        int readSize = readBytes(handle, index, readingBuffer, errBranch);
+        if (readSize == 0) {
+            throw posixException(OSErrorEnum.ENODATA);
+        }
+        return getByte(readingBuffer);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        int sz;
+        try {
+            sz = PythonUtils.toIntExact(length);
+        } catch (OverflowException e) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EOVERFLOW);
+        }
+        ByteBuffer readingBuffer = allocateByteBuffer(sz);
+        int readSize = readBytes(handle, index, readingBuffer, errBranch);
+        if (readSize > 0) {
+            getByteBufferArray(readingBuffer, bytes, readSize);
+        }
+        return readSize;
+    }
+
+    private static int readBytes(MMapHandle handle, long index, ByteBuffer readingBuffer, BranchProfile errBranch) throws PosixException {
+        try {
+            position(handle.channel, index + handle.offset);
+            return readChannel(handle.channel, readingBuffer);
+        } catch (IOException e) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        try {
+            SeekableByteChannel channel = handle.channel;
+            position(channel, handle.offset + index);
+            int written = writeChannel(channel, bytes, length);
+            if (written != length) {
+                throw posixException(OSErrorEnum.EIO);
+            }
+        } catch (Exception e) {
+            // Catching generic Exception to also cover NonWritableChannelException
+            errBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @TruffleBoundary
+    private static int writeChannel(SeekableByteChannel channel, byte[] bytes, int length) throws IOException {
+        return channel.write(ByteBuffer.wrap(bytes, 0, length));
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void mmapFlush(Object mmap, long offset, long length) {
+        // Intentionally noop
+        // If we had access to the underlying NIO FileChannel, we could explicitly set force(true)
+        // when creating the channel. Another possibility would be exposing JDK's memory mapped
+        // files support via Truffle API, which would allow for more compatible (and completely
+        // different implementation of mmap in emulated posix)
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void mmapUnmap(Object mmap, @SuppressWarnings("unused") long length) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            return;
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        if (handle.channel != null) {
+            try {
+                closeChannel(handle.channel);
+            } catch (IOException e) {
+                throw posixException(OSErrorEnum.fromException(e));
+            }
+            handle.channel = null;
+        }
+    }
+
+    @TruffleBoundary
+    private static void closeChannel(Channel ch) throws IOException {
+        ch.close();
+    }
+
+    @TruffleBoundary
+    private static void position(SeekableByteChannel ch, long offset) throws IOException {
+        ch.position(offset);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static ByteBuffer allocateByteBuffer(int n) {
+        return ByteBuffer.allocate(n);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    protected static void getByteBufferArray(ByteBuffer src, byte[] dst, int readSize) {
+        src.flip();
+        src.get(dst, 0, readSize);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    protected static byte getByte(ByteBuffer src) {
+        src.flip();
+        return src.get();
+    }
+
+    @TruffleBoundary
+    private static int readChannel(Object readableChannel, ByteBuffer dst) throws IOException {
+        return ((ReadableByteChannel) readableChannel).read(dst);
+    }
+
     // ------------------
     // Path conversions
 
@@ -1930,9 +2209,8 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     public Object createPathFromBytes(byte[] path) {
-        return checkEmbeddedNulls(new String(path, StandardCharsets.UTF_8));
+        return checkEmbeddedNulls(BytesUtils.createUTF8String(path));
     }
 
     @ExportMessage
@@ -1943,9 +2221,8 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    @TruffleBoundary
     public Buffer getPathAsBytes(Object path) {
-        return Buffer.wrap(((String) path).getBytes(StandardCharsets.UTF_8));
+        return Buffer.wrap(BytesUtils.utf8StringToBytes((String) path));
     }
 
     private static String checkEmbeddedNulls(String s) {
@@ -1990,10 +2267,10 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     /**
      * Resolves the path relative to the directory given as file descriptor. Honors the
-     * {@link PosixSupportLibrary#DEFAULT_DIR_FD}.
+     * {@link PosixConstants#AT_FDCWD}.
      */
     private TruffleFile resolvePath(int dirFd, String pathname, ConditionProfile defaultDirFdPofile) throws PosixException {
-        if (defaultDirFdPofile.profile(dirFd == PosixSupportLibrary.DEFAULT_DIR_FD)) {
+        if (defaultDirFdPofile.profile(dirFd == AT_FDCWD.value)) {
             return getTruffleFile(pathname);
         } else {
             TruffleFile file = getTruffleFile(pathname);
@@ -2037,37 +2314,48 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary(allowInlining = true)
     private static Set<StandardOpenOption> flagsToOptions(int flags) {
         Set<StandardOpenOption> options = new HashSet<>();
-        if ((flags & WRONLY) != 0) {
+        int maskedFlags = flags & O_ACCMODE.value;
+        if ((flags & O_APPEND.value) != 0) {
             options.add(StandardOpenOption.WRITE);
-        } else if ((flags & RDWR) != 0) {
+            options.add(StandardOpenOption.APPEND);
+        } else if (maskedFlags == O_WRONLY.value) {
+            options.add(StandardOpenOption.WRITE);
+        } else if (maskedFlags == O_RDWR.value) {
             options.add(StandardOpenOption.READ);
             options.add(StandardOpenOption.WRITE);
+        } else if (maskedFlags == O_RDONLY.value) {
+            options.add(StandardOpenOption.READ);
         } else {
-            options.add(StandardOpenOption.READ);
+            // TODO: neither read nor write should be allowed
+            // Currently, read succeeds even though we do not specify the READ option.
+            // We should probably store the file status flags in our fd table and query
+            // it explicitly before each operation.
         }
-        if ((flags & CREAT) != 0) {
+        // TODO: review these - I don't think that WRITE should be implied,
+        // open(name, O_CREATE | O_RDONLY) creates the file, but it cannot be written to (but can be
+        // read from). Also, O_EXCL should not imply O_CREAT. Moreover, we ignore a few flags.
+        // If O_EXCL and O_CREAT are specfied, symbolic links are not followed.
+        if ((flags & O_CREAT.value) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.CREATE);
         }
-        if ((flags & EXCL) != 0) {
+        if ((flags & O_EXCL.value) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.CREATE_NEW);
         }
-        if ((flags & APPEND) != 0) {
-            options.add(StandardOpenOption.WRITE);
-            options.add(StandardOpenOption.APPEND);
-        }
-        if ((flags & NDELAY) != 0 || (flags & DIRECT) != 0) {
+        if ((flags & O_NDELAY.value) != 0 || (O_DIRECT.defined && (flags & O_DIRECT.getValueIfDefined()) != 0)) {
             options.add(StandardOpenOption.DSYNC);
         }
-        if ((flags & SYNC) != 0) {
+        if ((flags & O_SYNC.value) != 0) {
             options.add(StandardOpenOption.SYNC);
         }
-        if ((flags & TRUNC) != 0) {
+        if ((flags & O_TRUNC.value) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.TRUNCATE_EXISTING);
         }
-        if ((flags & TMPFILE) != 0) {
+        // TODO we should always support O_TMPFILE, but we don't have it defined on darwin ->
+        // emulated backend should provide its own constants
+        if (O_TMPFILE.defined && (flags & O_TMPFILE.getValueIfDefined()) != 0) {
             options.add(StandardOpenOption.DELETE_ON_CLOSE);
         }
         return options;

@@ -27,13 +27,15 @@ from __future__ import print_function
 import contextlib
 import datetime
 import glob
-import itertools
 import json
 import os
+import pathlib
 import platform
 import re
 import shlex
 import shutil
+
+import itertools
 import sys
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
@@ -55,13 +57,19 @@ import mx_subst
 import mx_urlrewrites
 import mx_graalpython_bisect
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS
-from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, GraalPythonVm, \
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, WARMUP_BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS, \
+    JAVA_DRIVER_BENCHMARKS
+from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, \
+    GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
     CONFIGURATION_DEFAULT_MULTI_TIER, CONFIGURATION_NATIVE_MULTI_TIER, \
-    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, PythonParserBenchmarkSuite
-
+    PythonInteropBenchmarkSuite, PythonVmWarmupBenchmarkSuite, PythonParserBenchmarkSuite, \
+    CONFIGURATION_INTERPRETER, CONFIGURATION_INTERPRETER_MULTI, CONFIGURATION_NATIVE_INTERPRETER, \
+    CONFIGURATION_NATIVE_INTERPRETER_MULTI, PythonJavaEmbeddingBenchmarkSuite, python_java_embedding_vm_registry, \
+    GraalPythonJavaDriverVm, CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED, \
+    CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI, CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED, \
+    CONFIGURATION_JAVA_EMBEDDING_MULTI
 
 if not sys.modules.get("__main__"):
     # workaround for pdb++
@@ -368,6 +376,9 @@ def update_unittest_tags(args):
         ('test_modulefinder.txt', '*graalpython.lib-python.3.test.test_modulefinder.ModuleFinderTest.test_relative_imports_4'),
         # Temporarily disabled due to object identity or race condition (GR-24863)
         ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_threaded_weak_key_dict_deepcopy'),
+        # These tests are *inconsistently* triggering IllegalStateException("Coverage Tracker is already tracking") in com.oracle.truffle.tools.coverage.CoverageTracker. Race condition?
+        ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_run_as_module'),
+        ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_sys_argv_list'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_blacklist
@@ -523,8 +534,8 @@ def _hpy_test_root():
 def graalpytest(args):
     parser = ArgumentParser(prog='mx graalpytest')
     parser.add_argument('--python', type=str, action='store', default="", help='Run tests with custom Python binary.')
-    parser.add_argument('-v', "--verbose", action="store_true", help='Verbose output.')
-    parser.add_argument('-k', dest="filter", default=[], help='Test pattern.')
+    parser.add_argument('-v', "--verbose", action="store_true", help='Verbose output.', default=True)
+    parser.add_argument('-k', dest="filter", default='', help='Test pattern.')
     parser.add_argument('test', nargs="*", default=[], help='Test file to run (specify absolute or relative; e.g. "/path/to/test_file.py" or "cpyext/test_object.py") ')
     args, unknown_args = parser.parse_known_args(args)
 
@@ -573,7 +584,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     return testfiles
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=True, exclude=None, env=None):
+def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None):
     # ensure that the test distribution is up-to-date
     mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
@@ -606,20 +617,22 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
         # with the arguments
         basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-        jacoco_basedir = "%s-jacoco" % basedir
-        shutil.rmtree(jacoco_basedir, ignore_errors=True)
-        shutil.copytree(basedir, jacoco_basedir, symlinks=True)
-        launcher_path = os.path.join(jacoco_basedir, 'bin', 'graalpython')
-        with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-            lines = launcher.readlines()
-        assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
-        lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
-        with open(launcher_path, 'w') as launcher:
-            launcher.writelines(lines)
-        # jacoco only dumps the data on exit, and when we run all our unittests
-        # at once it generates so much data we run out of heap space
-        for testfile in testfiles:
-            mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=True, env=env)
+        launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpython').resolve())
+        launcher_path_bak = launcher_path + ".bak"
+        shutil.copy(launcher_path, launcher_path_bak)
+        try:
+            with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+                lines = launcher.readlines()
+            assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
+            lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
+            with open(launcher_path, 'w') as launcher:
+                launcher.writelines(lines)
+            # jacoco only dumps the data on exit, and when we run all our unittests
+            # at once it generates so much data we run out of heap space
+            for testfile in testfiles:
+                mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env)
+        finally:
+            shutil.move(launcher_path_bak, launcher_path)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
@@ -700,8 +713,8 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py"])
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py"])
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"])
+            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -710,11 +723,11 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
-            run_python_unittests(python_svm())
+            run_python_unittests(python_svm(), aot_compatible=True)
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
-            run_python_unittests(python_svm(["sandboxed"]))
+            run_python_unittests(python_svm(["sandboxed"]), aot_compatible=True)
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -1104,7 +1117,8 @@ def update_import_cmd(args):
         mx.abort("overlays repo must be clean")
     overlaybranch = vc.active_branch(overlaydir)
     if overlaybranch == "master":
-        vc.pull(overlaydir)
+        if "--no-pull" not in args:
+            vc.pull(overlaydir)
         vc.set_branch(overlaydir, current_branch, with_remote=False)
         vc.git_command(overlaydir, ["checkout", current_branch], abortOnError=True)
     elif overlaybranch == current_branch:
@@ -1126,7 +1140,7 @@ def update_import_cmd(args):
     # now update all imports
     for name in imports_to_update:
         for idx, suite_py in enumerate(suite_py_files):
-            update_import(name, suite_py, rev=("HEAD" if idx else "origin/master"))
+            update_import(name, suite_py, rev=("HEAD" if (idx or "--no-pull" in args) else "origin/master"))
 
     # copy files we inline from our imports
     shutil.copy(
@@ -1459,7 +1473,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             main_class=GRAALPYTHON_MAIN_CLASS,
             build_args=[
                 '-H:+TruffleCheckBlackListedMethods',
-                '-H:+DetectUserDirectoriesInImageHeap'
+                '-H:+DetectUserDirectoriesInImageHeap',
+                '-Dpolyglot.python.PosixModuleBackend=native'
             ],
             language='python',
         )
@@ -1485,30 +1500,57 @@ def _register_vms(namespace):
 
     # graalpython
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER, extra_polyglot_args=[
+        '--experimental-options', '--engine.Compilation=false'
+    ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_INTERPRETER_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context', '--engine.Compilation=false'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_DEFAULT_MULTI_TIER, extra_polyglot_args=[
         '--experimental-options', '--engine.MultiTier=true',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED, extra_polyglot_args=[
-        '--llvm.managed',
+        '--llvm.managed', '--python.PosixModuleBackend=java'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
     ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER, extra_polyglot_args=[
+        '--experimental-options', '--engine.Compilation=false']), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--llvm.managed',
+        '--experimental-options', '-multi-context', '--llvm.managed', '--python.PosixModuleBackend=java'
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context',
+    ]), SUITE, 10)
+    python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_INTERPRETER_MULTI, extra_polyglot_args=[
+        '--experimental-options', '-multi-context', '--engine.Compilation=false',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI_TIER, extra_polyglot_args=[
         '--experimental-options', '--engine.MultiTier=true',
     ]), SUITE, 10)
 
+    # java embedding driver
+    python_java_embedding_vm_registry.add_vm(
+        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_MULTI,
+                                extra_polyglot_args=['-multi-context']), SUITE, 10)
+    python_java_embedding_vm_registry.add_vm(
+        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_MULTI_SHARED,
+                                extra_polyglot_args=['-multi-context', '-shared-engine']), SUITE, 10)
+    python_java_embedding_vm_registry.add_vm(
+        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI,
+                                extra_polyglot_args=['-multi-context', '-interpreter']), SUITE, 10)
+    python_java_embedding_vm_registry.add_vm(
+        GraalPythonJavaDriverVm(config_name=CONFIGURATION_JAVA_EMBEDDING_INTERPRETER_MULTI_SHARED,
+                                extra_polyglot_args=['-multi-context', '-interpreter', '-shared-engine']), SUITE, 10)
+
 
 def _register_bench_suites(namespace):
     for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
+        mx_benchmark.add_bm_suite(py_bench_suite)
+    for py_bench_suite in PythonJavaEmbeddingBenchmarkSuite.get_benchmark_suites(JAVA_DRIVER_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
     for py_bench_suite in PythonVmWarmupBenchmarkSuite.get_benchmark_suites(WARMUP_BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
@@ -1765,7 +1807,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
         for var in ["CC", "CFLAGS", "LDFLAGS"]:
             env.pop(var, None)
-
+        args.insert(0, '--PosixModuleBackend=java')
         return do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
     def _dev_headers_dir(self):
@@ -2034,6 +2076,15 @@ def update_hpy_import_cmd(args):
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.dependency("com.oracle.graal.python.cext").dir, "include")
 
+    # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
+    dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
+    src_version_file = join(hpy_repo_path, "hpy", "devel", "version.py")
+    if not os.path.exists(src_version_file):
+        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
+        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
+        mx.abort("File 'version.py' is not available. Did you forget to run 'setup.py build' ?")
+    import_file(src_version_file, dest_version_file)
+
     # copy headers from .../hpy/hpy/devel/include' to 'header_dest'
     # but exclude subdir 'cpython' (since that's only for CPython)
     import_files(hpy_repo_include_dir, header_dest)
@@ -2048,10 +2099,6 @@ def update_hpy_import_cmd(args):
     test_files_dest = _hpy_test_root()
     import_files(hpy_repo_test_dir, test_files_dest)
     remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
-
-    # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
-    dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
-    import_file(join(hpy_repo_path, "hpy", "devel", "version.py"), dest_version_file)
 
     # import 'version.py' by path and read '__version__'
     from importlib import util

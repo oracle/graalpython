@@ -106,6 +106,7 @@ ccompile("c_arith_binop_module", code)
 from c_arith_binop_module import FloatSubclass
 
 
+# ~igv~: function_root_docompute_at
 def docompute(num):
     for i in range(num):
         sum_ = FloatSubclass(0.0)

@@ -240,7 +240,7 @@ def open(file, mode="r", buffering=-1, encoding=None, errors=None,
         elif creating or writing or appending:
             buffer = BufferedWriter(raw, buffering)
         elif reading:
-            buffer = io.BufferedReader(raw, buffering)
+            buffer = BufferedReader(raw, buffering)
         else:
             raise ValueError("unknown mode: %r" % mode)
         result = buffer

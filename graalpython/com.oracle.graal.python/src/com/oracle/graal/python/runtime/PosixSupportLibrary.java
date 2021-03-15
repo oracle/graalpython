@@ -40,6 +40,14 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFBLK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFCHR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFDIR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFIFO;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFLNK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFMT;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -58,27 +66,12 @@ import com.oracle.truffle.api.library.LibraryFactory;
 @GenerateLibrary(receiverType = PosixSupport.class)
 public abstract class PosixSupportLibrary extends Library {
 
-    public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is
-                                                    // equal to AT_FDCWD
-
-    public static final int O_CLOEXEC = 524288;
-
     public static final char POSIX_FILENAME_SEPARATOR = '/';
 
-    public static final int S_IFMT = 0170000;
-    public static final int S_IFDIR = 0040000;
-    public static final int S_IFREG = 0100000;
-    public static final int S_IFLNK = 0120000;
-
-    public static final int DT_UNKNOWN = 0;
-    public static final int DT_DIR = 4;
-    public static final int DT_REG = 8;
-    public static final int DT_LNK = 10;
-
-    public static final int LOCK_SH = 1;
-    public static final int LOCK_EX = 2;
-    public static final int LOCK_NB = 4;
-    public static final int LOCK_UN = 8;
+    // Constants for accessing the fields of the fstat result:
+    // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
+    public static final int ST_MODE = 0;
+    public static final int ST_SIZE = 6;
 
     public abstract String getBackend(Object recevier);
 
@@ -130,7 +123,8 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param receiver the receiver of the message
      * @param fd the file descriptor
-     * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array
+     * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array. There are
+     *         constants for some of the indices, e.g., {@link #ST_MODE}.
      * @throws PosixException if an error occurs
      */
     public abstract long[] fstat(Object receiver, int fd) throws PosixException;
@@ -249,8 +243,38 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int wstopsig(Object receiver, int status);
 
+    public abstract long getuid(Object receiver);
+
+    public abstract long getppid(Object receiver);
+
+    public abstract long getsid(Object receiver, long pid) throws PosixException;
+
+    public abstract String ctermid(Object receiver) throws PosixException;
+
+    // note: this leaks memory in nfi backend and is not synchronized
+    // TODO is it worth synchronizing at least all accesses made through PosixSupportLibrary?
+    public abstract void setenv(Object receiver, Object name, Object value, boolean overwrite) throws PosixException;
+
     public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
                     int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException;
+
+    // args.length must be > 0
+    public abstract void execv(Object receiver, Object pathname, Object[] args) throws PosixException;
+
+    // does not throw, because posix does not exactly define the return value
+    public abstract int system(Object receiver, Object command);
+
+    public abstract Object mmap(Object receiver, long length, int prot, int flags, int fd, long offset) throws PosixException;
+
+    public abstract byte mmapReadByte(Object receiver, Object mmap, long index) throws PosixException;
+
+    public abstract int mmapReadBytes(Object receiver, Object mmap, long index, byte[] bytes, int length) throws PosixException;
+
+    public abstract void mmapWriteBytes(Object receiver, Object mmap, long index, byte[] bytes, int length) throws PosixException;
+
+    public abstract void mmapFlush(Object receiver, Object mmap, long offset, long length) throws PosixException;
+
+    public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
@@ -423,6 +447,35 @@ public abstract class PosixSupportLibrary extends Library {
             CompilerAsserts.neverPartOfCompilation();
             return String.format("select[read = %s; write = %s; err = %s]", Arrays.toString(readfds), Arrays.toString(writefds), Arrays.toString(errorfds));
         }
+    }
+
+    // from stat.h macros
+    private static boolean istype(long mode, int mask) {
+        return (mode & S_IFMT.value) == mask;
+    }
+
+    public static boolean isDIR(long mode) {
+        return istype(mode, S_IFDIR.value);
+    }
+
+    public static boolean isCHR(long mode) {
+        return istype(mode, S_IFCHR.value);
+    }
+
+    public static boolean isBLK(long mode) {
+        return istype(mode, S_IFBLK.value);
+    }
+
+    public static boolean isREG(long mode) {
+        return istype(mode, S_IFREG.value);
+    }
+
+    public static boolean isFIFO(long mode) {
+        return istype(mode, S_IFIFO.value);
+    }
+
+    public static boolean isLNK(long mode) {
+        return istype(mode, S_IFLNK.value);
     }
 
     public static class ChannelNotSelectableException extends UnsupportedPosixFeatureException {

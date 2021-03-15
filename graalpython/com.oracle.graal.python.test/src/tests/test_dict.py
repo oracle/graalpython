@@ -140,6 +140,13 @@ def test_init():
 
     assert_raises(TypeError, dict.fromkeys, 10)
 
+    d = {'a':1, 'b':2}
+    d.__init__()
+    assert d == {'a':1, 'b':2}
+    d.__init__({'c':3})
+    assert d == {'a':1, 'b':2, 'c':3}
+    d.__init__({'d':4})
+    assert d == {'a':1, 'b':2, 'c':3, 'd':4}
 
 def test_init1():
     try:

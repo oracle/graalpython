@@ -88,7 +88,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -141,7 +141,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic({PGuards.class, PythonOptions.class})
-    @ReportPolymorphism
     abstract static class ResumeGeneratorNode extends Node {
         public abstract Object execute(VirtualFrame frame, PGenerator self, Object sendValue);
 
@@ -165,6 +164,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "cached")
+        @Megamorphic
         static Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
                         @Cached GenericInvokeNode call) {
             self.setRunning(true);

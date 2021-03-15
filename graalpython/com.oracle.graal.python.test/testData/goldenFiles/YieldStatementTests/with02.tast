@@ -64,8 +64,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         GetClassNodeGen SourceSection: None
                       GeneratorWithNode SourceSection: [44,80]`with fn():↵    yield...`
                         GeneratorBlockNode SourceSection: None
@@ -93,8 +91,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         GetClassNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None

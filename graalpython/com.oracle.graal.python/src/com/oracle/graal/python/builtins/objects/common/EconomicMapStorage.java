@@ -55,8 +55,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.LazyString;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -67,6 +67,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -141,30 +142,15 @@ public class EconomicMapStorage extends HashingStorage {
         }
     }
 
-    public static String toString(PString key, ValueProfile profile) {
-        CharSequence profiled = profile.profile(key.getCharSequence());
-        if (profiled instanceof String) {
-            return (String) profiled;
-        } else if (profiled instanceof LazyString) {
-            return ((LazyString) profiled).toString();
-        }
-        return generic(profiled);
-    }
-
-    @TruffleBoundary
-    private static String generic(CharSequence profiled) {
-        return profiled.toString();
-    }
-
     @ExportMessage
     @ImportStatic(PGuards.class)
     static class GetItemWithState {
 
         @Specialization
         static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
+                        @Shared("findProfile") @Cached ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                        @Shared("gotState") @Cached ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 DictKey newKey = new DictKey(key, key.hashCode());
@@ -174,29 +160,28 @@ public class EconomicMapStorage extends HashingStorage {
             }
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile)"})
+        @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"}, limit = "1")
         static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached("createClassProfile()") ValueProfile profile,
-                        @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Cached GilNode gil) {
+                        @Cached StringMaterializeNode stringMaterializeNode,
+                        @Shared("findProfile") @Cached ConditionProfile findProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isBuiltinClassProfile,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                final String k = EconomicMapStorage.toString(key, profile);
+                final String k = stringMaterializeNode.execute(key);
                 return getItemString(self, k, state, findProfile, lib, gotState, gil);
             } finally {
                 gil.release(mustRelease);
             }
         }
 
-        @Specialization(replaces = "getItemString", limit = "3")
+        @Specialization(replaces = {"getItemString", "getItemPString"}, limit = "3")
         static Object getItemGeneric(EconomicMapStorage self, Object key, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 final long h = getHashWithState(key, lib, state, gotState);
@@ -254,8 +239,9 @@ public class EconomicMapStorage extends HashingStorage {
             }
         }
 
-        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile)"})
+        @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"})
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
+                        @Cached StringMaterializeNode stringMaterializeNode,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
@@ -263,7 +249,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                final String k = EconomicMapStorage.toString(key, profile);
+                final String k = stringMaterializeNode.execute(key);
                 return setItemString(self, k, value, state, findProfile, lib, gotState, gil);
             } finally {
                 gil.release(mustRelease);

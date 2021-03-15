@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -413,6 +414,10 @@ public abstract class PGuards {
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytesLike;
+    }
+
+    public static boolean isPBytes(Object obj) {
+        return obj instanceof PBytes;
     }
 
     public static boolean isArray(Object obj) {

@@ -129,7 +129,7 @@ public class AsyncHandler {
         }
     }
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(5, new ThreadFactory() {
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(6, new ThreadFactory() {
         @Override
         public Thread newThread(Runnable r) {
             Thread t = Executors.defaultThreadFactory().newThread(r);

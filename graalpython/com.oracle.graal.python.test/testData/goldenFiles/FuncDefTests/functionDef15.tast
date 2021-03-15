@@ -43,8 +43,6 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                       EmptyNode SourceSection: [32,48]`global SOMETHING`
                     IfNode SourceSection: [51,77]`if True : SOMETHING ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BooleanLiteralNode SourceSection: [54,58]`True`
                       WriteGlobalNodeGen SourceSection: [61,77]`SOMETHING = True`
                         Identifier: SOMETHING
@@ -86,8 +84,6 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                       FunctionBodyNode SourceSection: [95,114]`if SOMETHING : pass`
                         IfNode SourceSection: [95,114]`if SOMETHING : pass`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [98,107]`SOMETHING`
                               Identifier: SOMETHING
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -28,7 +28,10 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
@@ -42,25 +45,32 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RDIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import java.util.Arrays;
 import java.util.List;
@@ -98,6 +108,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -110,10 +121,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.StopIterationException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public class ForeignObjectBuiltins extends PythonBuiltins {
@@ -160,15 +173,16 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         public long len(Object self,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-
             try {
                 if (lib.hasArrayElements(self)) {
                     return lib.getArraySize(self);
+                } else if (lib.isIterator(self) || lib.hasIterator(self)) {
+                    return 0; // a value signifying it has a length, but it's unknown
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
-            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, "__len__");
+            throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __LEN__);
         }
     }
 
@@ -540,6 +554,28 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object doForeignArray(Object iterator,
+                        @Cached ConditionProfile notIterator,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("iterator") InteropLibrary lib) {
+            if (notIterator.profile(lib.isIterator(iterator))) {
+                try {
+                    return lib.getIteratorNextElement(iterator);
+                } catch (UnsupportedMessageException | StopIterationException e) {
+                    assert (e instanceof StopIterationException) : "iterator claimed to be iterator but wasn't";
+                    throw raiseNode.raise(StopIteration);
+                }
+            } else {
+                throw raiseNode.raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __NEXT__);
+            }
+        }
+    }
+
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class NewNode extends PythonBuiltinNode {
@@ -875,4 +911,99 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             return objectStrNode;
         }
     }
+
+    @Builtin(name = __BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
+    abstract static class BasesNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "3")
+        Object getBases(Object self,
+                        @CachedLibrary("self") InteropLibrary lib) {
+            if (lib.isMetaObject(self)) {
+                return factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
+            } else {
+                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __BASES__);
+            }
+        }
+    }
+
+    @Builtin(name = __INSTANCECHECK__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
+    abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        Object check(Object self, Object instance,
+                        @CachedLibrary("self") InteropLibrary lib) {
+            if (lib.isMetaObject(self)) {
+                try {
+                    return lib.isMetaInstance(self, instance);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __INSTANCECHECK__);
+            }
+        }
+    }
+
+    @Builtin(name = __RAND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class AndNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        protected static Object op(VirtualFrame frame, Object left, Object right,
+                        @Cached("create(__AND__, __RAND__)") LookupAndCallBinaryNode callAnd,
+                        @CachedLibrary("left") InteropLibrary lib) {
+            if (lib.isNumber(left) && lib.fitsInLong(left)) {
+                try {
+                    return callAnd.executeObject(frame, lib.asLong(left), right);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+    }
+
+    @Builtin(name = __ROR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class OrNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        protected static Object op(VirtualFrame frame, Object left, Object right,
+                        @Cached("create(__OR__, __ROR__)") LookupAndCallBinaryNode callOr,
+                        @CachedLibrary("left") InteropLibrary lib) {
+            if (lib.isNumber(left) && lib.fitsInLong(left)) {
+                try {
+                    return callOr.executeObject(frame, lib.asLong(left), right);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+    }
+
+    @Builtin(name = __RXOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __XOR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class XorNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        protected static Object op(VirtualFrame frame, Object left, Object right,
+                        @Cached("create(__XOR__, __RXOR__)") LookupAndCallBinaryNode callXor,
+                        @CachedLibrary("left") InteropLibrary lib) {
+            if (lib.isNumber(left) && lib.fitsInLong(left)) {
+                try {
+                    return callXor.executeObject(frame, lib.asLong(left), right);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+    }
+
 }

@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,6 +80,12 @@ public class PythonModuleTests {
     public void setUp() {
         PythonTests.enterContext();
         context = PythonLanguage.getContext();
+    }
+
+    @After
+    public void tearDown() {
+        context = null;
+        PythonTests.closeContext();
     }
 
     @Test

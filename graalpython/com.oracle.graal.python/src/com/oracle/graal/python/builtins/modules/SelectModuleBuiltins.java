@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_VALUE_NAN;
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT_TO;
+import static com.oracle.graal.python.runtime.PosixConstants.FD_SETSIZE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
@@ -63,6 +65,8 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.EmulatedPosixSupport;
+import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -129,10 +133,10 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
                         @Cached BranchProfile notSelectableBranch,
                         @Cached GilNode gil) {
-
-            ObjAndFDList readFDs = seq2set(frame, rlist, rlistLibrary, itemLib, callGetItemNode, constructListNode);
-            ObjAndFDList writeFDs = seq2set(frame, wlist, wlistLibrary, itemLib, callGetItemNode, constructListNode);
-            ObjAndFDList xFDs = seq2set(frame, xlist, xlistLibrary, itemLib, callGetItemNode, constructListNode);
+            EmulatedPosixSupport emulatedPosixSupport = getContext().getResources();
+            ObjAndFDList readFDs = seq2set(frame, rlist, rlistLibrary, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
+            ObjAndFDList writeFDs = seq2set(frame, wlist, wlistLibrary, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
+            ObjAndFDList xFDs = seq2set(frame, xlist, xlistLibrary, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
 
             Timeval timeoutval = null;
             if (!PGuards.isPNone(timeout)) {
@@ -146,7 +150,12 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             try {
                 gil.release(true);
                 try {
-                    result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                    if (readFDs.containsSocket || writeFDs.containsSocket || xFDs.containsSocket) {
+                        // TODO remove this once native sockets are supported
+                        result = PosixSupportLibrary.getUncached().select(emulatedPosixSupport, readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                    } else {
+                        result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                    }
                 } finally {
                     gil.acquire();
                 }
@@ -178,8 +187,8 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return factory().createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
-        private static ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary sequenceLib, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
-                        FastConstructListNode constructListNode) {
+        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary sequenceLib, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
+                        FastConstructListNode constructListNode, PosixResources resources) {
             PArguments.ThreadState threadState = PArguments.getThreadState(frame);
             // We cannot assume any size of those two arrays, because the sequence may change as a
             // side effect of the invocation of fileno. We also need to call lengthWithState
@@ -187,22 +196,30 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             ArrayBuilder<Object> objects = new ArrayBuilder<>();
             IntArrayBuilder fds = new IntArrayBuilder();
             PSequence pSequence = constructListNode.execute(sequence);
+            boolean containsSocket = false;
             for (int i = 0; i < sequenceLib.lengthWithState(sequence, threadState); i++) {
                 Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
                 objects.add(pythonObject);
-                fds.add(itemLib.asFileDescriptorWithState(pythonObject, threadState));
+                int fd = itemLib.asFileDescriptorWithState(pythonObject, threadState);
+                if (fd >= FD_SETSIZE.value) {
+                    throw raise(ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
+                }
+                fds.add(fd);
+                containsSocket |= resources.isSocket(fd);
             }
-            return new ObjAndFDList(objects.toArray(new Object[0]), fds.toArray());
+            return new ObjAndFDList(objects.toArray(new Object[0]), fds.toArray(), containsSocket);
         }
 
         @ValueType
         private static final class ObjAndFDList {
             private final Object[] objects;
             private final int[] fds;
+            private final boolean containsSocket; // TODO remove when native sockets are supported
 
-            private ObjAndFDList(Object[] objects, int[] fds) {
+            private ObjAndFDList(Object[] objects, int[] fds, boolean containsSocket) {
                 this.objects = objects;
                 this.fds = fds;
+                this.containsSocket = containsSocket;
             }
         }
 

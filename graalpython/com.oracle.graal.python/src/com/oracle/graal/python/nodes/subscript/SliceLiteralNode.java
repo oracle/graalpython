@@ -98,12 +98,12 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
     @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
     @SuppressWarnings("unused")
-    public Object sliceStop(int first, PNone second, PNone third) {
+    public PSlice sliceStop(int first, PNone second, PNone third) {
         return factory.createIntSlice(0, first, 1, true, true);
     }
 
     @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
-    public Object doGeneric(Object start, Object stop, Object step) {
+    public PSlice doGeneric(Object start, Object stop, Object step) {
         return factory.createObjectSlice(start, stop, step);
     }
 

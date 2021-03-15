@@ -43,8 +43,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                       GeneratorIfNode SourceSection: [55,282]`if _is_unpacked_egg(...`
                         GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           PythonCallUnary SourceSection: [58,85]`_is_unpacked_egg(pat...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [58,74]`_is_unpacked_egg`
@@ -82,10 +80,9 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                         PythonCallBinary SourceSection: [202,237]`os.path.join(path_it...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNodeGen SourceSection: [202,209]`os.path`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [202,209]`os.path`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: path
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -152,8 +149,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
                                       PythonCallTernary SourceSection: [388,424]`dist_factory(path_it...`
                                         CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [388,400]`dist_factory`
@@ -226,10 +221,9 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               PythonCallBinary SourceSection: [544,574]`os.path.join(path_it...`
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
-                                  GetAttributeNodeGen SourceSection: [544,551]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                  GetAttributeNode SourceSection: [544,551]`os.path`
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
-                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None

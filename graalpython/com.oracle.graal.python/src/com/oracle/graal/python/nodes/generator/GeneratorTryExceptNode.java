@@ -126,7 +126,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             if (!wasHandled) {
                 ExceptNode exceptNode = exceptNodes[i];
                 gen.setIndex(frame, exceptIndex, i + 1);
-                if (exceptNode.matchesException(frame, exception)) {
+                if (exceptNode.matchesPException(frame, exception)) {
                     exception.setCatchingFrameReference(frame, this);
                     exception.markFrameEscaped();
                     tryChainPreexistingException(frame, exception);

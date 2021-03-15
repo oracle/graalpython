@@ -225,7 +225,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -255,8 +254,8 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -343,7 +342,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = BYTEARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PByteArray)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ByteArrayNode extends PythonBuiltinNode {
         @Specialization
         public PByteArray setEmpty(Object cls, @SuppressWarnings("unused") Object arg) {
@@ -1115,7 +1113,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // int(x, base=10)
     @Builtin(name = INT, minNumOfPositionalArgs = 1, parameterNames = {"cls", "x", "base"}, numOfPositionalOnlyArgs = 2, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
-    @ReportPolymorphism
     public abstract static class IntNode extends PythonTernaryBuiltinNode {
 
         private final ConditionProfile invalidBase = ConditionProfile.createBinaryProfile();
@@ -1388,17 +1385,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // String
 
         @Specialization(guards = "isNoValue(base)")
+        @Megamorphic
         Object createInt(VirtualFrame frame, Object cls, String arg, @SuppressWarnings("unused") PNone base) {
             return stringToInt(frame, cls, arg, 10, arg);
         }
 
         @Specialization
+        @Megamorphic
         Object parsePIntError(VirtualFrame frame, Object cls, String number, int base) {
             checkBase(base);
             return stringToInt(frame, cls, number, base, number);
         }
 
         @Specialization(guards = "!isNoValue(base)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Megamorphic
         Object createIntError(VirtualFrame frame, Object cls, String number, Object base,
                         @CachedLibrary("base") PythonObjectLibrary lib) {
             int intBase = lib.asSizeWithState(base, null, PArguments.getThreadState(frame));
@@ -1408,18 +1408,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         // PIBytesLike
         @Specialization
+        @Megamorphic
         Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, int base) {
             checkBase(base);
             return stringToInt(frame, cls, toString(arg), base, arg);
         }
 
         @Specialization(guards = "isNoValue(base)")
+        @Megamorphic
         Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, @SuppressWarnings("unused") PNone base) {
             return parseBytesError(frame, cls, arg, 10);
         }
 
         // PString
         @Specialization(guards = "isNoValue(base)", limit = "1")
+        @Megamorphic
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, @SuppressWarnings("unused") PNone base,
                         @CachedLibrary("arg") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
@@ -1431,6 +1434,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
+        @Megamorphic
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, int base,
                         @CachedLibrary("arg") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
@@ -1469,6 +1473,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "5")
+        @Megamorphic
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @CachedLibrary(value = "obj") PythonObjectLibrary objectLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
@@ -1490,7 +1495,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         if (objectLib.isBuffer(obj)) {
                             try {
                                 byte[] bytes = objectLib.getBufferBytes(obj);
-                                return stringToInt(frame, cls, toString(bytes), 10, obj);
+                                return stringToInt(frame, cls, PythonUtils.newString(bytes), 10, obj);
                             } catch (UnsupportedMessageException e) {
                                 CompilerDirectives.transferToInterpreterAndInvalidate();
                                 throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");
@@ -1589,14 +1594,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
-            return toString(toByteArrayNode.execute(pByteArray));
+            return PythonUtils.newString(toByteArrayNode.execute(pByteArray));
         }
-
-        @TruffleBoundary
-        private static String toString(byte[] barr) {
-            return new String(barr);
-        }
-
     }
 
     // bool([x])
@@ -2219,8 +2218,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // type(object, bases, dict)
     @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PythonClass)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @ReportPolymorphism
     public abstract static class TypeNode extends PythonBuiltinNode {
         private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
@@ -2255,6 +2252,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
+        @Megamorphic
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
                         @CachedLibrary(limit = "5") PythonObjectLibrary lib,
@@ -2917,7 +2915,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                                     "\n" +
                                     "The name must be a string; the optional doc argument can have any type.")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ModuleNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")

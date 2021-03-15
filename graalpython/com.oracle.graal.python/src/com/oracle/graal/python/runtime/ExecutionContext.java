@@ -117,7 +117,6 @@ public abstract class ExecutionContext {
                 if (!neededCallerFrame) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     neededCallerFrame = true;
-                    reportPolymorphicSpecialize();
                 }
                 PFrame.Reference thisInfo;
 
@@ -141,7 +140,6 @@ public abstract class ExecutionContext {
                 if (!neededExceptionState) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     neededExceptionState = true;
-                    reportPolymorphicSpecialize();
                 }
                 PException curExc = null;
                 if (isPythonFrame(frame, callNode)) {

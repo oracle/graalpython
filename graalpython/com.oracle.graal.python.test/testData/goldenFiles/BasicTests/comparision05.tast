@@ -44,5 +44,3 @@ ModuleRootNode Name: <module 'comparision05'> SourceSection: [0,16]`x() < y() <=
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
       YesNodeGen SourceSection: None
-        IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None

@@ -3,3 +3,7 @@
 *graalpython.lib-python.3.test.test_filecmp.DirCompareTestCase.test_dircmp
 *graalpython.lib-python.3.test.test_filecmp.DirCompareTestCase.test_report_full_closure
 *graalpython.lib-python.3.test.test_filecmp.DirCompareTestCase.test_report_partial_closure
+*graalpython.lib-python.3.test.test_filecmp.FileCompareTestCase.test_cache_clear
+*graalpython.lib-python.3.test.test_filecmp.FileCompareTestCase.test_different
+*graalpython.lib-python.3.test.test_filecmp.FileCompareTestCase.test_matching
+*graalpython.lib-python.3.test.test_filecmp.TestMain.test_main

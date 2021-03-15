@@ -61,6 +61,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -135,13 +136,14 @@ final class DefaultPythonIntegerExports {
             }
         }
 
-        @Specialization(replaces = "iP")
+        @Specialization(replaces = "iP", limit = "1")
         static boolean iPOverflow(Integer receiver, PInt other,
+                        @CachedLibrary("other") InteropLibrary otherLib,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin, @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
-                    if (other.fitsInInt()) {
+                    if (otherLib.fitsInInt(other)) {
                         return receiver == other.intValue();
                     }
                 }

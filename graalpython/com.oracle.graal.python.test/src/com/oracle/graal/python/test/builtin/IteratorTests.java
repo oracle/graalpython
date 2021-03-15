@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.test.builtin;
 
+import org.junit.After;
 import org.junit.Before;
 
 import com.oracle.graal.python.test.PythonTests;
@@ -33,5 +34,10 @@ public class IteratorTests {
     @Before
     public void setup() {
         PythonTests.enterContext();
+    }
+
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 }

@@ -62,8 +62,6 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [55,155]`if not any(issubclas...`
                               NotNodeGen SourceSection: [58,109]`not any(issubclass(b...`
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 PythonCallUnary SourceSection: [62,109]`any(issubclass(b, ba...`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [62,65]`any`
@@ -129,10 +127,9 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                           GeneratorAccessNode SourceSection: None
                                           PRaiseNodeGen SourceSection: None
                                     GetIteratorExpressionNodeGen SourceSection: [95,108]`cls.__bases__`
-                                      GetAttributeNodeGen SourceSection: [95,108]`cls.__bases__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                      GetAttributeNode SourceSection: [95,108]`cls.__bases__`
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __bases__
-                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None

@@ -84,6 +84,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -95,8 +96,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
-
-import sun.net.util.IPAddressUtil;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
@@ -681,7 +680,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            getContext().getResources().close(socket.getFileno());
+            getContext().getResources().closeSocket(socket);
             return PNone.NONE;
         }
 

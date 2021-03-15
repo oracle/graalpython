@@ -68,8 +68,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,<return_val>,Illegal]
                           NotNodeGen SourceSection: [2081,2122]`getattr(obj, key, de...`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
                               PythonCallTernary SourceSection: [2081,2107]`getattr(obj, key, de...`
                                 CallTernaryMethodNodeGen SourceSection: None
@@ -140,8 +138,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   Frame: [1,i,Illegal]
                             IfNode SourceSection: [2200,2234]`if i:↵            re...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadLocalVariableNode SourceSection: [2203,2204]`i`
                                   Frame: [1,i,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -215,8 +211,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   Frame: [1,i,Illegal]
                             IfNode SourceSection: [2324,2363]`if not i:↵          ...`
                               NotNodeGen SourceSection: [2327,2332]`not i`
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 ReadLocalVariableNode SourceSection: [2331,2332]`i`
                                   Frame: [1,i,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -300,8 +294,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           Frame: [3,predicate,Illegal]
                         TernaryIfNode SourceSection: [2462,2503]`func if func is not ...`
                           NotNodeGen SourceSection: [2470,2486]`func is not None`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2470,2474]`func`
                                 Frame: [0,func,Illegal]
@@ -361,8 +353,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   Frame: [4,i,Illegal]
                             IfNode SourceSection: [2535,2585]`if predicate(i):↵   ...`
                               YesNodeGen SourceSection: None
-                                IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
                                 PythonCallUnary SourceSection: [2538,2550]`predicate(i)`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [2538,2547]`predicate`
@@ -470,12 +460,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                   FunctionBodyNode SourceSection: [2809,3052]`if metaclass is not ...`
                     IfNode SourceSection: [2809,2999]`if metaclass is not ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         OrNode SourceSection: [2812,2852]`metaclass is not Non...`
                           NotNodeGen SourceSection: [2812,2833]`metaclass is not Non...`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             IsExpressionNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2812,2821]`metaclass`
                                 Frame: [3,metaclass,Illegal]
@@ -495,8 +481,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             IntegerLiteralNode SourceSection: [2851,2852]`0`
                               Value: 0
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [2869,2875]`_posix`
                           Identifier: _posix
@@ -780,10 +764,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   Frame: [2,it,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3344,3360]`self.__iterators`
-                                          GetAttributeNodeGen SourceSection: [3344,3360]`self.__iterators`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [3344,3360]`self.__iterators`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _map__iterators
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -910,8 +893,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                 Frame: [2,i,Illegal]
                                           IfNode SourceSection: [3573,3620]`if x == i:↵         ...`
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [3576,3582]`x == i`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __eq__
@@ -932,10 +913,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                           PythonCallNodeGen SourceSection: [3524,3559]`map(self.__func, *se...`
                                             CallNodeGen SourceSection: None
                                             PositionalArgumentsNode SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [3528,3539]`self.__func`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [3528,3539]`self.__func`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _map__func
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -943,10 +923,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                 ReadLocalVariableNode SourceSection: [3528,3532]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [3542,3558]`self.__iterators`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [3542,3558]`self.__iterators`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _map__iterators
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -1025,8 +1004,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                     FunctionBodyNode SourceSection: [3877,4271]`if len(obj) == 0:↵  ...`
                       IfNode SourceSection: [3877,4134]`if len(obj) == 0:↵  ...`
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [3880,3893]`len(obj) == 0`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __eq__
@@ -1045,10 +1022,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,<return_val>,Illegal]
-                            GetAttributeNodeGen SourceSection: [4021,4045]`__getframe__(1).f_lo...`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [4021,4045]`__getframe__(1).f_lo...`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: f_locals
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -1062,8 +1038,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   Value: 1
                         IfNode SourceSection: [4050,4134]`elif len(obj) != 1:↵...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [4055,4068]`len(obj) != 1`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __ne__
@@ -1093,10 +1067,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               Identifier: <return_val>
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [1,<return_val>,Illegal]
-                              GetAttributeNodeGen SourceSection: [4154,4169]`obj[0].__dict__`
-                                GetFixedAttributeNodeGen SourceSection: None
+                              GetAttributeNode SourceSection: [4154,4169]`obj[0].__dict__`
+                                GetFixedAttributeNode SourceSection: None
                                   Key: __dict__
-                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None

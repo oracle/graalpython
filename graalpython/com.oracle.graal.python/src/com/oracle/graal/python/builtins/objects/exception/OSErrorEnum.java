@@ -61,6 +61,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
+import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.PLATFORM_DARWIN;
+import static com.oracle.graal.python.util.PythonUtils.getPythonOSName;
+
 public enum OSErrorEnum {
 
     /**
@@ -84,8 +87,8 @@ public enum OSErrorEnum {
     ENOEXEC(8, "Exec format error"),
     EBADF(9, "Bad file number"),
     ECHILD(10, "No child processes"),
-    EWOULDBLOCK(11, "Operation would block"),
-    EAGAIN(11, "Try again"),
+    EWOULDBLOCK(platformSpecific(11, 35), "Operation would block"),
+    EAGAIN(platformSpecific(11, 35), "Try again"),
     ENOMEM(12, "Out of memory"),
     EACCES(13, "Permission denied"),
     EFAULT(14, "Bad address"),
@@ -109,15 +112,15 @@ public enum OSErrorEnum {
     EPIPE(32, "Broken pipe"),
     EDOM(33, "Math argument out of domain of func"),
     ERANGE(34, "Math result not representable"),
-    EDEADLOCK(35),
-    EDEADLK(35, "Resource deadlock would occur"),
-    ENAMETOOLONG(36, "File name too long"),
-    ENOLCK(37, "No record locks available"),
-    ENOSYS(38, "Invalid system call number"),
-    ENOTEMPTY(39, "Directory not empty"),
-    ELOOP(40, "Too many symbolic links encountered", "Too many levels of symbolic links"),
-    ENOMSG(42, "No message of desired type"),
-    EIDRM(43, "Identifier removed"),
+    EDEADLOCK(platformSpecific(35, 11)),
+    EDEADLK(platformSpecific(35, 11), "Resource deadlock would occur"),
+    ENAMETOOLONG(platformSpecific(36, 63), "File name too long"),
+    ENOLCK(platformSpecific(37, 77), "No record locks available"),
+    ENOSYS(platformSpecific(38, 78), "Invalid system call number"),
+    ENOTEMPTY(platformSpecific(39, 66), "Directory not empty"),
+    ELOOP(platformSpecific(40, 62), "Too many symbolic links encountered", "Too many levels of symbolic links"),
+    ENOMSG(platformSpecific(42, 91), "No message of desired type"),
+    EIDRM(platformSpecific(43, 90), "Identifier removed"),
     ECHRNG(44, "Channel number out of range"),
     EL2NSYNC(45, "Level 2 not synchronized"),
     EL3HLT(46, "Level 3 halted"),
@@ -347,5 +350,9 @@ public enum OSErrorEnum {
             this.oserror = oserror;
             this.message = message;
         }
+    }
+
+    private static int platformSpecific(int linuxValue, int darwinValue) {
+        return getPythonOSName().equals(PLATFORM_DARWIN) ? darwinValue : linuxValue;
     }
 }

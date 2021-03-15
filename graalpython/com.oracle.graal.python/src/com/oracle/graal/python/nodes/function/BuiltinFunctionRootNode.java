@@ -354,7 +354,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "<builtin function " + name + " at " + Integer.toHexString(hashCode()) + ">";
+        Class<?> clazz = factory.getNodeClass().getEnclosingClass();
+        String context = clazz == null ? "" : clazz.getSimpleName() + ".";
+        return "<builtin function " + context + name + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
     @Override

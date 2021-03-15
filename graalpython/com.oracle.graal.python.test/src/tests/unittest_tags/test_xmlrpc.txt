@@ -10,8 +10,6 @@
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time_struct
 *graalpython.lib-python.3.test.test_xmlrpc.DateTimeTestCase.test_time_tuple
-*graalpython.lib-python.3.test.test_xmlrpc.FailingServerTestCase.test_fail_no_info
-*graalpython.lib-python.3.test.test_xmlrpc.FailingServerTestCase.test_fail_with_info
 *graalpython.lib-python.3.test.test_xmlrpc.FaultTestCase.test_dotted_attribute
 *graalpython.lib-python.3.test.test_xmlrpc.FaultTestCase.test_repr
 *graalpython.lib-python.3.test.test_xmlrpc.GzipUtilTestCase.test_gzip_decode_limit

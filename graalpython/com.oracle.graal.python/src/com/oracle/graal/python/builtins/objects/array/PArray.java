@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.array;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -179,13 +178,7 @@ public final class PArray extends PythonBuiltinObject {
     byte[] getBufferBytes(@Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            try {
-                return Arrays.copyOf(buffer, getBufferLength(gil));
-            } catch (Throwable t) {
-                // Break exception edges
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw t;
-            }
+            return PythonUtils.arrayCopyOf(buffer, getBufferLength(gil));
         } finally {
             gil.release(mustRelease);
         }

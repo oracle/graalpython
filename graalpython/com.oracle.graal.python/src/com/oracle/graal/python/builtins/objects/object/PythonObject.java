@@ -43,6 +43,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -100,8 +101,8 @@ public class PythonObject extends PythonAbstractObject {
 
     @ExportMessage
     public static class GetLazyPythonClass {
-        public static boolean hasInitialClass(PythonObject self, DynamicObjectLibrary dylib) {
-            return (dylib.getShapeFlags(self) & CLASS_CHANGED_FLAG) == 0;
+        public static boolean hasInitialClass(Shape shape) {
+            return (shape.getFlags() & CLASS_CHANGED_FLAG) == 0;
         }
 
         public static Object getInitialClass(PythonObject self) {
@@ -109,9 +110,8 @@ public class PythonObject extends PythonAbstractObject {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"klass != null", "self.getShape() == cachedShape", "hasInitialClass(self, dylib)"}, limit = "1", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"klass != null", "self.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1", assumptions = "singleContextAssumption()")
         public static Object getConstantClass(PythonObject self,
-                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
                         @Cached("self.getShape()") Shape cachedShape,
                         @Cached(value = "getInitialClass(self)", weak = true) Object klass, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
@@ -122,7 +122,15 @@ public class PythonObject extends PythonAbstractObject {
             }
         }
 
-        @Specialization(replaces = "getConstantClass")
+        @SuppressWarnings("unused")
+        @Specialization(guards = "hasInitialClass(self.getShape())")
+        public static Object getClass(PythonObject self,
+                        @Bind("getInitialClass(self)") Object klass) {
+            assert klass != null;
+            return klass;
+        }
+
+        @Specialization(guards = "!hasInitialClass(self.getShape())", replaces = "getConstantClass")
         public static Object getPythonClass(PythonObject self,
                         @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();

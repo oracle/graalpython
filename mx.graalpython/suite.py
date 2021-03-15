@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "003cb2ba2c263e608f3cfca4a2454938005c02eb",
+                "version": "5a1d413830ed950a9051c7b76c7dfb3e146ec6eb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "003cb2ba2c263e608f3cfca4a2454938005c02eb",
+                "version": "5a1d413830ed950a9051c7b76c7dfb3e146ec6eb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "003cb2ba2c263e608f3cfca4a2454938005c02eb",
+                "version": "5a1d413830ed950a9051c7b76c7dfb3e146ec6eb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -301,6 +301,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python",
                 "sdk:GRAAL_SDK",
+                "sdk:LAUNCHER_COMMON",
                 "mx:JMH_1_21"
             ],
             "jacoco": "exclude",

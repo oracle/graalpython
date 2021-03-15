@@ -238,6 +238,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Max native memory heap size (default: 2 GB).") //
     public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 31);
 
+    @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to true (false means that GraalPython is being embedded in an application).") //
+    public static final OptionKey<Boolean> RunViaLauncher = new OptionKey<>(false);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;

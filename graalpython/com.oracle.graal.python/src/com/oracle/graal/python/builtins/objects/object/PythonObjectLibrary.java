@@ -1087,16 +1087,39 @@ public abstract class PythonObjectLibrary extends Library {
                         lookupAttribute(receiver, null, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
     }
 
+    /**
+     * Checks whether the reciever is a buffer, e.g. bytes-like, object storage.
+     *
+     * @return true if the receiver is a buffer, false otherwise.
+     */
     @Abstract(ifExported = {"getBufferBytes", "getBufferLength"})
     public boolean isBuffer(Object receiver) {
         return false;
     }
 
+    /**
+     * Returns the length of the buffer, i.e. number of bytes.
+     *
+     * @param receiver a buffer object. Use {@See isBuffer} to check if the receiver is a buffer or
+     *            not.
+     * @return Returns the length of the buffer
+     * @throws UnsupportedMessageException if the object is not a buffer. Use {@See isBuffer} to
+     *             check if the receiver is a buffer or not.
+     */
     @Abstract(ifExported = {"isBuffer", "getBufferBytes"})
     public int getBufferLength(Object receiver) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
+    /**
+     * Returns a copy of the byte[] array of the buffer. Any changes to the returned byte array
+     * won't be reflected in the receiver's storage.
+     * 
+     * @param receiver a buffer object.
+     * @return a byte array copy of the receiver's storage.
+     * @throws UnsupportedMessageException if the object is not a buffer. Use {@See isBuffer} to
+     *             check if the receiver is a buffer or not.
+     */
     @Abstract(ifExported = {"isBuffer", "getBufferLength"})
     public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();

@@ -161,6 +161,7 @@ import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -191,11 +192,6 @@ public abstract class SequenceStorageNodes {
         GeneralizationNode create();
 
         GeneralizationNode getUncached();
-    }
-
-    public interface ContainerFactory {
-
-        Object apply(SequenceStorage s, PythonObjectFactory factory);
     }
 
     @GenerateUncached
@@ -597,22 +593,22 @@ public abstract class SequenceStorageNodes {
     @ImportStatic(PGuards.class)
     public abstract static class GetItemDynamicNode extends Node {
 
-        public abstract Object execute(ContainerFactory factoryMethod, SequenceStorage s, Object key);
+        public abstract Object executeObject(SequenceStorage s, Object key);
 
         public final Object execute(SequenceStorage s, int key) {
-            return execute(null, s, key);
+            return executeObject(s, key);
         }
 
         public final Object execute(SequenceStorage s, long key) {
-            return execute(null, s, key);
+            return executeObject(s, key);
         }
 
         public final Object execute(SequenceStorage s, PInt key) {
-            return execute(null, s, key);
+            return executeObject(s, key);
         }
 
         @Specialization
-        protected static Object doScalarInt(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, int idx,
+        protected static Object doScalarInt(SequenceStorage storage, int idx,
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
@@ -620,7 +616,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static Object doScalarLong(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, long idx,
+        protected static Object doScalarLong(SequenceStorage storage, long idx,
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
@@ -628,7 +624,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static Object doScalarPInt(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, PInt idx,
+        protected static Object doScalarPInt(SequenceStorage storage, PInt idx,
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
@@ -636,7 +632,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "!isPSlice(idx)")
-        protected static Object doScalarGeneric(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, Object idx,
+        protected static Object doScalarGeneric(SequenceStorage storage, Object idx,
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
@@ -644,16 +640,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static Object doSlice(ContainerFactory factoryMethod, SequenceStorage storage, PSlice slice,
+        @SuppressWarnings("unused")
+        protected static Object doSlice(SequenceStorage storage, PSlice slice,
                         @Cached GetItemSliceNode getItemSliceNode,
                         @Cached PythonObjectFactory factory,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {
-            SliceInfo info = compute.execute(sliceCast.execute(slice), storage.length());
-            if (factoryMethod != null) {
-                return factoryMethod.apply(getItemSliceNode.execute(storage, info.start, info.stop, info.step, sliceLen.len(info)), factory);
-            }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
@@ -1980,6 +1973,17 @@ public abstract class SequenceStorageNodes {
             return lenNode;
         }
 
+        private static final boolean testingEqualsWithDifferingLengths(int llen, int rlen, BinCmpOp op) {
+            // shortcut: if the lengths differ, the lists differ.
+            CompilerAsserts.compilationConstant(op);
+            if (op == Eq.INSTANCE) {
+                if (llen != rlen) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         @SuppressWarnings("unused")
         @Specialization(guards = {"isEmpty(left)", "isEmpty(right)"})
         boolean doEmpty(SequenceStorage left, SequenceStorage right) {
@@ -1990,6 +1994,9 @@ public abstract class SequenceStorageNodes {
         boolean doBoolStorage(BoolSequenceStorage left, BoolSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+                return false;
+            }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 int litem = PInt.intValue(left.getBoolItemNormalized(i));
                 int ritem = PInt.intValue(right.getBoolItemNormalized(i));
@@ -2004,6 +2011,9 @@ public abstract class SequenceStorageNodes {
         boolean doByteStorage(ByteSequenceStorage left, ByteSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+                return false;
+            }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 byte litem = left.getByteItemNormalized(i);
                 byte ritem = right.getByteItemNormalized(i);
@@ -2018,6 +2028,9 @@ public abstract class SequenceStorageNodes {
         boolean doIntStorage(IntSequenceStorage left, IntSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+                return false;
+            }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 int litem = left.getIntItemNormalized(i);
                 int ritem = right.getIntItemNormalized(i);
@@ -2032,6 +2045,9 @@ public abstract class SequenceStorageNodes {
         boolean doLongStorage(LongSequenceStorage left, LongSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+                return false;
+            }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 long litem = left.getLongItemNormalized(i);
                 long ritem = right.getLongItemNormalized(i);
@@ -2046,6 +2062,9 @@ public abstract class SequenceStorageNodes {
         boolean doDoubleStorage(DoubleSequenceStorage left, DoubleSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+                return false;
+            }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 double litem = left.getDoubleItemNormalized(i);
                 double ritem = right.getDoubleItemNormalized(i);
@@ -2062,6 +2081,9 @@ public abstract class SequenceStorageNodes {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             int llen = getLenNode().execute(left);
             int rlen = getLenNode().execute(right);
+            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+                return false;
+            }
             ThreadState state;
             if (hasFrame.profile(frame != null)) {
                 state = PArguments.getThreadState(frame);

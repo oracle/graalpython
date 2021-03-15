@@ -413,5 +413,7 @@ class TestObject(object):
         del mv3
         while mv3ref() is not None:
             gc.collect()
-            time.sleep(0.1)
+            if obj.get_bufcount() == 0:
+                break
+            time.sleep(1)
         assert obj.get_bufcount() == 0

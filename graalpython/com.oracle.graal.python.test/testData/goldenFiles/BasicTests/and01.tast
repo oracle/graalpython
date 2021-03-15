@@ -15,5 +15,3 @@ ModuleRootNode Name: <module 'and01'> SourceSection: [0,7]`a and b`
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       YesNodeGen SourceSection: None
-        IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None

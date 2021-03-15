@@ -62,8 +62,6 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       GetClassNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None

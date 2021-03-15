@@ -58,6 +58,7 @@ def setup_task_queue():
 TASK_QUEUE = setup_task_queue()
 
 
+# igv: function_root_do_stuff_at
 def do_stuff():
     total = 0
     for i in range(iteration):

@@ -116,6 +116,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         List<String> arguments = new ArrayList<>(inputArgs);
         List<String> subprocessArgs = new ArrayList<>();
         programArgs = new ArrayList<>();
+        boolean posixBackendSpecified = false;
         for (int i = 0; i < arguments.size(); i++) {
             String arg = arguments.get(i);
             switch (arg) {
@@ -285,11 +286,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         }
                     } else {
                         if (arg.startsWith("--llvm.") ||
-                                        arg.startsWith("--python.CoreHome") ||
-                                        arg.startsWith("--python.StdLibHome") ||
-                                        arg.startsWith("--python.CAPI") ||
-                                        arg.startsWith("--PosixModuleBackend")) {
+                                        matchesPythonOption(arg, "CoreHome") ||
+                                        matchesPythonOption(arg, "StdLibHome") ||
+                                        matchesPythonOption(arg, "CAPI") ||
+                                        matchesPythonOption(arg, "PosixModuleBackend")) {
                             addRelaunchArg(arg);
+                        }
+                        if (matchesPythonOption(arg, "PosixModuleBackend")) {
+                            posixBackendSpecified = true;
                         }
                         // possibly a polyglot argument
                         unrecognized.add(arg);
@@ -313,7 +317,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (!subprocessArgs.isEmpty()) {
             subExec(inputArgs, subprocessArgs);
         }
-
+        if (!posixBackendSpecified) {
+            polyglotOptions.put("python.PosixModuleBackend", "native");
+        }
         return unrecognized;
     }
 
@@ -351,7 +357,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static void print(String string) {
-        System.out.println(string);
+        System.err.println(string);
     }
 
     private static String getLauncherExecName() {
@@ -524,7 +530,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (warnOptions == null || warnOptions.isEmpty()) {
             warnOptions = "";
         }
-        String executable = getContextOptionIfSetViaCommandLine("python.Executable");
+        String executable = getContextOptionIfSetViaCommandLine("Executable");
         if (executable != null) {
             contextBuilder.option("python.ExecutableList", executable);
         } else {
@@ -562,6 +568,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
 
         contextBuilder.option("python.CheckHashPycsMode", checkHashPycsMode);
+        contextBuilder.option("python.RunViaLauncher", "true");
 
         if (multiContext) {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
@@ -610,12 +617,17 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         System.exit(rc);
     }
 
+    private static boolean matchesPythonOption(String arg, String key) {
+        assert !key.startsWith("python.");
+        return arg.startsWith("--python." + key) || arg.startsWith("--" + key);
+    }
+
     private String getContextOptionIfSetViaCommandLine(String key) {
-        if (System.getProperty("polyglot." + key) != null) {
-            return System.getProperty("polyglot." + key);
+        if (System.getProperty("polyglot.python." + key) != null) {
+            return System.getProperty("polyglot.python." + key);
         }
         for (String f : givenArguments) {
-            if (f.startsWith("--" + key)) {
+            if (matchesPythonOption(f, key)) {
                 String[] splits = f.split("=", 2);
                 if (splits.length > 1) {
                     return splits[1];
@@ -703,7 +715,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void printHelp(OptionCategory maxCategory) {
-        print("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
+        System.out.println("usage: python [option] ... (-c cmd | file) [arg] ...\n" +
                         "Options and arguments (and corresponding environment variables):\n" +
                         "-B     : this disables writing .py[co] files on import\n" +
                         "-c cmd : program passed in as string (terminates option list)\n" +

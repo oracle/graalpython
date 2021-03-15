@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
@@ -59,11 +60,10 @@ public class PBuffered extends PythonBuiltinObject {
     private boolean finalizing;
 
     /*-
-     * TODO: should be used once FileIO is implemented. 
      * True if this is a vanilla Buffered object
      * (rather than a user derived class) *and* the raw stream is a vanilla FileIO object.
      */
-    private boolean fastClosedChecks;
+    private PFileIO fileioRaw;
 
     /* Absolute position inside the raw stream (-1 if unknown). */
     private long absPos;
@@ -87,6 +87,9 @@ public class PBuffered extends PythonBuiltinObject {
      * Just after the last byte waiting to be written, or -1 if the buffer isn't ready for writing.
      */
     private int writeEnd;
+
+    private PRLock lock;
+    private long owner;
 
     @CompilerDirectives.CompilationFinal private int bufferSize;
     @CompilerDirectives.CompilationFinal private int bufferMask;
@@ -124,8 +127,14 @@ public class PBuffered extends PythonBuiltinObject {
         return raw;
     }
 
-    public void setRaw(Object rawBuffer) {
-        this.raw = rawBuffer;
+    public void setRaw(Object newRaw, boolean isFileIO) {
+        this.raw = newRaw;
+        this.fileioRaw = isFileIO ? (PFileIO) newRaw : null;
+    }
+
+    public void clearRaw() {
+        this.raw = null;
+        this.fileioRaw = null;
     }
 
     public boolean isOK() {
@@ -161,11 +170,12 @@ public class PBuffered extends PythonBuiltinObject {
     }
 
     public boolean isFastClosedChecks() {
-        return fastClosedChecks;
+        return fileioRaw != null;
     }
 
-    public void setFastClosedChecks(boolean fastClosedChecks) {
-        this.fastClosedChecks = fastClosedChecks;
+    public PFileIO getFileIORaw() {
+        assert fileioRaw != null;
+        return fileioRaw;
     }
 
     public long getAbsPos() {
@@ -228,12 +238,20 @@ public class PBuffered extends PythonBuiltinObject {
         return writePos;
     }
 
+    public void setWritePos(int n) {
+        this.writePos = n;
+    }
+
     public void incWritePos(int n) {
         this.writePos += n;
     }
 
     public int getWriteEnd() {
         return writeEnd;
+    }
+
+    public void setWriteEnd(int n) {
+        this.writeEnd = n;
     }
 
     public void incWriteEnd(int n) {
@@ -256,5 +274,21 @@ public class PBuffered extends PythonBuiltinObject {
 
     public int getBufferMask() {
         return bufferMask;
+    }
+
+    public PRLock getLock() {
+        return lock;
+    }
+
+    public void setLock(PRLock lock) {
+        this.lock = lock;
+    }
+
+    public long getOwner() {
+        return owner;
+    }
+
+    public void setOwner(long owner) {
+        this.owner = owner;
     }
 }

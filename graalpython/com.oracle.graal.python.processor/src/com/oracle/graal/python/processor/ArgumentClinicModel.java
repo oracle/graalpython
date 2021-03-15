@@ -44,9 +44,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -173,7 +177,15 @@ public class ArgumentClinicModel {
                                 // factory method
                                 continue factoryLoop;
                             }
-                            args[i] = annotation.defaultValue();
+                            String defaultValue = annotation.defaultValue();
+                            Stream<? extends Element> eclosedElements = type.getEnclosedElements().stream();
+                            eclosedElements = eclosedElements.filter(x -> x.getKind() == ElementKind.FIELD && x.getSimpleName().toString().equals(defaultValue));
+                            Optional<? extends Element> typeElement = eclosedElements.findFirst();
+                            if (typeElement.isPresent()) {
+                                args[i] = type.getQualifiedName() + "." + typeElement.get().getSimpleName();
+                            } else {
+                                args[i] = defaultValue;
+                            }
                             break;
                         case UseDefaultForNone:
                             args[i] = String.valueOf(annotation.useDefaultForNone());

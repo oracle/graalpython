@@ -52,14 +52,13 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ReportPolymorphism
 @GenerateUncached
 public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
 
@@ -254,6 +253,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
 
     @Specialization(replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool", "callObjectSingleContext",
                     "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callBinaryMethodSingleContext", "callBinaryMethod"})
+    @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object receiver,
                     @Cached("create()") CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {

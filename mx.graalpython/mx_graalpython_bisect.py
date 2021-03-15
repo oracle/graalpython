@@ -204,6 +204,7 @@ def _bisect_benchmark(argv, initial_branch, email_to):
     def benchmark_callback(suite, commit):
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
+        mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
         if args.enterprise and suite.name != 'vm-enterprise':
             checkout_args = ['--dynamicimports', '/vm-enterprise', 'checkout-downstream', 'vm', 'vm-enterprise']
             if fetched_enterprise[0]:
@@ -215,8 +216,11 @@ def _bisect_benchmark(argv, initial_branch, email_to):
             fetched_enterprise[0] = True
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
-        print("debug: graalpython={} graal={} graal-enterprise={}"
-              .format(*(get_commit(get_suite(s)) for s in ('graalpython', '/vm', '/vm-enterprise'))))
+        debug_str = "debug: graalpython={} graal={}".format(
+            get_commit(get_suite('graalpython')), get_commit(get_suite('/vm')))
+        if args.enterprise:
+            debug_str += " graal-enterprise={}".format(get_commit(get_suite('/vm-enterprise')))
+        print(debug_str)
         env = os.environ.copy()
         env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
         retcode = mx.run(shlex.split(args.build_command), env=env, nonZeroIsFatal=False)

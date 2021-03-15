@@ -41,6 +41,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedLanguage;
@@ -48,6 +49,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -76,7 +79,7 @@ public abstract class RaiseNode extends StatementNode {
 
         // raise * from <class>
         @Specialization(guards = "lib.isLazyPythonClass(causeClass)")
-        static void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object causeClass,
+        static void setCause(VirtualFrame frame, PBaseException exception, Object causeClass,
                         @Cached BranchProfile baseCheckFailedProfile,
                         @Cached ValidExceptionNode validException,
                         @Cached CallNode callConstructor,
@@ -86,7 +89,7 @@ public abstract class RaiseNode extends StatementNode {
                 baseCheckFailedProfile.enter();
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
             }
-            Object cause = callConstructor.execute(causeClass);
+            Object cause = callConstructor.execute(frame, causeClass);
             if (cause instanceof PBaseException) {
                 exception.setCause((PBaseException) cause);
             } else {
@@ -200,10 +203,18 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     // raise <invalid> [from *]
-    @Specialization(guards = "!isBaseExceptionOrPythonClass(exception)")
+    @Specialization(guards = "!isBaseExceptionOrPythonClass(exception)", limit = "3")
     @SuppressWarnings("unused")
     static void doRaise(VirtualFrame frame, Object exception, Object cause,
+                    @CachedLibrary("exception") InteropLibrary lib,
                     @Cached PRaiseNode raise) {
+        if (lib.isException(exception)) {
+            try {
+                throw lib.throwException(exception);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
         throw raiseNoException(raise);
     }
 

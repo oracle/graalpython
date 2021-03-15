@@ -448,6 +448,7 @@ class BZ2FileTest(BaseTest):
             bz2f.close()
         self.assertRaises(ValueError, bz2f.writable)
 
+    @support.impl_detail("FileIO finalizers", graalvm=False)
     def testOpenDel(self):
         self.createTempFile()
         for i in range(10000):

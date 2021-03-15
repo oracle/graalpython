@@ -56,8 +56,6 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                   Value: 4
                               IfNode SourceSection: [45,115]`if x == 1:↵      pri...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [48,54]`x == 1`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __eq__

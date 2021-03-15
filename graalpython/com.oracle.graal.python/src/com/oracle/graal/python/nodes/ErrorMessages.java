@@ -62,6 +62,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_BE_UNICODE = "%s argument %d must be a unicode character, not %p";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
+    public static final String ARG_MUST_NOT_BE_EMPTY = "%s arg %d must not be empty";
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
     public static final String ARG_SHOULD_BE_INT_BYTESLIKE_OBJ = "argument should be integer or bytes-like object, not '%p'";
     public static final String ARG_SHOULD_BE_INT_OR_NONE = "argument should be integer or None, not %p";
@@ -151,7 +152,6 @@ public abstract class ErrorMessages {
     public static final String CANNOT_INITIALIZE_WITH = "cannot initialize %s with %s%s";
     public static final String CANNOT_LOAD = "cannot load %s: %s";
     public static final String CANNOT_LOAD_M = "cannot load %s: %m";
-    public static final String CANNOT_MMAP_FILE = "cannot mmap file";
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
     public static final String CANNOT_RESIZE_BUFFER = "cannot resize buffer";
     public static final String CANNOT_SPECIFY_FILTERS = "Cannot specify filters except with FORMAT_RAW";
@@ -166,6 +166,8 @@ public abstract class ErrorMessages {
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";
     public static final String CANT_DELETE = "can't delete '%s'";
+    public static final String CANT_EXTEND_JAVA_CLASS_NOT_JVM = "Java Class can be extended only in JVM mode.";
+    public static final String CANT_EXTEND_JAVA_CLASS_NOT_TYPE = "Function extend needs a Java type as its argument not %p";
     public static final String CANT_FIND_MODULE = "can't find module '%s'";
     public static final String CANT_MULTIPLY_SEQ_BY_NON_INT = "can't multiply sequence by non-int of type '%p'";
     public static final String CANT_PICKLE_FUNC_OBJS = "can't pickle function objects";
@@ -255,6 +257,7 @@ public abstract class ErrorMessages {
     public static final String FILE_OR_STREAM_IS_NOT_READABLE = "File or stream is not readable.";
     public static final String FILE_OR_STREAM_IS_NOT_SEEKABLE = "File or stream is not seekable.";
     public static final String FILE_OR_STREAM_IS_NOT_WRITABLE = "File or stream is not writable.";
+    public static final String FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT = "filedescriptor out of range in select()";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";
@@ -272,6 +275,7 @@ public abstract class ErrorMessages {
     public static final String FUNC_CONSTRUCTION_NOT_SUPPORTED = "function construction not supported for (%p, %p, %p, %p, %p, %p)";
     public static final String FUNC_TAKES_AT_LEAST_D_ARGS = "function takes at least %d arguments (%d given)";
     public static final String FUNC_TAKES_EXACTLY_D_ARGS = "function takes exaclty %d arguments (%d given)";
+    public static final String FUNC_S_MUST_BE_S_NOT_P = "%s() %s must be %s, not %p";
     public static final String GENERATOR_EXPR_MUST_BE_PARENTHESIZED = "Generator expression must be parenthesized";
     public static final String GENERATOR_IGNORED_EXIT = "generator ignored GeneratorExit";
     public static final String GENERATOR_RAISED_STOPITER = "generator raised StopIteration";
@@ -292,6 +296,7 @@ public abstract class ErrorMessages {
     public static final String IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT = "if you give only one argument to maketrans it must be a dict";
     public static final String INVALID_INDEXING_OF_0_DIM_MEMORY = "invalid indexing of 0-dim memory";
     public static final String ILLEGAL_ARG = "illegal argument";
+    public static final String ILLEGAL_ENVIRONMENT_VARIABLE_NAME = "illegal environment variable name";
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
     public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
@@ -302,6 +307,7 @@ public abstract class ErrorMessages {
     public static final String INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D = "index out of bounds on dimension %d";
     public static final String INDEX_OUT_OF_RANGE = "index out of range";
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
+    public static final String INPUT_TOO_LONG = "input too long";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
     public static final String INSTANCE_HAS_NO_ATTR_S = "%s instance has no attribute '%s'";
     public static final String INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = "int() can't convert non-string with explicit base";
@@ -384,7 +390,6 @@ public abstract class ErrorMessages {
     public static final String MATH_DOMAIN_ERROR = "math domain error";
     public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
-    public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
     public static final String MEMORYVIEW_INVALID_SLICE_KEY = "memoryview: invalid slice key";
     public static final String MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P = "memoryview: a bytes-like object is required, not '%p'";
     public static final String MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S = "memoryview: invalid value for format '%s'";
@@ -667,6 +672,20 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
     public static final String CANNOT_INTERN_P = "can't intern %p";
+    public static final String METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = "Method requires a 'bytes' object, got '%p'";
+    public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
+    public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
+
+    // mmap
+    public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
+    public static final String MEM_MAPPED_OFFSET_MUST_BE_POSITIVE = "memory mapped offset must be positive";
+    public static final String MEM_MAPPED_OFFSET_INVALID_ACCESS = "mmap invalid access parameter.";
+    public static final String MMAP_CHANGED_LENGTH = "The mmapped file has changed its length";
+    public static final String CANNOT_MMAP_AN_EMPTY_FILE = "cannot mmap an empty file";
+    public static final String MMAP_S_IS_GREATER_THAN_FILE_SIZE = "mmap %s is greater than file size";
+    public static final String TOO_MANY_REMAINING_BYTES_TO_BE_STORED = "There are too many remaining bytes to be stored in a bytes object.";
+    public static final String MMAP_CANNOT_MODIFY_READONLY_MEMORY = "mmap can't modify a readonly memory map.";
+    public static final String DATA_OUT_OF_RANGE = "data out of range";
 
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
@@ -712,6 +731,15 @@ public abstract class ErrorMessages {
     public static final String S_SHOULD_RETURN_BYTES = "%s should return bytes";
     public static final String S_RETURNED_TOO_MUCH_DATA = "%s returned too much data: %d bytes requested, %d returned";
     public static final String S_SHOULD_RETURN_BYTES_NOT_P = " should have returned a bytes object, not '%p'";
+    public static final String BAD_MODE = "Must have exactly one of create/read/write/append mode and at most one plus";
+    public static final String NEG_FD = "negative file descriptor";
+    public static final String CANNOT_USE_CLOSEFD = "Cannot use closefd=False with file name";
+    public static final String EXPECTED_INT_FROM_OPENER = "expected integer from opener";
+    public static final String OPENER_RETURNED_D = "opener returned %d";
+    public static final String FILE_NOT_OPEN_FOR_S = "File not open for %s";
+    public static final String UNBOUNDED_READ_RETURNED_MORE_BYTES = "unbounded read returned more bytes than a Python bytes object can hold";
+    public static final String INVALID_MODE_S = "invalid mode: %s";
+    public static final String S_TO_CLOSED_FILE = "%s to closed file";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT = "cannot pickle '%s' object";
@@ -720,4 +748,5 @@ public abstract class ErrorMessages {
     public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
                     "is deprecated, and may be removed in a future version of Python.";
+    public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
 }

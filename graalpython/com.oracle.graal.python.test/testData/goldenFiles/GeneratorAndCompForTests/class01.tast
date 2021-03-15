@@ -84,10 +84,9 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         Identifier: root
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,root,Illegal]
-                                        GetAttributeNodeGen SourceSection: [68,79]`self.__root`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [68,79]`self.__root`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: _OrderedDict__root
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -99,10 +98,9 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         Identifier: curr
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [2,curr,Illegal]
-                                        GetAttributeNodeGen SourceSection: [95,104]`root.prev`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [95,104]`root.prev`
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: prev
-                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -116,10 +114,9 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                             ExpressionStatementNode SourceSection: [149,163]`yield curr.key`
                                               YieldNode SourceSection: [149,163]`yield curr.key`
                                                 flagSlot: 0
-                                                GetAttributeNodeGen SourceSection: [155,163]`curr.key`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [155,163]`curr.key`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: key
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -132,10 +129,9 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                               Identifier: curr
                                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                 Frame: [2,curr,Illegal]
-                                              GetAttributeNodeGen SourceSection: [183,192]`curr.prev`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                              GetAttributeNode SourceSection: [183,192]`curr.prev`
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: prev
-                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -145,8 +141,6 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                           NotNodeGen SourceSection: [119,135]`curr is not root`
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             IsExpressionNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNode SourceSection: [119,123]`curr`
                                                 Frame: [2,curr,Illegal]

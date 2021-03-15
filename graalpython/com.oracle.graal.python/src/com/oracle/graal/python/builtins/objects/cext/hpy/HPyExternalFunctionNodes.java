@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING_ARRAY;
 
 import java.util.Arrays;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseArgHandlesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
@@ -56,16 +58,19 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsure
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeArgFuncToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -74,7 +79,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -159,15 +163,93 @@ public abstract class HPyExternalFunctionNodes {
             case LENFUNC:
                 rootNode = new HPyMethNoargsRoot(language, name, true);
                 break;
+            case SSIZEOBJARGPROC:
+                rootNode = new HPyMethSSizeObjArgProcRoot(language, name);
+                break;
             case INQUIRY:
                 rootNode = new HPyMethInquiryRoot(language, name);
                 break;
             case SSIZEARGFUNC:
                 rootNode = new HPyMethSSizeArgFuncRoot(language, name);
                 break;
+            case OBJOBJPROC:
+                rootNode = new HPyMethObjObjProcRoot(language, name);
+                break;
             default:
                 // TODO(fa): support remaining signatures
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy method signature: " + signature.name());
+        }
+        Object[] defaults = new Object[numDefaults];
+        Arrays.fill(defaults, PNone.NO_VALUE);
+        return factory.createBuiltinFunction(name, enclosingType, defaults, new PKeyword[]{new PKeyword(KW_CALLABLE, callable)}, PythonUtils.getOrCreateCallTarget(rootNode));
+    }
+
+    /**
+     * Creates a built-in function for a specific slot. This built-in function also does appropriate
+     * argument and result conversion and calls the provided callable.
+     *
+     * @param language The Python language object.
+     * @param wrapper The wrapper ID as defined in {@link HPySlotWrapper}.
+     * @param name The name of the method.
+     * @param callable The native function pointer.
+     * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
+     * @param factory Just an instance of {@link PythonObjectFactory} to create the function object.
+     * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot wrapper.
+     */
+    @TruffleBoundary
+    static PBuiltinFunction createWrapperFunction(PythonLanguage language, HPySlotWrapper wrapper, String name, Object callable, Object enclosingType, PythonObjectFactory factory) {
+        assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
+        PRootNode rootNode;
+        int numDefaults = 0;
+        switch (wrapper) {
+            case NULL:
+                rootNode = new HPyMethKeywordsRoot(language, name);
+                break;
+            case UNARYFUNC:
+                rootNode = new HPyMethNoargsRoot(language, name, false);
+                break;
+            case BINARYFUNC:
+            case BINARYFUNC_L:
+                rootNode = new HPyMethORoot(language, name, false);
+                break;
+            case BINARYFUNC_R:
+                rootNode = new HPyMethReverseBinaryRoot(language, name, false);
+                break;
+            case INIT:
+                rootNode = new HPyMethInitProcRoot(language, name);
+                break;
+            case TERNARYFUNC:
+                rootNode = new HPyMethTernaryRoot(language, name);
+                // the third argument is optional
+                // so it has a default value (this implicitly is 'None')
+                numDefaults = 1;
+                break;
+            case LENFUNC:
+                rootNode = new HPyMethNoargsRoot(language, name, true);
+                break;
+            case INQUIRYPRED:
+                rootNode = new HPyMethInquiryRoot(language, name);
+                break;
+            case INDEXARGFUNC:
+                rootNode = new HPyMethSSizeArgFuncRoot(language, name);
+                break;
+            case OBJOBJARGPROC:
+                rootNode = new HPyMethObjObjProcRoot(language, name);
+                break;
+            case SQ_ITEM:
+                rootNode = new HPyMethSqItemWrapperRoot(language, name);
+                break;
+            case SQ_SETITEM:
+                rootNode = new HPyMethSqSetitemWrapperRoot(language, name);
+                break;
+            case SQ_DELITEM:
+                // it's really the same as SQ_SETITEM but with a default
+                rootNode = new HPyMethSqSetitemWrapperRoot(language, name);
+                numDefaults = 1;
+                break;
+            default:
+                // TODO(fa): support remaining slot wrappers
+                throw CompilerDirectives.shouldNotReachHere("unsupported HPy slot wrapper: wrap_" + wrapper.name().toLowerCase());
         }
         Object[] defaults = new Object[numDefaults];
         Arrays.fill(defaults, PNone.NO_VALUE);
@@ -283,6 +365,15 @@ public abstract class HPyExternalFunctionNodes {
             super(language);
             this.name = name;
             this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(checkFunctionResultNode, convertArgsToSulongNode);
+        }
+
+        protected static Object intToBoolean(Object result) {
+            if (result instanceof Integer) {
+                return ((Integer) result) != 0;
+            } else if (result instanceof Long) {
+                return ((Long) result) != 0;
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Override
@@ -555,7 +646,7 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    static final class HPyMethSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
+    static class HPyMethSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
         private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "n"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
@@ -569,7 +660,7 @@ public abstract class HPyExternalFunctionNodes {
             return new Object[]{getSelf(frame), getArg1(frame)};
         }
 
-        private Object getArg1(VirtualFrame frame) {
+        protected Object getArg1(VirtualFrame frame) {
             if (readArg1Node == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readArg1Node = insert(ReadIndexedArgumentNode.create(1));
@@ -580,6 +671,58 @@ public abstract class HPyExternalFunctionNodes {
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c: wrap_sq_item}.
+     */
+    static final class HPyMethSqItemWrapperRoot extends HPyMethSSizeArgFuncRoot {
+
+        @Child private GetIndexNode getIndexNode;
+
+        public HPyMethSqItemWrapperRoot(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = getSelf(frame);
+            return new Object[]{self, getIndex(self, getArg1(frame))};
+        }
+
+        private int getIndex(Object self, Object index) {
+            if (getIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getIndexNode = insert(GetIndexNode.create());
+            }
+            return getIndexNode.execute(self, index);
+        }
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c: wrap_sq_setitem}.
+     */
+    static final class HPyMethSqSetitemWrapperRoot extends HPyMethSSizeObjArgProcRoot {
+
+        @Child private GetIndexNode getIndexNode;
+
+        public HPyMethSqSetitemWrapperRoot(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = getSelf(frame);
+            return new Object[]{self, getIndex(self, getArg1(frame)), getArg2(frame)};
+        }
+
+        private int getIndex(Object self, Object index) {
+            if (getIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getIndexNode = insert(GetIndexNode.create());
+            }
+            return getIndexNode.execute(self, index);
         }
     }
 
@@ -626,8 +769,6 @@ public abstract class HPyExternalFunctionNodes {
     static final class HPyMethInquiryRoot extends HPyMethodDescriptorRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
 
-        @Child private CastToJavaIntExactNode castToJavaIntExactNode;
-
         public HPyMethInquiryRoot(PythonLanguage language, String name) {
             super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
         }
@@ -639,11 +780,107 @@ public abstract class HPyExternalFunctionNodes {
 
         @Override
         protected Object processResult(VirtualFrame frame, Object result) {
-            if (castToJavaIntExactNode == null) {
+            // 'HPyCheckPrimitiveResultNode' already guarantees that the result is 'int' or 'long'.
+            return intToBoolean(result);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethObjObjProcRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "other"}, KEYWORDS_HIDDEN_CALLABLE, true);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+
+        public HPyMethObjObjProcRoot(PythonLanguage language, String name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), getArg1(frame)};
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToJavaIntExactNode = insert(CastToJavaIntExactNode.create());
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
             }
-            return castToJavaIntExactNode.execute(result) != 0;
+            return readArg1Node.execute(frame);
+        }
+
+        @Override
+        protected Object processResult(VirtualFrame frame, Object result) {
+            // 'HPyCheckPrimitiveResultNode' already guarantees that the result is 'int' or 'long'.
+            return intToBoolean(result);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static class HPyMethSSizeObjArgProcRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "arg0", "arg1"}, KEYWORDS_HIDDEN_CALLABLE, true);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private ReadIndexedArgumentNode readArg2Node;
+
+        public HPyMethSSizeObjArgProcRoot(PythonLanguage language, String name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPySSizeObjArgProcToSulongNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
+        }
+
+        protected Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArg1Node.execute(frame);
+        }
+
+        protected Object getArg2(VirtualFrame frame) {
+            if (readArg2Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg2Node = insert(ReadIndexedArgumentNode.create(2));
+            }
+            return readArg2Node.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethReverseBinaryRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "other"}, KEYWORDS_HIDDEN_CALLABLE, true);
+
+        @Child private ReadIndexedArgumentNode readOtherNode;
+
+        public HPyMethReverseBinaryRoot(PythonLanguage language, String name, boolean nativePrimitiveResult) {
+            super(language, name, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getOther(frame), getSelf(frame)};
+        }
+
+        private Object getOther(VirtualFrame frame) {
+            if (readOtherNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readOtherNode = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readOtherNode.execute(frame);
         }
 
         @Override
@@ -812,7 +1049,7 @@ public abstract class HPyExternalFunctionNodes {
 
     /**
      * Similar to {@link HPyCheckFunctionResultNode}, this node checks a primitive result of a
-     * native function.
+     * native function. This node guarantees that an {@code int} or {@code long} is returned.
      */
     @ImportStatic(PGuards.class)
     abstract static class HPyCheckPrimitiveResultNode extends HPyCheckFunctionResultNode {
@@ -838,18 +1075,53 @@ public abstract class HPyExternalFunctionNodes {
             return value;
         }
 
-        @Specialization(guards = "!isIntOrLong(value)")
-        Object doPointer(PythonContext context, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, Object value,
+        @Specialization(limit = "1")
+        Object doObject(PythonContext context, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, Object value,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @CachedLibrary("value") InteropLibrary lib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, lib.isNull(value), context, raiseNode, factory, language);
-            return value;
+            if (lib.fitsInLong(value)) {
+                try {
+                    long lvalue = lib.asLong(value);
+                    checkFunctionResult(name, lvalue == -1, context, raiseNode, factory, language);
+                    return lvalue;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw raiseNode.raise(SystemError, "function '%s' did not return an integer.", name);
+        }
+    }
+
+    /**
+     * Implements semantics of function {@code typeobject.c: getindex}.
+     */
+    static final class GetIndexNode extends Node {
+
+        @Child private PythonObjectLibrary indexLib = PythonObjectLibrary.getFactory().createDispatched(3);
+        @Child private PythonObjectLibrary selfLib;
+        @Child private NormalizeIndexNode normalizeIndexNode;
+
+        public int execute(Object self, Object indexObj) {
+            int index = indexLib.asSize(indexObj);
+            if (index < 0) {
+                // 'selfLib' acts as an implicit profile for 'index < 0'
+                if (selfLib == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    selfLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+                }
+                if (normalizeIndexNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    normalizeIndexNode = insert(NormalizeIndexNode.create(false));
+                }
+                return normalizeIndexNode.execute(index, selfLib.length(self));
+            }
+            return index;
         }
 
-        static boolean isIntOrLong(Object value) {
-            return value instanceof Integer || value instanceof Long;
+        public static GetIndexNode create() {
+            return new GetIndexNode();
         }
     }
 }

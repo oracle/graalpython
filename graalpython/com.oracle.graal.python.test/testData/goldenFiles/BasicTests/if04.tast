@@ -13,8 +13,6 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
           Identifier: predicate
           TernaryIfNode SourceSection: [12,53]`func if func is not ...`
             NotNodeGen SourceSection: [20,36]`func is not None`
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
               IsExpressionNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [20,24]`func`
                   Identifier: func

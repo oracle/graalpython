@@ -13,8 +13,6 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
           SideEffect:
             IfNode SourceSection: [10,96]`if var == 200:↵  pri...`
               YesNodeGen SourceSection: None
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
                 BinaryComparisonNodeGen SourceSection: [13,23]`var == 200`
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __eq__
@@ -35,8 +33,6 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     Value: 2
               IfNode SourceSection: [37,96]`elif var == 150:↵  p...`
                 YesNodeGen SourceSection: None
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
                   BinaryComparisonNodeGen SourceSection: [42,52]`var == 150`
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __eq__
@@ -56,8 +52,6 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     DoubleLiteralNode SourceSection: [63,66]`1.5`
                 IfNode SourceSection: [68,96]`elif var == 100:↵  p...`
                   YesNodeGen SourceSection: None
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     BinaryComparisonNodeGen SourceSection: [73,83]`var == 100`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __eq__

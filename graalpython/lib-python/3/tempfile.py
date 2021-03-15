@@ -613,9 +613,11 @@ else:
 
         (fd, name) = _mkstemp_inner(dir, prefix, suffix, flags, output_type)
         try:
-            _os.unlink(name)
-            return _io.open(fd, mode, buffering=buffering,
+            # TODO GR-29159 _io.open calls fstat, but our emulated posix backend cannot handle it if the file is removed.
+            result = _io.open(fd, mode, buffering=buffering,
                             newline=newline, encoding=encoding, errors=errors)
+            _os.unlink(name)
+            return result
         except:
             _os.close(fd)
             raise

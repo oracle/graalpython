@@ -332,7 +332,7 @@ public final class PBaseException extends PythonObject {
 
     @ExportMessage
     int getExceptionExitStatus(
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
                     @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();

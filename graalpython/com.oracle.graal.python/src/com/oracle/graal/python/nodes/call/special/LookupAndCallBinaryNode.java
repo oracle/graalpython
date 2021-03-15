@@ -40,8 +40,11 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -54,8 +57,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -84,8 +85,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 // The (int, double) and (double, int) specializations are needed to avoid int->long conversion.
 // Although it would produce correct results, the special handling of long to double comparison
 // is slower than converting int->double, which is always correct.
-@ReportPolymorphism
 @ImportStatic(PythonOptions.class)
+@ReportPolymorphism
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {

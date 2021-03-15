@@ -26,6 +26,4 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
           CallUnaryMethodNodeGen SourceSection: None
           CallQuaternaryMethodNodeGen SourceSection: None
           YesNodeGen SourceSection: None
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
           GetClassNodeGen SourceSection: None

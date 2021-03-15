@@ -107,14 +107,10 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                                   GeneratorAccessNode SourceSection: None
                               GeneratorAccessNode SourceSection: None
                             YesNodeGen SourceSection: None
-                              IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
                               BooleanLiteralNode SourceSection: [50,54]`True`
                             GeneratorAccessNode SourceSection: None
                           BlockNode SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                           BinaryComparisonNodeGen SourceSection: [24,34]`len(h) > 1`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__

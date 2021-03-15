@@ -80,8 +80,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                           GeneratorIfNode SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                               BinaryComparisonNodeGen SourceSection: [35,41]`i != j`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __ne__

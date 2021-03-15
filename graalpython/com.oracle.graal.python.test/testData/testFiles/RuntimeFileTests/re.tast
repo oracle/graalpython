@@ -123,10 +123,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7007,7033]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7007,7033]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_ASCII
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -145,10 +144,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7075,7106]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7075,7106]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_IGNORECASE
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -167,10 +165,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7134,7161]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7134,7161]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_LOCALE
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -189,10 +186,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7206,7234]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7206,7234]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_UNICODE
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -211,10 +207,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7277,7307]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7277,7307]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_MULTILINE
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -233,10 +228,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7353,7380]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7353,7380]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_DOTALL
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -255,10 +249,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7420,7448]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7420,7448]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_VERBOSE
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -375,10 +368,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7667,7696]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7667,7696]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_TEMPLATE
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -411,10 +403,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        GetAttributeNodeGen SourceSection: [7749,7775]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [7749,7775]`sre_compile.SRE_FLAG...`
+                          GetFixedAttributeNode SourceSection: None
                             Key: SRE_FLAG_DEBUG
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -430,10 +421,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
-          GetAttributeNodeGen SourceSection: [6980,6992]`enum.IntFlag`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [6980,6992]`enum.IntFlag`
+            GetFixedAttributeNode SourceSection: None
               Key: IntFlag
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -452,10 +442,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                 Identifier: globals
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-          GetAttributeNodeGen SourceSection: [7826,7847]`RegexFlag.__members_...`
-            GetFixedAttributeNodeGen SourceSection: None
+          GetAttributeNode SourceSection: [7826,7847]`RegexFlag.__members_...`
+            GetFixedAttributeNode SourceSection: None
               Key: __members__
-              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -466,10 +455,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                 CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [7866,7891]`error = sre_compile....`
         Identifier: error
-        GetAttributeNodeGen SourceSection: [7874,7891]`sre_compile.error`
-          GetFixedAttributeNodeGen SourceSection: None
+        GetAttributeNode SourceSection: [7874,7891]`sre_compile.error`
+          GetFixedAttributeNode SourceSection: None
             Key: error
-            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -1404,8 +1392,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                   FunctionBodyNode SourceSection: [11607,11811]`if isinstance(patter...`
                     IfNode SourceSection: [11607,11811]`if isinstance(patter...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [11610,11634]`isinstance(pattern, ...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11610,11620]`isinstance`
@@ -1556,8 +1542,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                   FunctionBodyNode SourceSection: [12097,12905]`if isinstance(flags,...`
                     IfNode SourceSection: [12097,12162]`if isinstance(flags,...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [12100,12128]`isinstance(flags, Re...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12100,12110]`isinstance`
@@ -1573,10 +1557,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         Identifier: flags
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,flags,Illegal]
-                        GetAttributeNodeGen SourceSection: [12146,12157]`flags.value`
-                          GetFixedAttributeNodeGen SourceSection: None
+                        GetAttributeNode SourceSection: [12146,12157]`flags.value`
+                          GetFixedAttributeNode SourceSection: None
                             Key: value
-                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -1621,8 +1604,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         BlockNode SourceSection: None
                     IfNode SourceSection: [12258,12439]`if isinstance(patter...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallBinary SourceSection: [12261,12289]`isinstance(pattern, ...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12261,12271]`isinstance`
@@ -1637,8 +1618,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       BlockNode SourceSection: None
                         IfNode SourceSection: [12299,12420]`if flags:↵          ...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadLocalVariableNode SourceSection: [12302,12307]`flags`
                               Frame: [1,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1662,8 +1641,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       BlockNode SourceSection: None
                     IfNode SourceSection: [12439,12558]`if not sre_compile.i...`
                       NotNodeGen SourceSection: [12442,12475]`not sre_compile.isst...`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         PythonCallUnary SourceSection: [12446,12475]`sre_compile.isstring...`
                           CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
@@ -1700,8 +1677,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [12602,12897]`if not (flags & DEBU...`
                       NotNodeGen SourceSection: [12605,12624]`not (flags & DEBUG)`
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BinaryArithmeticExpression SourceSection: [12610,12623]`flags & DEBUG`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __and__
@@ -1714,8 +1689,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       BlockNode SourceSection: None
                         IfNode SourceSection: [12634,12851]`if len(_cache) >= _M...`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [12637,12661]`len(_cache) >= _MAXC...`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __ge__
@@ -2013,12 +1986,8 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadVariableFromFrameNodeGen SourceSection: None
                     IfNode SourceSection: [13408,13518]`if not template[0] a...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         AndNode SourceSection: [13411,13452]`not template[0] and ...`
                           NotNodeGen SourceSection: [13411,13426]`not template[0]`
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             GetItemNodeGen SourceSection: [13415,13426]`template[0]`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,template,Illegal]
@@ -2042,8 +2011,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             IntegerLiteralNode SourceSection: [13451,13452]`1`
                               Value: 1
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                       FrameReturnNode SourceSection: [13492,13513]`return template[1][0...`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
@@ -2182,10 +2149,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Identifier: _compile
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [13718,13738]`(p.pattern, p.flags)...`
-                            GetAttributeNodeGen SourceSection: [13719,13728]`p.pattern`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [13719,13728]`p.pattern`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: pattern
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2193,10 +2159,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [13719,13720]`p`
                                 Frame: [0,p,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            GetAttributeNodeGen SourceSection: [13730,13737]`p.flags`
-                              GetFixedAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [13730,13737]`p.flags`
+                              GetFixedAttributeNode SourceSection: None
                                 Key: flags
-                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2343,8 +2308,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             CachedDispatchFirst SourceSection: None
                                         IfNode SourceSection: [14036,14109]`if isinstance(flags,...`
                                           YesNodeGen SourceSection: None
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                             PythonCallBinary SourceSection: [14039,14067]`isinstance(flags, Re...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14039,14049]`isinstance`
@@ -2360,10 +2323,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             Identifier: flags
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,flags,Illegal]
-                                            GetAttributeNodeGen SourceSection: [14089,14100]`flags.value`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                            GetAttributeNode SourceSection: [14089,14100]`flags.value`
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: value
-                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2603,10 +2565,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           Identifier: append
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,append,Illegal]
-                                          GetAttributeNodeGen SourceSection: [14673,14686]`result.append`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [14673,14686]`result.append`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: append
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2618,10 +2579,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           Identifier: match
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,match,Illegal]
-                                          GetAttributeNodeGen SourceSection: [14703,14737]`self.scanner.scanner...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [14703,14737]`self.scanner.scanner...`
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: match
-                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2629,10 +2589,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             PythonCallUnary SourceSection: [14703,14731]`self.scanner.scanner...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [14703,14715]`self.scanner`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                GetAttributeNode SourceSection: [14703,14715]`self.scanner`
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: scanner
-                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2653,8 +2612,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           WhileNode SourceSection: None
                                             WhileRepeatingNode SourceSection: None
                                               YesNodeGen SourceSection: None
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                 BooleanLiteralNode SourceSection: [14766,14770]`True`
                                               BlockNode SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [14784,14795]`m = match()`
@@ -2668,8 +2625,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 IfNode SourceSection: [14808,14852]`if not m:↵          ...`
                                                   NotNodeGen SourceSection: [14811,14816]`not m`
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [14815,14816]`m`
                                                       Frame: [6,m,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -2687,8 +2642,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                 IfNode SourceSection: [14876,14921]`if i == j:↵         ...`
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     BinaryComparisonNodeGen SourceSection: [14879,14885]`i == j`
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __eq__
@@ -2706,10 +2659,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                     Frame: [8,action,Illegal]
                                                   GetItemNodeGen SourceSection: [14930,14960]`self.lexicon[m.lasti...`
                                                     GetItemNodeGen SourceSection: None
-                                                      GetAttributeNodeGen SourceSection: None
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                      GetAttributeNode SourceSection: None
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: lexicon
-                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -2720,10 +2672,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                       BinaryArithmeticExpression SourceSection: [14943,14956]`m.lastindex-1`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __sub__
-                                                        GetAttributeNodeGen SourceSection: [14943,14954]`m.lastindex`
-                                                          GetFixedAttributeNodeGen SourceSection: None
+                                                        GetAttributeNode SourceSection: [14943,14954]`m.lastindex`
+                                                          GetFixedAttributeNode SourceSection: None
                                                             Key: lastindex
-                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -2737,8 +2688,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                       Value: 1
                                                 IfNode SourceSection: [14973,15086]`if callable(action):...`
                                                   YesNodeGen SourceSection: None
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     PythonCallUnary SourceSection: [14976,14992]`callable(action)`
                                                       CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [14976,14984]`callable`
@@ -2777,8 +2726,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                   BlockNode SourceSection: None
                                                 IfNode SourceSection: [15086,15152]`if action is not Non...`
                                                   NotNodeGen SourceSection: [15089,15107]`action is not None`
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
                                                     IsExpressionNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [15089,15095]`action`
                                                         Frame: [8,action,Illegal]

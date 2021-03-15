@@ -71,21 +71,18 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
-    protected void tryChainExceptionFromHandler(PException handlerException, Throwable handledException) {
+    protected void tryChainExceptionFromHandler(PException handlerException, PException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
-        if (handledException != handlerException && handledException instanceof PException) {
-            chainExceptions(handlerException.getUnreifiedException(), (PException) handledException);
+        if (handledException != handlerException) {
+            chainExceptions(handlerException.getUnreifiedException(), handledException);
         }
     }
 
-    protected void tryChainPreexistingException(VirtualFrame frame, Throwable handledException) {
+    protected void tryChainPreexistingException(VirtualFrame frame, PException handledException) {
         // Chain a preexisting (before the try started) exception to the handled exception
-        if (handledException instanceof PException) {
-            PException pException = (PException) handledException;
-            PException preexisting = getExceptionForChaining(frame);
-            if (preexisting != null) {
-                chainExceptions(pException.getUnreifiedException(), preexisting);
-            }
+        PException preexisting = getExceptionForChaining(frame);
+        if (preexisting != null) {
+            chainExceptions(handledException.getUnreifiedException(), preexisting);
         }
     }
 

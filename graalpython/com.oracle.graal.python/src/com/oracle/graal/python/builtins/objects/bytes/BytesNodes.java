@@ -41,7 +41,14 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.PythonLanguage.getCore;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.utf8StringToBytes;
+import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_S_MUST_BE_S_NOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.READ_WRITE_BYTELIKE_OBJ;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -52,8 +59,10 @@ import java.util.Arrays;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentIndex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
@@ -64,6 +73,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -75,9 +86,9 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -94,7 +105,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -137,7 +147,6 @@ public abstract class BytesNodes {
         static PBytesLike bytearray(PythonObjectFactory factory, @SuppressWarnings("unused") PByteArray basedOn, PBytesLike bytes) {
             return factory.createByteArray(bytes.getSequenceStorage());
         }
-
     }
 
     @ImportStatic(PythonOptions.class)
@@ -577,7 +586,6 @@ public abstract class BytesNodes {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(PGuards.class)
     public abstract static class BytesInitNode extends PNodeWithRaise {
 
@@ -618,15 +626,16 @@ public abstract class BytesNodes {
             return toByteNode.execute(frame, source, lenNode.execute(frame, source));
         }
 
-        @Specialization
-        byte[] fromString(String source, String encoding, @SuppressWarnings("unused") Object errors) {
+        @Specialization(guards = {"isString(source)", "isString(encoding)"})
+        byte[] fromString(Object source, Object encoding, Object errors,
+                        @Cached CastToJavaStringNode castStr) {
             String e = errors instanceof String ? (String) errors : "strict";
-            return BytesBuiltins.stringToByte(source, encoding, e, getRaiseNode());
+            return BytesBuiltins.stringToByte(castStr.execute(source), castStr.execute(encoding), e, getRaiseNode());
         }
 
-        @Specialization
+        @Specialization(guards = "isString(source)")
         @SuppressWarnings("unused")
-        byte[] fromString(String source, PNone encoding, Object errors) {
+        byte[] fromString(Object source, PNone encoding, Object errors) {
             throw raise(TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
         }
 
@@ -661,7 +670,7 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c >>> 4];
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
-            return BytesUtils.createASCIIString(retbuf);
+            return createASCIIString(retbuf);
         }
 
         @Specialization(guards = "bytesPerSepGroup < 0")
@@ -701,7 +710,7 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
 
-            return BytesUtils.createASCIIString(retbuf);
+            return createASCIIString(retbuf);
         }
 
         @Specialization(guards = "absBytesPerSepGroup > 0")
@@ -741,7 +750,7 @@ public abstract class BytesNodes {
                 retbuf[j--] = BytesUtils.HEXDIGITS[c & 0x0f];
                 retbuf[j--] = BytesUtils.HEXDIGITS[c >>> 4];
             }
-            return BytesUtils.createASCIIString(retbuf);
+            return createASCIIString(retbuf);
         }
     }
 
@@ -801,4 +810,115 @@ public abstract class BytesNodes {
             return Arrays.copyOf(arr, len);
         }
     }
+
+    public abstract static class DecodeUTF8FSPathNode extends PNodeWithRaise {
+
+        public byte[] getBytes(VirtualFrame frame, Object value) {
+            return utf8StringToBytes(execute(frame, value));
+        }
+
+        public abstract String execute(VirtualFrame frame, Object value);
+
+        @Specialization(limit = "2")
+        static String doit(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary toBuffer,
+                        @Cached CastToJavaStringNode toString,
+                        @Cached PosixModuleBuiltins.FspathNode fsPath) {
+            Object path = fsPath.call(frame, value);
+            if (toBuffer.isBuffer(path)) {
+                try {
+                    return encodeFSDefault(toBuffer.getBufferBytes(path));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return toString.execute(path);
+        }
+
+        /*-
+         * This should be equivalent to PyUnicode_EncodeFSDefault
+         * TODO: encoding perference is set per context but will force
+         * it to UTF-8 for the time being.
+         */
+        private static String encodeFSDefault(byte[] path) {
+            return createUTF8String(path);
+        }
+    }
+
+    /*
+     * This basically act as `PyObject_GetBuffer(arg, &buffer, PyBUF_WRITABLE)` which will prop the
+     * buffer arguments for length and check if it is writable.
+     */
+    public abstract static class GetByteLengthIfWritableNode extends PNodeWithRaise {
+        private final String fname;
+        private final String displayname;
+
+        public GetByteLengthIfWritableNode(String fname, String displayname) {
+            this.fname = fname;
+            this.displayname = displayname;
+        }
+
+        public abstract int execute(VirtualFrame frame, Object buf);
+
+        @Specialization
+        int getLength(PByteArray buf,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            return lenNode.execute(buf.getSequenceStorage());
+        }
+
+        @Specialization
+        int getLength(PBytes buf) {
+            return error(buf);
+        }
+
+        @Specialization
+        int getLength(PMemoryView buf,
+                        @Cached ConditionProfile isReadOnly) {
+            if (isReadOnly.profile(buf.isReadOnly())) {
+                return error(buf);
+            }
+            return buf.getLength();
+        }
+
+        @Specialization
+        int getLength(PArray buf) {
+            // TODO: check if can only do ACCESS_READ when checkIsWritable is set.
+            return buf.getLength();
+        }
+
+        @Specialization(limit = "1")
+        int getLength(PMMap buf,
+                        @CachedLibrary("buf") PythonObjectLibrary bufLib) {
+            try {
+                return bufLib.getBufferLength(buf);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Fallback
+        int error(Object buf) {
+            throw raise(TypeError, FUNC_S_MUST_BE_S_NOT_P, fname, displayname, READ_WRITE_BYTELIKE_OBJ, buf);
+        }
+
+        public static GetByteLengthIfWritableNode createReadIntoArg() {
+            return BytesNodesFactory.GetByteLengthIfWritableNodeGen.create("readinto", "argument");
+        }
+    }
+
+    public abstract static class GetBuffer extends PNodeWithRaise {
+
+        public abstract byte[] execute(Object buffer);
+
+        @Specialization(limit = "2")
+        byte[] getBuffer(Object buffer,
+                        @Cached ConditionProfile isBuffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary libBuffer) {
+            if (isBuffer.profile(!libBuffer.isBuffer(buffer))) {
+                throw raise(TypeError, A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, buffer);
+            }
+            return getBytes(libBuffer, buffer);
+        }
+    }
+
 }

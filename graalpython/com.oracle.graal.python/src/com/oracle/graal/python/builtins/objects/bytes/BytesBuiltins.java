@@ -27,7 +27,10 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
+import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_NEED_OBJ;
+import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_LENGTH_1;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -698,10 +701,6 @@ public class BytesBuiltins extends PythonBuiltins {
 
     abstract static class PrefixSuffixBaseNode extends PythonQuaternaryClinicBuiltinNode {
 
-        private static final String INVALID_RECEIVER = "Method requires a 'bytes' object, got '%p'";
-        private static final String INVALID_FIRST_ARG = "first arg must be bytes or a tuple of bytes, not %p";
-        private static final String INVALID_ELEMENT_TYPE = "a bytes-like object is required, not '%p'";
-
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             CompilerAsserts.neverPartOfCompilation();
@@ -739,7 +738,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Fallback
         boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
                         @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end) {
-            throw raise(TypeError, INVALID_RECEIVER, substr);
+            throw raise(TypeError, METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P, substr);
         }
 
         // the actual operation; will be overridden by subclasses
@@ -762,11 +761,11 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         static BytesNodes.ToBytesNode createToBytes() {
-            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, INVALID_FIRST_ARG);
+            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P);
         }
 
         static BytesNodes.ToBytesNode createToBytesFromTuple() {
-            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, INVALID_ELEMENT_TYPE);
+            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P);
         }
     }
 

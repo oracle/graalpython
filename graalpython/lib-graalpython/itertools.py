@@ -25,13 +25,23 @@ import sys
 
 
 class repeat():
+    """
+    repeat(object [,times]) -> create an iterator which returns the object\n\
+    for the specified number of times.  If not specified, returns the object\n\
+    endlessly.
+    """
     @__graalpython__.builtin_method
-    def __init__(self, obj, times=None):
-        self.obj = obj
-        self.times = times
+    def __init__(self, object, times=None):
+        self.element = object
         if times is not None and not isinstance(times, int):
             raise TypeError(f"integer argument expected, got {times.__class__.__name__}")
-        self.count = times if times and times > 0 else 0
+        if times is not None:
+            if times < 0:
+                self.cnt = 0
+            else:
+                self.cnt = times
+        else:
+            self.cnt = -1
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -39,27 +49,30 @@ class repeat():
 
     @__graalpython__.builtin_method
     def __next__(self):
-        if self.times is not None:
-            if self.count == 0:
-                raise StopIteration
-            self.count -= 1
-        return self.obj
+        if self.cnt == 0:
+            raise StopIteration
+        elif self.cnt > 0:
+            self.cnt -= 1
+        return self.element
 
     @__graalpython__.builtin_method
     def __length_hint__(self):
-        return self.count
+        if self.cnt == -1:
+            raise TypeError("len() of unsized object")
+        return self.cnt
 
     @__graalpython__.builtin_method
     def __reduce__(self):
-        if self.times is not None:
-            return (self, (self.obj, self.count))
-        return (self, (self.obj,))
+        if self.cnt >= 0:
+            return type(self), (self.element, self.cnt)
+        return type(self), (self.element,)
 
     @__graalpython__.builtin_method
     def __repr__(self):
-        if self.times is not None:
-            return "{}({}, {})".format(type(self).__name__, self.obj, self.count)
-        return "{}({})".format(type(self).__name__, self.obj)
+        if self.cnt == -1:
+            return "{}({!r})".format(type(self).__name__, self.element)
+        else:
+            return "{}({!r}, {})".format(type(self).__name__, self.element, self.cnt)
 
 
 class chain():
@@ -70,11 +83,8 @@ class chain():
     """
     @__graalpython__.builtin_method
     def __init__(self, *iterables):
-        self._iterables = iterables
-        self._len = len(iterables)
-        if self._len > 0:
-            self._current = iter(self._iterables[0])
-        self._idx = 0
+        self._source = iter(iterables)
+        self._active = None
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -82,21 +92,47 @@ class chain():
 
     @__graalpython__.builtin_method
     def __next__(self):
-        if self._idx >= self._len:
-            raise StopIteration
-        try:
-            return next(self._current)
-        except (StopIteration, IndexError):
-            self._idx += 1
-            if self._idx >= self._len:
-                raise StopIteration
-            self._current = iter(self._iterables[self._idx])
-            return self.__next__()
+        while self._source:
+            if not self._active:
+                try:
+                    self._active = iter(next(self._source))
+                except:
+                    self._source = None
+                    raise
+            try:
+                return next(self._active)
+            except StopIteration:
+                self._active = None
+        raise StopIteration
 
     @classmethod
     @__graalpython__.builtin_method
     def from_iterable(cls, arg):
-        return cls(*iter(arg))
+        instance = cls()
+        instance._source = iter(arg)
+        return instance
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        if self._source:
+            if self._active:
+                return type(self), (), (self._source, self._active)
+            else:
+                return type(self), (), (self._source,)
+        else:
+            return type(self), ()
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        if not isinstance(state, tuple) or len(state) not in [1,2]:
+            raise TypeError("state is not a length 1 or 2 tuple")
+        self._source = state[0]
+        if not getattr(self._source, "__next__", None):
+            raise TypeError("Arguments must be iterators")
+        if len(state) == 2:
+            self._active = state[1]
+            if not getattr(self._active, "__next__", None):
+                raise TypeError("Arguments must be iterators")
 
 
 class starmap():
@@ -119,15 +155,49 @@ class starmap():
         obj = next(self.iterable)
         return self.fun(*obj)
 
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), (self.fun, self.iterable)
+
 
 class islice(object):
     @__graalpython__.builtin_method
     def __init__(self, iterable, *args):
-        self._iterable = enumerate(iter(iterable))
-        slice = list(args)
-        if len(slice) >= 2 and slice[1] is None:
-             slice[1] = sys.maxsize
-        self._indexes = iter(range(*slice))
+        start = 0
+        stop = -1
+        step = 1
+        if len(args) not in [1, 2, 3]:
+            raise TypeError("islice(seq, stop) or islice(seq, start, stop[, step])")
+        if len(args) == 1:
+            if args[0] != None:
+                stop = int(args[0])
+        else:
+            if args[0] != None:
+                try:
+                    start = int(args[0])
+                except:
+                    start = -1
+            if args[1] != None:
+                try:
+                    stop = int(args[1])
+                except:
+                    raise ValueError("Stop argument for islice() must be None or ean integer: 0 <= x <= sys.maxsize.")
+        if start < 0 or stop < -1 or start > sys.maxsize or stop > sys.maxsize:
+            raise ValueError("Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.")
+        if len(args) == 3:
+            if args[2] != None:
+                try:
+                    step = int(args[2])
+                except:
+                    step = -1
+        if step < 1:
+            raise ValueError("Step for islice() must be a positive integer or None.")
+
+        self._it = iter(iterable)
+        self._next = start
+        self._stop = stop
+        self._step = step
+        self._cnt = 0
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -135,19 +205,59 @@ class islice(object):
 
     @__graalpython__.builtin_method
     def __next__(self):
-        index = next(self._indexes) # may raise StopIteration
-        while True:
-            i, element = next(self._iterable) # may raise StopIteration
-            if i == index:
-                return element
+        it = self._it
+        stop = self._stop
+        if not it:
+            raise StopIteration
+        while self._cnt < self._next:
+            try:
+                item = next(it)
+            except:
+                # C code uses any exception to clear the iterator
+                self._it = None
+                raise
+            self._cnt += 1
+        if stop != -1 and self._cnt >= stop:
+            self._it = None
+            raise StopIteration
+        try:
+            item = next(it)
+        except:
+            self._it = None
+            raise
+        self._cnt += 1
+        oldnext = self._next
+        self._next += self._step
+        if self._next < oldnext or (stop != -1 and self._next > stop):
+            self._next = stop
+        return item
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        if self._it is None:
+            return type(self), (iter([]), 0), 0
+        if self._stop == -1:
+            stop = None
+        else:
+            stop = self._stop
+        return type(self), (self._it, self._next, stop, self._step), self._cnt
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        self._cnt = int(state)
 
 
 class count(object):
     @__graalpython__.builtin_method
     def __init__(self, start=0, step=1):
-        if not isinstance(start, (int, float)) or \
-                not isinstance(step, (int, float)):
-            raise TypeError('a number is required')
+        valid_start = valid_step = False
+        for o in [start, step]:
+            if not isinstance(o, complex):
+                for mm in ["__index__", "__float__", "__int__"]:
+                    if hasattr(o, mm):
+                        break
+                else:
+                    raise TypeError("a number is required")
         self._cnt = start
         self._step = step
 
@@ -183,6 +293,10 @@ class permutations():
         if r is None:
             self.r = len(iterable)
         else:
+            if not isinstance(r, int):
+                raise TypeError("Expected int as r")
+            if r < 0:
+                raise ValueError("r must be non-negative")
             self.r = r
         n = len(iterable)
         n_minus_r = n - self.r
@@ -426,11 +540,14 @@ class accumulate(object):
 
     Return series of accumulated sums."""
 
+    _marker = object()
+
     @__graalpython__.builtin_method
-    def __init__(self, iterable, func=None):
+    def __init__(self, iterable, func=None, *, initial=None):
         self.iterable = iter(iterable)
         self.func = func
-        self.total = None
+        self.total = accumulate._marker
+        self.initial = initial
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -438,16 +555,35 @@ class accumulate(object):
 
     @__graalpython__.builtin_method
     def __next__(self):
+        if self.initial is not None:
+            self.total = self.initial
+            self.initial = None
+            return self.total
         value = next(self.iterable)
-        if self.total is None:
+        if self.total is accumulate._marker:
             self.total = value
             return value
 
         if self.func is None:
-            self.total += value
+            self.total = self.total + value
         else:
-            self.total = self.func(total, value)
+            self.total = self.func(self.total, value)
         return self.total
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        if self.initial is not None:
+            it = chain((self.initial,), self.iterable)
+            return type(self), (it, self.func), None
+        elif self.total is None:
+            it = accumulate(chain((self.total,), self.iterable), self.func)
+            return islice, (it, 1, None)
+        else:
+            return type(self), (self.iterable, self.func), self.total
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        self.total = state
 
 
 class dropwhile(object):
@@ -490,7 +626,7 @@ class filterfalse(object):
 
     @__graalpython__.builtin_method
     def __init__(self, func, sequence):
-        self.func = func or (lambda x: False)
+        self.func = func
         self.iterator = iter(sequence)
 
     @__graalpython__.builtin_method
@@ -501,8 +637,15 @@ class filterfalse(object):
     def __next__(self):
         while True:
             n = next(self.iterator)
-            if not self.func(n):
+            if self.func is None:
+                if not n:
+                    return n
+            elif not self.func(n):
                 return n
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), (self.func, self.iterator)
 
 
 class takewhile(object):
@@ -557,10 +700,11 @@ class groupby(object):
     """
     @__graalpython__.builtin_method
     def __init__(self, iterable, key=None):
-        self._iterator = iter(iterable)
-        self._keyfunc = key
         self._marker = object()
         self._tgtkey = self._currkey = self._currvalue = self._marker
+        self._currgrouper = None
+        self._keyfunc = key
+        self._it = iter(iterable)
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -568,38 +712,42 @@ class groupby(object):
 
     @__graalpython__.builtin_method
     def __next__(self):
-        self._skip_to_next_iteration_group()
-        key = self._tgtkey = self._currkey
-        grouper = _grouper(self, key)
-        return (key, grouper)
-
-    @__graalpython__.builtin_method
-    def _skip_to_next_iteration_group(self):
+        self._currgrouper = None
+        marker = self._marker
         while True:
-            if self._currkey is self._marker:
+            if self._currkey is marker:
                 pass
-            elif self._tgtkey is self._marker:
+            elif self._tgtkey is marker:
                 break
             else:
                 if not self._tgtkey == self._currkey:
                     break
+            self._groupby_step()
 
-            newvalue = next(self._iterator)
-            if self._keyfunc is None:
-                newkey = newvalue
-            else:
-                newkey = self._keyfunc(newvalue)
+        self._tgtkey = self._currkey
+        grouper = _grouper(self, self._tgtkey)
+        return (self._currkey, grouper)
 
-            self._currkey = newkey
-            self._currvalue = newvalue
+    @__graalpython__.builtin_method
+    def _groupby_step(self):
+        newvalue = next(self._it)
+        if self._keyfunc is None:
+            newkey = newvalue
+        else:
+            newkey = self._keyfunc(newvalue)
+        self._currvalue = newvalue
+        self._currkey = newkey
 
 
 class _grouper():
     @__graalpython__.builtin_method
-    def __init__(self, groupby, tgtkey):
-        self.groupby = groupby
-        self.tgtkey = tgtkey
-        self._marker = groupby._marker
+    def __init__(self, parent, tgtkey):
+        if not isinstance(parent, groupby):
+            raise TypeError("incorrect usage of internal _grouper")
+        parent._currgouper = self
+        self._parent = parent
+        self._tgtkey = tgtkey
+        self._marker = parent._marker
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -607,24 +755,16 @@ class _grouper():
 
     @__graalpython__.builtin_method
     def __next__(self):
-        groupby = self.groupby
-        if groupby._currvalue is self._marker:
-            newvalue = next(groupby._iterator)
-            if groupby._keyfunc is None:
-                newkey = newvalue
-            else:
-                newkey = groupby._keyfunc(newvalue)
-            assert groupby._currvalue is self._marker
-            groupby._currkey = newkey
-            groupby._currvalue = newvalue
-
-        assert groupby._currkey is not self._marker
-        if not self.tgtkey == groupby._currkey:
-            raise StopIteration(None)
-        result = groupby._currvalue
-        groupby._currvalue = self._marker
-        groupby._currkey = self._marker
-        return result
+        gbo = self._parent
+        if gbo._currgouper != self:
+            raise StopIteration
+        if gbo._currvalue is self._marker:
+            gbo._groupby_step()
+        if not (self._tgtkey == gbo._currkey):
+            raise StopIteration
+        r = gbo._currvalue
+        gbo._currvalue = self._marker
+        return r
 
 
 class combinations():
@@ -740,47 +880,50 @@ class zip_longest():
     """
 
     @__graalpython__.builtin_method
+    def __new__(subtype, *args, fillvalue=None):
+        self = object.__new__(subtype)
+        self.fillvalue = fillvalue
+        self.tuplesize = len(args)
+        self.numactive = len(args)
+        self.ittuple = [iter(arg) for arg in args]
+        return self
+
+    @__graalpython__.builtin_method
     def __iter__(self):
         return self
 
     @__graalpython__.builtin_method
-    def _fetch(self, index):
-        it = self.iterators[index]
-        if it is not None:
-            try:
-                return next(it)
-            except StopIteration:
-                self.active -= 1
-                if self.active <= 0:
-                    # It was the last active iterator
-                    raise
-                self.iterators[index] = None
-        return self.fillvalue
-
-    @__graalpython__.builtin_method
     def __next__(self):
-        if self.active <= 0:
+        if not self.tuplesize:
             raise StopIteration
-        nb = len(self.iterators)
-        if nb == 0:
+        if not self.numactive:
             raise StopIteration
-        result = []
-        for index in range(nb):
-            result.append(self._fetch(index))
+        result = [None] * self.tuplesize
+        for idx, it in enumerate(self.ittuple):
+            if it is None:
+                item = self.fillvalue
+            else:
+                try:
+                    item = next(it)
+                except StopIteration:
+                    self.numactive -= 1
+                    if self.numactive == 0:
+                        raise StopIteration
+                    else:
+                        item = self.fillvalue
+                        self.ittuple[idx] = None
+                except:
+                    self.numactive = 0
+                    raise
+            result[idx] = item
         return tuple(result)
 
     @__graalpython__.builtin_method
-    def __new__(subtype, iter1, *args, fillvalue=None):
-        self = object.__new__(subtype)
-        self.fillvalue = fillvalue
-        self.active = len(args) + 1
-        self.iterators = [iter(iter1)] + [iter(arg) for arg in args]
-        return self
-
-    @__graalpython__.builtin_method
     def __reduce__(self):
-        return type(self), tuple([(it if it else tuple()) for it in self.iterators]), self.fillvalue
-
+        args = []
+        for elem in self.ittuple:
+            args.append(elem if elem is not None else tuple())
+        return type(self), tuple(args), self.fillvalue
 
     @__graalpython__.builtin_method
     def __setstate__(self, state):
@@ -810,6 +953,7 @@ class cycle():
         self.saved = []
         self.iterable = iter(iterable)
         self.index = 0
+        self.firstpass = False
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -817,26 +961,42 @@ class cycle():
 
     @__graalpython__.builtin_method
     def __next__(self):
-        if self.index > 0:
-            if not self.saved:
-                raise StopIteration
-            if len(self.saved) > self.index:
-                obj = self.saved[self.index]
-                self.index += 1
-            else:
-                obj = self.saved[0]
-                self.index = 1
-        else:
+        if self.iterable:
             try:
                 obj = next(self.iterable)
             except StopIteration:
-                if not self.saved:
-                    raise
-                obj = self.saved[0]
-                self.index = 1
+                self.iterable = None
             else:
-                self.saved.append(obj)
+                if not self.firstpass:
+                    self.saved.append(obj)
+                return obj
+        if not self.saved:
+            raise StopIteration
+        obj = self.saved[self.index]
+        self.index += 1
+        if self.index >= len(self.saved):
+            self.index = 0
         return obj
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        if self.iterable is None:
+            it = iter(self.saved)
+            if self.index:
+                it.__setstate__(self.index)
+            return type(self), (it,), (self.saved, True)
+        return type(self), (self.iterable,), (self.saved, self.firstpass)
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        if (not isinstance(state, tuple) or
+            len(state) != 2 or
+            not isinstance(state[0], list) or
+            not isinstance(state[1], int)):
+            raise TypeError("invalid state tuple")
+        self.saved = state[0]
+        self.firstpass = state[1]
+        self.index = 0
 
 
 class compress():
@@ -865,13 +1025,66 @@ class compress():
         # raise this. The shortest one stops first.
         while True:
             next_item = next(self.data)
-            next_selector = next(selectors)
+            next_selector = next(self.selectors)
             if next_selector:
                 return next_item
 
     @__graalpython__.builtin_method
     def __reduce__(self):
         return (type(self), (self.data, self.selectors))
+
+
+class _tee_dataobject:
+    LINKCELLS = 128
+
+    @__graalpython__.builtin_method
+    def __init__(self, it, values=None, nxt=None):
+        self.it = it
+        if values:
+            self.values = values
+            self.numread = len(values)
+            if self.numread == _tee_dataobject.LINKCELLS:
+                self.nextlink = nxt
+                if nxt and not isinstance(nxt, _tee_dataobject):
+                    raise ValueError("_tee_dataobject next link must be a _tee_dataobject")
+            elif self.numread > _tee_dataobject.LINKCELLS:
+                raise ValueError(f"_tee_dataobject should nove have more than {_tee_dataobject.LINKCELLS} links")
+            elif nxt is not None:
+                raise ValueError("_tee_dataobject shouldn't have a next if not full")
+        else:
+            self.values = []
+            self.numread = 0
+        self.running = False
+        self.nextlink = nxt
+
+    @__graalpython__.builtin_method
+    def _jumplink(self):
+        if not self.nextlink:
+            self.nextlink = _tee_dataobject(self.it)
+        return self.nextlink
+
+    @__graalpython__.builtin_method
+    def _getitem(self, i):
+        assert i < _tee_dataobject.LINKCELLS
+        if i < self.numread:
+            return self.values[i]
+        else:
+            assert i == self.numread
+            if self.running:
+                raise RuntimeError("cannot re-enter the tee iterator")
+            self.running = True
+            try:
+                value = next(self.it)
+            finally:
+                self.running = False
+            self.numread += 1
+            self.values.append(value)
+            return value
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        values = self.values[:self.numread]
+        return type(self), (self.it, values, self.nextlink)
 
 
 class _tee:
@@ -881,16 +1094,15 @@ class _tee:
     # traversed given fixed size list, it'll become a garbage
     # to be collected
     @__graalpython__.builtin_method
-    def __init__(self, it, buffer=None):
-        self.itemIndex = 0
-        if buffer is None:
-            # Support for direct creation of _tee from user code,
-            # where the ctor takes a single iterable object
-            self.it = iter(it)
-            self.buffer = [None] * 8
+    def __new__(cls, iterable):
+        it = iter(iterable)
+        if isinstance(it, _tee):
+            return it.__copy__()
         else:
-            self.it = it
-            self.buffer = buffer
+            to = object.__new__(_tee)
+            to.dataobj = _tee_dataobject(it)
+            to.index = 0
+        return to
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -898,25 +1110,34 @@ class _tee:
 
     @__graalpython__.builtin_method
     def __next__(self):
-        # jump to the next buffer if necessary
-        lastIndex = len(self.buffer) - 1
-        if self.itemIndex == lastIndex:
-            if self.buffer[lastIndex] is None:
-                self.buffer[lastIndex] = [None] * 8
-            self.buffer = self.buffer[lastIndex]
-            self.itemIndex = 0
-        # take existing item from the buffer or advance the iterator
-        if self.buffer[self.itemIndex] is None:
-            result = next(self.it)
-            self.buffer[self.itemIndex] = result
-        else:
-            result = self.buffer[self.itemIndex]
-        self.itemIndex += 1
-        return result
+        if self.index >= _tee_dataobject.LINKCELLS:
+            self.dataobj = self.dataobj._jumplink()
+            self.index = 0
+        value = self.dataobj._getitem(self.index)
+        self.index += 1
+        return value
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), ((),), (self.dataobj, self.index)
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        if not isinstance(state, tuple) or len(state) != 2:
+            raise TypeError("state is not a 2-tuple")
+        if not isinstance(state[0], _tee_dataobject):
+            raise TypeError("state is not a _tee_dataobject")
+        self.dataobj = state[0]
+        if state[1] < 0 or state[1] > _tee_dataobject.LINKCELLS:
+            raise ValueError("Index out of range")
+        self.index = int(state[1])
 
     @__graalpython__.builtin_method
     def __copy__(self):
-        return _tee(self.it, self.buffer)
+        to = object.__new__(_tee)
+        to.dataobj = self.dataobj
+        to.index = self.index
+        return to
 
 
 def tee(iterable, n=2):
@@ -924,12 +1145,12 @@ def tee(iterable, n=2):
         raise TypeError()
     if n < 0:
         raise ValueError("n must be >=0")
+    if n == 0:
+        return tuple()
     # if the iterator can be copied, use that instead of _tee
     # note: this works for _tee itself
     it = iter(iterable)
     copy = getattr(it, "__copy__", None)
-    if callable(copy):
-        return tuple([it] + [it.__copy__() for i in range(1, n)])
-    else:
-        queue = [None] * 8
-        return tuple(_tee(it, queue) for i in range(0, n))
+    if not callable(copy):
+        it = _tee(it)
+    return tuple([it] + [it.__copy__() for i in range(1, n)])

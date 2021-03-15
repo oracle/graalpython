@@ -92,8 +92,6 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [73,83]`len(h) > 1`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __gt__

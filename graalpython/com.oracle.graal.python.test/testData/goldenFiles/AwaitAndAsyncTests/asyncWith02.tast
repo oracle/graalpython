@@ -51,8 +51,6 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                           CallUnaryMethodNodeGen SourceSection: None
                           CallQuaternaryMethodNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                           GetClassNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: b
@@ -67,8 +65,6 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
-                          IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
                         GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]

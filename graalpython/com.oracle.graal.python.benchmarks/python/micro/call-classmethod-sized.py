@@ -42,6 +42,7 @@ class CustomType:
     def customClassMethod(clazz, *args):
         return args[0]
 
+# igv: function_root_count_at
 def count(num):
     total = 0
     for i in range(num):

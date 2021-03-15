@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInt
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyInitObject;
@@ -76,7 +77,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -227,7 +228,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private SetItemNode setItemNode;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
-        @Child private PConstructAndRaiseNode constructAndRaiseNode;
 
         static class ImportException extends Exception {
             private static final long serialVersionUID = 3517291912314595890L;
@@ -351,7 +351,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (!(result instanceof PythonModule)) {
                 // PyModuleDef_Init(pyModuleDef)
                 // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                throw raise(NotImplementedError, "multi-phase init of extension module %s", name);
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, name);
             } else {
                 ((PythonObject) result).setAttribute(__FILE__, path);
                 // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
@@ -384,11 +384,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
             getCheckResultNode().execute(context, initFuncName, nativeResult);
 
-            Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
+            Object result = AsPythonObjectNodeGen.getUncached().execute(ResolveHandleNodeGen.getUncached().execute(nativeResult));
             if (!(result instanceof PythonModule)) {
                 // PyModuleDef_Init(pyModuleDef)
                 // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                throw raise(NotImplementedError, "multi-phase init of extension module %s", path);
+                throw PRaiseNode.raiseUncached(this, NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, path);
             } else {
                 ((PythonObject) result).setAttribute(__FILE__, path);
                 // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
@@ -499,14 +499,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 checkResultNode = insert(DefaultCheckFunctionResultNodeGen.create());
             }
             return checkResultNode;
-        }
-
-        private PConstructAndRaiseNode getConstructAndRaiseNode() {
-            if (constructAndRaiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
-            }
-            return constructAndRaiseNode;
         }
 
         @TruffleBoundary
@@ -623,6 +615,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         PBytes run(PInt magicNumber, PBytesLike source) {
             return run(magicNumber.longValue(), source);
+        }
+
+        @Specialization
+        PBytes run(int magicNumber, PBytesLike source) {
+            return run((long) magicNumber, source);
         }
     }
 

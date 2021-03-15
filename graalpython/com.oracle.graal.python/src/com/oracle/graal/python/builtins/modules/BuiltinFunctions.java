@@ -177,7 +177,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1068,14 +1067,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         boolean isInstance(VirtualFrame frame, Object instance, Object cls) {
-            if (getPythonLanguage().getEngineOption(PythonOptions.EmulateJython)) {
-                TruffleLanguage.Env env = getContext().getEnv();
-                if (env.isHostObject(cls)) {
-                    Object hostCls = env.asHostObject(cls);
-                    Object hostInstance = env.isHostObject(instance) ? env.asHostObject(instance) : instance;
-                    return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
-                }
-            }
             TriState check = isInstanceCheckInternal(frame, instance, cls);
             if (check == TriState.UNDEFINED) {
                 return typeInstanceCheckNode.executeWith(frame, cls, instance);
@@ -1097,14 +1088,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
             }
             return getObjectArrayNode.execute(tuple);
-        }
-
-        private PythonLanguage getPythonLanguage() {
-            if (languageRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                languageRef = lookupLanguageReference(PythonLanguage.class);
-            }
-            return languageRef.get();
         }
     }
 
@@ -1829,12 +1812,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        double sumDoubleNone(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, 0, lib);
-        }
-
-        @Specialization(rewriteOn = UnexpectedResultException.class)
         double sumDoubleDouble(VirtualFrame frame, Object arg1, double start,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
             return sumDoubleInternal(frame, arg1, start, lib);
@@ -1862,7 +1839,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleNone", "sumDoubleDouble"})
+        @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile hasStart,
@@ -1898,7 +1875,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "globals", minNumOfPositionalArgs = 0)
+    @Builtin(name = "globals")
     @GenerateNodeFactory
     public abstract static class GlobalsNode extends PythonBuiltinNode {
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
@@ -1933,7 +1910,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "locals", minNumOfPositionalArgs = 0, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = "locals", needsFrame = true, alwaysNeedsCallerFrame = true)
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
 

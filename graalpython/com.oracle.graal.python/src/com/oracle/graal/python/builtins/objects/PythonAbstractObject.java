@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
@@ -160,6 +161,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.StopIterationException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -171,6 +173,8 @@ import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1063,7 +1067,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             try {
                 Object getAttrFunc = lookup.execute(receiver, __GETATTRIBUTE__);
                 try {
-                    return callNode.execute(getAttrFunc, receiver, name);
+                    return callNode.execute(frame, getAttrFunc, receiver, name);
                 } catch (PException pe) {
                     pe.expect(AttributeError, isAttrErrorProfile1);
                     getAttrFunc = lookup.execute(receiver, __GETATTR__);
@@ -1739,6 +1743,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (!isImmutable.execute(owner)) {
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
+                } else if (owner != object && (info & WRITE_SIDE_EFFECTS) == 0) {
+                    // we already checked the owner to be immutable at this point, so we definitely
+                    // cannot remove it (lookup will always lead to that not mutable owner). But if
+                    // it's not a setter, we may still be able to write that attribute directly on
+                    // the object
+                    if (!isImmutable.execute(object)) {
+                        info |= MODIFIABLE;
+                    }
                 }
             } else {
                 if (dataModelLibrary.isSequence(object) && isItemReadable(object, fieldName, getItemNode)) {
@@ -2360,6 +2372,66 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             } finally {
                 gil.release(mustRelease);
             }
+        }
+    }
+
+    @ExportMessage
+    public boolean hasIterator(
+                    @CachedLibrary("this") PythonObjectLibrary lib) {
+        return lib.isIterable(this);
+    }
+
+    @ExportMessage
+    public Object getIterator(
+                    @CachedLibrary("this") PythonObjectLibrary lib) throws UnsupportedMessageException {
+        if (lib.isIterable(this)) {
+            return lib.getIterator(this);
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    public boolean isIterator(
+                    @CachedLibrary("this") PythonObjectLibrary lib) {
+        return lib.lookupAttributeOnType(this, __NEXT__) != PNone.NO_VALUE;
+    }
+
+    private static final HiddenKey NEXT_ELEMENT = new HiddenKey("next_element");
+
+    @ExportMessage
+    public boolean hasIteratorNextElement(
+                    @CachedLibrary("this") InteropLibrary ilib,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
+                    @CachedLibrary("this") DynamicObjectLibrary dylib,
+                    @Exclusive @Cached IsBuiltinClassProfile exceptionProfile) throws UnsupportedMessageException {
+        if (ilib.isIterator(this)) {
+            Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
+            if (nextElement != null) {
+                return true;
+            }
+            try {
+                nextElement = plib.lookupAndCallSpecialMethod(this, null, __NEXT__);
+                dylib.put(this, NEXT_ELEMENT, nextElement);
+                return true;
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.StopIteration, exceptionProfile);
+                return false;
+            }
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    public Object getIteratorNextElement(
+                    @CachedLibrary("this") InteropLibrary ilib,
+                    @CachedLibrary("this") DynamicObjectLibrary dylib) throws StopIterationException, UnsupportedMessageException {
+        if (ilib.hasIteratorNextElement(this)) {
+            Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
+            dylib.put(this, NEXT_ELEMENT, null);
+            return nextElement;
+        } else {
+            throw StopIterationException.create();
         }
     }
 }
