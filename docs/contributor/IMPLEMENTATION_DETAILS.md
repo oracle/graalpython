@@ -223,7 +223,7 @@ e.g. one thread is supposed to block on a `select` call that the other thread
 would unblock by operating on the selected resource. Now the second thread
 cannot start to run because it is waiting for the first thread to acquire the
 GIL. To get around this potential deadlock, we would have to "remember" around
-blockig calls that the first thread would have released the GIL before and
+blocking calls that the first thread would have released the GIL before and
 re-acquired it after that point. Since this is equivalent to just releasing and
 re-acquiring the GIL, we might as well always do that.
 
