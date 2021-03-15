@@ -38,6 +38,7 @@
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidInit
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testInvalidModeStrings
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testModeStrings
+*graalpython.lib-python.3.test.test_fileio.COtherFileTests.testTruncate
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testTruncateOnWindows
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUnclosedFDOnException
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUnicodeOpen
@@ -83,6 +84,7 @@
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testInvalidInit
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testInvalidModeStrings
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testModeStrings
+*graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testTruncate
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testTruncateOnWindows
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUnclosedFDOnException
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUnicodeOpen
