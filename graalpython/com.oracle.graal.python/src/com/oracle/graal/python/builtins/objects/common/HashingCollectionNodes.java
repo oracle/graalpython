@@ -206,7 +206,7 @@ public abstract class HashingCollectionNodes {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage curStorage = new EmptyStorage();
+            HashingStorage curStorage = EmptyStorage.INSTANCE;
             Object iterator = otherLib.getIteratorWithFrame(other, frame);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             while (true) {

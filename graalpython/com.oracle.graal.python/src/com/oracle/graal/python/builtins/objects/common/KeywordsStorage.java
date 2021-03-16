@@ -267,7 +267,7 @@ public class KeywordsStorage extends HashingStorage {
     @Override
     @ExportMessage
     public HashingStorage clear() {
-        return new EmptyStorage();
+        return EmptyStorage.INSTANCE;
     }
 
     @Override

@@ -138,7 +138,7 @@ public abstract class DictLiteralNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return factory.createDict(new EmptyStorage());
+            return factory.createDict(EmptyStorage.INSTANCE);
         }
     }
 

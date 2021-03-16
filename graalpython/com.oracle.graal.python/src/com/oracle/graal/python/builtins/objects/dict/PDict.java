@@ -69,11 +69,11 @@ public final class PDict extends PHashingCollection {
     }
 
     public PDict(Object cls, Shape instanceShape) {
-        super(cls, instanceShape, new EmptyStorage());
+        super(cls, instanceShape, EmptyStorage.INSTANCE);
     }
 
     public PDict(Object cls, Shape instanceShape, PKeyword[] keywords) {
-        super(cls, instanceShape, (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage());
+        super(cls, instanceShape, (keywords != null) ? KeywordsStorage.create(keywords) : EmptyStorage.INSTANCE);
     }
 
     public Object getItem(Object key) {
@@ -87,7 +87,7 @@ public final class PDict extends PHashingCollection {
     public static HashingStorage createNewStorage(PythonLanguage lang, boolean isStringKey, int expectedSize) {
         HashingStorage newDictStorage;
         if (expectedSize == 0) {
-            newDictStorage = new EmptyStorage();
+            newDictStorage = EmptyStorage.INSTANCE;
         } else if (isStringKey) {
             if (expectedSize < DynamicObjectStorage.SIZE_THRESHOLD) {
                 newDictStorage = new DynamicObjectStorage(lang);

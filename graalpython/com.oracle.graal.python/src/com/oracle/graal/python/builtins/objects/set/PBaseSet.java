@@ -41,7 +41,7 @@ import com.oracle.truffle.api.object.Shape;
 public abstract class PBaseSet extends PHashingCollection {
 
     public PBaseSet(Object clazz, Shape instanceShape) {
-        super(clazz, instanceShape, new EmptyStorage());
+        super(clazz, instanceShape, EmptyStorage.INSTANCE);
     }
 
     public PBaseSet(Object clazz, Shape instanceShape, HashingStorage set) {

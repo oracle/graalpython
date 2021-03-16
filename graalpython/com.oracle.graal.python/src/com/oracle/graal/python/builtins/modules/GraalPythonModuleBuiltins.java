@@ -612,7 +612,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         private HashingStorage getStrategy(String name, PythonLanguage lang) {
             switch (name) {
                 case "empty":
-                    return new EmptyStorage();
+                    return EmptyStorage.INSTANCE;
                 case "hashmap":
                     return new HashMapStorage();
                 case "dynamicobject":

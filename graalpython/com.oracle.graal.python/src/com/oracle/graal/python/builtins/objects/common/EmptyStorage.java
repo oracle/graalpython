@@ -59,6 +59,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EmptyStorage extends HashingStorage {
+    public static final EmptyStorage INSTANCE = new EmptyStorage();
+
+    // Singleton
+    private EmptyStorage() {
+    }
 
     @Override
     @ExportMessage
