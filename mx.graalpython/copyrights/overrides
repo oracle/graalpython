@@ -459,7 +459,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/Fram
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadGlobalOrBuiltinNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadLocalVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/WriteIdentifierNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/WriteLocalVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/WriteNode.java,zippy.copyright
@@ -470,7 +469,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/F
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/GeneratorExpressionNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/GeneratorFunctionDefinitionNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/PythonBuiltinNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/FrameTransferNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorAccessNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorBlockNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorControlNode.java,zippy.copyright
