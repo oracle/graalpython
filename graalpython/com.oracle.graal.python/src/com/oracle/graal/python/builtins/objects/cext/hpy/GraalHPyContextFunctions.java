@@ -1980,7 +1980,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary objectLib) throws ArityException, UnsupportedTypeException {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary objectLib) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(nativeContext, arguments[1]);
@@ -2000,7 +2000,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyCastKwargsNode castKwargsNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached CallNode callNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedTypeException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 4);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             try {

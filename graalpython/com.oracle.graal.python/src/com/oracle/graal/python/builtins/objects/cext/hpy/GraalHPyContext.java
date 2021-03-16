@@ -784,7 +784,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         PythonCore core = context.getCore();
 
         createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
-        
+
         createConstant(members, HPyContextMember.H_NONE, PNone.NONE);
         createConstant(members, HPyContextMember.H_TRUE, core.getTrue());
         createConstant(members, HPyContextMember.H_FALSE, core.getFalse());
@@ -930,7 +930,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         members[HPyContextMember.CTX_CALLABLE_CHECK.ordinal()] = new GraalHPyIsCallable();
         members[HPyContextMember.CTX_CALLTUPLEDICT.ordinal()] = new GraalHPyIsCallTupleDict();
-        
+
         members[HPyContextMember.CTX_DICT_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PDict);
         members[HPyContextMember.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
         members[HPyContextMember.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
