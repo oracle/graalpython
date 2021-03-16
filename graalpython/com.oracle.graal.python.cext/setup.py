@@ -64,6 +64,7 @@ relative_rpath = "@loader_path" if darwin_native else r"$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
 is_managed = 'managed' in SOABI
+lib_ext = 'dylib' if sys.platform == "darwin" else 'so'
 
 # configure logger
 logger = logging.getLogger(__name__)
@@ -302,6 +303,33 @@ class Bzip2Depedency(CAPIDependency):
         return self.lib_install_dir
 
 
+class LZMADepedency(CAPIDependency):
+
+    def build(self, extracted_dir=None):
+        if not extracted_dir:
+            extracted_dir = self.download()
+        
+        xz_src_path = os.path.join(extracted_dir, self.package_name + "-" + self.version)
+        lzma_support_path = os.path.join(__dir__, 'lzma')
+        parallel_arg =  "-j" + str(os.cpu_count()) if threaded else ""
+        make_args = ['make', parallel_arg, '-C', lzma_support_path]
+        make_args += ["CC='%s'" % get_config_var("CC")]
+        make_args += ["XZ_ROOT='%s'" % xz_src_path]
+        make_args += ["CONFIG_H_DIR='%s'" % lzma_support_path]
+        make_args += ["LIB_DIR='%s'" % self.lib_install_dir]
+        make_args += ["INC_DIR='%s'" % self.include_install_dir]
+        system(' '.join(make_args), msg="Could not build liblzma")
+        return self.lib_install_dir
+
+    def install(self, build_dir=None):
+        lib_path = os.path.join(self.lib_install_dir, "lib%s.%s" % (self.lib_name, lib_ext))
+        if os.path.exists(lib_path):
+            # library has been built earlier, so just return the install directory.
+            return self.lib_install_dir
+        
+        return self.build()
+
+
 def _build_deps(deps):
     libs = []
     library_dirs = []
@@ -443,7 +471,7 @@ def build_libposix(capi_home):
     files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
     module = Extension(libposix_name,
                        sources=files,
-                       extra_compile_args=cflags_warnings)
+                       extra_compile_args=cflags_warnings + ['-Wall', '-Werror'])
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
     setup(
         script_name='setup' + libposix_name,
@@ -496,6 +524,11 @@ def build(capi_home):
                                 subdir="bz2", 
                                 libname="libbz2support", 
                                 deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
+                                extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
+        build_nativelibsupport(capi_home, 
+                                subdir="lzma", 
+                                libname="liblzmasupport", 
+                                deps=[LZMADepedency("lzma", "xz==5.2.5", "XZ-5.2.5")],
                                 extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
         build_libpython(capi_home)
         build_builtin_exts(capi_home)

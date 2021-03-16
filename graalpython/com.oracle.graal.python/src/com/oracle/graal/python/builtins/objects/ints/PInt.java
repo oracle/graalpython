@@ -116,106 +116,178 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isNumber() {
+    public boolean isNumber(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        if (isBoolean.profile(this == context.getCore().getTrue() || this == context.getCore().getFalse())) {
+            return false;
+        }
         return true;
     }
 
     @ExportMessage
-    public boolean fitsInByte() {
-        return fitsIn(MIN_BYTE, MAX_BYTE);
+    public boolean fitsInByte(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        if (isNumber(isBoolean, context)) {
+            return fitsIn(MIN_BYTE, MAX_BYTE);
+        } else {
+            return false;
+        }
     }
 
     @ExportMessage
-    public byte asByte() throws UnsupportedMessageException {
-        try {
-            return byteValueExact();
-        } catch (ArithmeticException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+    public byte asByte(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, context)) {
+            try {
+                return byteValueExact();
+            } catch (ArithmeticException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    boolean fitsInShort(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        if (isNumber(isBoolean, context)) {
+            return fitsIn(MIN_SHORT, MAX_SHORT);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage(limit = "1")
+    short asShort(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, context)) {
+            try {
+                return interop.asShort(intValueExact());
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    public boolean fitsInInt(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        if (isNumber(isBoolean, context)) {
+            return fitsIn(MIN_INT, MAX_INT);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    public int asInt(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, context)) {
+            try {
+                return this.intValueExact();
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    public boolean fitsInLong(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+        if (isNumber(isBoolean, context)) {
+            return fitsIn(MIN_LONG, MAX_LONG);
+        } else {
+            return false;
+        }
+    }
+
+    @ExportMessage
+    public long asLong(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, context)) {
+            try {
+                return this.longValueExact();
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
             throw UnsupportedMessageException.create();
         }
     }
 
     @ExportMessage(limit = "1")
-    boolean fitsInShort() {
-        return fitsIn(MIN_SHORT, MAX_SHORT);
-    }
-
-    @ExportMessage(limit = "1")
-    short asShort(@CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
+    boolean fitsInFloat(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
-            return interop.asShort(intValueExact());
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    public boolean fitsInInt() {
-        return fitsIn(MIN_INT, MAX_INT);
-    }
-
-    @ExportMessage
-    public int asInt() throws UnsupportedMessageException {
-        try {
-            return this.intValueExact();
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-    }
-
-    @ExportMessage
-    public boolean fitsInLong() {
-        return fitsIn(MIN_LONG, MAX_LONG);
-    }
-
-    @ExportMessage
-    public long asLong() throws UnsupportedMessageException {
-        try {
-            return this.longValueExact();
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-    }
-
-    @ExportMessage(limit = "1")
-    boolean fitsInFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) {
-        try {
-            return fitsInLong() && interop.fitsInFloat(longValueExact());
+            return fitsInLong(isBoolean, context) && interop.fitsInFloat(longValueExact());
         } catch (OverflowException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
     @ExportMessage(limit = "1")
-    float asFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
-        try {
-            return interop.asFloat(longValueExact());
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+    float asFloat(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, context)) {
+            try {
+                return interop.asFloat(longValueExact());
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
             throw UnsupportedMessageException.create();
         }
     }
 
     @ExportMessage(limit = "1")
-    boolean fitsInDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) {
+    boolean fitsInDouble(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
-            return fitsInLong() && interop.fitsInDouble(longValueExact());
+            return fitsInLong(isBoolean, context) && interop.fitsInDouble(longValueExact());
         } catch (OverflowException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
     @ExportMessage(limit = "1")
-    double asDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
-        try {
-            return interop.asDouble(longValueExact());
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+    double asDouble(
+                    @Shared("isBoolean") @Cached ConditionProfile isBoolean,
+                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, context)) {
+            try {
+                return interop.asDouble(longValueExact());
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedMessageException.create();
+            }
+        } else {
             throw UnsupportedMessageException.create();
         }
     }
@@ -587,7 +659,7 @@ public final class PInt extends PythonBuiltinObject {
     /**
      * Creates a Python {@code int} object from a Java {@code long} value by interpreting it as an
      * unsigned number.
-     * 
+     *
      * @param factory Python object factory
      * @param profile condition profile for the case when the unsigned value fits into Java
      *            {@code long}

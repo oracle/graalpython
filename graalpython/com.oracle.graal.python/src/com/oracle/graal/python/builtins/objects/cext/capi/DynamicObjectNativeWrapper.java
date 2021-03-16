@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_DEF;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MEMORYVIEW_EXPORTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_BASE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_EXPORTS;
@@ -98,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.WrapVoidPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateTimeMode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -162,6 +164,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -431,6 +434,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached BranchProfile notMemoryview,
                         @Cached BranchProfile notBuffer,
                         @Cached BranchProfile notMmap,
+                        @Cached LookupNativeMemberInMRONode lookupTpAsBufferNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
             PythonBuiltinClass pBytes = context.getCore().lookupType(PythonBuiltinClassType.PBytes);
@@ -458,8 +462,16 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return new PyBufferProcsWrapper(pMmap);
             }
             notMmap.enter();
-            // NULL pointer
-            return toSulongNode.execute(getNativeNullNode.execute());
+            /*
+             * Managed classes don't store PyBufferProcs objects and so there is no attribute. This
+             * is why we use managedMemberName == "".
+             */
+            Object result = lookupTpAsBufferNode.execute(object, NativeMember.TP_AS_BUFFER, "");
+            if (result == PNone.NO_VALUE) {
+                // NULL pointer
+                return toSulongNode.execute(getNativeNullNode.execute());
+            }
+            return toSulongNode.execute(result);
         }
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
@@ -978,13 +990,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(object)));
         }
 
-        protected static boolean isPyDateTime(PythonObject object, GetClassNode getClassNode, GetNameNode getNameNode) {
-            return "datetime".equals(getNameNode.execute(getClassNode.execute(object)));
-        }
-
         protected static boolean isPyDateTimeCAPIType(String className) {
             return "PyDateTime_CAPI".equals(className);
 
+        }
+
+        protected static DateTimeMode getDateTimeMode(PythonObject object, GetClassNode getClassNode, GetNameNode getNameNode) {
+            return PyDateTimeMRNode.getModeFromTypeName(getNameNode.execute(getClassNode.execute(object)));
         }
 
         @Specialization(guards = "isPyDateTimeCAPI(object, getClassNode, getNameNode)", limit = "1")
@@ -996,12 +1008,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getAttrNode.execute(getClassNode.execute(object), key));
         }
 
-        @Specialization(guards = "isPyDateTime(object, getClassNode, getNameNode)", limit = "1")
+        @Specialization(guards = "mode != null", limit = "1")
         static Object doDatetimeData(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("getNameNode") @Cached @SuppressWarnings("unused") GetNameNode getNameNode,
                         @Shared("getClassNode") @Cached @SuppressWarnings("unused") GetClassNode getClassNode,
+                        @Bind("getDateTimeMode(object, getClassNode, getNameNode)") DateTimeMode mode,
                         @Cached PyDateTimeMRNode pyDateTimeMRNode) {
-            return pyDateTimeMRNode.execute(object, key);
+            return pyDateTimeMRNode.execute(object, key, mode);
         }
 
         @Specialization(guards = "eq(F_LINENO, key)")
@@ -1024,13 +1037,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         // TODO fallback guard
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) throws UnknownIdentifierException {
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
+                        @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
             if (nativeWrapper.isMemberReadable(key)) {
                 logGeneric(key);
-                return lib.getItem(nativeWrapper.getNativeMemberStore(), key);
+                DynamicObjectStorage nativeMemberStore = nativeWrapper.getNativeMemberStore();
+                if (nativeMemberStore != null) {
+                    return lib.getItem(nativeMemberStore, key);
+                }
+                return toSulongNode.execute(getNativeNullNode.execute());
             }
             throw UnknownIdentifierException.create(key);
         }
@@ -1296,8 +1315,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     if (((DynamicObjectNativeWrapper) nativeWrapper).isMemberModifiable(key)) {
                         logGeneric(key);
                         lib.setItem(((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(lang), key, value);
+                    } else {
+                        throw UnknownIdentifierException.create(key);
                     }
-                    throw UnknownIdentifierException.create(key);
                 } else {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -1324,6 +1344,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         TP_FREE.getMemberName().equals(member) ||
                         TP_SUBCLASSES.getMemberName().equals(member) ||
                         MD_DEF.getMemberName().equals(member) ||
+                        MD_STATE.getMemberName().equals(member) ||
                         TP_DICT.getMemberName().equals(member) ||
                         TP_DICTOFFSET.getMemberName().equals(member) ||
                         MEMORYVIEW_EXPORTS.getMemberName().equals(member);

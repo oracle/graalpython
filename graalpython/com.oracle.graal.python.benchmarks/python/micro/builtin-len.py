@@ -33,13 +33,13 @@ def call_len(num, ll):
     return length
 
 
-def measure():
+def measure(num=500000000):
     ll = [x * 2 for x in range(1000)]
-    length = call_len(500000000, ll)  # 1000000000
+    length = call_len(num, ll)  # 1000000000
 
     print("Final length ", length)
 
 
 
 def __benchmark__(*args):
-    measure()
+    measure(*args)

@@ -221,6 +221,7 @@ public final class PythonContext {
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
     @CompilationFinal private NFIBz2Support nativeBz2lib;
+    @CompilationFinal private NFILZMASupport nativeLZMA;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -262,7 +263,7 @@ public final class PythonContext {
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
-    private PosixResources resources;
+    private EmulatedPosixSupport resources;
     private final AsyncHandler handler;
     private final AsyncHandler.SharedFinalizer sharedFinalizer;
 
@@ -355,6 +356,10 @@ public final class PythonContext {
 
     public NFIBz2Support getNFIBz2Support() {
         return nativeBz2lib;
+    }
+
+    public NFILZMASupport getNFILZMASupport() {
+        return nativeLZMA;
     }
 
     public TruffleLanguage.Env getEnv() {
@@ -450,18 +455,19 @@ public final class PythonContext {
     }
 
     public void initialize() {
-        initalizePosixSupport();
+        initializePosixSupport();
         core.initialize(this);
         setupRuntimeInformation(false);
         core.postInitialize();
         if (!ImageInfo.inImageBuildtimeCode()) {
             importSiteIfForced();
+        } else if (posixSupport instanceof ImageBuildtimePosixSupport) {
+            ((ImageBuildtimePosixSupport) posixSupport).checkLeakingResources();
         }
     }
 
     public void patch(Env newEnv) {
         setEnv(newEnv);
-        posixSupport.postInitialize();
         setupRuntimeInformation(true);
         core.postInitialize();
         importSiteIfForced();
@@ -528,6 +534,7 @@ public final class PythonContext {
     private void setupRuntimeInformation(boolean isPatching) {
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
+        nativeLZMA = NFILZMASupport.createNative(this, "");
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
@@ -560,28 +567,41 @@ public final class PythonContext {
         isInitialized = true;
     }
 
-    private void initalizePosixSupport() {
+    private void initializePosixSupport() {
         String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
         PosixSupport result;
+        // The resources field will be removed once all posix builtins go through PosixSupport
         switch (option) {
             case "java":
-                result = new EmulatedPosixSupport(this);
+                result = resources = new EmulatedPosixSupport(this, false);
                 break;
             case "native":
-                result = NFIPosixSupport.createNative(this);
-                break;
             case "llvm":
-                result = NFIPosixSupport.createLLVM(this);
+                // TODO this condition will be moved into a factory method in NFIPosixBackend
+                // for now it's here because we still need to expose the emulated backend as
+                // 'resources'
+                if (ImageInfo.inImageBuildtimeCode()) {
+                    EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this, false);
+                    NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                    result = new ImageBuildtimePosixSupport(nativePosixSupport, emulatedPosixSupport);
+                    resources = emulatedPosixSupport;
+                } else if (ImageInfo.inImageRuntimeCode()) {
+                    NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                    result = new ImageBuildtimePosixSupport(nativePosixSupport, null);
+                    resources = new EmulatedPosixSupport(this, true);
+                    resources.setEnv(env);
+                } else {
+                    if (!getOption(PythonOptions.RunViaLauncher)) {
+                        writeWarning("Native Posix backend is not fully supported when embedding. For example, standard I/O always uses file " +
+                                        "descriptors 0, 1 and 2 regardless of stream redirection specified in Truffle environment");
+                    }
+                    result = new NFIPosixSupport(this, option);
+                    resources = new EmulatedPosixSupport(this, true);
+                    resources.setEnv(env);
+                }
                 break;
             default:
                 throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
-        }
-        // The resources field will be removed once all posix builtins go through PosixSupport
-        if (result instanceof PosixResources) {
-            resources = (PosixResources) result;
-        } else {
-            resources = new PosixResources();
-            resources.setEnv(env);
         }
         if (LoggingPosixSupport.isEnabled()) {
             posixSupport = new LoggingPosixSupport(result);
@@ -915,7 +935,7 @@ public final class PythonContext {
         return getEnv().isHostLookupAllowed() || getEnv().isNativeAccessAllowed();
     }
 
-    public PosixResources getResources() {
+    public EmulatedPosixSupport getResources() {
         return resources;
     }
 

@@ -40,6 +40,22 @@
  */
 package com.oracle.graal.python.test.parser;
 
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.CharBuffer;
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.parser.ScopeInfo;
@@ -56,17 +72,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.CharBuffer;
-import java.util.Arrays;
-import java.util.List;
-import org.junit.Assert;
-import static org.junit.Assert.assertTrue;
-import org.junit.Rule;
-import org.junit.rules.TestName;
 
 public class ParserTestBase {
     protected PythonContext context;
@@ -87,8 +92,18 @@ public class ParserTestBase {
     private SSTNode lastSST;
 
     public ParserTestBase() {
+    }
+
+    @Before
+    public void setUp() {
         PythonTests.enterContext();
         context = PythonLanguage.getContext();
+    }
+
+    @After
+    public void tearDown() {
+        context = null;
+        PythonTests.closeContext();
     }
 
     protected Source createSource(File testFile) throws Exception {

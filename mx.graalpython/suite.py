@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "315d6d694622db1fa17154c360d2471a659fb7d0",
+                "version": "5a1d413830ed950a9051c7b76c7dfb3e146ec6eb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "315d6d694622db1fa17154c360d2471a659fb7d0",
+                "version": "5a1d413830ed950a9051c7b76c7dfb3e146ec6eb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "315d6d694622db1fa17154c360d2471a659fb7d0",
+                "version": "5a1d413830ed950a9051c7b76c7dfb3e146ec6eb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -106,6 +106,13 @@ suite = {
                 "artifactId": "xz",
                 "version": "1.8",
             },
+        },
+        "XZ-5.2.5": {
+            "urls": [
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/xz-5.2.5.tar.gz",
+            ],
+            "packedResource": True,
+            "sha1": "fa2ae4db119f639a01b02f99f1ba671ece2828eb",
         },
         "BZIP2": {
             "urls": [
@@ -301,6 +308,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python",
                 "sdk:GRAAL_SDK",
+                "sdk:LAUNCHER_COMMON",
                 "mx:JMH_1_21"
             ],
             "jacoco": "exclude",
@@ -335,12 +343,14 @@ suite = {
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+                "XZ-5.2.5",
                 "BZIP2",
             ],
             "buildEnv": {
                 "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                 "ARCH": "<arch>",
                 "OS": "<os>",
+                "XZ-5.2.5": "<path:XZ-5.2.5>",
                 "BZIP2": "<path:BZIP2>",
             },
         },

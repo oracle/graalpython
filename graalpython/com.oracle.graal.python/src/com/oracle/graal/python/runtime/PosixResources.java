@@ -58,6 +58,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -76,11 +78,13 @@ public class PosixResources extends PosixSupport {
     private static final int FD_STDERR = 2;
 
     /** Context-local file-descriptor mappings and PID mappings */
+    protected final PythonContext context;
     private final SortedMap<Integer, ChannelWrapper> files;
     protected final Map<Integer, String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
+    private final boolean useNfiForSocketFd;
 
     private static class ProcessGroup extends Process {
         private final List<Process> children;
@@ -184,7 +188,8 @@ public class PosixResources extends PosixSupport {
         }
     }
 
-    public PosixResources() {
+    public PosixResources(PythonContext context, boolean useNfiForSocketFd) {
+        this.context = context;
         files = Collections.synchronizedSortedMap(new TreeMap<>());
         filePaths = Collections.synchronizedMap(new HashMap<>());
         children = Collections.synchronizedList(new ArrayList<>());
@@ -206,6 +211,7 @@ public class PosixResources extends PosixSupport {
         children.add(new ProcessGroup(children)); // PID 0 is special, and refers to all processes
                                                   // in the process group
         inodes = new HashMap<>();
+        this.useNfiForSocketFd = useNfiForSocketFd;
     }
 
     @TruffleBoundary
@@ -256,9 +262,12 @@ public class PosixResources extends PosixSupport {
     @TruffleBoundary
     private void dupFD(int fd1, int fd2) {
         ChannelWrapper channelWrapper = files.getOrDefault(fd1, null);
+        String path = filePaths.get(fd1);
         if (channelWrapper != null) {
+            assert path != null;
             channelWrapper.cnt += 1;
             files.put(fd2, channelWrapper);
+            filePaths.put(fd2, path);
         }
     }
 
@@ -324,13 +333,63 @@ public class PosixResources extends PosixSupport {
         }
     }
 
+    // Until the socket module is rewritten to use PosixSupportLibrary, we need to deal with
+    // emulated sockets when graalpython runs with the NFI posix backend. Mainly we need to
+    // distinguish whether a fd is a real native file descriptor, or if it is an emulated socket.
+    // Thus we must 'reserve' a native fd for each emulated socket - we do that by dup()-ing
+    // a fd which we get by calling native pipe().
+    // We also assume that fds returned from openSocket are used only through the socket module
+    // i.e. calls like posix.close(fd) or posix.read(fd) don't do the right thing.
+    private int nativeFdForSockets = -1;
+
     @TruffleBoundary
     public int openSocket(PSocket socket) {
         synchronized (files) {
-            int fd = nextFreeFd();
+            int fd;
+            if (!useNfiForSocketFd) {
+                // using emulated backend
+                fd = nextFreeFd();
+            } else {
+                // using nfi backend
+                try {
+                    Object posixSupport = context.getPosixSupport();
+                    PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+                    if (nativeFdForSockets == -1) {
+                        int[] fds = posixLib.pipe(posixSupport);
+                        nativeFdForSockets = fds[0];
+                        fd = fds[1];
+                    } else {
+                        fd = posixLib.dup(posixSupport, nativeFdForSockets);
+                    }
+                } catch (PosixException e) {
+                    throw CompilerDirectives.shouldNotReachHere("Unable to assign native fd to a socket", e);
+                }
+            }
             addFD(fd, socket);
             return fd;
         }
+    }
+
+    @TruffleBoundary
+    public void closeSocket(PSocket socket) {
+        int fd = socket.getFileno();
+        if (fd < 0) {
+            return;
+        }
+        socket.setFileno(-1);
+        close(fd);
+        if (useNfiForSocketFd) {
+            // using nfi backend
+            try {
+                PosixSupportLibrary.getUncached().close(context.getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw CompilerDirectives.shouldNotReachHere("Unable to close native fd", e);
+            }
+        }
+    }
+
+    public boolean isSocket(int fd) {
+        return getSocket(fd) != null;
     }
 
     @TruffleBoundary

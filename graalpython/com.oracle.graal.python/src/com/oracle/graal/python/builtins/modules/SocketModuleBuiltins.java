@@ -680,7 +680,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            getContext().getResources().close(socket.getFileno());
+            getContext().getResources().closeSocket(socket);
             return PNone.NONE;
         }
 

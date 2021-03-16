@@ -1502,18 +1502,12 @@ public abstract class TypeNodes {
             if (hasValueProfile.profile(itemsize != PNone.NO_VALUE)) {
                 return (long) itemsize;
             }
-            itemsize = computeItemSize(cls, getBaseNode, baseItemsizeNode);
-            writeNode.execute(cls, TYPE_ITEMSIZE, itemsize);
-            return (long) itemsize;
-        }
 
-        private static Long computeItemSize(PythonManagedClass cls, GetBaseClassNode getBaseNode, GetItemsizeNode baseItemsizeNode) {
-            if (cls instanceof PythonBuiltinClass) {
-                return getItemsizeType(((PythonBuiltinClass) cls).getType());
-            }
             Object base = getBaseNode.execute(cls);
             assert base != null;
-            return baseItemsizeNode.execute(base);
+            itemsize = baseItemsizeNode.execute(base);
+            writeNode.execute(cls, TYPE_ITEMSIZE, itemsize);
+            return (long) itemsize;
         }
 
         @Specialization

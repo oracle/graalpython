@@ -30,12 +30,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -740,6 +736,31 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary
+    public static ByteArrayOutputStream createOutputStream() {
+        return new ByteArrayOutputStream();
+    }
+
+    @TruffleBoundary
+    public static ByteArrayOutputStream createOutputStream(int n) {
+        return new ByteArrayOutputStream(n);
+    }
+
+    @TruffleBoundary
+    public static void append(ByteArrayOutputStream bas, byte[] bytes, int off, int len) {
+        bas.write(bytes, off, len);
+    }
+
+    @TruffleBoundary
+    public static void append(ByteArrayOutputStream bas, byte[] bytes, int len) {
+        append(bas, bytes, 0, len);
+    }
+
+    @TruffleBoundary
+    public static byte[] toByteArray(ByteArrayOutputStream bas) {
+        return bas.toByteArray();
+    }
+
+    @TruffleBoundary
     public static String createUTF8String(byte[] retbuf) {
         return new String(retbuf, StandardCharsets.UTF_8);
     }
@@ -749,31 +770,9 @@ public final class BytesUtils {
         return str.getBytes(StandardCharsets.UTF_8);
     }
 
-    /*
-     * corresponds to unicode_encode_utf8.
-     */
-    @TruffleBoundary
-    public static byte[] encodeUTF8(String str) throws CharacterCodingException {
-        CodingErrorAction errorAction = CodingErrorAction.REPORT;
-        Charset cs = StandardCharsets.UTF_8;
-        ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(str));
-        int n = encoded.remaining();
-        byte[] data = new byte[n];
-        encoded.get(data);
-        return data;
-    }
-
     public static byte[] getBytes(PythonObjectLibrary lib, Object object) {
         try {
             return lib.getBufferBytes(object);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
-    }
-
-    public static int getBytesLength(PythonObjectLibrary lib, Object object) {
-        try {
-            return lib.getBufferLength(object);
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }

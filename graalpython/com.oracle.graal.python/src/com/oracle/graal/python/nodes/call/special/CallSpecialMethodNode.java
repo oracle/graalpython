@@ -63,7 +63,6 @@ import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.NodeField;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -73,7 +72,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
-@ReportPolymorphism
 @NodeField(name = "maxSizeExceeded", type = boolean.class)
 abstract class CallSpecialMethodNode extends Node {
 

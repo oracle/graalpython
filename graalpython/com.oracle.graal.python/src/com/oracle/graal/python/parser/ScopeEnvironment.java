@@ -313,7 +313,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return currentScope.isExplicitNonlocalVariable(name);
     }
 
-    public FrameSlot createAndReturnLocal(String name) {
+    public FrameSlot createAndReturnLocal(Object name) {
         return currentScope.createSlotIfNotPresent(name);
     }
 

@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
@@ -116,6 +115,9 @@ import com.oracle.graal.python.builtins.modules.io.BufferedWriterMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
+import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
@@ -157,8 +159,6 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
-import com.oracle.graal.python.builtins.objects.lzma.LZMACompressorBuiltins;
-import com.oracle.graal.python.builtins.objects.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
@@ -289,7 +289,6 @@ public final class Python3Core implements PythonCore {
                         "marshal",
                         "_struct",
                         "bool",
-                        "_lzma",
                         "_posixshmem"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {

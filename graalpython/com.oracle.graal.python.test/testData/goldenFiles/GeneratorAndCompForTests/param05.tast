@@ -43,18 +43,15 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
                         ExpressionStatementNode SourceSection: [35,42]`yield p`
                           YieldNode SourceSection: [35,42]`yield p`
                             flagSlot: 0
-                            ReadGeneratorFrameVariableNode SourceSection: [41,42]`p`
+                            ReadGeneratorFrameVariableNodeGen SourceSection: [41,42]`p`
                               Frame: [1,p,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                           Identifier: p
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [1,p,Illegal]
+                          Frame: [1,p,Illegal]
                         GetIteratorExpressionNodeGen SourceSection: [26,29]`arg`
-                          ReadGeneratorFrameVariableNode SourceSection: [26,29]`arg`
+                          ReadGeneratorFrameVariableNodeGen SourceSection: [26,29]`arg`
                             Frame: [0,arg,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                         GetNextNode SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
@@ -62,13 +59,11 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
                         IsBuiltinClassProfile SourceSection: None
                           CachedDispatchFirst SourceSection: None
                       BlockNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: arg
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,arg,Illegal]
+                    Frame: [0,arg,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadVarKeywordsNodeGen SourceSection: None
                         PythonObjectFactoryNodeGen SourceSection: None

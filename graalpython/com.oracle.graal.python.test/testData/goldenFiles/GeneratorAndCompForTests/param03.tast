@@ -44,33 +44,28 @@ ModuleRootNode Name: <module 'param03'> SourceSection: [0,35]`def fn(a, b=1):↵
                       ExpressionStatementNode SourceSection: [18,25]`yield a`
                         YieldNode SourceSection: [18,25]`yield a`
                           flagSlot: 0
-                          ReadGeneratorFrameVariableNode SourceSection: [24,25]`a`
+                          ReadGeneratorFrameVariableNodeGen SourceSection: [24,25]`a`
                             Frame: [0,a,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       ExpressionStatementNode SourceSection: [28,35]`yield b`
                         YieldNode SourceSection: [28,35]`yield b`
                           flagSlot: 1
-                          ReadGeneratorFrameVariableNode SourceSection: [34,35]`b`
+                          ReadGeneratorFrameVariableNodeGen SourceSection: [34,35]`b`
                             Frame: [1,b,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: a
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [0,a,Illegal]
+                      Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: b
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [1,b,Illegal]
+                      Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1

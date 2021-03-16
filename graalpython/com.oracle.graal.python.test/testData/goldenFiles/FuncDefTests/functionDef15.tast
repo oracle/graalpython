@@ -43,8 +43,6 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                       EmptyNode SourceSection: [32,48]`global SOMETHING`
                     IfNode SourceSection: [51,77]`if True : SOMETHING ...`
                       YesNodeGen SourceSection: None
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                         BooleanLiteralNode SourceSection: [54,58]`True`
                       WriteGlobalNodeGen SourceSection: [61,77]`SOMETHING = True`
                         Identifier: SOMETHING
@@ -52,9 +50,8 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                           CachedDispatchFirst SourceSection: None
                         BooleanLiteralNode SourceSection: [73,77]`True`
                       BlockNode SourceSection: None
-                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [0,<return_val>,Illegal]
-                  ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -86,14 +83,11 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                       FunctionBodyNode SourceSection: [95,114]`if SOMETHING : pass`
                         IfNode SourceSection: [95,114]`if SOMETHING : pass`
                           YesNodeGen SourceSection: None
-                            IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [98,107]`SOMETHING`
                               Identifier: SOMETHING
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [110,114]`pass`
                             EmptyNode SourceSection: [110,114]`pass`
                           BlockNode SourceSection: None
-                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                       Frame: [0,<return_val>,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None

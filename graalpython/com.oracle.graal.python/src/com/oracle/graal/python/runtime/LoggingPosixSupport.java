@@ -91,6 +91,7 @@ public class LoggingPosixSupport extends PosixSupport {
 
     public LoggingPosixSupport(PosixSupport delegate) {
         this.delegate = delegate;
+        LOGGER.log(Level.INFO, "Using " + delegate.getClass());
     }
 
     public static boolean isEnabled() {
@@ -239,7 +240,7 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     public SelectResult select(int[] readfds, int[] writefds, int[] errorfds, Timeval timeout,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("select", "%s %s %s %d %d", readfds, writefds, errorfds, timeout.getSeconds(), timeout.getMicroseconds());
+        logEnter("select", "%s %s %s %s", readfds, writefds, errorfds, timeout);
         try {
             return logExit("select", "%s", lib.select(delegate, readfds, writefds, errorfds, timeout));
         } catch (PosixException e) {
@@ -533,6 +534,39 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void futimes(int fd, Timeval[] timeval,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("futimes", "%d, %s", fd, timeval);
+        try {
+            lib.futimes(delegate, fd, timeval);
+        } catch (PosixException e) {
+            throw logException("futimes", e);
+        }
+    }
+
+    @ExportMessage
+    final void lutimes(Object filename, Timeval[] timeval,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("lutimes", "%s, %s", filename, timeval);
+        try {
+            lib.lutimes(delegate, filename, timeval);
+        } catch (PosixException e) {
+            throw logException("lutimes", e);
+        }
+    }
+
+    @ExportMessage
+    final void utimes(Object filename, Timeval[] timeval,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("utimes", "%s, %s", filename, timeval);
+        try {
+            lib.utimes(delegate, filename, timeval);
+        } catch (PosixException e) {
+            throw logException("utimes", e);
+        }
+    }
+
+    @ExportMessage
     final void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("renameAt", "%d, %s, %d, %s", oldDirFd, oldPath, newDirFd, newPath);
@@ -595,6 +629,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public Object mmap(long length, int prot, int flags, int fd, long offset,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("mmap", "%d, %d, %d, %d, %d", length, prot, flags, fd, offset);
+        try {
+            return logExit("mmap", "%s", lib.mmap(delegate, length, prot, flags, fd, offset));
+        } catch (PosixException e) {
+            throw logException("mmap", e);
+        }
+    }
+
+    @ExportMessage
     final long[] waitpid(long pid, int options,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("waitpid", "%d, %d", pid, options);
@@ -602,6 +647,17 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("waitpid", "%s", lib.waitpid(delegate, pid, options));
         } catch (PosixException e) {
             throw logException("waitpid", e);
+        }
+    }
+
+    @ExportMessage
+    public byte mmapReadByte(Object mmap, long index,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("mmapReadByte", "%s, %d", mmap, index);
+        try {
+            return logExit("mmapReadByte", "%s", lib.mmapReadByte(delegate, mmap, index));
+        } catch (PosixException e) {
+            throw logException("mmapReadByte", e);
         }
     }
 
@@ -687,6 +743,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("mmapReadBytes", "%s, %d, %d", mmap, index, length);
+        try {
+            return logExit("mmapReadBytes", "%s", lib.mmapReadBytes(delegate, mmap, index, bytes, length));
+        } catch (PosixException e) {
+            throw logException("mmapReadBytes", e);
+        }
+    }
+
+    @ExportMessage
     final String ctermid(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("ctermid", "");
         try {
@@ -708,6 +775,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("mmapWriteBytes", "%s, %d, %d", mmap, index, length);
+        try {
+            lib.mmapWriteBytes(delegate, mmap, index, bytes, length);
+        } catch (PosixException e) {
+            throw logException("mmapWriteBytes", e);
+        }
+    }
+
+    @ExportMessage
     final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
                     int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
@@ -722,6 +800,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public void mmapFlush(Object mmap, long offset, long length,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("mmapFlush", "%s, %d, %d", mmap, offset, length);
+        try {
+            lib.mmapFlush(delegate, mmap, offset, length);
+        } catch (PosixException e) {
+            throw logException("mmapFlush", e);
+        }
+    }
+
+    @ExportMessage
     final void execv(Object pathname, Object[] args,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("execv", "%s, %s", pathname, args);
@@ -729,6 +818,17 @@ public class LoggingPosixSupport extends PosixSupport {
             lib.execv(delegate, pathname, args);
         } catch (PosixException e) {
             throw logException("execv", e);
+        }
+    }
+
+    @ExportMessage
+    public void mmapUnmap(Object mmap, long length,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("mmapUnmap", "%s %d", mmap, length);
+        try {
+            lib.mmapUnmap(delegate, mmap, length);
+        } catch (PosixException e) {
+            throw logException("mmapUnmap", e);
         }
     }
 
@@ -812,6 +912,10 @@ public class LoggingPosixSupport extends PosixSupport {
         if (arg instanceof Buffer) {
             Buffer b = (Buffer) arg;
             return "Buffer{" + asString(b.data, 0, (int) b.length) + "}";
+        }
+        if (arg instanceof Timeval) {
+            Timeval t = (Timeval) arg;
+            return "Timeval{" + t.getSeconds() + ", " + t.getMicroseconds() + "}";
         }
         if (arg instanceof byte[]) {
             byte[] bytes = (byte[]) arg;

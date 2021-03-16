@@ -191,7 +191,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 }
             }
-            getContext().getResources().close(socket.getFileno());
+            getContext().getResources().closeSocket(socket);
             return PNone.NONE;
         }
     }
@@ -692,7 +692,9 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class SockDetachNode extends PythonUnaryBuiltinNode {
         @Specialization
         int detach(PSocket socket) {
-            return socket.getFileno();
+            int fd = socket.getFileno();
+            socket.setFileno(-1);
+            return fd;
         }
     }
 

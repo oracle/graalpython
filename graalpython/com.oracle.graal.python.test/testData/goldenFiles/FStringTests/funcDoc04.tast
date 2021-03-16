@@ -42,6 +42,5 @@ ModuleRootNode Name: <module 'funcDoc04'> SourceSection: [0,34]`def fn(): '123' 
                           StringLiteralNode SourceSection: [23,28]`'789'`
                       ExpressionStatementNode SourceSection: [30,34]`pass`
                         EmptyNode SourceSection: [30,34]`pass`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

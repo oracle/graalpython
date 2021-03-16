@@ -1125,6 +1125,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
 
         self.assertRaises(RuntimeError, IgnoreGeneratorExit().close)
 
+    @support.impl_detail("async support", graalvm=False)
     def test_AsyncGenerator(self):
         class NonAGen1:
             def __aiter__(self): return self
@@ -1399,6 +1400,7 @@ class TestCollectionABCs(ABCTestCase):
         s &= WithSet('cdef')            # This used to fail
         self.assertEqual(set(s), set('cd'))
 
+    @support.impl_detail("relies on element order in a set", graalvm=False)
     def test_issue_4920(self):
         # MutableSet.pop() method did not work
         class MySet(MutableSet):

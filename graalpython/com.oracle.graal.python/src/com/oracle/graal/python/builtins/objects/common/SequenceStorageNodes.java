@@ -194,11 +194,6 @@ public abstract class SequenceStorageNodes {
         GeneralizationNode getUncached();
     }
 
-    public interface ContainerFactory {
-
-        Object apply(SequenceStorage s, PythonObjectFactory factory);
-    }
-
     @GenerateUncached
     public abstract static class IsAssignCompatibleNode extends Node {
 
@@ -598,22 +593,22 @@ public abstract class SequenceStorageNodes {
     @ImportStatic(PGuards.class)
     public abstract static class GetItemDynamicNode extends Node {
 
-        public abstract Object execute(ContainerFactory factoryMethod, SequenceStorage s, Object key);
+        public abstract Object executeObject(SequenceStorage s, Object key);
 
         public final Object execute(SequenceStorage s, int key) {
-            return execute(null, s, key);
+            return executeObject(s, key);
         }
 
         public final Object execute(SequenceStorage s, long key) {
-            return execute(null, s, key);
+            return executeObject(s, key);
         }
 
         public final Object execute(SequenceStorage s, PInt key) {
-            return execute(null, s, key);
+            return executeObject(s, key);
         }
 
         @Specialization
-        protected static Object doScalarInt(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, int idx,
+        protected static Object doScalarInt(SequenceStorage storage, int idx,
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
@@ -621,7 +616,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static Object doScalarLong(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, long idx,
+        protected static Object doScalarLong(SequenceStorage storage, long idx,
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
@@ -629,7 +624,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static Object doScalarPInt(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, PInt idx,
+        protected static Object doScalarPInt(SequenceStorage storage, PInt idx,
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
@@ -637,7 +632,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "!isPSlice(idx)")
-        protected static Object doScalarGeneric(@SuppressWarnings("unused") ContainerFactory factoryMethod, SequenceStorage storage, Object idx,
+        protected static Object doScalarGeneric(SequenceStorage storage, Object idx,
                         @Shared("getItemScalarNode") @Cached GetItemScalarNode getItemScalarNode,
                         @Shared("normalizeIndexNode") @Cached NormalizeIndexCustomMessageNode normalizeIndexNode,
                         @Shared("lenNode") @Cached LenNode lenNode) {
@@ -645,16 +640,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static Object doSlice(ContainerFactory factoryMethod, SequenceStorage storage, PSlice slice,
+        @SuppressWarnings("unused")
+        protected static Object doSlice(SequenceStorage storage, PSlice slice,
                         @Cached GetItemSliceNode getItemSliceNode,
                         @Cached PythonObjectFactory factory,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {
-            SliceInfo info = compute.execute(sliceCast.execute(slice), storage.length());
-            if (factoryMethod != null) {
-                return factoryMethod.apply(getItemSliceNode.execute(storage, info.start, info.stop, info.step, sliceLen.len(info)), factory);
-            }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }

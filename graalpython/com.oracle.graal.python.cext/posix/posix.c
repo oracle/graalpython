@@ -51,6 +51,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -58,17 +59,14 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/select.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <sys/file.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
-
-// TODO remove this once we properly synchronize constants between Java and C
-static int fixDirFd(int dirFd) {
-    return dirFd == -100 ? AT_FDCWD : dirFd;
-}
 
 int64_t call_getpid() {
     return getpid();
@@ -104,17 +102,7 @@ int32_t set_inheritable(int32_t fd, int32_t inheritable) {
 }
 
 int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
-    int fixedFlags = flags;
-    // TODO remove this once we properly synchronize constants between Java and C
-    if (flags & 64) {
-        fixedFlags &= ~64;
-        fixedFlags |= O_CREAT;
-    }
-    if (flags & 524288) {
-        fixedFlags &= ~524288;
-        fixedFlags |= O_CLOEXEC;
-    }
-    return openat(fixDirFd(dirFd), pathname, fixedFlags, mode);
+    return openat(dirFd, pathname, flags, mode);
 }
 
 int32_t call_close(int32_t fd) {
@@ -198,7 +186,7 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
 
     struct timeval timeout = {timeoutSec, timeoutUsec};
 
-    int result = select(nfds, &readfdsSet, &writefdsSet, &errfdsSet, timeoutSec > 0 ? &timeout : NULL);
+    int result = select(nfds, &readfdsSet, &writefdsSet, &errfdsSet, timeoutSec >= 0 ? &timeout : NULL);
 
     // fill in the output parameter
     fill_select_result(readfds, readfdsLen, &readfdsSet, selected, 0);
@@ -283,7 +271,7 @@ static void stat_struct_to_longs(struct stat *st, int64_t *out) {
 
 int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSymlinks, int64_t *out) {
     struct stat st;
-    int result = fstatat(fixDirFd(dirFd), path, &st, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    int result = fstatat(dirFd, path, &st, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
     }
@@ -313,11 +301,11 @@ int32_t call_uname(char *sysname, char *nodename, char *release, char *version, 
 }
 
 int32_t call_unlinkat(int32_t dirFd, const char *pathname, int32_t rmdir) {
-    return unlinkat(fixDirFd(dirFd), pathname, rmdir ? AT_REMOVEDIR : 0);
+    return unlinkat(dirFd, pathname, rmdir ? AT_REMOVEDIR : 0);
 }
 
 int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
-    return symlinkat(target, fixDirFd(dirFd), linkpath);
+    return symlinkat(target, dirFd, linkpath);
 }
 
 int32_t call_mkdirat(int32_t dirFd, const char *pathname, int32_t mode) {
@@ -375,16 +363,17 @@ int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t
     return 0;
 }
 
+#ifdef __gnu_linux__
 int32_t call_utimensat(int32_t dirFd, const char *path, int64_t *timespec, int32_t followSymlinks) {
     if (!timespec) {
-        return utimensat(fixDirFd(dirFd), path, NULL, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+        return utimensat(dirFd, path, NULL, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
     } else {
         struct timespec times[2];
         times[0].tv_sec = timespec[0];
         times[0].tv_nsec = timespec[1];
         times[1].tv_sec = timespec[2];
         times[1].tv_nsec = timespec[3];
-        return utimensat(fixDirFd(dirFd), path, times, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+        return utimensat(dirFd, path, times, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
     }
 }
 
@@ -400,6 +389,46 @@ int32_t call_futimens(int32_t fd, int64_t *timespec) {
         return futimens(fd, times);
     }
 }
+#endif
+
+int32_t call_futimes(int32_t fd, int64_t *timeval) {
+    if (!timeval) {
+        return futimes(fd, NULL);
+    } else {
+        struct timeval times[2];
+        times[0].tv_sec = timeval[0];
+        times[0].tv_usec = timeval[1];
+        times[1].tv_sec = timeval[2];
+        times[1].tv_usec = timeval[3];
+        return futimes(fd, times);
+    }
+}
+
+int32_t call_lutimes(const char *filename, int64_t *timeval) {
+    if (!timeval) {
+        return lutimes(filename, NULL);
+    } else {
+        struct timeval times[2];
+        times[0].tv_sec = timeval[0];
+        times[0].tv_usec = timeval[1];
+        times[1].tv_sec = timeval[2];
+        times[1].tv_usec = timeval[3];
+        return lutimes(filename, times);
+    }
+}
+
+int32_t call_utimes(const char *filename, int64_t *timeval) {
+    if (!timeval) {
+        return utimes(filename, NULL);
+    } else {
+        struct timeval times[2];
+        times[0].tv_sec = timeval[0];
+        times[0].tv_usec = timeval[1];
+        times[1].tv_sec = timeval[2];
+        times[1].tv_usec = timeval[3];
+        return utimes(filename, times);
+    }
+}
 
 int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
     return renameat(oldDirFd, oldPath, newDirFd, newPath);
@@ -413,11 +442,11 @@ int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t ef
     if (effectiveIds) {
         flags |= AT_EACCESS;
     }
-    return faccessat(fixDirFd(dirFd), path, mode, flags);
+    return faccessat(dirFd, path, mode, flags);
 }
 
 int32_t call_fchmodat(int32_t dirFd, const char *path, int32_t mode, int32_t followSymlinks) {
-    return fchmodat(fixDirFd(dirFd), path, mode, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    return fchmodat(dirFd, path, mode, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
 }
 
 int32_t call_fchmod(int32_t fd, int32_t mode) {
@@ -503,6 +532,21 @@ void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
 
 int32_t call_system(const char *pathname) {
     return system(pathname);
+}
+
+int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
+    void *result = mmap(NULL, length, prot, flags, fd, offset);
+    return result == MAP_FAILED ? 0 : (int64_t) result;
+}
+
+int32_t call_munmap(int64_t address, int64_t length) {
+    return munmap((void *) address, length);
+}
+
+void call_msync(int64_t address, int64_t offset, int64_t length) {
+    // TODO: can be generalized to also accept different flags,
+    // but MS_SYNC and such seem to be defined to different values across systems
+    msync(((int8_t *) address) + offset, length, MS_SYNC);
 }
 
 int32_t get_errno() {

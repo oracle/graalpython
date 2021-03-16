@@ -177,7 +177,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1068,14 +1067,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         boolean isInstance(VirtualFrame frame, Object instance, Object cls) {
-            if (getPythonLanguage().getEngineOption(PythonOptions.EmulateJython)) {
-                TruffleLanguage.Env env = getContext().getEnv();
-                if (env.isHostObject(cls)) {
-                    Object hostCls = env.asHostObject(cls);
-                    Object hostInstance = env.isHostObject(instance) ? env.asHostObject(instance) : instance;
-                    return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
-                }
-            }
             TriState check = isInstanceCheckInternal(frame, instance, cls);
             if (check == TriState.UNDEFINED) {
                 return typeInstanceCheckNode.executeWith(frame, cls, instance);
@@ -1097,14 +1088,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
             }
             return getObjectArrayNode.execute(tuple);
-        }
-
-        private PythonLanguage getPythonLanguage() {
-            if (languageRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                languageRef = lookupLanguageReference(PythonLanguage.class);
-            }
-            return languageRef.get();
         }
     }
 

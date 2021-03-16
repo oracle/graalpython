@@ -58,12 +58,15 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -94,6 +97,7 @@ public abstract class IteratorNodes {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "4")
         int length(VirtualFrame frame, Object iterable,
+                        @CachedLibrary("iterable") InteropLibrary iLib,
                         @CachedLibrary("iterable") PythonObjectLibrary plib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary toInt,
                         @Cached("create(__LEN__)") LookupAttributeInMRONode lenNode,
@@ -103,6 +107,13 @@ public abstract class IteratorNodes {
                         @Cached ConditionProfile hasLenProfile,
                         @Cached ConditionProfile hasLengthHintProfile,
                         @Cached PRaiseNode raiseNode) {
+            if (iLib.isString(iterable)) {
+                try {
+                    return iLib.asString(iterable).length();
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
             Object clazz = plib.getLazyPythonClass(iterable);
             Object attrLenObj = lenNode.execute(clazz);
             if (hasLenProfile.profile(attrLenObj != PNone.NO_VALUE)) {

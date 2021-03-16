@@ -25,23 +25,21 @@
  */
 package com.oracle.graal.python.runtime.object;
 
-import java.io.ByteArrayOutputStream;
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
-import java.nio.channels.SeekableByteChannel;
 import java.util.concurrent.Semaphore;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 import org.graalvm.collections.EconomicMap;
-import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
+import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -92,8 +90,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
-import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
@@ -163,7 +159,6 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -175,7 +170,6 @@ import com.oracle.truffle.api.object.Shape;
 
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
-@ReportPolymorphism
 public abstract class PythonObjectFactory extends Node {
 
     public static PythonObjectFactory create() {
@@ -967,12 +961,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(getLanguage()), dirEntryData, path));
     }
 
-    public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {
-        return trace(new PMMap(PythonBuiltinClassType.PMMap, PythonBuiltinClassType.PMMap.getInstanceShape(getLanguage()), channel, length, offset));
-    }
-
-    public PMMap createMMap(Object clazz, SeekableByteChannel channel, long length, long offset) {
-        return trace(new PMMap(clazz, getShape(clazz), channel, length, offset));
+    public PMMap createMMap(Object clazz, Object mmapHandle, int fd, long length, int access) {
+        return trace(new PMMap(clazz, getShape(clazz), mmapHandle, fd, length, access));
     }
 
     public BZ2Object.BZ2Compressor createBZ2Compressor(Object clazz) {
@@ -995,12 +985,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(ZLibCompObject.createNative(clazz, getShape(clazz), zst, zlibSupport));
     }
 
-    public PLZMADecompressor createLZMADecompressor(Object clazz, int format, int memlimit) {
-        return trace(new PLZMADecompressor(clazz, getShape(clazz), format, memlimit));
+    public LZMAObject.LZMADecompressor createLZMADecompressor(Object clazz, boolean isNative) {
+        return trace(LZMAObject.createDecompressor(clazz, getShape(clazz), isNative));
     }
 
-    public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
+    public LZMAObject.LZMACompressor createLZMACompressor(Object clazz, boolean isNative) {
+        return trace(LZMAObject.createCompressor(clazz, getShape(clazz), isNative));
     }
 
     public PFileIO createFileIO(Object clazz) {

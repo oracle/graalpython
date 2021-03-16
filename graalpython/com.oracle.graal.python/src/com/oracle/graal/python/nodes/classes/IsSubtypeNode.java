@@ -58,7 +58,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -71,7 +71,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @GenerateUncached
 @NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
 @ImportStatic({PythonOptions.class, PGuards.class})
-@ReportPolymorphism
 public abstract class IsSubtypeNode extends PNodeWithContext {
     protected abstract boolean executeInternal(Frame frame, Object derived, Object cls);
 
@@ -258,6 +257,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "isSubtypeOfVariableTypeCached",
                     "isSubtypeGenericCachedLen"
     }, limit = "4")
+    @Megamorphic
     boolean issubTypeGeneric(Object derived, Object cls,
                     @SuppressWarnings("unused") @CachedLibrary("derived") PythonObjectLibrary libD,
                     @SuppressWarnings("unused") @CachedLibrary("cls") PythonObjectLibrary libC,
@@ -277,6 +277,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"!libD.isLazyPythonClass(derived) || !libC.isLazyPythonClass(cls)"})
+    @Megamorphic
     public boolean fallback(VirtualFrame frame, Object derived, Object cls,
                     @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary libD,
                     @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary libC,

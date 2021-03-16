@@ -74,6 +74,11 @@ class HPyDevel:
             dist.ext_modules = []
         dist.ext_modules += hpy_ext_modules
 
+        class HpyExtName(str):
+            def split(self, /, sep=None, maxsplit=-1):
+                res = str.split(self, sep, maxsplit)
+                return [HpyExtName(x) for x in res]
+
         hpy_devel = self
         base_class = dist.cmdclass.get('build_ext', build_ext)
         class build_hpy_ext(base_class):
@@ -94,9 +99,16 @@ class HPyDevel:
                     hpy_devel.fix_extension(ext, hpy_abi=self.distribution.hpy_abi)
                 return base_class.build_extension(self, ext)
 
+            def get_ext_fullname(self, ext_name):
+                fullname = super().get_ext_fullname(ext_name)
+                if is_hpy_extension(fullname):
+                    # wrap name to be able to identify in 'get_ext_filename'
+                    return HpyExtName(fullname)
+                return fullname
+
             def get_ext_filename(self, ext_name):
                 # this is needed to give the .hpy.so extension to universal extensions
-                if is_hpy_extension(ext_name) and self.distribution.hpy_abi == 'universal':
+                if (isinstance(ext_name, HpyExtName) or is_hpy_extension(ext_name)) and self.distribution.hpy_abi == 'universal':
                     ext_path = ext_name.split('.')
                     ext_suffix = '.hpy.so' # XXX Windows?
                     return os.path.join(*ext_path) + ext_suffix

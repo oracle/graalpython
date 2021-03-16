@@ -45,25 +45,20 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                             ForNextElementNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: x
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [0,x,Illegal]
+                                Frame: [0,x,Illegal]
                             BlockNode SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: [35,40]`x = 4`
                                 Identifier: x
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [0,x,Illegal]
+                                Frame: [0,x,Illegal]
                                 IntegerLiteralNode SourceSection: [39,40]`4`
                                   Value: 4
                               IfNode SourceSection: [45,115]`if x == 1:↵      pri...`
                                 YesNodeGen SourceSection: None
-                                  IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
                                   BinaryComparisonNodeGen SourceSection: [48,54]`x == 1`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __eq__
-                                    ReadLocalVariableNode SourceSection: [48,49]`x`
+                                    ReadLocalVariableNodeGen SourceSection: [48,49]`x`
                                       Frame: [0,x,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [53,54]`1`
                                       Value: 1
                                 BlockNode SourceSection: None
@@ -81,9 +76,8 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [105,110]`print`
                                       Identifier: print
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [111,112]`x`
+                                    ReadLocalVariableNodeGen SourceSection: [111,112]`x`
                                       Frame: [0,x,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [21,29]`range(3)`
                             PythonCallUnary SourceSection: [21,29]`range(3)`
                               CallUnaryMethodNodeGen SourceSection: None
@@ -93,6 +87,5 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                               IntegerLiteralNode SourceSection: [27,28]`3`
                                 Value: 3
                         BlockNode SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

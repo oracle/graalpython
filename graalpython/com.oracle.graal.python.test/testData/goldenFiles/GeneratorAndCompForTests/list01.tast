@@ -39,17 +39,15 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
                     BinaryArithmeticExpression SourceSection: [1,5]`x**y`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __pow__
-                      ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
+                      ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`x`
                         Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [4,5]`y`
                         Identifier: y
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,x,Illegal]
+                  Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -59,9 +57,8 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

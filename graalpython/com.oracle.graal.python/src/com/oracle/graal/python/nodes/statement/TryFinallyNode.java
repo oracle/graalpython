@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.statement;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -52,7 +53,7 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
                 body.executeVoid(frame);
             } catch (PException handledException) {
                 handleException(frame, handledException);
-            } catch (ControlFlowException e) {
+            } catch (AbstractTruffleException | ControlFlowException e) {
                 finalbody.executeVoid(frame);
                 throw e;
             } catch (Throwable e) {

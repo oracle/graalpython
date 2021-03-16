@@ -157,7 +157,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -331,7 +330,6 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    @ReportPolymorphism
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ToSulongNode extends CExtToNativeNode {
 
@@ -565,7 +563,6 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
-    @ReportPolymorphism
     public abstract static class ToNewRefNode extends CExtToNativeNode {
 
         public final Object executeInt(int i) {

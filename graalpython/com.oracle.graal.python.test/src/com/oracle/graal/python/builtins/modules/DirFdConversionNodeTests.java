@@ -40,12 +40,25 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.PythonLanguage.getContext;
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+
+import java.math.BigInteger;
+
+import org.graalvm.polyglot.Context;
+import org.hamcrest.CoreMatchers;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.DirFdConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -54,17 +67,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
-import org.graalvm.polyglot.Context;
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.math.BigInteger;
-
-import static com.oracle.graal.python.PythonLanguage.getContext;
 
 public class DirFdConversionNodeTests {
     @Rule public ExpectedException expectedException = ExpectedException.none();
@@ -74,10 +76,15 @@ public class DirFdConversionNodeTests {
         PythonTests.enterContext();
     }
 
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
+    }
+
     @Test
     public void none() {
-        Assert.assertEquals(PosixSupportLibrary.DEFAULT_DIR_FD, call(PNone.NONE));
-        Assert.assertEquals(PosixSupportLibrary.DEFAULT_DIR_FD, call(PNone.NO_VALUE));
+        Assert.assertEquals(AT_FDCWD.value, call(PNone.NONE));
+        Assert.assertEquals(AT_FDCWD.value, call(PNone.NO_VALUE));
     }
 
     @Test

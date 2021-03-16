@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,32 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.lzma;
+package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import java.io.ByteArrayOutputStream;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-import org.tukaani.xz.FinishableOutputStream;
+public abstract class LongConversionBaseNode extends ArgumentCastNodeWithRaise {
+    private final long defaultValue;
+    protected final boolean useDefaultForNone;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.object.Shape;
-
-public class PLZMACompressor extends PythonObject {
-
-    private FinishableOutputStream lzmaStream;
-    private ByteArrayOutputStream bos;
-
-    public PLZMACompressor(Object clazz, Shape instanceShape, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        super(clazz, instanceShape);
-        this.lzmaStream = lzmaStream;
-        this.bos = bos;
+    protected LongConversionBaseNode(long defaultValue, boolean useDefaultForNone) {
+        this.defaultValue = defaultValue;
+        this.useDefaultForNone = useDefaultForNone;
     }
 
-    public FinishableOutputStream getLzmaStream() {
-        return lzmaStream;
+    public abstract long executeLong(VirtualFrame frame, Object value);
+
+    @Specialization(guards = {"!useDefaultForNone", "isNoValue(none)"})
+    long doNoValue(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
     }
 
-    public ByteArrayOutputStream getBos() {
-        return bos;
+    @Specialization(guards = "useDefaultForNone")
+    long doNoValueAndNone(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
     }
 
+    @Specialization
+    static long doInt(int i) {
+        return i;
+    }
+
+    @Specialization
+    static long doLong(long l) {
+        return l;
+    }
+
+    protected boolean isHandledPNone(Object value) {
+        return isHandledPNone(useDefaultForNone, value);
+    }
 }

@@ -86,7 +86,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -106,7 +105,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -588,7 +586,6 @@ public abstract class BytesNodes {
         }
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(PGuards.class)
     public abstract static class BytesInitNode extends PNodeWithRaise {
 
@@ -629,15 +626,16 @@ public abstract class BytesNodes {
             return toByteNode.execute(frame, source, lenNode.execute(frame, source));
         }
 
-        @Specialization
-        byte[] fromString(String source, String encoding, @SuppressWarnings("unused") Object errors) {
+        @Specialization(guards = {"isString(source)", "isString(encoding)"})
+        byte[] fromString(Object source, Object encoding, Object errors,
+                        @Cached CastToJavaStringNode castStr) {
             String e = errors instanceof String ? (String) errors : "strict";
-            return BytesBuiltins.stringToByte(source, encoding, e, getRaiseNode());
+            return BytesBuiltins.stringToByte(castStr.execute(source), castStr.execute(encoding), e, getRaiseNode());
         }
 
-        @Specialization
+        @Specialization(guards = "isString(source)")
         @SuppressWarnings("unused")
-        byte[] fromString(String source, PNone encoding, Object errors) {
+        byte[] fromString(Object source, PNone encoding, Object errors) {
             throw raise(TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
         }
 
@@ -838,7 +836,7 @@ public abstract class BytesNodes {
         }
 
         /*-
-         * This should be equivalent to PyUnicode_EncodeFSDefault 
+         * This should be equivalent to PyUnicode_EncodeFSDefault
          * TODO: encoding perference is set per context but will force
          * it to UTF-8 for the time being.
          */

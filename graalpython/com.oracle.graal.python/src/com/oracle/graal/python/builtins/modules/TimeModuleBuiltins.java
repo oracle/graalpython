@@ -44,10 +44,12 @@ import java.util.List;
 import java.util.TimeZone;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrfTimeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -62,7 +64,9 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -73,7 +77,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -483,10 +486,14 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.strftime(format[, t])
-    @Builtin(name = "strftime", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "strftime", minNumOfPositionalArgs = 1, parameterNames = {"format", "time"})
+    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class StrfTimeNode extends PythonBuiltinNode {
+    public abstract static class StrfTimeNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StrfTimeNodeClinicProviderGen.INSTANCE;
+        }
 
         private static Object castToPInt(Object obj, PythonObjectLibrary asPIntLib, PRaiseNode raise) {
             if (asPIntLib.canBePInt(obj)) {
@@ -826,11 +833,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public String formatTime(@SuppressWarnings("unused") String format, @SuppressWarnings("unused") Object time) {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
-        }
-
-        @Fallback
-        public String formatTime(Object format, @SuppressWarnings("unused") Object time) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "strftime()", 1, "str", format);
         }
     }
 

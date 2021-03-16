@@ -36,14 +36,13 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
-@ReportPolymorphism
 @GenerateUncached
 public abstract class CallDispatchNode extends Node {
 
@@ -133,12 +132,14 @@ public abstract class CallDispatchNode extends Node {
     }
 
     @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCode", "callFunctionCachedCt"})
+    @Megamorphic
     protected Object callFunctionUncached(Frame frame, PFunction callee, Object[] arguments,
                     @Cached GenericInvokeNode invoke) {
         return invoke.executeInternal(frame, callee, arguments);
     }
 
     @Specialization(replaces = {"callBuiltinFunctionCached", "callBuiltinFunctionCachedCt"})
+    @Megamorphic
     protected Object callBuiltinFunctionUncached(Frame frame, PBuiltinFunction callee, Object[] arguments,
                     @Cached GenericInvokeNode invoke) {
         return invoke.executeInternal(frame, callee, arguments);

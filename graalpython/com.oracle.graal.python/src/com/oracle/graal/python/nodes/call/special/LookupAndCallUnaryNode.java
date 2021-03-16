@@ -53,7 +53,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -61,7 +61,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ReportPolymorphism
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallUnaryNode extends Node {
 
@@ -237,6 +236,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     }
 
     @Specialization(replaces = "callObject")
+    @Megamorphic
     Object callObjectUncached(VirtualFrame frame, Object receiver,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,

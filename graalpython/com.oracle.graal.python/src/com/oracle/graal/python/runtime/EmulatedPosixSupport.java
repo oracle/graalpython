@@ -40,6 +40,49 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_DIR;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_LNK;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_REG;
+import static com.oracle.graal.python.runtime.PosixConstants.DT_UNKNOWN;
+import static com.oracle.graal.python.runtime.PosixConstants.F_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_EX;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_NB;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_SH;
+import static com.oracle.graal.python.runtime.PosixConstants.LOCK_UN;
+import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
+import static com.oracle.graal.python.runtime.PosixConstants.O_ACCMODE;
+import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
+import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
+import static com.oracle.graal.python.runtime.PosixConstants.O_DIRECT;
+import static com.oracle.graal.python.runtime.PosixConstants.O_EXCL;
+import static com.oracle.graal.python.runtime.PosixConstants.O_NDELAY;
+import static com.oracle.graal.python.runtime.PosixConstants.O_RDONLY;
+import static com.oracle.graal.python.runtime.PosixConstants.O_RDWR;
+import static com.oracle.graal.python.runtime.PosixConstants.O_SYNC;
+import static com.oracle.graal.python.runtime.PosixConstants.O_TMPFILE;
+import static com.oracle.graal.python.runtime.PosixConstants.O_TRUNC;
+import static com.oracle.graal.python.runtime.PosixConstants.O_WRONLY;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_EXEC;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_NONE;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_READ;
+import static com.oracle.graal.python.runtime.PosixConstants.PROT_WRITE;
+import static com.oracle.graal.python.runtime.PosixConstants.R_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_CUR;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_DATA;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_END;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_HOLE;
+import static com.oracle.graal.python.runtime.PosixConstants.SEEK_SET;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFBLK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFCHR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFDIR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFIFO;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFLNK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFSOCK;
+import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
+import static com.oracle.graal.python.runtime.PosixConstants.W_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.X_OK;
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
 import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
 import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
@@ -123,7 +166,9 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatu
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -176,33 +221,6 @@ import com.sun.security.auth.UnixNumericGroupPrincipal;
 @ExportLibrary(PosixSupportLibrary.class)
 @SuppressWarnings("unused")
 public final class EmulatedPosixSupport extends PosixResources {
-    private static final int TMPFILE = 4259840;
-    private static final int TEMPORARY = 4259840;
-    private static final int SYNC = 1052672;
-    private static final int RSYNC = 1052672;
-    private static final int DIRECT = 16384;
-    private static final int DSYNC = 4096;
-    private static final int NDELAY = 2048;
-    private static final int NONBLOCK = 2048;
-    private static final int APPEND = 1024;
-    private static final int TRUNC = 512;
-    private static final int EXCL = 128;
-    private static final int CREAT = 64;
-    private static final int RDWR = 2;
-    private static final int WRONLY = 1;
-    private static final int RDONLY = 0;
-
-    private static final int SEEK_SET = 0;
-    private static final int SEEK_CUR = 1;
-    private static final int SEEK_END = 2;
-
-    private static final int WNOHANG = 1;
-    private static final int WUNTRACED = 3;
-
-    private static final int F_OK = 0;
-    private static final int X_OK = 1;
-    private static final int W_OK = 2;
-    private static final int R_OK = 4;
 
     private static final PosixFilePermission[][] otherBitsToPermission = new PosixFilePermission[][]{
                     new PosixFilePermission[]{},
@@ -235,27 +253,21 @@ public final class EmulatedPosixSupport extends PosixResources {
                     new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE},
     };
 
-    private static final int S_IFIFO = 0010000;
-    private static final int S_IFCHR = 0020000;
-    private static final int S_IFBLK = 0060000;
-    private static final int S_IFSOCK = 0140000;
-    private static final int S_IFLNK = 0120000;
-    private static final int S_IFDIR = 0040000;
-    private static final int S_IFREG = 0100000;
-
-    private final PythonContext context;
     private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
-    public EmulatedPosixSupport(PythonContext context) {
-        this.context = context;
+    public EmulatedPosixSupport(PythonContext context, boolean useNfiForSocketFd) {
+        super(context, useNfiForSocketFd);
         setEnv(context.getEnv());
     }
 
     @Override
-    public void postInitialize() {
-        environ.putAll(System.getenv());
+    public void setEnv(Env env) {
+        super.setEnv(env);
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            environ.putAll(System.getenv());
+        }
     }
 
     @ExportMessage
@@ -452,7 +464,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     continue errfdsCheck;
                 }
             }
-            compatibilityIgnored("POSIX emultaion layer doesn't support waiting on exceptional conditions in select()");
+            compatibilityIgnored("POSIX emulation layer doesn't support waiting on exceptional conditions in select()");
             break;
         }
 
@@ -595,34 +607,38 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter();
             throw posixException(OSErrorEnum.fromException(e));
         }
-        if (notSupported.profile(newPos == -1)) {
-            throw new UnsupportedPosixFeatureException("emulated lseek cannot seek beyond the file size. " +
-                            "Please enable native posix support using " +
-                            "the following option '--python.PosixModuleBackend=native'");
+        if (notSupported.profile(newPos < 0)) {
+            if (newPos == -2) {
+                throw new UnsupportedPosixFeatureException("SEEK_HOLE and SEEK_DATA are not supported");
+            } else {
+                throw new UnsupportedPosixFeatureException("emulated lseek cannot seek beyond the file size. " +
+                                "Please enable native posix support using " +
+                                "the following option '--python.PosixModuleBackend=native'");
+            }
         }
         return newPos;
     }
 
     /*-
-     * There are two main differences between emulated lseek and native lseek: 
+     * There are two main differences between emulated lseek and native lseek:
      *      1- native lseek allows setting position beyond file size.
      *      2- native lseek current position doesn't change after file truncate, i.e. position stays beyond file size.
      * XXX: we do not currently track the later case, which might produce inconsistent results compare to native lseek.
      */
     @TruffleBoundary(allowInlining = true)
     private static long setPosition(long pos, int how, SeekableByteChannel fc) throws IOException {
-        long newPos = pos;
-        switch (how) {
-            case SEEK_CUR:
-                newPos += fc.position();
-                break;
-            case SEEK_END:
-                newPos += fc.size();
-                break;
-            case SEEK_SET:
-                break;
-            default:
-                throw new IllegalArgumentException();
+        long newPos;
+        if (how == SEEK_CUR.value) {
+            newPos = pos + fc.position();
+        } else if (how == SEEK_END.value) {
+            newPos = pos + fc.size();
+        } else if (how == SEEK_SET.value) {
+            newPos = pos;
+        } else if ((SEEK_DATA.defined && how == SEEK_DATA.getValueIfDefined()) ||
+                        (SEEK_HOLE.defined && how == SEEK_HOLE.getValueIfDefined())) {
+            return -2;
+        } else {
+            throw new IllegalArgumentException();
         }
         fc.position(newPos);
         long p = fc.position();
@@ -678,14 +694,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static FileLock doLockOperation(int operation, FileChannel fc, FileLock oldLock) throws IOException {
         FileLock lock = oldLock;
         if (lock == null) {
-            if ((operation & PosixSupportLibrary.LOCK_SH) != 0) {
-                if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+            if ((operation & LOCK_SH.value) != 0) {
+                if ((operation & LOCK_NB.value) != 0) {
                     lock = fc.tryLock(0, Long.MAX_VALUE, true);
                 } else {
                     lock = fc.lock(0, Long.MAX_VALUE, true);
                 }
-            } else if ((operation & PosixSupportLibrary.LOCK_EX) != 0) {
-                if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+            } else if ((operation & LOCK_EX.value) != 0) {
+                if ((operation & LOCK_NB.value) != 0) {
                     lock = fc.tryLock();
                 } else {
                     lock = fc.lock();
@@ -694,12 +710,12 @@ public final class EmulatedPosixSupport extends PosixResources {
                 // not locked, that's ok
             }
         } else {
-            if ((operation & PosixSupportLibrary.LOCK_UN) != 0) {
+            if ((operation & LOCK_UN.value) != 0) {
                 lock.release();
                 lock = null;
-            } else if ((operation & PosixSupportLibrary.LOCK_EX) != 0) {
+            } else if ((operation & LOCK_EX.value) != 0) {
                 if (lock.isShared()) {
-                    if ((operation & PosixSupportLibrary.LOCK_NB) != 0) {
+                    if ((operation & LOCK_NB.value) != 0) {
                         FileLock newLock = fc.tryLock();
                         if (newLock != null) {
                             lock = newLock;
@@ -960,14 +976,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static int fileTypeBitsFromAttributes(TruffleFile.Attributes attributes) {
         int mode = 0;
         if (attributes.get(IS_REGULAR_FILE)) {
-            mode |= S_IFREG;
+            mode |= S_IFREG.value;
         } else if (attributes.get(IS_DIRECTORY)) {
-            mode |= S_IFDIR;
+            mode |= S_IFDIR.value;
         } else if (attributes.get(IS_SYMBOLIC_LINK)) {
-            mode |= S_IFLNK;
+            mode |= S_IFLNK.value;
         } else {
             // TODO: differentiate these
-            mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
+            mode |= S_IFSOCK.value | S_IFBLK.value | S_IFCHR.value | S_IFIFO.value;
         }
         return mode;
     }
@@ -981,7 +997,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             // best effort
             canonical = file.getAbsoluteFile();
         }
-        return context.getResources().getInodeId(canonical.getPath());
+        return getInodeId(canonical.getPath());
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -1273,18 +1289,18 @@ public final class EmulatedPosixSupport extends PosixResources {
         try {
             Attributes attrs = file.getAttributes(Arrays.asList(IS_DIRECTORY, IS_SYMBOLIC_LINK, IS_REGULAR_FILE), LinkOption.NOFOLLOW_LINKS);
             if (attrs.get(IS_DIRECTORY)) {
-                return PosixSupportLibrary.DT_DIR;
+                return DT_DIR.value;
             } else if (attrs.get(IS_SYMBOLIC_LINK)) {
-                return PosixSupportLibrary.DT_LNK;
+                return DT_LNK.value;
             } else if (attrs.get(IS_REGULAR_FILE)) {
-                return PosixSupportLibrary.DT_REG;
+                return DT_REG.value;
             }
         } catch (IOException e) {
             LOGGER.log(Level.FINE, "Silenced exception in dirEntryGetType", e);
             // The caller will re-try using stat, which can throw PosixException and it should get
             // the same error again
         }
-        return PosixSupportLibrary.DT_UNKNOWN;
+        return DT_UNKNOWN.value;
     }
 
     @ExportMessage
@@ -1302,6 +1318,38 @@ public final class EmulatedPosixSupport extends PosixResources {
         String path = getFilePath(fd);
         TruffleFile file = getTruffleFile(path);
         setUTimeNode.execute(file, timespec, true);
+    }
+
+    @ExportMessage
+    public void futimes(int fd, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String path = getFilePath(fd);
+        TruffleFile file = getTruffleFile(path);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), true);
+    }
+
+    @ExportMessage
+    public void lutimes(Object filename, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String filenameStr = pathToJavaStr(filename);
+        TruffleFile file = getTruffleFile(filenameStr);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), false);
+    }
+
+    @ExportMessage
+    public void utimes(Object filename, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String filenameStr = pathToJavaStr(filename);
+        TruffleFile file = getTruffleFile(filenameStr);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), true);
+    }
+
+    private static long[] timevalToTimespec(Timeval[] timeval) {
+        if (timeval == null) {
+            return null;
+        }
+        return new long[]{timeval[0].getSeconds(), timeval[0].getMicroseconds() * 1000,
+                        timeval[1].getSeconds(), timeval[1].getMicroseconds() * 1000};
     }
 
     @GenerateUncached
@@ -1388,7 +1436,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (!file.exists(getLinkOptions(followSymlinks))) {
             return false;
         }
-        if (mode == F_OK) {
+        if (mode == F_OK.value) {
             // we are supposed to just check the existence
             return true;
         }
@@ -1399,13 +1447,13 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw new UnsupportedPosixFeatureException("faccess with effective user IDs");
         }
         boolean result = true;
-        if ((mode & X_OK) != 0) {
+        if ((mode & X_OK.value) != 0) {
             result = result && file.isExecutable();
         }
-        if ((mode & R_OK) != 0) {
+        if ((mode & R_OK.value) != 0) {
             result = result && file.isReadable();
         }
-        if ((mode & W_OK) != 0) {
+        if ((mode & W_OK.value) != 0) {
             result = result && file.isWritable();
         }
         return result;
@@ -1505,7 +1553,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             if (options == 0) {
                 int exitStatus = waitpid((int) pid);
                 return new long[]{pid, exitStatus};
-            } else if (options == WNOHANG) {
+            } else if (options == WNOHANG.value) {
                 // TODO: simplify once the super class is merged with this class
                 int[] res = exitStatus((int) pid);
                 return new long[]{res[0], res[1]};
@@ -1912,6 +1960,276 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    public static final class MMapHandle {
+        private static final MMapHandle NONE = new MMapHandle(null, 0);
+        private SeekableByteChannel channel;
+        private final long offset;
+
+        public MMapHandle(SeekableByteChannel channel, long offset) {
+            this.channel = channel;
+            this.offset = offset;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return String.format("Emulated mmap [channel=%s, offset=%d]", channel, offset);
+        }
+    }
+
+    private static final class AnonymousMap implements SeekableByteChannel {
+        private final byte[] data;
+
+        private boolean open = true;
+        private int cur;
+
+        public AnonymousMap(int cap) {
+            this.data = new byte[cap];
+        }
+
+        @Override
+        public boolean isOpen() {
+            return open;
+        }
+
+        @Override
+        public void close() throws IOException {
+            open = false;
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            int nread = Math.min(dst.remaining(), data.length - cur);
+            dst.put(data, cur, nread);
+            return nread;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            int nwrite = Math.min(src.remaining(), data.length - cur);
+            src.get(data, cur, nwrite);
+            return nwrite;
+        }
+
+        @Override
+        public long position() throws IOException {
+            return cur;
+        }
+
+        @Override
+        public SeekableByteChannel position(long newPosition) throws IOException {
+            if (newPosition < 0 || newPosition >= data.length) {
+                throw new IllegalArgumentException();
+            }
+            cur = (int) newPosition;
+            return this;
+        }
+
+        @Override
+        public long size() throws IOException {
+            return data.length;
+        }
+
+        @Override
+        public SeekableByteChannel truncate(long size) throws IOException {
+            for (int i = 0; i < size; i++) {
+                data[i] = 0;
+            }
+            return this;
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    final MMapHandle mmap(long length, int prot, int flags, int fd, long offset,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile isAnonymousProfile) throws PosixException {
+        if (prot == PROT_NONE.value) {
+            return MMapHandle.NONE;
+        }
+
+        // Note: the profile is not really defaultDirProfile, but it's good to share...
+        if (isAnonymousProfile.profile((flags & MAP_ANONYMOUS.value) != 0)) {
+            try {
+                return new MMapHandle(new AnonymousMap(PythonUtils.toIntExact(length)), 0);
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new UnsupportedPosixFeatureException(String.format("Anonymous mapping in mmap for memory larger than %d", Integer.MAX_VALUE));
+            }
+        }
+
+        String path = getFilePath(fd);
+        TruffleFile file = getTruffleFile(path);
+        Set<StandardOpenOption> options = mmapProtToOptions(prot);
+
+        // we create a new channel, the file may be closed but the mmap object should still work
+        SeekableByteChannel fileChannel;
+        try {
+            fileChannel = newByteChannel(file, options);
+            position(fileChannel, offset);
+            return new MMapHandle(fileChannel, offset);
+        } catch (IOException e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @TruffleBoundary
+    private static Set<StandardOpenOption> mmapProtToOptions(int prot) {
+        HashSet<StandardOpenOption> options = new HashSet<>();
+        if ((prot & PROT_READ.value) != 0) {
+            options.add(StandardOpenOption.READ);
+        }
+        if ((prot & PROT_WRITE.value) != 0) {
+            options.add(StandardOpenOption.WRITE);
+        }
+        if ((prot & PROT_EXEC.value) != 0) {
+            throw new UnsupportedPosixFeatureException("mmap: flag PROT_EXEC is not supported");
+        }
+        return options;
+    }
+
+    @TruffleBoundary
+    private static SeekableByteChannel newByteChannel(TruffleFile file, Set<StandardOpenOption> options) throws IOException {
+        return file.newByteChannel(options);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public byte mmapReadByte(Object mmap, long index,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        ByteBuffer readingBuffer = allocateByteBuffer(1);
+        int readSize = readBytes(handle, index, readingBuffer, errBranch);
+        if (readSize == 0) {
+            throw posixException(OSErrorEnum.ENODATA);
+        }
+        return getByte(readingBuffer);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        int sz;
+        try {
+            sz = PythonUtils.toIntExact(length);
+        } catch (OverflowException e) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EOVERFLOW);
+        }
+        ByteBuffer readingBuffer = allocateByteBuffer(sz);
+        int readSize = readBytes(handle, index, readingBuffer, errBranch);
+        if (readSize > 0) {
+            getByteBufferArray(readingBuffer, bytes, readSize);
+        }
+        return readSize;
+    }
+
+    private static int readBytes(MMapHandle handle, long index, ByteBuffer readingBuffer, BranchProfile errBranch) throws PosixException {
+        try {
+            position(handle.channel, index + handle.offset);
+            return readChannel(handle.channel, readingBuffer);
+        } catch (IOException e) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length,
+                    @Shared("errorBranch") @Cached BranchProfile errBranch) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            errBranch.enter();
+            throw posixException(OSErrorEnum.EACCES);
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        try {
+            SeekableByteChannel channel = handle.channel;
+            position(channel, handle.offset + index);
+            int written = writeChannel(channel, bytes, length);
+            if (written != length) {
+                throw posixException(OSErrorEnum.EIO);
+            }
+        } catch (Exception e) {
+            // Catching generic Exception to also cover NonWritableChannelException
+            errBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @TruffleBoundary
+    private static int writeChannel(SeekableByteChannel channel, byte[] bytes, int length) throws IOException {
+        return channel.write(ByteBuffer.wrap(bytes, 0, length));
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void mmapFlush(Object mmap, long offset, long length) {
+        // Intentionally noop
+        // If we had access to the underlying NIO FileChannel, we could explicitly set force(true)
+        // when creating the channel. Another possibility would be exposing JDK's memory mapped
+        // files support via Truffle API, which would allow for more compatible (and completely
+        // different implementation of mmap in emulated posix)
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void mmapUnmap(Object mmap, @SuppressWarnings("unused") long length) throws PosixException {
+        if (mmap == MMapHandle.NONE) {
+            return;
+        }
+        MMapHandle handle = (MMapHandle) mmap;
+        if (handle.channel != null) {
+            try {
+                closeChannel(handle.channel);
+            } catch (IOException e) {
+                throw posixException(OSErrorEnum.fromException(e));
+            }
+            handle.channel = null;
+        }
+    }
+
+    @TruffleBoundary
+    private static void closeChannel(Channel ch) throws IOException {
+        ch.close();
+    }
+
+    @TruffleBoundary
+    private static void position(SeekableByteChannel ch, long offset) throws IOException {
+        ch.position(offset);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static ByteBuffer allocateByteBuffer(int n) {
+        return ByteBuffer.allocate(n);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    protected static void getByteBufferArray(ByteBuffer src, byte[] dst, int readSize) {
+        src.flip();
+        src.get(dst, 0, readSize);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    protected static byte getByte(ByteBuffer src) {
+        src.flip();
+        return src.get();
+    }
+
+    @TruffleBoundary
+    private static int readChannel(Object readableChannel, ByteBuffer dst) throws IOException {
+        return ((ReadableByteChannel) readableChannel).read(dst);
+    }
+
     // ------------------
     // Path conversions
 
@@ -1981,10 +2299,10 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     /**
      * Resolves the path relative to the directory given as file descriptor. Honors the
-     * {@link PosixSupportLibrary#DEFAULT_DIR_FD}.
+     * {@link PosixConstants#AT_FDCWD}.
      */
     private TruffleFile resolvePath(int dirFd, String pathname, ConditionProfile defaultDirFdPofile) throws PosixException {
-        if (defaultDirFdPofile.profile(dirFd == PosixSupportLibrary.DEFAULT_DIR_FD)) {
+        if (defaultDirFdPofile.profile(dirFd == AT_FDCWD.value)) {
             return getTruffleFile(pathname);
         } else {
             TruffleFile file = getTruffleFile(pathname);
@@ -2028,37 +2346,48 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary(allowInlining = true)
     private static Set<StandardOpenOption> flagsToOptions(int flags) {
         Set<StandardOpenOption> options = new HashSet<>();
-        if ((flags & WRONLY) != 0) {
-            options.add(StandardOpenOption.WRITE);
-        }
-        if ((flags & APPEND) != 0) {
+        int maskedFlags = flags & O_ACCMODE.value;
+        if ((flags & O_APPEND.value) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.APPEND);
-        } else if ((flags & RDWR) != 0) {
+        } else if (maskedFlags == O_WRONLY.value) {
+            options.add(StandardOpenOption.WRITE);
+        } else if (maskedFlags == O_RDWR.value) {
             options.add(StandardOpenOption.READ);
             options.add(StandardOpenOption.WRITE);
-        } else {
+        } else if (maskedFlags == O_RDONLY.value) {
             options.add(StandardOpenOption.READ);
+        } else {
+            // TODO: neither read nor write should be allowed
+            // Currently, read succeeds even though we do not specify the READ option.
+            // We should probably store the file status flags in our fd table and query
+            // it explicitly before each operation.
         }
-        if ((flags & CREAT) != 0) {
+        // TODO: review these - I don't think that WRITE should be implied,
+        // open(name, O_CREATE | O_RDONLY) creates the file, but it cannot be written to (but can be
+        // read from). Also, O_EXCL should not imply O_CREAT. Moreover, we ignore a few flags.
+        // If O_EXCL and O_CREAT are specfied, symbolic links are not followed.
+        if ((flags & O_CREAT.value) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.CREATE);
         }
-        if ((flags & EXCL) != 0) {
+        if ((flags & O_EXCL.value) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.CREATE_NEW);
         }
-        if ((flags & NDELAY) != 0 || (flags & DIRECT) != 0) {
+        if ((flags & O_NDELAY.value) != 0 || (O_DIRECT.defined && (flags & O_DIRECT.getValueIfDefined()) != 0)) {
             options.add(StandardOpenOption.DSYNC);
         }
-        if ((flags & SYNC) != 0) {
+        if ((flags & O_SYNC.value) != 0) {
             options.add(StandardOpenOption.SYNC);
         }
-        if ((flags & TRUNC) != 0) {
+        if ((flags & O_TRUNC.value) != 0) {
             options.add(StandardOpenOption.WRITE);
             options.add(StandardOpenOption.TRUNCATE_EXISTING);
         }
-        if ((flags & TMPFILE) != 0) {
+        // TODO we should always support O_TMPFILE, but we don't have it defined on darwin ->
+        // emulated backend should provide its own constants
+        if (O_TMPFILE.defined && (flags & O_TMPFILE.getValueIfDefined()) != 0) {
             options.add(StandardOpenOption.DELETE_ON_CLOSE);
         }
         return options;

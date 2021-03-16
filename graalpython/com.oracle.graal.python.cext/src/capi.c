@@ -358,6 +358,11 @@ freefunc get_tp_free(PyTypeObject* obj) {
 	return obj->tp_free;
 }
 
+/** to be used from Java code only; reads native 'tp_as_buffer' field */
+PyBufferProcs* get_tp_as_buffer(PyTypeObject* obj) {
+	return obj->tp_as_buffer;
+}
+
 /** to be used from Java code only; reads native 'tp_flags' field */
 unsigned long get_tp_flags(PyTypeObject* obj) {
 	return obj->tp_flags;

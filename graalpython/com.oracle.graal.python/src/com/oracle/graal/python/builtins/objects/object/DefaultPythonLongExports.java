@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -151,11 +152,12 @@ final class DefaultPythonLongExports {
             return false;
         }
 
-        @Specialization(replaces = "lP")
+        @Specialization(replaces = "lP", limit = "1")
         static boolean lPOverflow(Long receiver, PInt other,
+                        @CachedLibrary("other") InteropLibrary otherLib,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
-                if (other.fitsInLong()) {
+                if (otherLib.fitsInLong(other)) {
                     return receiver == other.longValue();
                 }
             }

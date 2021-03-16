@@ -55,21 +55,26 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleCodeData;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleInfo;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.FindLoaderNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.FindModuleNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.GetCodeNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.GetDataNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.GetFileNameNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.GetSourceNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.IsPackageNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.LoadModuleNodeClinicProviderGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -81,7 +86,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -129,6 +133,12 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             this.readFirstLoc = false;
             this.positions = new ArrayList<>();
             this.in = in;
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            in.close();
         }
 
         @Override
@@ -194,7 +204,6 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 
@@ -349,7 +358,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        public PNone init(PZipImporter self, PythonObject path,
+        public PNone init(PZipImporter self, Object path,
                         @CachedLibrary("path") PythonObjectLibrary lib) {
             initZipImporter(self, lib.asPath(path));
             return PNone.NONE;
@@ -393,10 +402,16 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "find_module", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "find_module", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname", "path"})
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "path", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
-    public abstract static class FindModuleNode extends PythonTernaryBuiltinNode {
+    public abstract static class FindModuleNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FindModuleNodeClinicProviderGen.INSTANCE;
+        }
+
         /**
          *
          * @param self
@@ -418,7 +433,6 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     @Builtin(name = "find_loader", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname", "path"})
     @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class FindLoaderNode extends PythonTernaryClinicBuiltinNode {
         @Override
@@ -457,10 +471,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_code", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "get_code", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetCodeNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetCodeNodeClinicProviderGen.INSTANCE;
+        }
 
         @Child private CompileNode compileNode;
 
@@ -493,10 +511,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_data", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "get_data", minNumOfPositionalArgs = 2, parameterNames = {"self", "pathname"})
+    @ArgumentClinic(name = "pathname", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class GetDataNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetDataNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetDataNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         @TruffleBoundary
@@ -559,10 +581,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_filename", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "get_filename", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class GetFileNameNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetFileNameNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetFileNameNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         public Object doit(VirtualFrame frame, PZipImporter self, String fullname,
@@ -585,10 +611,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "get_source", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "get_source", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class GetSourceNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetSourceNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetSourceNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         public String doit(VirtualFrame frame, PZipImporter self, String fullname,
@@ -611,10 +641,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "is_package", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "is_package", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class IsPackageNode extends PythonBinaryBuiltinNode {
+    public abstract static class IsPackageNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IsPackageNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         public boolean doit(PZipImporter self, String fullname,
@@ -632,10 +666,14 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "load_module", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "load_module", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname"})
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class LoadModuleNode extends PythonBinaryBuiltinNode {
+    public abstract static class LoadModuleNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return LoadModuleNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         public Object doit(VirtualFrame frame, PZipImporter self, String fullname,

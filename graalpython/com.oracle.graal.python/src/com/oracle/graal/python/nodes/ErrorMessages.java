@@ -152,15 +152,12 @@ public abstract class ErrorMessages {
     public static final String CANNOT_INITIALIZE_WITH = "cannot initialize %s with %s%s";
     public static final String CANNOT_LOAD = "cannot load %s: %s";
     public static final String CANNOT_LOAD_M = "cannot load %s: %m";
-    public static final String CANNOT_MMAP_FILE = "cannot mmap file";
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
     public static final String CANNOT_RESIZE_BUFFER = "cannot resize buffer";
     public static final String CANNOT_SET_VERIFY_MODE_TO_CERT_NONE = "Cannot set verify_mode to CERT_NONE when check_hostname is enabled.";
     public static final String CANNOT_SPECIFY_FILTERS = "Cannot specify filters except with FORMAT_RAW";
     public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
-    public static final String CANNOT_SPECIFY_MEM_LIMIT = "Cannot specify memory limit with FORMAT_RAW";
-    public static final String CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = "Cannot specify both preset and filter chain";
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
     public static final String CANNOT_USE_TO_INITIALIZE_ARRAY = "cannot use a %p to initialize an array with typecode '%s'";
     public static final String CANT_CONCAT_S_TO_P = "can't concat %s to %p";
@@ -168,6 +165,8 @@ public abstract class ErrorMessages {
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";
     public static final String CANT_DELETE = "can't delete '%s'";
+    public static final String CANT_EXTEND_JAVA_CLASS_NOT_JVM = "Java Class can be extended only in JVM mode.";
+    public static final String CANT_EXTEND_JAVA_CLASS_NOT_TYPE = "Function extend needs a Java type as its argument not %p";
     public static final String CANT_FIND_MODULE = "can't find module '%s'";
     public static final String CANT_MULTIPLY_SEQ_BY_NON_INT = "can't multiply sequence by non-int of type '%p'";
     public static final String CANT_PICKLE_FUNC_OBJS = "can't pickle function objects";
@@ -258,6 +257,7 @@ public abstract class ErrorMessages {
     public static final String FILE_OR_STREAM_IS_NOT_READABLE = "File or stream is not readable.";
     public static final String FILE_OR_STREAM_IS_NOT_SEEKABLE = "File or stream is not seekable.";
     public static final String FILE_OR_STREAM_IS_NOT_WRITABLE = "File or stream is not writable.";
+    public static final String FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT = "filedescriptor out of range in select()";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";
@@ -319,7 +319,6 @@ public abstract class ErrorMessages {
     public static final String INTEGER_IS_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
-    public static final String INTEGRITY_CHECKS_ONLY_SUPPORTED_BY = "Integrity checks are only supported by FORMAT_XZ";
     public static final String INTERMEDIATE_OVERFLOW_IN = "intermediate overflow in %s";
     public static final String INVALD_OR_UNREADABLE_CLASSPATH = "invalid or unreadable classpath: '%s' - %m";
     public static final String INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION = "invalid or unsupported protocol version: %s";
@@ -393,7 +392,6 @@ public abstract class ErrorMessages {
     public static final String MATH_DOMAIN_ERROR = "math domain error";
     public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
-    public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
     public static final String MEMORYVIEW_INVALID_SLICE_KEY = "memoryview: invalid slice key";
     public static final String MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P = "memoryview: a bytes-like object is required, not '%p'";
     public static final String MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S = "memoryview: invalid value for format '%s'";
@@ -439,7 +437,6 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_RETURN_2TUPLE = "%p.__divmod__() must return a 2-tuple, not %p";
-    public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String S_MUST_RETURN_S_NOT_P = "%s must return a %s, not %p";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_USED_BEFORE_GLOBAL = "name '%s' is used prior to global declaration";
@@ -609,6 +606,7 @@ public abstract class ErrorMessages {
     public static final String TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ = "type '%p' is not supported by the foreign object";
     public static final String TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION = "type() doesn't support MRO entry resolution; use types.new_class()";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
+    public static final String UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = "%s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
     public static final String UNHASHABLE_TYPE = "unhashable type: '%p'";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";
@@ -635,8 +633,10 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_STR_TYPE = "unsupported string type: %s";
     public static final String UNSUPPORTED_TARGET_SIZE = "Unsupported target size: %d";
     public static final String UNSUPPORTED_USE_OF_SYS_EXECUTABLE = "internal error: unsupported use of sys.executable";
+    public static final String UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS = "utime: cannot use dir_fd and follow_symlinks together on this platform";
     public static final String VALUE_EXPECTED = "%s value expected";
     public static final String VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = "value too large to fit into index-sized integer";
+    public static final String VALUE_TOO_LARGE_FOR_S_TYPE = "Value too large for %s type";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL_P = "Was not possible to marshal %p";
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
@@ -704,6 +704,17 @@ public abstract class ErrorMessages {
     public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
 
+    // mmap
+    public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
+    public static final String MEM_MAPPED_OFFSET_MUST_BE_POSITIVE = "memory mapped offset must be positive";
+    public static final String MEM_MAPPED_OFFSET_INVALID_ACCESS = "mmap invalid access parameter.";
+    public static final String MMAP_CHANGED_LENGTH = "The mmapped file has changed its length";
+    public static final String CANNOT_MMAP_AN_EMPTY_FILE = "cannot mmap an empty file";
+    public static final String MMAP_S_IS_GREATER_THAN_FILE_SIZE = "mmap %s is greater than file size";
+    public static final String TOO_MANY_REMAINING_BYTES_TO_BE_STORED = "There are too many remaining bytes to be stored in a bytes object.";
+    public static final String MMAP_CANNOT_MODIFY_READONLY_MEMORY = "mmap can't modify a readonly memory map.";
+    public static final String DATA_OUT_OF_RANGE = "data out of range";
+
     // zlib errors
     public static final String WHILE_FLUSHING = "while flushing";
     public static final String WHILE_S_DATA = "while %s data";
@@ -733,6 +744,15 @@ public abstract class ErrorMessages {
     public static final String INVALID_SEQUENCE_OF_COMMANDS = "Internal error - Invalid sequence of commands sent to libbzip2";
     public static final String LIBBZIP2_WAS_NOT_COMPILED_CORRECTLY = "libbzip2 was not compiled correctly";
     public static final String UNRECOGNIZED_ERROR_FROM_LIBBZIP2_D = "Unrecognized error from libbzip2: %d";
+
+    // lzma errors
+    public static final String ALREADY_AT_END_OF_STREAM = "Already at end of stream";
+    public static final String INVALID_COMPRESSION_PRESET = "Invalid compression preset: %d";
+    public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
+    public static final String CANNOT_SPECIFY_FILTERS = "Cannot specify filters except with FORMAT_RAW";
+    public static final String CANNOT_SPECIFY_MEM_LIMIT = "Cannot specify memory limit with FORMAT_RAW";
+    public static final String INTEGRITY_CHECKS_ONLY_SUPPORTED_BY = "Integrity checks are only supported by FORMAT_XZ";
+    public static final String CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = "Cannot specify both preset and filter chain";
 
     // io errors
     public static final String IO_S_INVALID_LENGTH = "raw %s returned invalid length %d (should have been between 0 and %d)";
@@ -765,4 +785,5 @@ public abstract class ErrorMessages {
     public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
                     "is deprecated, and may be removed in a future version of Python.";
+    public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
 }

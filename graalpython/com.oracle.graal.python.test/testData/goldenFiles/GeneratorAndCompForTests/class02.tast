@@ -76,16 +76,14 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                      Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                     FunctionBodyNode SourceSection: [59,208]`nonpositive = [elem ...`
                                       WriteLocalVariableNodeGen SourceSection: [59,128]`nonpositive = [elem ...`
                                         Identifier: nonpositive
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,nonpositive,Illegal]
+                                        Frame: [1,nonpositive,Illegal]
                                         PythonCallUnary SourceSection: [74,127]`elem for elem, count...`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -117,50 +115,38 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
                                                         NotNodeGen SourceSection: [114,127]`not count > 0`
-                                                          IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
                                                           BinaryComparisonNodeGen SourceSection: [118,127]`count > 0`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __gt__
-                                                            ReadGeneratorFrameVariableNode SourceSection: [118,123]`count`
+                                                            ReadGeneratorFrameVariableNodeGen SourceSection: [118,123]`count`
                                                               Frame: [1,count,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [126,127]`0`
                                                               Value: 0
                                                       ExpressionStatementNode SourceSection: [74,78]`elem`
                                                         YieldNode SourceSection: [74,78]`elem`
                                                           flagSlot: 0
-                                                          ReadGeneratorFrameVariableNode SourceSection: [74,78]`elem`
+                                                          ReadGeneratorFrameVariableNodeGen SourceSection: [74,78]`elem`
                                                             Frame: [0,elem,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                       BlockNode SourceSection: None
                                                     DestructuringAssignmentNodeGen SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: <>temp2
-                                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                          Frame: [2,<>temp2,Illegal]
+                                                        Frame: [2,<>temp2,Illegal]
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: <>temp3
-                                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                          Frame: [3,<>temp3,Illegal]
+                                                        Frame: [3,<>temp3,Illegal]
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: elem
-                                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                          Frame: [0,elem,Illegal]
-                                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                                        Frame: [0,elem,Illegal]
+                                                        ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                           Frame: [2,<>temp2,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: count
-                                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                          Frame: [1,count,Illegal]
-                                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                                        Frame: [1,count,Illegal]
+                                                        ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                           Frame: [3,<>temp3,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
@@ -170,9 +156,8 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
-                                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [4,<return_val>,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
@@ -180,9 +165,8 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                               PythonCallNodeGen SourceSection: [98,110]`self.items()`
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [98,102]`self`
+                                                  ReadLocalVariableNodeGen SourceSection: [98,102]`self`
                                                     Frame: [0,self,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                       ElseNode SourceSection: [137,197]`for elem in nonposit...`
                                         ForNode SourceSection: None
@@ -190,31 +174,24 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                             ForNextElementNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: elem
-                                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                                  Frame: [2,elem,Illegal]
-                                            DeleteItemNodeGen SourceSection: [174,188]`del self[elem]`
-                                              ReadLocalVariableNode SourceSection: None
-                                                Frame: [0,self,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [183,187]`elem`
                                                 Frame: [2,elem,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                            DeleteItemNodeGen SourceSection: [174,188]`del self[elem]`
+                                              ReadLocalVariableNodeGen SourceSection: None
+                                                Frame: [0,self,Illegal]
+                                              ReadLocalVariableNodeGen SourceSection: [183,187]`elem`
+                                                Frame: [2,elem,Illegal]
                                           GetIteratorExpressionNodeGen SourceSection: [149,160]`nonpositive`
-                                            ReadLocalVariableNode SourceSection: [149,160]`nonpositive`
+                                            ReadLocalVariableNodeGen SourceSection: [149,160]`nonpositive`
                                               Frame: [1,nonpositive,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [197,208]`return self`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [3,<return_val>,Illegal]
-                                          ReadLocalVariableNode SourceSection: [204,208]`self`
+                                          Frame: [3,<return_val>,Illegal]
+                                          ReadLocalVariableNodeGen SourceSection: [204,208]`self`
                                             Frame: [0,self,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [14,18]`dict`

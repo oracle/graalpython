@@ -51,11 +51,13 @@ import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -82,21 +84,29 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     public void executeExcept(VirtualFrame frame, Throwable e) {
         if (exceptName != null) {
             if (e instanceof PException) {
-                exceptName.doWrite(frame, ((PException) e).getEscapedException());
+                exceptName.writeObject(frame, ((PException) e).getEscapedException());
             } else {
-                exceptName.doWrite(frame, e);
+                exceptName.writeObject(frame, e);
             }
         }
         body.executeVoid(frame);
         if (exceptName != null) {
-            exceptName.doWrite(frame, null);
+            exceptName.writeObject(frame, null);
         }
         throw ExceptionHandledException.INSTANCE;
     }
 
-    public boolean matchesException(VirtualFrame frame, Throwable e) {
+    public boolean matchesPException(VirtualFrame frame, PException e) {
         if (exceptType == null) {
-            return e instanceof PException; // foreign exceptions must be caught explicitly
+            return true;
+        }
+        return getMatchNode().executeMatch(frame, e, exceptType.execute(frame));
+    }
+
+    public boolean matchesTruffleException(@SuppressWarnings("unused") VirtualFrame frame, AbstractTruffleException e) {
+        assert !(e instanceof PException);
+        if (exceptType == null) {
+            return true;
         }
         return getMatchNode().executeMatch(frame, e, exceptType.execute(frame));
     }
@@ -131,15 +141,13 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 }
 
-interface EmulateJythonNode {
-    default boolean emulateJython(PythonLanguage language) {
+@ImportStatic(PythonOptions.class)
+abstract class ValidExceptionNode extends Node {
+    protected abstract boolean execute(VirtualFrame frame, Object type);
+
+    protected static boolean emulateJython(PythonLanguage language) {
         return language.getEngineOption(PythonOptions.EmulateJython);
     }
-}
-
-@ImportStatic(PythonOptions.class)
-abstract class ValidExceptionNode extends Node implements EmulateJythonNode {
-    protected abstract boolean execute(VirtualFrame frame, Object type);
 
     protected static boolean isPythonExceptionType(PythonBuiltinClassType type) {
         PythonBuiltinClassType base = type;
@@ -193,7 +201,7 @@ abstract class ValidExceptionNode extends Node implements EmulateJythonNode {
 }
 
 @ImportStatic({PGuards.class, PythonOptions.class})
-abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
+abstract class ExceptMatchNode extends Node {
     @Child private PRaiseNode raiseNode;
 
     protected abstract boolean executeMatch(VirtualFrame frame, Object exception, Object clause);
@@ -222,38 +230,20 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
         return isSubtype.execute(frame, plib.getLazyPythonClass(e.getUnreifiedException()), clause);
     }
 
-    @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostException(e)", "context.getEnv().isHostObject(clause)"})
+    @Specialization(guards = {"eLib.isException(e)", "clauseLib.isMetaObject(clause)"}, limit = "3", replaces = "matchPythonSingle")
     @SuppressWarnings("unused")
-    boolean matchJava(VirtualFrame frame, Throwable e, Object clause,
+    boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
                     @Cached ValidExceptionNode isValidException,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @CachedLibrary("e") InteropLibrary eLib,
+                    @CachedLibrary("clause") InteropLibrary clauseLib) {
+        // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
+        // foreign exception types if they *are* exception types
         raiseIfNoException(frame, clause, isValidException);
-        // cast must succeed due to ValidExceptionNode above
-        Class<?> javaClause = (Class<?>) context.getEnv().asHostObject(clause);
-        Throwable hostException = context.getEnv().asHostException(e);
-        return javaClause.isInstance(hostException);
-    }
-
-    @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostObject(clause)"})
-    @SuppressWarnings("unused")
-    boolean doNotMatchPython(VirtualFrame frame, @SuppressWarnings("unused") PException e, Object clause,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached ValidExceptionNode isValidException) {
-        raiseIfNoException(frame, clause, isValidException);
-        return false;
-    }
-
-    @Specialization(guards = {"lib.isLazyPythonClass(clause)", "emulateJython(language)", "context.getEnv().isHostException(e)"})
-    @SuppressWarnings("unused")
-    boolean doNotMatchJava(VirtualFrame frame, @SuppressWarnings("unused") Throwable e, Object clause,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached ValidExceptionNode isValidException,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-        raiseIfNoException(frame, clause, isValidException);
-        return false;
+        try {
+            return clauseLib.isMetaInstance(clause, e);
+        } catch (UnsupportedMessageException e1) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     @Specialization

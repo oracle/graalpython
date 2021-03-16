@@ -142,6 +142,27 @@ def __build_class__(func, name, *bases, **kwargs):
         raise TypeError("__build_class__: func must be a function")
     if not isinstance(name, str):
         raise TypeError("__build_class__: name is not a string, got '%s'" % type(name))
+    if len(bases) == 1:
+        import java
+        if java.is_type(bases[0]): 
+            ns = {}
+            func(ns)  # fill up namespace with the methods and fields of the class
+            ns['__super__'] = None  # place where store the original java class when instance is created
+            ExtenderClass = type("PythonJavaExtenderClass", (object, ), ns)
+            HostAdapter = __graalpython__.extend(bases[0])
+            resultClass = type(name, (object, ), {})
+
+            def factory (cls, *args):
+                # creates extender object and store the super java class
+                extenderInstance = ExtenderClass()
+                args = args[1:] + (extenderInstance, ) # remove the class and add the extender instance object
+                hostObject = HostAdapter(*args)   # create new adapter
+                extenderInstance.__super__ = __graalpython__.super(hostObject)   #set the super java object
+                return hostObject
+
+            resultClass.__new__ = classmethod(factory)
+            return resultClass
+        
     return new_class(name, bases=bases, kwds=kwargs, exec_body=func)
 
 

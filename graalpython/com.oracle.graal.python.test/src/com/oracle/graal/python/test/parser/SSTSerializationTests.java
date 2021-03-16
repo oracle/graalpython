@@ -41,7 +41,6 @@
 package com.oracle.graal.python.test.parser;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -1363,9 +1362,8 @@ public class SSTSerializationTests extends ParserTestBase {
         sb.append("Kind: ").append(scope.getScopeKind()).append("\n");
         Set<String> names = new HashSet<>();
         scope.getFrameDescriptor().getIdentifiers().forEach((id) -> {
-            String name = (String) id;
-            if (!name.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX) && !name.startsWith(FrameSlotIDs.RETURN_SLOT_ID)) {
-                names.add((String) id);
+            if (id instanceof String) {
+                names.add(id.toString());
             }
         });
         indent(sb, indent + 1);

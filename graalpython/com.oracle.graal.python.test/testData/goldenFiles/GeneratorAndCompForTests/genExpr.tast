@@ -31,14 +31,12 @@ ModuleRootNode Name: <module 'genExpr'> SourceSection: [0,21]`(i for i in range(
               ExpressionStatementNode SourceSection: [1,2]`i`
                 YieldNode SourceSection: [1,2]`i`
                   flagSlot: 0
-                  ReadGeneratorFrameVariableNode SourceSection: [1,2]`i`
+                  ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`i`
                     Frame: [0,i,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   GeneratorAccessNode SourceSection: None
               WriteGeneratorFrameVariableNodeGen SourceSection: None
                 Identifier: i
-                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                  Frame: [0,i,Illegal]
+                Frame: [0,i,Illegal]
               ArgumentExpressionNode SourceSection: None
                 ReadIndexedArgumentNodeGen SourceSection: None
                   Index: 0
@@ -48,9 +46,8 @@ ModuleRootNode Name: <module 'genExpr'> SourceSection: [0,21]`(i for i in range(
               GeneratorAccessNode SourceSection: None
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
-            ReadGeneratorFrameVariableNode SourceSection: None
+            ReadGeneratorFrameVariableNodeGen SourceSection: None
               Frame: [1,<return_val>,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None
             BlockNode SourceSection: None
             GeneratorAccessNode SourceSection: None
             PRaiseNodeGen SourceSection: None

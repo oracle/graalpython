@@ -40,12 +40,17 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
+import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
@@ -78,6 +83,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
 
+import sun.misc.Unsafe;
+
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
  * that the native access is allowed or to configure managed LLVM backend for NFI.
@@ -88,16 +95,33 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
-    private static final int PATH_MAX = 4096;
-    private static final int L_ctermid = 9;
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
 
+    private static final Unsafe UNSAFE = initUnsafe();
+
+    private static Unsafe initUnsafe() {
+        try {
+            return Unsafe.getUnsafe();
+        } catch (SecurityException se) {
+            try {
+                Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+                theUnsafe.setAccessible(true);
+                return (Unsafe) theUnsafe.get(Unsafe.class);
+            } catch (Exception e) {
+                throw new UnsupportedOperationException("Cannot initialize Unsafe for the native POSIX backend", e);
+            }
+        }
+    }
+
     private enum PosixNativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
+        call_mmap("(sint64, sint32, sint32, sint32, sint64):sint64"),
+        call_munmap("(sint64, sint64):sint32"),
+        call_msync("(sint64, sint64, sint64):void"),
         call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint32):sint32"),
@@ -129,6 +153,9 @@ public final class NFIPosixSupport extends PosixSupport {
         call_readdir("(sint64, [sint8], uint64, [sint64]):sint32"),
         call_utimensat("(sint32, [sint8], [sint64], sint32):sint32"),
         call_futimens("(sint32, [sint64]):sint32"),
+        call_futimes("(sint32, [sint64]):sint32"),
+        call_lutimes("([sint8], [sint64]):sint32"),
+        call_utimes("([sint8], [sint64]):sint32"),
         call_renameat("(sint32, [sint8], sint32, [sint8]):sint32"),
         call_faccessat("(sint32, [sint8], sint32, sint32, sint32):sint32"),
         call_fchmodat("(sint32, [sint8], sint32, sint32):sint32"),
@@ -201,7 +228,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         public long callLong(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
             try {
-                return ensureResultInterop().asLong(call(posix, function, args));
+                return getResultInterop().asLong(call(posix, function, args));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -209,7 +236,15 @@ public final class NFIPosixSupport extends PosixSupport {
 
         public int callInt(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
             try {
-                return ensureResultInterop().asInt(call(posix, function, args));
+                return getResultInterop().asInt(call(posix, function, args));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        public byte callByte(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
+            try {
+                return getResultInterop().asByte(call(posix, function, args));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -254,7 +289,7 @@ public final class NFIPosixSupport extends PosixSupport {
             try {
                 posix.nfiLibrary = posix.context.getEnv().parseInternal(loadSrc).call();
             } catch (Throwable e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+                throw CompilerDirectives.shouldNotReachHere("Unable to load native posix support library", e);
             }
         }
 
@@ -270,7 +305,7 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
 
-        private InteropLibrary ensureResultInterop() {
+        public InteropLibrary getResultInterop() {
             if (resultInterop == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 resultInterop = insert(InteropLibrary.getFactory().createDispatched(2));
@@ -284,18 +319,33 @@ public final class NFIPosixSupport extends PosixSupport {
     private volatile Object nfiLibrary;
     private final AtomicReferenceArray<Object> cachedFunctions;
 
-    private NFIPosixSupport(PythonContext context, String nfiBackend) {
+    public NFIPosixSupport(PythonContext context, String nfiBackend) {
+        assert nfiBackend.equals("native") || nfiBackend.equals("llvm");
         this.context = context;
         this.nfiBackend = nfiBackend;
         this.cachedFunctions = new AtomicReferenceArray<>(PosixNativeFunction.values().length);
+        setEnv(context.getEnv());
     }
 
-    public static NFIPosixSupport createNative(PythonContext context) {
-        return new NFIPosixSupport(context, "native");
-    }
-
-    public static NFIPosixSupport createLLVM(PythonContext context) {
-        return new NFIPosixSupport(context, "llvm");
+    @Override
+    public void setEnv(Env env) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            return;
+        }
+        // Java NIO (and TruffleFile) do not expect/support changing native working directory since
+        // it is inherently thread-unsafe operation. It is not defined how NIO behaves when native
+        // cwd changes, thus we need to prevent TruffleFile from resolving relative paths using
+        // NIO by setting Truffle cwd to a know value. This cannot be done lazily in chdir() because
+        // native cwd is global, but Truffle cwd is per context.
+        // TruffleFile will be unaware of the real working directory and keep resolving against the
+        // original working directory. This should not matter since we do not use TruffleFile for
+        // ordinary I/O when using NFI backend.
+        try {
+            TruffleFile truffleFile = context.getEnv().getInternalTruffleFile(".").getAbsoluteFile();
+            context.getEnv().setCurrentWorkingDirectory(truffleFile);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Unable to change Truffle working directory", e);
+        }
     }
 
     @ExportMessage
@@ -765,6 +815,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert PosixConstants.HAVE_UTIMENSAT.value;
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(this, PosixNativeFunction.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
         if (ret != 0) {
@@ -775,8 +826,39 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void futimens(int fd, long[] timespec,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert PosixConstants.HAVE_FUTIMENS.value;
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(this, PosixNativeFunction.call_futimens, fd, wrap(timespec));
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void futimes(int fd, Timeval[] timeval,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert timeval == null || timeval.length == 2;
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_futimes, fd, wrap(timeval));
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void lutimes(Object filename, Timeval[] timeval,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert timeval == null || timeval.length == 2;
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_lutimes, pathToCString(filename), wrap(timeval));
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void utimes(Object filename, Timeval[] timeval,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert timeval == null || timeval.length == 2;
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_utimes, pathToCString(filename), wrap(timeval));
         if (ret != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -822,8 +904,8 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public Object readlinkat(int dirFd, Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Buffer buffer = Buffer.allocate(PATH_MAX);
-        long n = invokeNode.callLong(this, PosixNativeFunction.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX);
+        Buffer buffer = Buffer.allocate(PATH_MAX.value);
+        long n = invokeNode.callLong(this, PosixNativeFunction.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX.value);
         if (n < 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -920,7 +1002,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public String ctermid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        byte[] buf = new byte[L_ctermid];
+        byte[] buf = new byte[L_ctermid.value];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_ctermid, wrap(buf));
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
@@ -1124,6 +1206,87 @@ public final class NFIPosixSupport extends PosixSupport {
         return offset;
     }
 
+    private static final class MMapHandle {
+        private final long pointer;
+        private final long length;
+
+        public MMapHandle(long pointer, long length) {
+            this.pointer = pointer;
+            this.length = length;
+        }
+    }
+
+    @ExportMessage
+    public Object mmap(long length, int prot, int flags, int fd, long offset,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long address = invokeNode.callLong(this, PosixNativeFunction.call_mmap, length, prot, flags, fd, offset);
+        if (address == 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+        return new MMapHandle(address, length);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public byte mmapReadByte(Object mmap, long index) {
+        MMapHandle handle = (MMapHandle) mmap;
+        if (index < 0 || index >= handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IndexOutOfBoundsException();
+        }
+        return UNSAFE.getByte(handle.pointer + index);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int mmapReadBytes(Object mmap, long index, byte[] bytes, int length) {
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, index, length);
+        UNSAFE.copyMemory(null, handle.pointer + index, bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
+        return length;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void mmapWriteBytes(Object mmap, long index, byte[] bytes, int length) {
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, index, length);
+        UNSAFE.copyMemory(bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, handle.pointer + index, length);
+    }
+
+    @ExportMessage
+    public void mmapFlush(Object mmap, long offset, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        MMapHandle handle = (MMapHandle) mmap;
+        checkIndexAndLen(handle, offset, length);
+        invokeNode.call(this, PosixNativeFunction.call_msync, handle.pointer, offset, length);
+    }
+
+    @ExportMessage
+    public void mmapUnmap(Object mmap, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        MMapHandle handle = (MMapHandle) mmap;
+        if (length != handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalArgumentException();
+        }
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_munmap, handle.pointer, length);
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    private static void checkIndexAndLen(MMapHandle handle, long index, long length) {
+        if (length < 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalArgumentException();
+        }
+        if (index < 0 || index + length > handle.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IndexOutOfBoundsException();
+        }
+    }
+
     // ------------------
     // Path conversions
 
@@ -1250,6 +1413,11 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private Object wrap(int[] ints) {
         return context.getEnv().asGuestValue(ints);
+    }
+
+    private Object wrap(Timeval[] timeval) {
+        long[] longs = timeval == null ? null : new long[]{timeval[0].getSeconds(), timeval[0].getMicroseconds(), timeval[1].getSeconds(), timeval[1].getMicroseconds()};
+        return wrap(longs);
     }
 
     private Object wrap(Buffer buffer) {

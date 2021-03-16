@@ -114,26 +114,24 @@ public class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doNativeBytes(BZ2Object.BZ2Decompressor self, PBytesLike data, int maxLength,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(data.getSequenceStorage());
                 int len = lenNode.execute(data.getSequenceStorage());
-                return factory().createBytes(decompress.execute(self, ctxt, bytes, len, maxLength));
+                return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
             }
         }
 
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doNativeObject(BZ2Object.BZ2Decompressor self, Object data, int maxLength,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(data);
                 int len = bytes.length;
-                return factory().createBytes(decompress.execute(self, ctxt, bytes, len, maxLength));
+                return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
             }
         }
 

@@ -10,6 +10,8 @@ def test_os_pipe():
     r,w = os.pipe()
     written = os.write(w, b"hello")
     assert os.read(r, written) == b"hello"
+    os.close(r)
+    os.close(w)
 
 
 class TestSubprocess(unittest.TestCase):

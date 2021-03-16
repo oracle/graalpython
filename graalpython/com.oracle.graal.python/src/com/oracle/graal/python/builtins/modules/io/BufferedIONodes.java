@@ -46,12 +46,12 @@ import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuil
 import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.append;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.createStream;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.readahead;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.safeDowncast;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.toByteArray;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_FIT_P_IN_OFFSET_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_INVALID_POS;
@@ -379,7 +379,7 @@ public class BufferedIONodes {
             }
 
             /* Now we try to get some more from the raw stream */
-            ByteArrayOutputStream chunks = createStream();
+            ByteArrayOutputStream chunks = createOutputStream();
             if (n > 0) {
                 append(chunks, self.getBuffer(), self.getPos(), n);
                 self.incPos(n);

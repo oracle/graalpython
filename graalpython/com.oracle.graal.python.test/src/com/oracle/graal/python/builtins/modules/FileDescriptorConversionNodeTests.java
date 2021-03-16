@@ -41,11 +41,13 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.PythonLanguage.getContext;
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 
 import java.math.BigInteger;
 
 import org.graalvm.polyglot.Context;
 import org.hamcrest.CoreMatchers;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -75,12 +76,17 @@ public class FileDescriptorConversionNodeTests {
         PythonTests.enterContext();
     }
 
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
+    }
+
     @Test
     public void none() {
         expectedException.expect(PException.class);
         expectedException.expectMessage("TypeError: argument must be an int, or have a fileno() method.");
         call(PNone.NONE);
-        Assert.assertEquals(PosixSupportLibrary.DEFAULT_DIR_FD, call(PNone.NO_VALUE));
+        Assert.assertEquals(AT_FDCWD.value, call(PNone.NO_VALUE));
     }
 
     @Test

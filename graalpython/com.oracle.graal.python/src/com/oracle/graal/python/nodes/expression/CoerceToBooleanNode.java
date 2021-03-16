@@ -29,8 +29,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.YesNodeGen;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
@@ -39,7 +38,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateWrapper
 public abstract class CoerceToBooleanNode extends UnaryOpNode {
-    @Child protected IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
     @Override
     public WrapperNode createWrapper(ProbeNode probe) {
@@ -67,69 +65,69 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
     @Override
     public abstract boolean executeBoolean(VirtualFrame frame);
 
-    @ReportPolymorphism
     public abstract static class YesNode extends CoerceToBooleanNode {
         @Specialization
-        boolean doBoolean(boolean operand) {
+        static boolean doBoolean(boolean operand) {
             return operand;
         }
 
         @Specialization
-        boolean doInteger(int operand) {
+        static boolean doInteger(int operand) {
             return operand != 0;
         }
 
         @Specialization
-        boolean doLong(long operand) {
+        static boolean doLong(long operand) {
             return operand != 0L;
         }
 
         @Specialization
-        boolean doDouble(double operand) {
+        static boolean doDouble(double operand) {
             return operand != 0;
         }
 
         @Specialization
-        boolean doString(String operand) {
+        static boolean doString(String operand) {
             return operand.length() != 0;
         }
 
+        @Megamorphic
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        boolean doObject(VirtualFrame frame, Object object,
+        static boolean doObject(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             return lib.isTrueWithState(object, PArguments.getThreadState(frame));
         }
     }
 
-    @ReportPolymorphism
     public abstract static class NotNode extends CoerceToBooleanNode {
         @Specialization
-        boolean doBool(boolean operand) {
+        static boolean doBool(boolean operand) {
             return !operand;
         }
 
         @Specialization
-        boolean doInteger(int operand) {
+        static boolean doInteger(int operand) {
             return operand == 0;
         }
 
         @Specialization
-        boolean doLong(long operand) {
+        static boolean doLong(long operand) {
             return operand == 0L;
         }
 
         @Specialization
-        boolean doDouble(double operand) {
+        static boolean doDouble(double operand) {
             return operand == 0;
         }
 
         @Specialization
-        boolean doString(String operand) {
+        static boolean doString(String operand) {
             return operand.length() == 0;
         }
 
+        @Megamorphic
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        boolean doObject(VirtualFrame frame, Object object,
+        static boolean doObject(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             return !lib.isTrueWithState(object, PArguments.getThreadState(frame));
         }

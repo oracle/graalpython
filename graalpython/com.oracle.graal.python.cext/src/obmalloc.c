@@ -109,6 +109,13 @@ void* PyMem_Malloc(size_t size) {
     return ptr;
 }
 
+void* PyMem_Calloc(size_t nelem, size_t elsize) {
+    if (elsize != 0 && nelem > (size_t)PY_SSIZE_T_MAX / elsize) {
+        return NULL;
+    }
+    return PyMem_RawCalloc(nelem, elsize);
+}
+
 void* PyMem_RawMalloc(size_t size) {
 	mem_head_t* ptr_with_head = malloc((size == 0 ? 1 : size) + sizeof(mem_head_t));
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);

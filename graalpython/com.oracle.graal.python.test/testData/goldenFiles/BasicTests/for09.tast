@@ -18,8 +18,6 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
               BlockNode SourceSection: None
                 IfNode SourceSection: [27,62]`if call01(i)==0:↵   ...`
                   YesNodeGen SourceSection: None
-                    IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                     BinaryComparisonNodeGen SourceSection: [30,42]`call01(i)==0`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __eq__
