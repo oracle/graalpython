@@ -40,9 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -70,7 +69,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        Map<String, Object> configOptions = new HashMap<>();
+        LinkedHashMap<String, Object> configOptions = new LinkedHashMap<>();
         configOptions.put("WITH_THREAD", 1);
         core.lookupBuiltinModule("_sysconfig").setAttribute(CONFIG_OPTIONS, configOptions);
     }
@@ -88,7 +87,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
         PDict select(PythonModule self,
                         @SuppressWarnings("unused") Object[] arguments,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            Map<String, Object> configOptions = (Map<String, Object>) readNode.execute(self, CONFIG_OPTIONS);
+            LinkedHashMap<String, Object> configOptions = (LinkedHashMap<String, Object>) readNode.execute(self, CONFIG_OPTIONS);
             return factory().createDictFromMap(configOptions);
         }
     }

@@ -40,9 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -138,8 +137,8 @@ public class PyExpatModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("model", model);
 
         PythonModule errors = core.factory().createPythonModule("pyexpat.errors");
-        Map<String, Object> codes = new HashMap<>(ErrorConstant.values().length);
-        Map<Integer, Object> messages = new HashMap<>(ErrorConstant.values().length);
+        LinkedHashMap<String, Object> codes = new LinkedHashMap<>(ErrorConstant.values().length);
+        LinkedHashMap<Integer, Object> messages = new LinkedHashMap<>(ErrorConstant.values().length);
         for (ErrorConstant c : ErrorConstant.values()) {
             errors.setAttribute(c.name(), c.message);
             codes.put(c.message, c.ordinal() + 1);

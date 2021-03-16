@@ -27,7 +27,7 @@ package com.oracle.graal.python.runtime.object;
 
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
-import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.concurrent.Semaphore;
 
 import javax.net.ssl.SSLContext;
@@ -617,8 +617,9 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(cls, getShape(cls)));
     }
 
-    public final PDict createDictFromMap(Map<?, ?> map) {
-        return createDict(new HashMapStorage(map));
+    @SuppressWarnings("unchecked")
+    public final PDict createDictFromMap(LinkedHashMap<?, ?> map) {
+        return createDict(new HashMapStorage((LinkedHashMap<Object, Object>) map));
     }
 
     public final PDict createDictLocals(MaterializedFrame frame) {

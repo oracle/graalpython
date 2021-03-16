@@ -45,10 +45,9 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Currency;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -173,7 +172,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PDict localeconv() {
-            Map<String, Object> dict = new HashMap<>(20);
+            LinkedHashMap<String, Object> dict = new LinkedHashMap<>(20);
 
             // get default locale for the format category
             Locale locale = Locale.getDefault(Locale.Category.FORMAT);

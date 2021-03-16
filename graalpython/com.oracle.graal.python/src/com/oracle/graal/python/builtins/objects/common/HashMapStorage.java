@@ -78,10 +78,6 @@ public class HashMapStorage extends HashingStorage {
         this.values = newHashMap(capacity);
     }
 
-    public HashMapStorage(Map<?, ?> map) {
-        this.values = newHashMap(map);
-    }
-
     public HashMapStorage() {
         this.values = newHashMap();
     }
