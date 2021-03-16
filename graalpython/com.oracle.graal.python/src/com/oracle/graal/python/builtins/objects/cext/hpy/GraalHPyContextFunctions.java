@@ -890,7 +890,8 @@ public abstract class GraalHPyContextFunctions {
                     // ignore
                 }
             }
-            throw CExtCommonNodes.fatalError(asContextNode, context.getContext(), null, errorMessage, -1);
+            CExtCommonNodes.fatalError(asContextNode, context.getContext(), null, errorMessage, -1);
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
