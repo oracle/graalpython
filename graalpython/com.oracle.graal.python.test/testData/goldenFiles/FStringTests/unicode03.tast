@@ -81,6 +81,5 @@ ModuleRootNode Name: <module 'unicode03'> SourceSection: [0,183]`def test():↵ 
                                   Identifier: precision
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [165,182]` and this is true`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

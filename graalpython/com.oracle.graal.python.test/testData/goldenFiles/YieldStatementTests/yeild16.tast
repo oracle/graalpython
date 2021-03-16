@@ -52,9 +52,8 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       BlockNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

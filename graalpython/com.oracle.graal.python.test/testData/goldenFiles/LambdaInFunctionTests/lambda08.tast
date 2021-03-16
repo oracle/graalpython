@@ -72,15 +72,13 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,46]`def fn():↵  lam
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: foo
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,foo,Illegal]
+                                      Frame: [0,foo,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: spaz
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [1,spaz,Illegal]
+                                      Frame: [1,spaz,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 1
@@ -88,13 +86,10 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,46]`def fn():↵  lam
                                     FunctionBodyNode SourceSection: [45,46]`0`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
+                                        Frame: [2,<return_val>,Illegal]
                                         IntegerLiteralNode SourceSection: [45,46]`0`
                                           Value: 0
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

@@ -35,8 +35,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                   Body: BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: self
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,self,Illegal]
+                      Frame: [0,self,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -47,18 +46,15 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                             ForNextElementNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: frame
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [4,frame,Illegal]
+                                Frame: [4,frame,Illegal]
                             ContinueTargetNode SourceSection: None
                               BlockNode SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: [49,59]`count += 1`
                                   Identifier: count
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [1,count,Illegal]
+                                  Frame: [1,count,Illegal]
                                   LookupAndCallInplaceNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [49,54]`count`
+                                    ReadLocalVariableNodeGen SourceSection: [49,54]`count`
                                       Frame: [1,count,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [58,59]`1`
                                       Value: 1
                                     ObjectLiteralNode SourceSection: None
@@ -67,9 +63,8 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                     BinaryComparisonNodeGen SourceSection: [71,81]`count >= 3`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __ge__
-                                      ReadLocalVariableNode SourceSection: [71,76]`count`
+                                      ReadLocalVariableNodeGen SourceSection: [71,76]`count`
                                         Frame: [1,count,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [80,81]`3`
                                         Value: 3
                                   ContinueNode SourceSection: [95,103]`continue`
@@ -79,9 +74,8 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                     BinaryComparisonNodeGen SourceSection: [115,125]`count == 4`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __eq__
-                                      ReadLocalVariableNode SourceSection: [115,120]`count`
+                                      ReadLocalVariableNodeGen SourceSection: [115,120]`count`
                                         Frame: [1,count,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [124,125]`4`
                                         Value: 4
                                   ElseNode SourceSection: [139,186]`for name, value in a...`
@@ -91,30 +85,23 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                           DestructuringAssignmentNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <>temp5
-                                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [5,<>temp5,Illegal]
+                                              Frame: [5,<>temp5,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <>temp6
-                                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [6,<>temp6,Illegal]
+                                              Frame: [6,<>temp6,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: name
-                                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [2,name,Illegal]
-                                              ReadLocalVariableNode SourceSection: None
+                                              Frame: [2,name,Illegal]
+                                              ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [5,<>temp5,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: value
-                                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [3,value,Illegal]
-                                              ReadLocalVariableNode SourceSection: None
+                                              Frame: [3,value,Illegal]
+                                              ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [6,<>temp6,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [177,186]`count = 1`
                                           Identifier: count
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,count,Illegal]
+                                          Frame: [1,count,Illegal]
                                           IntegerLiteralNode SourceSection: [185,186]`1`
                                             Value: 1
                                       GetIteratorExpressionNodeGen SourceSection: [158,159]`a`
@@ -124,10 +111,8 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                     BlockNode SourceSection: None
                                   BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [35,39]`self`
-                            ReadLocalVariableNode SourceSection: [35,39]`self`
+                            ReadLocalVariableNodeGen SourceSection: [35,39]`self`
                               Frame: [0,self,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [7,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

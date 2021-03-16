@@ -30,15 +30,13 @@ ModuleRootNode Name: <module 'lambda06'> SourceSection: [0,14]`lambda x, y: 0`
               BlockNode SourceSection: None
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: x
-                  WriteLocalFrameSlotNodeGen SourceSection: None
-                    Frame: [0,x,Illegal]
+                  Frame: [0,x,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 0
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: y
-                  WriteLocalFrameSlotNodeGen SourceSection: None
-                    Frame: [1,y,Illegal]
+                  Frame: [1,y,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 1
@@ -46,10 +44,8 @@ ModuleRootNode Name: <module 'lambda06'> SourceSection: [0,14]`lambda x, y: 0`
                 FunctionBodyNode SourceSection: [13,14]`0`
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <return_val>
-                    WriteLocalFrameSlotNodeGen SourceSection: None
-                      Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     IntegerLiteralNode SourceSection: [13,14]`0`
                       Value: 0
-            Return Expresssion: ReadLocalVariableNode SourceSection: None
+            Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
               Frame: [2,<return_val>,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None

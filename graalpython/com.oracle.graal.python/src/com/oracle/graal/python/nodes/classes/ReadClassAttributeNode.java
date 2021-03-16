@@ -148,15 +148,15 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
             return right;
         }
 
-        public void doWrite(VirtualFrame frame, Object value) {
-            writeCellLocal.doWrite(frame, value);
-            writeNsItem.doWrite(frame, value);
+        public void writeObject(VirtualFrame frame, Object value) {
+            writeCellLocal.writeObject(frame, value);
+            writeNsItem.writeObject(frame, value);
         }
 
         @Override
         public void executeVoid(VirtualFrame frame) {
             Object value = right.execute(frame);
-            doWrite(frame, value);
+            writeObject(frame, value);
         }
     }
 }

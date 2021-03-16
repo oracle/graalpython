@@ -39,17 +39,15 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                       Body: BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: extra_opts
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,extra_opts,Illegal]
+                          Frame: [0,extra_opts,Illegal]
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
                               Index: 0
                         FunctionBodyNode SourceSection: [67,71]`pass`
                           ExpressionStatementNode SourceSection: [67,71]`pass`
                             EmptyNode SourceSection: [67,71]`pass`
-                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                      Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                         Frame: [1,<return_val>,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,37]`def bla():â†µ  install...`
           Identifier: bla
@@ -90,6 +88,5 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13,20]`install`
                             Identifier: install
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

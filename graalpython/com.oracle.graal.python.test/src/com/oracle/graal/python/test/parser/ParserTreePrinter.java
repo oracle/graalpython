@@ -493,7 +493,7 @@ public class ParserTreePrinter implements NodeVisitor {
         String[] names = new String[identifiers.size()];
         int i = 0;
         for (Object identifier : identifiers) {
-            names[i++] = (String) identifier;
+            names[i++] = identifier.toString();
         }
         add(names);
         sb.append("]");
@@ -539,7 +539,7 @@ public class ParserTreePrinter implements NodeVisitor {
                 } else {
                     first = false;
                 }
-                sb.append((String) slot.getIdentifier()).append(", ");
+                sb.append(slot.getIdentifier()).append(", ");
             }
         }
     }

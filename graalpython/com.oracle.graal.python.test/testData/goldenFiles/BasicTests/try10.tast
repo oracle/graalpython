@@ -36,15 +36,13 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: x
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,x,Illegal]
+                        Frame: [0,x,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: y
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,y,Illegal]
+                        Frame: [1,y,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -53,17 +51,14 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                         TryExceptNode SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [35,49]`result = x / y`
                             Identifier: result
-                            WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [2,result,Illegal]
+                            Frame: [2,result,Illegal]
                             BinaryArithmeticExpression SourceSection: [44,49]`x / y`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __truediv__
-                              ReadLocalVariableNode SourceSection: [44,45]`x`
+                              ReadLocalVariableNodeGen SourceSection: [44,45]`x`
                                 Frame: [0,x,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [48,49]`y`
+                              ReadLocalVariableNodeGen SourceSection: [48,49]`y`
                                 Frame: [1,y,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                           ExceptNode SourceSection: None
                             ExpressionStatementNode SourceSection: [88,114]`print("division by z...`
                               PythonCallUnary SourceSection: [88,114]`print("division by z...`
@@ -82,9 +77,8 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [139,150]`"result is"`
-                              ReadLocalVariableNode SourceSection: [152,158]`result`
+                              ReadLocalVariableNodeGen SourceSection: [152,158]`result`
                                 Frame: [2,result,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [181,214]`print("executing fin...`
                           PythonCallUnary SourceSection: [181,214]`print("executing fin...`
                             CallUnaryMethodNodeGen SourceSection: None
@@ -92,6 +86,5 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [187,213]`"executing finally c...`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [3,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

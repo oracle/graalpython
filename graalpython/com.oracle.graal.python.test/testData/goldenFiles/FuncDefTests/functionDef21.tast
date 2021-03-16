@@ -37,15 +37,13 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                   BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: a
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,a,Illegal]
+                      Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: b
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,b,Illegal]
+                      Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -53,26 +51,22 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                     FrameReturnNode SourceSection: [24,40]`return a + b + c`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,<return_val>,Illegal]
+                        Frame: [2,<return_val>,Illegal]
                         BinaryArithmeticExpression SourceSection: [31,40]`a + b + c`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __add__
                           BinaryArithmeticExpression SourceSection: [31,36]`a + b`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __add__
-                            ReadLocalVariableNode SourceSection: [31,32]`a`
+                            ReadLocalVariableNodeGen SourceSection: [31,32]`a`
                               Frame: [0,a,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [35,36]`b`
+                            ReadLocalVariableNodeGen SourceSection: [35,36]`b`
                               Frame: [1,b,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`c`
                             Identifier: c
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [2,<return_val>,Illegal]
-                  ReadVariableFromFrameNodeGen SourceSection: None
       PythonCallBinary SourceSection: [41,49]`foo(1,2)`
         CallBinaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [41,44]`foo`

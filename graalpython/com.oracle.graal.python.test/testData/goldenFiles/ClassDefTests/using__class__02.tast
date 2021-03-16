@@ -76,16 +76,14 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: this
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,this,Illegal]
+                                      Frame: [0,this,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                     FunctionBodyNode SourceSection: [56,200]`class Y:↵           ...`
                                       WriteLocalVariableNodeGen SourceSection: [56,192]`class Y:↵           ...`
                                         Identifier: Y
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,Y,Illegal]
+                                        Frame: [1,Y,Illegal]
                                         PythonCallBinary SourceSection: [56,192]`class Y:↵           ...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
@@ -103,7 +101,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                 Param Names: namespace
                                               CelVars: __class__
-                                              FreeVars: <>freevar__class__
+                                              FreeVars: None
                                               NeedsCellFrame: False
                                               FrameDescriptor: 4 slots [__class__, z, methodY, <>freevar__class__]
                                               ExecutionSlots:
@@ -137,9 +135,8 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                             Identifier: __class__
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: None
-                                                            ReadLocalVariableNode SourceSection: None
+                                                            ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [3,<>freevar__class__,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                       SetItemNodeGen SourceSection: [119,192]`def methodY(this):↵ ...`
                                                         ArgumentExpressionNode SourceSection: None
@@ -170,45 +167,37 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                                 Body: BlockNode SourceSection: None
                                                                   WriteLocalVariableNodeGen SourceSection: None
                                                                     Identifier: this
-                                                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                      Frame: [0,this,Illegal]
+                                                                    Frame: [0,this,Illegal]
                                                                     ArgumentExpressionNode SourceSection: None
                                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                                         Index: 0
                                                                   FunctionBodyNode SourceSection: [162,175]`y = __class__`
                                                                     WriteLocalVariableNodeGen SourceSection: [162,175]`y = __class__`
                                                                       Identifier: y
-                                                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                        Frame: [1,y,Illegal]
+                                                                      Frame: [1,y,Illegal]
                                                                       ReadLocalCellNodeGen SourceSection: [166,175]`__class__`
-                                                                        ReadLocalVariableNode SourceSection: None
+                                                                        ReadLocalVariableNodeGen SourceSection: None
                                                                           Frame: [2,__class__,Illegal]
-                                                                          ReadVariableFromFrameNodeGen SourceSection: None
                                                                         ReadFromCellNodeGen SourceSection: None
-                                                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [3,<return_val>,Illegal]
-                                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                     SetItemNodeGen SourceSection: None
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
                                                       StringLiteralNode SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: None
+                                                      ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [0,__class__,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
                                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                                           StringLiteralNode SourceSection: None
                                       FrameReturnNode SourceSection: [192,200]`return Y`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [3,<return_val>,Illegal]
-                                          ReadLocalVariableNode SourceSection: [199,200]`Y`
+                                          Frame: [3,<return_val>,Illegal]
+                                          ReadLocalVariableNodeGen SourceSection: [199,200]`Y`
                                             Frame: [1,Y,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [213,263]`def methodX(this):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -238,31 +227,26 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: this
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,this,Illegal]
+                                      Frame: [0,this,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
                                     FunctionBodyNode SourceSection: [248,262]`yy = __class__`
                                       WriteLocalVariableNodeGen SourceSection: [248,262]`yy = __class__`
                                         Identifier: yy
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,yy,Illegal]
+                                        Frame: [1,yy,Illegal]
                                         ReadLocalCellNodeGen SourceSection: [253,262]`__class__`
-                                          ReadLocalVariableNode SourceSection: None
+                                          ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [2,__class__,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: None
                           Frame: [0,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

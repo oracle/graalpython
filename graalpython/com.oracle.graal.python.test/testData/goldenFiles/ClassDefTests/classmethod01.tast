@@ -88,23 +88,20 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: self
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [0,self,Illegal]
+                                          Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 0
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: string
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,string,Illegal]
+                                          Frame: [1,string,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 1
                                       FunctionBodyNode SourceSection: [68,72]`pass`
                                         ExpressionStatementNode SourceSection: [68,72]`pass`
                                           EmptyNode SourceSection: [68,72]`pass`
-                                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                    Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

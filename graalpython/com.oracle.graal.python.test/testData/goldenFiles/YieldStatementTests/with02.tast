@@ -55,9 +55,8 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                             ReadGlobalOrBuiltinNodeGen SourceSection: [38,40]`p3`
                               Identifier: p3
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [19,20]`a`
                           Frame: [0,a,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         LookupSpecialMethodNodeGen SourceSection: None
                         LookupSpecialMethodNodeGen SourceSection: None
                         CachedDispatchFirst SourceSection: None
@@ -94,13 +93,11 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         GetClassNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: a
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,a,Illegal]
+                    Frame: [0,a,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

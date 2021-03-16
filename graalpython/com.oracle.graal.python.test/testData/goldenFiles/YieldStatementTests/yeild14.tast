@@ -47,14 +47,12 @@ ModuleRootNode Name: <module 'yeild14'> SourceSection: [0,26]`def f(): yield 1; 
                       FrameReturnNode SourceSection: [18,26]`return 1`
                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                           Identifier: <return_val>
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
+                          Frame: [0,<return_val>,Illegal]
                           IntegerLiteralNode SourceSection: [25,26]`1`
                             Value: 1
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

@@ -35,8 +35,7 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                   Body: BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: sequences
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,sequences,Illegal]
+                      Frame: [0,sequences,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -47,16 +46,14 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                             ForNextElementNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: s1
-                                WriteLocalFrameSlotNodeGen SourceSection: None
-                                  Frame: [2,s1,Illegal]
+                                Frame: [2,s1,Illegal]
                             BreakTargetNode SourceSection: [55,165]`for s2 in sequences:...`
                               ForNode SourceSection: None
                                 ForRepeatingNode SourceSection: None
                                   ForNextElementNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: s2
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [1,s2,Illegal]
+                                      Frame: [1,s2,Illegal]
                                   IfNode SourceSection: [88,142]`if candidate in s2[1...`
                                     YesNodeGen SourceSection: None
                                       ContainsNodeGen SourceSection: [91,110]`candidate in s2[1:]`
@@ -67,9 +64,8 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                           Identifier: candidate
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GetItemNodeGen SourceSection: [104,110]`s2[1:]`
-                                          ReadLocalVariableNode SourceSection: None
+                                          ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,s2,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           SliceLiteralNodeGen SourceSection: [107,109]`1:`
                                             PythonObjectFactoryNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [107,108]`1`
@@ -79,15 +75,12 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                     BreakNode SourceSection: [128,133]`break`
                                     BlockNode SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [65,74]`sequences`
-                                  ReadLocalVariableNode SourceSection: [65,74]`sequences`
+                                  ReadLocalVariableNodeGen SourceSection: [65,74]`sequences`
                                     Frame: [0,sequences,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                               BreakNode SourceSection: [160,165]`break`
                           GetIteratorExpressionNodeGen SourceSection: [36,45]`sequences`
-                            ReadLocalVariableNode SourceSection: [36,45]`sequences`
+                            ReadLocalVariableNodeGen SourceSection: [36,45]`sequences`
                               Frame: [0,sequences,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [3,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

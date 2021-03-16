@@ -39,8 +39,7 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,35]`def fn():↵  with 
                           EmptyNode SourceSection: [31,35]`pass`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: a
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,a,Illegal]
+                          Frame: [0,a,Illegal]
                         PythonCallNodeGen SourceSection: [17,20]`A()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [17,18]`A`
@@ -53,6 +52,5 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,35]`def fn():↵  with 
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
