@@ -213,6 +213,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CodeReprNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         static Object repr(PCode self) {
             return self.toString();
         }

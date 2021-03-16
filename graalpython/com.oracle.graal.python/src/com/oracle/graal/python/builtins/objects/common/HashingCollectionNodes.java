@@ -186,7 +186,7 @@ public abstract class HashingCollectionNodes {
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             for (int i = 0; i < PString.length(str); i++) {
                 String key = PString.valueOf(PString.charAt(str, i));
-                lib.setItemWithFrame(storage, key, val, hasFrame, frame);
+                storage = lib.setItemWithFrame(storage, key, val, hasFrame, frame);
             }
             return storage;
         }

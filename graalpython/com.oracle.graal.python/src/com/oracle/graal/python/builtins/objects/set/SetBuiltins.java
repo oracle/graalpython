@@ -99,7 +99,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class InitNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isNoValue(iterable)", limit = "1")
+        @Specialization(guards = "isNoValue(iterable)", limit = "3")
         static PNone doNoValue(PSet self, @SuppressWarnings("unused") PNone iterable,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage newStorage = lib.clear(self.getDictStorage());
@@ -135,7 +135,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         public static Object clear(PSet self,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage newStorage = lib.clear(self.getDictStorage());
@@ -160,7 +160,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "canDoSetBinOp(other)", limit = "1")
+        @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
         Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
@@ -182,7 +182,7 @@ public final class SetBuiltins extends PythonBuiltins {
         PBaseSet doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("args.length") int len,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = lib.copy(self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = lib.union(result, getHashingStorageNode.execute(frame, args[i]));
@@ -190,10 +190,10 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(result);
         }
 
-        @Specialization(replaces = "doCached", limit = "1")
+        @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = lib.copy(self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = lib.union(result, getHashingStorageNode.execute(frame, args[i]));
@@ -291,7 +291,7 @@ public final class SetBuiltins extends PythonBuiltins {
         static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("args.length") int len,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
             for (int i = 0; i < len; i++) {
                 result = lib.union(result, getHashingStorageNode.execute(frame, args[i]));
@@ -300,10 +300,10 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(replaces = "doCached", limit = "1")
+        @Specialization(replaces = "doCached")
         static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
             for (Object o : args) {
                 result = lib.union(result, getHashingStorage.execute(frame, o));
@@ -312,7 +312,7 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         static PNone doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorage,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
@@ -347,7 +347,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntersectNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isNoValue(other)", limit = "2")
+        @Specialization(guards = "isNoValue(other)", limit = "3")
         PSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PSet self, @SuppressWarnings("unused") PNone other,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             return factory().createSet(lib.copy(self.getDictStorage()));
@@ -358,7 +358,7 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached("args.length") int len,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = lib.copy(self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = lib.intersectWithFrame(result, getHashingStorageNode.execute(frame, args[i]), hasFrame, frame);
@@ -366,11 +366,11 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(result);
         }
 
-        @Specialization(replaces = "doCached", limit = "1")
+        @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = lib.copy(self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = lib.intersectWithFrame(result, getHashingStorageNode.execute(frame, args[i]), hasFrame, frame);
@@ -378,7 +378,7 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(result);
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         PSet doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
@@ -404,7 +404,7 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached("args.length") int len,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
             for (int i = 0; i < len; i++) {
                 result = lib.intersectWithFrame(result, getHashingStorage.execute(frame, args[i]), hasFrame, frame);
@@ -413,11 +413,11 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(replaces = "doCached", limit = "1")
+        @Specialization(replaces = "doCached")
         static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
             for (Object o : args) {
                 result = lib.intersectWithFrame(result, getHashingStorage.execute(frame, o), hasFrame, frame);
@@ -426,7 +426,7 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         static PNone doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
@@ -442,7 +442,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canDoSetBinOp(other)", limit = "1")
+        @Specialization(guards = "canDoSetBinOp(other)", limit = "3")
         Object doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
@@ -460,7 +460,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SymmetricDifferenceNode extends PythonBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         PSet doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorage,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
@@ -483,7 +483,7 @@ public final class SetBuiltins extends PythonBuiltins {
         static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("args.length") int len,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
             for (int i = 0; i < len; i++) {
                 result = lib.xor(result, getHashingStorage.execute(frame, args[i]));
@@ -492,10 +492,10 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(replaces = "doCached", limit = "1")
+        @Specialization(replaces = "doCached")
         static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
             for (Object o : args) {
                 result = lib.xor(result, getHashingStorage.execute(frame, o));
@@ -504,7 +504,7 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         static PNone doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached GetHashingStorageNode getHashingStorage,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
@@ -548,7 +548,7 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached("args.length") int len,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = lib.copy(self.getDictStorage());
             for (int i = 0; i < len; i++) {
                 result = lib.diffWithFrame(result, getHashingStorageNode.execute(frame, args[i]), hasFrame, frame);
@@ -556,11 +556,11 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(result);
         }
 
-        @Specialization(replaces = "doCached", limit = "1")
+        @Specialization(replaces = "doCached")
         PBaseSet doGeneric(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = lib.copy(self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
                 result = lib.diffWithFrame(result, getHashingStorageNode.execute(frame, args[i]), hasFrame, frame);
@@ -568,7 +568,7 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(result);
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         PSet doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
@@ -593,7 +593,7 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached("args.length") int len,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
             for (int i = 0; i < len; i++) {
                 result = lib.diffWithFrame(result, getHashingStorage.execute(frame, args[i]), hasFrame, frame);
@@ -602,11 +602,11 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(replaces = "doCached", limit = "1")
+        @Specialization(replaces = "doCached")
         static PNone doSet(VirtualFrame frame, PSet self, Object[] args,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage result = self.getDictStorage();
             for (Object o : args) {
                 result = lib.diffWithFrame(result, getHashingStorage.execute(frame, o), hasFrame, frame);
@@ -615,7 +615,7 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         static PNone doSet(VirtualFrame frame, PSet self, Object other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorage,
@@ -629,7 +629,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = "remove", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         Object remove(VirtualFrame frame, PSet self, Object key,
                         @Cached BranchProfile updatedStorage,
                         @Cached BaseSetBuiltins.ConvertKeyNode conv,
@@ -659,7 +659,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = "discard", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization(limit = "3")
         Object discard(VirtualFrame frame, PSet self, Object key,
                         @Cached BranchProfile updatedStorage,
                         @Cached BaseSetBuiltins.ConvertKeyNode conv,
@@ -706,11 +706,11 @@ public final class SetBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         Object remove(VirtualFrame frame, PSet self,
                         @Cached BranchProfile updatedStorage,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             for (Object next : lib.keys(self.getDictStorage())) {
                 removeItem(frame, self, next, lib, hasFrame, updatedStorage);
                 return next;
