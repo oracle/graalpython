@@ -64,21 +64,51 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
+/**
+ * This class implements equivalents of OpenSSL transport functions ({@code SSL_read} etc) on top of
+ * JDK's {@link SSLEngine}. It takes care of the handshake, packeting, network and application data
+ * buffering and network or memory buffer IO. In addition to what the OpenSSL functions would do, it
+ * also handles Python-specific error handling, non-blocking IO and socket timeouts.
+ */
 public class SSLEngineHelper {
 
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private static final int TLS_HEADER_SIZE = 5;
 
+    /**
+     * Equivalent of {@code SSL_write}. Attempts to transmit all the data in the supplied buffer
+     * into given {@link PSSLSocket} (which can be backed by a memory buffer).
+     *
+     * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
+     * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
+     */
     @TruffleBoundary
     public static void write(PNodeWithRaise node, PSSLSocket socket, ByteBuffer input) {
         loop(node, socket, input, EMPTY_BUFFER, Operation.WRITE);
     }
 
+    /**
+     * Equivalent of {@code SSL_read}. Attempts to read bytes from the {@link PSSLSocket} (which can
+     * be backed by a memory buffer) into given buffer. Will read at most the data of one TLS
+     * packet. Decrypted but not read data is buffered on the socket and returned by the next call.
+     * Empty output buffer after the call signifies the peer closed the connection cleanly.
+     *
+     * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
+     * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
+     */
     @TruffleBoundary
     public static void read(PNodeWithRaise node, PSSLSocket socket, ByteBuffer target) {
         loop(node, socket, EMPTY_BUFFER, target, Operation.READ);
     }
 
+    /**
+     * Equivalent of {@code SSL_do_handshake}. Initiate a handshake if one has not been initiated
+     * already. Becomes a no-op after the initial handshake is done, i.e. cannot be used to perform
+     * renegotiation.
+     *
+     * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
+     * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
+     */
     @TruffleBoundary
     public static void handshake(PNodeWithRaise node, PSSLSocket socket) {
         if (!socket.isHandshakeComplete()) {
@@ -92,6 +122,13 @@ public class SSLEngineHelper {
         }
     }
 
+    /**
+     * Equivalent of {@code SSL_do_shutdown}. Initiates a duplex close of the TLS connection - sends
+     * a close_notify message and tries to receive a close_notify from the peer.
+     *
+     * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
+     * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
+     */
     @TruffleBoundary
     public static void shutdown(PNodeWithRaise node, PSSLSocket socket) {
         socket.getEngine().closeOutbound();
