@@ -2136,8 +2136,13 @@ public class GraalHPyNodes {
 
         @Specialization(guards = "!argsHandle.isNull()")
         static Object[] doNotNull(GraalHPyHandle argsHandle,
-                        @Cached ExecutePositionalStarargsInteropNode expandArgsNode) {
-            return expandArgsNode.executeWithGlobalState(argsHandle.getDelegate());
+                        @Cached ExecutePositionalStarargsInteropNode expandArgsNode,
+                        @Cached PRaiseNode raiseNode) {
+            Object args = argsHandle.getDelegate();
+            if (PGuards.isPTuple(args)) {
+                return expandArgsNode.executeWithGlobalState(args);
+            }
+            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires args to be a tuple or null handle");
         }
     }
 
@@ -2158,8 +2163,12 @@ public class GraalHPyNodes {
         static PKeyword[] doKeywords(@SuppressWarnings("unused") GraalHPyHandle kwargsHandle,
                         @Bind("kwargsHandle.getDelegate()") Object delegate,
                         @Shared("lenNode") @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode) {
-            return expandKwargsNode.execute(delegate);
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (PGuards.isDict(delegate)) {
+                return expandKwargsNode.execute(delegate);
+            }
+            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires kw to be a dict or null handle");
         }
 
         static boolean isEmptyDict(HashingCollectionNodes.LenNode lenNode, Object delegate) {

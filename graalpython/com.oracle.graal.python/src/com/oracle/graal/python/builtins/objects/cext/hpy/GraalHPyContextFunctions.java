@@ -2002,10 +2002,10 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedTypeException {
             checkArity(arguments, 4);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
-            Object callable = asPythonObjectNode.execute(nativeContext, arguments[1]);
             try {
                 Object[] args = castArgsNode.execute(ensureHandleNode.execute(nativeContext, arguments[2]));
                 PKeyword[] keywords = castKwargsNode.execute(ensureHandleNode.execute(nativeContext, arguments[3]));
+                Object callable = asPythonObjectNode.execute(nativeContext, arguments[1]);
                 return asHandleNode.execute(nativeContext, callNode.execute(callable, args, keywords));
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
