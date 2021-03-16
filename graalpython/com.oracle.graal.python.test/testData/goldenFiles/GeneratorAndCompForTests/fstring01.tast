@@ -35,8 +35,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                   Body: BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: someset
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,someset,Illegal]
+                      Frame: [0,someset,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -44,8 +43,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                       FrameReturnNode SourceSection: [17,64]`return ', '.join(f'{...`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [1,<return_val>,Illegal]
+                          Frame: [1,<return_val>,Illegal]
                           PythonCallUnary SourceSection: [24,64]`', '.join(f'{name}' ...`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
@@ -81,8 +79,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: name
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,name,Illegal]
+                                        Frame: [0,name,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -92,17 +89,14 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
-                                    ReadGeneratorFrameVariableNode SourceSection: None
+                                    ReadGeneratorFrameVariableNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [56,63]`someset`
-                                ReadLocalVariableNode SourceSection: [56,63]`someset`
+                                ReadLocalVariableNodeGen SourceSection: [56,63]`someset`
                                   Frame: [0,someset,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

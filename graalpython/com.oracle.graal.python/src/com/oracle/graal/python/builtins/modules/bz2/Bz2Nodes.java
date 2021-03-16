@@ -56,8 +56,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NFIBz2Support;
 import com.oracle.graal.python.runtime.NativeLibrary;
@@ -65,7 +66,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -92,8 +93,7 @@ public class Bz2Nodes {
     protected static final int BZ_OUTBUFF_FULL = (-8);
     protected static final int BZ_CONFIG_ERROR = (-9);
 
-    @GenerateUncached
-    public abstract static class Bz2NativeCompress extends Node {
+    public abstract static class Bz2NativeCompress extends PNodeWithRaise {
 
         public abstract byte[] execute(BZ2Object.BZ2Compressor self, PythonContext context, byte[] bytes, int len, int action);
 
@@ -109,26 +109,24 @@ public class Bz2Nodes {
         byte[] nativeCompress(BZ2Object.BZ2Compressor self, PythonContext context, byte[] bytes, int len, int action,
                         @Cached NativeLibrary.InvokeNativeFunction compress,
                         @Cached GetOutputNativeBufferNode getBuffer,
-                        @Cached PRaiseNode raiseNode,
                         @Cached ConditionProfile errProfile) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             Object inGuest = context.getEnv().asGuestValue(bytes);
             int err = bz2Support.compress(self.getBzs(), inGuest, len, action, INITIAL_BUFFER_SIZE, compress);
             if (errProfile.profile(err != BZ_OK)) {
-                errorHandling(err, raiseNode);
+                errorHandling(err, getRaiseNode());
             }
             return getBuffer.execute(self.getBzs(), context);
         }
 
     }
 
-    @GenerateUncached
     public abstract static class Bz2NativeDecompress extends Node {
 
-        public abstract byte[] execute(BZ2Object.BZ2Decompressor self, PythonContext context, byte[] data, int len, int maxLength);
+        public abstract byte[] execute(BZ2Object.BZ2Decompressor self, byte[] data, int len, int maxLength);
 
         @Specialization
-        byte[] nativeDecompress(BZ2Object.BZ2Decompressor self, PythonContext context, byte[] bytes, int len, int maxLength,
+        byte[] nativeDecompress(BZ2Object.BZ2Decompressor self, byte[] bytes, int len, int maxLength,
                         @Cached Bz2NativeInternalDecompress decompress) {
             boolean inputBufferInUse;
             /* Prepend unconsumed input if necessary */
@@ -150,10 +148,10 @@ public class Bz2Nodes {
                      * buffer if realloc fails
                      */
                     self.resizeInputBuffer(newSize);
-                    self.setNextIn(self.getInputBuffer(), context);
+                    self.setNextIn(self.getInputBuffer());
                 } else if (availNow < len) {
                     PythonUtils.arraycopy(self.getNextIn(), self.getNextInIndex(), self.getInputBuffer(), 0, self.getBzsAvailInReal());
-                    self.setNextIn(self.getInputBuffer(), context);
+                    self.setNextIn(self.getInputBuffer());
                     self.setNextInIndex(0);
                 }
                 PythonUtils.arraycopy(bytes, 0, self.getNextIn(), self.getNextInIndex() + self.getBzsAvailInReal(), len);
@@ -161,12 +159,12 @@ public class Bz2Nodes {
                 self.incBzsAvailInReal(len);
                 inputBufferInUse = true;
             } else {
-                self.setNextIn(bytes, context);
+                self.setNextIn(bytes);
                 self.setBzsAvailInReal(len);
                 inputBufferInUse = false;
             }
 
-            byte[] result = decompress.execute(self, context, maxLength);
+            byte[] result = decompress.execute(self, maxLength);
 
             if (self.isEOF()) {
                 self.setNeedsInput(false);
@@ -202,7 +200,7 @@ public class Bz2Nodes {
                     /* Copy tail */
                     // memcpy(d->input_buffer, bzs->next_in, self.getBzsAvailInReal());
                     PythonUtils.arraycopy(self.getNextIn(), self.getNextInIndex(), self.getInputBuffer(), 0, self.getBzsAvailInReal());
-                    self.setNextIn(self.getInputBuffer(), context);
+                    self.setNextIn(self.getInputBuffer());
                     self.setNextInIndex(0);
                 }
             }
@@ -211,22 +209,21 @@ public class Bz2Nodes {
         }
     }
 
-    @GenerateUncached
-    public abstract static class Bz2NativeInternalDecompress extends Node {
+    public abstract static class Bz2NativeInternalDecompress extends PNodeWithRaise {
 
-        public abstract byte[] execute(BZ2Object.BZ2Decompressor self, PythonContext context, int maxLength);
+        public abstract byte[] execute(BZ2Object.BZ2Decompressor self, int maxLength);
 
         @Specialization
-        byte[] nativeInternalDecompress(BZ2Object.BZ2Decompressor self, PythonContext context, int maxLength,
+        byte[] nativeInternalDecompress(BZ2Object.BZ2Decompressor self, int maxLength,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction decompress,
                         @Cached NativeLibrary.InvokeNativeFunction getBzsAvailInReal,
                         @Cached NativeLibrary.InvokeNativeFunction getNextInIndex,
                         @Cached GetOutputNativeBufferNode getBuffer,
-                        @Cached PRaiseNode raiseNode,
                         @Cached ConditionProfile errProfile,
                         @Cached BranchProfile ofProfile) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
-            Object inGuest = self.getNextInGuest();
+            Object inGuest = self.getNextInGuest(context);
             int offset = self.getNextInIndex();
             int err = bz2Support.decompress(self.getBzs(), inGuest, offset, maxLength, INITIAL_BUFFER_SIZE, self.getBzsAvailInReal(), decompress);
             long nextInIdx = bz2Support.getNextInIndex(self.getBzs(), getNextInIndex);
@@ -236,35 +233,33 @@ public class Bz2Nodes {
                 self.setBzsAvailInReal(bzsAvailInReal);
             } catch (OverflowException of) {
                 ofProfile.enter();
-                raiseNode.raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
+                throw raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
             }
             if (err == BZ_STREAM_END) {
                 self.setEOF();
             } else if (errProfile.profile(err != BZ_OK)) {
-                errorHandling(err, raiseNode);
+                errorHandling(err, getRaiseNode());
             }
             return getBuffer.execute(self.getBzs(), context);
         }
     }
 
-    @GenerateUncached
-    public abstract static class GetOutputNativeBufferNode extends PNodeWithContext {
+    public abstract static class GetOutputNativeBufferNode extends PNodeWithRaise {
 
         public abstract byte[] execute(Object bzst, PythonContext context);
 
         @Specialization
-        static byte[] getBuffer(Object bzst, PythonContext context,
+        byte[] getBuffer(Object bzst, PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction getBufferSize,
                         @Cached NativeLibrary.InvokeNativeFunction getBuffer,
-                        @Cached PRaiseNode raiseNode,
                         @Cached BranchProfile ofProfile) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
-            int size = 0;
+            int size;
             try {
                 size = PInt.intValueExact(bz2Support.getOutputBufferSize(bzst, getBufferSize));
             } catch (OverflowException of) {
                 ofProfile.enter();
-                raiseNode.raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
+                throw raise(SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
             }
             if (size == 0) {
                 return PythonUtils.EMPTY_BYTE_ARRAY;

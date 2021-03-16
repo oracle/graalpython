@@ -26,6 +26,8 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -91,9 +93,12 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -125,35 +130,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
-    private static final int TMPFILE = 4259840;
-    private static final int TEMPORARY = 4259840;
-    private static final int SYNC = 1052672;
-    private static final int RSYNC = 1052672;
-    private static final int CLOEXEC = PosixSupportLibrary.O_CLOEXEC;
-    private static final int DIRECT = 16384;
-    private static final int DSYNC = 4096;
-    private static final int NDELAY = 2048;
-    private static final int NONBLOCK = 2048;
-    private static final int APPEND = PosixSupportLibrary.O_APPEND;
-    private static final int TRUNC = PosixSupportLibrary.O_TRUNC;
-    private static final int EXCL = PosixSupportLibrary.O_EXCL;
-    private static final int CREAT = PosixSupportLibrary.O_CREAT;
-    private static final int RDWR = PosixSupportLibrary.O_RDWR;
-    private static final int WRONLY = PosixSupportLibrary.O_WRONLY;
-    private static final int RDONLY = PosixSupportLibrary.O_RDONLY;
-
-    // TODO map Python's SEEK_SET, SEEK_CUR, SEEK_END values to the underlying OS values if they are
-    // different
-    private static final int SEEK_DATA = 3;
-    private static final int SEEK_HOLE = 4;
-
-    private static final int WNOHANG = 1;
-    private static final int WUNTRACED = 3;
-
-    private static final int F_OK = 0;
-    private static final int X_OK = 1;
-    private static final int W_OK = 2;
-    private static final int R_OK = 4;
 
     static final StructSequence.Descriptor STAT_RESULT_DESC = new StructSequence.Descriptor(
                     PythonBuiltinClassType.PStatResult,
@@ -213,33 +189,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     public PosixModuleBuiltins() {
-        builtinConstants.put("O_RDONLY", RDONLY);
-        builtinConstants.put("O_WRONLY", WRONLY);
-        builtinConstants.put("O_RDWR", RDWR);
-        builtinConstants.put("O_CREAT", CREAT);
-        builtinConstants.put("O_EXCL", EXCL);
-        builtinConstants.put("O_TRUNC", TRUNC);
-        builtinConstants.put("O_APPEND", APPEND);
-        builtinConstants.put("O_NONBLOCK", NONBLOCK);
-        builtinConstants.put("O_NDELAY", NDELAY);
-        builtinConstants.put("O_DSYNC", DSYNC);
-        builtinConstants.put("O_DIRECT", DIRECT);
-        builtinConstants.put("O_CLOEXEC", CLOEXEC);
-        builtinConstants.put("O_RSYNC", RSYNC);
-        builtinConstants.put("O_SYNC", SYNC);
-        builtinConstants.put("O_TEMPORARY", TEMPORARY);
-        builtinConstants.put("O_TMPFILE", TMPFILE);
+        addConstants(PosixConstants.openFlags);
+        addConstants(PosixConstants.waitOptions);
+        addConstants(PosixConstants.accessMode);
 
-        builtinConstants.put("SEEK_DATA", SEEK_DATA);
-        builtinConstants.put("SEEK_HOLE", SEEK_HOLE);
+        addConstant(PosixConstants.SEEK_DATA);
+        addConstant(PosixConstants.SEEK_HOLE);
+    }
 
-        builtinConstants.put("WNOHANG", WNOHANG);
-        builtinConstants.put("WUNTRACED", WUNTRACED);
+    private void addConstant(IntConstant c) {
+        if (c.defined) {
+            builtinConstants.put(c.name, c.getValueIfDefined());
+        }
+    }
 
-        builtinConstants.put("F_OK", F_OK);
-        builtinConstants.put("X_OK", X_OK);
-        builtinConstants.put("W_OK", W_OK);
-        builtinConstants.put("R_OK", R_OK);
+    private void addConstants(IntConstant[] constants) {
+        for (IntConstant c : constants) {
+            addConstant(c);
+        }
     }
 
     @Override
@@ -496,7 +463,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached BranchProfile errorProfile) {
-            int fixedFlags = flags | CLOEXEC;
+            int fixedFlags = flags | O_CLOEXEC.value;
             auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
             while (true) {
                 try {
@@ -740,6 +707,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    public static int mapPythonSeekWhenceToPosix(int pythonWhence) {
+        // See os.py
+        switch (pythonWhence) {
+            case 0:
+                return PosixConstants.SEEK_SET.value;
+            case 1:
+                return PosixConstants.SEEK_CUR.value;
+            case 2:
+                return PosixConstants.SEEK_END.value;
+            default:
+                return pythonWhence;
+        }
+    }
+
     @Builtin(name = "lseek", minNumOfPositionalArgs = 3, parameterNames = {"fd", "pos", "how"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "pos", conversionClass = OffsetConversionNode.class)
@@ -757,7 +738,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
             try {
-                return posixLib.lseek(getPosixSupport(), fd, pos, how);
+                return posixLib.lseek(getPosixSupport(), fd, pos, mapPythonSeekWhenceToPosix(how));
             } catch (PosixException e) {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -944,7 +925,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         protected static boolean isDefault(int dirFd) {
-            return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
+            return dirFd == AT_FDCWD.value;
         }
     }
 
@@ -1365,122 +1346,54 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "utime", minNumOfPositionalArgs = 1, parameterNames = {"path", "times"}, varArgsMarker = true, keywordOnlyNames = {"ns", "dir_fd", "follow_symlinks"})
-    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
-    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
-    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
-    @GenerateNodeFactory
-    abstract static class UtimeNode extends PythonClinicBuiltinNode {
+    abstract static class UtimeArgsToTimespecNode extends PythonBuiltinBaseNode {
+        abstract long[] execute(VirtualFrame frame, Object times, Object ns);
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PosixModuleBuiltinsClinicProviders.UtimeNodeClinicProviderGen.INSTANCE;
+        Timeval[] toTimeval(VirtualFrame frame, Object times, Object ns) {
+            long[] timespec = execute(frame, times, ns);
+            return timespec == null ? null : new Timeval[]{new Timeval(timespec[0], timespec[1] / 1000), new Timeval(timespec[2], timespec[3] / 1000)};
         }
 
         @Specialization(guards = {"isNoValue(ns)"})
         @SuppressWarnings("unused")
-        PNone pathNow(VirtualFrame frame, PosixPath path, PNone times, PNone ns, int dirFd, boolean followSymlinks,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            auditNode.audit("os.utime", path.originalObject, PNone.NONE, PNone.NONE, dirFdForAudit(dirFd));
-            callUtimeNsAt(frame, path, null, dirFd, followSymlinks, posixLib);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isNoValue(ns)", "isDefault(dirFd)", "followSymlinks"})
-        @SuppressWarnings("unused")
-        PNone fdNow(VirtualFrame frame, PosixFd fd, PNone times, PNone ns, int dirFd, boolean followSymlinks,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            auditNode.audit("os.utime", fd.originalObject, PNone.NONE, PNone.NONE, dirFdForAudit(dirFd));
-            callFutimeNs(frame, fd, null, posixLib);
-            return PNone.NONE;
+        long[] now(VirtualFrame frame, PNone times, PNone ns) {
+            return null;
         }
 
         @Specialization(guards = {"isNoValue(ns)"})
-        PNone pathTimes(VirtualFrame frame, PosixPath path, PTuple times, @SuppressWarnings("unused") PNone ns, int dirFd, boolean followSymlinks,
+        long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached ObjectToTimespecNode objectToTimespecNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            long[] timespec = convertToTimespec(frame, times, lenNode, getItemNode, objectToTimespecNode);
-            auditNode.audit("os.utime", path.originalObject, times, PNone.NONE, dirFdForAudit(dirFd));
-            callUtimeNsAt(frame, path, timespec, dirFd, followSymlinks, posixLib);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isNoValue(ns)", "isDefault(dirFd)", "followSymlinks"})
-        @SuppressWarnings("unused")
-        PNone fdTimes(VirtualFrame frame, PosixFd fd, PTuple times, PNone ns, int dirFd, boolean followSymlinks,
-                        @Cached LenNode lenNode,
-                        @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached ObjectToTimespecNode objectToTimespecNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            long[] timespec = convertToTimespec(frame, times, lenNode, getItemNode, objectToTimespecNode);
-            auditNode.audit("os.utime", fd.originalObject, times, PNone.NONE, dirFdForAudit(dirFd));
-            callFutimeNs(frame, fd, timespec, posixLib);
-            return PNone.NONE;
+                        @Cached ObjectToTimespecNode objectToTimespecNode) {
+            return convertToTimespec(frame, times, lenNode, getItemNode, objectToTimespecNode);
         }
 
         @Specialization
-        PNone pathNs(VirtualFrame frame, PosixPath path, @SuppressWarnings("unused") PNone times, PTuple ns, int dirFd, boolean followSymlinks,
+        long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached SplitLongToSAndNsNode splitLongToSAndNsNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            long[] timespec = convertToTimespec(frame, ns, lenNode, getItemNode, splitLongToSAndNsNode);
-            auditNode.audit("os.utime", path.originalObject, PNone.NONE, ns, dirFdForAudit(dirFd));
-            callUtimeNsAt(frame, path, timespec, dirFd, followSymlinks, posixLib);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isDefault(dirFd)", "followSymlinks"})
-        @SuppressWarnings("unused")
-        PNone fdNs(VirtualFrame frame, PosixFd fd, PNone times, PTuple ns, int dirFd, boolean followSymlinks,
-                        @Cached LenNode lenNode,
-                        @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached SplitLongToSAndNsNode splitLongToSAndNsNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            long[] timespec = convertToTimespec(frame, ns, lenNode, getItemNode, splitLongToSAndNsNode);
-            auditNode.audit("os.utime", fd.originalObject, PNone.NONE, ns, dirFdForAudit(dirFd));
-            callFutimeNs(frame, fd, timespec, posixLib);
-            return PNone.NONE;
+                        @Cached SplitLongToSAndNsNode splitLongToSAndNsNode) {
+            return convertToTimespec(frame, ns, lenNode, getItemNode, splitLongToSAndNsNode);
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isNoValue(ns)"})
         @SuppressWarnings("unused")
-        PNone bothSpecified(VirtualFrame frame, Object path, Object times, Object ns, int dirFd, boolean followSymlinks) {
+        long[] bothSpecified(VirtualFrame frame, Object times, Object ns) {
             throw raise(ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isPTuple(times)", "isNoValue(ns)"})
         @SuppressWarnings("unused")
-        PNone timesNotATuple(VirtualFrame frame, Object path, Object times, PNone ns, int dirFd, boolean followSymlinks) {
+        long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns) {
             throw timesTupleError();
         }
 
         @Specialization(guards = {"!isNoValue(ns)", "!isPTuple(ns)"})
         @SuppressWarnings("unused")
-        PNone nsNotATuple(VirtualFrame frame, Object path, PNone times, Object ns, int dirFd, boolean followSymlinks) {
+        long[] nsNotATuple(VirtualFrame frame, PNone times, Object ns) {
             // ns can actually also contain objects implementing __divmod__, but CPython produces
             // this error message
             throw raise(TypeError, ErrorMessages.MUST_BE, "utime", "ns", "a tuple of two ints");
-        }
-
-        @Specialization(guards = {"isPNone(times) || isNoValue(ns)", "!isDefault(dirFd)"})
-        @SuppressWarnings("unused")
-        PNone fdWithDirFd(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks) {
-            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "utime");
-        }
-
-        @Specialization(guards = {"isPNone(times) || isNoValue(ns)", "isDefault(dirFd)", "!followSymlinks"})
-        @SuppressWarnings("unused")
-        PNone fdWithFollowSymlinks(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks) {
-            throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "utime");
         }
 
         private PException timesTupleError() {
@@ -1497,27 +1410,131 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             convertToTimespecBaseNode.execute(frame, getItemNode.execute(frame, times.getSequenceStorage(), 1), timespec, 2);
             return timespec;
         }
+    }
 
-        private void callUtimeNsAt(VirtualFrame frame, PosixPath path, long[] timespec, int dirFd, boolean followSymlinks, PosixSupportLibrary posixLib) {
+    @Builtin(name = "utime", minNumOfPositionalArgs = 1, parameterNames = {"path", "times"}, varArgsMarker = true, keywordOnlyNames = {"ns", "dir_fd", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    @ImportStatic(PosixConstants.class)
+    abstract static class UtimeNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.UtimeNodeClinicProviderGen.INSTANCE;
+        }
+
+        private static Object checkNone(Object o) {
+            return PGuards.isPNone(o) ? PNone.NONE : o;
+        }
+
+        @Specialization(guards = "HAVE_UTIMENSAT.value")
+        PNone utimensat(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            long[] timespec = timespecNode.execute(frame, times, ns);
+            auditNode.audit("os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
                 posixLib.utimensat(getPosixSupport(), dirFd, path.value, timespec, followSymlinks);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw raiseOSErrorFromPosixException(frame, e);
             }
+            return PNone.NONE;
         }
 
-        private void callFutimeNs(VirtualFrame frame, PosixFd fd, long[] timespec, PosixSupportLibrary posixLib) {
+        @Specialization(guards = {"!HAVE_UTIMENSAT.value", "isDefault(dirFd)", "followSymlinks"})
+        PNone utimes(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
+            auditNode.audit("os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            try {
+                posixLib.utimes(getPosixSupport(), path.value, timeval);
+            } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!HAVE_UTIMENSAT.value", "isDefault(dirFd)", "!followSymlinks"})
+        PNone lutimes(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
+            auditNode.audit("os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            try {
+                posixLib.lutimes(getPosixSupport(), path.value, timeval);
+            } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!HAVE_UTIMENSAT.value", "!isDefault(dirFd)", "followSymlinks"})
+        @SuppressWarnings("unused")
+        PNone dirFdNotSupported(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks) {
+            throw raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC, "dir_fd");
+        }
+
+        @Specialization(guards = {"!HAVE_UTIMENSAT.value", "!isDefault(dirFd)", "!followSymlinks"})
+        @SuppressWarnings("unused")
+        PNone dirFdAndFollowSymlinksNotSupported(VirtualFrame frame, PosixPath path, Object times, Object ns, int dirFd, boolean followSymlinks) {
+            throw raise(ValueError, ErrorMessages.UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS, "dir_fd");
+        }
+
+        @Specialization(guards = {"HAVE_FUTIMENS.value", "isDefault(dirFd)", "followSymlinks"})
+        PNone futimens(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            long[] timespec = timespecNode.execute(frame, times, ns);
+            auditNode.audit("os.utime", fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
                 posixLib.futimens(getPosixSupport(), fd.fd, timespec);
             } catch (PosixException e) {
                 // filename is intentionally not included, see CPython's os_utime_impl
                 throw raiseOSErrorFromPosixException(frame, e);
             }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!HAVE_FUTIMENS.value", "isDefault(dirFd)", "followSymlinks"})
+        PNone futimes(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached UtimeArgsToTimespecNode timespecNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
+            auditNode.audit("os.utime", fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            try {
+                posixLib.futimes(getPosixSupport(), fd.fd, timeval);
+            } catch (PosixException e) {
+                // filename is intentionally not included, see CPython's os_utime_impl
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isPNone(times) || isNoValue(ns)", "!isDefault(dirFd)"})
+        @SuppressWarnings("unused")
+        PNone fdWithDirFd(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks) {
+            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "utime");
+        }
+
+        @Specialization(guards = {"isPNone(times) || isNoValue(ns)", "isDefault(dirFd)", "!followSymlinks"})
+        @SuppressWarnings("unused")
+        PNone fdWithFollowSymlinks(VirtualFrame frame, PosixFd fd, Object times, Object ns, int dirFd, boolean followSymlinks) {
+            throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "utime");
         }
 
         protected static boolean isDefault(int dirFd) {
-            return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
+            return dirFd == AT_FDCWD.value;
         }
     }
 
@@ -1609,7 +1626,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 // TODO CPython checks for ENOTSUP as well
                 if (e.getErrorCode() == OSErrorEnum.EOPNOTSUPP.getNumber() && !followSymlinks) {
-                    if (dirFd != PosixSupportLibrary.DEFAULT_DIR_FD) {
+                    if (dirFd != AT_FDCWD.value) {
                         throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chmod");
                     } else {
                         throw raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM, "chmod", "follow_symlinks");
@@ -2210,7 +2227,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     static int dirFdForAudit(int dirFd) {
-        return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd;
+        return dirFd == AT_FDCWD.value ? -1 : dirFd;
     }
 
     public static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
@@ -2266,13 +2283,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     /**
      * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the
-     * parameter is omitted, returns {@link PosixSupportLibrary#DEFAULT_DIR_FD}.
+     * parameter is omitted, returns {@link PosixConstants#AT_FDCWD}.
      */
     public abstract static class DirFdConversionNode extends ArgumentCastNodeWithRaise {
 
         @Specialization
         int doNone(@SuppressWarnings("unused") PNone value) {
-            return PosixSupportLibrary.DEFAULT_DIR_FD;
+            return AT_FDCWD.value;
         }
 
         @Specialization

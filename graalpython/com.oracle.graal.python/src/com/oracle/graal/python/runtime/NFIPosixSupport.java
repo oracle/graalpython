@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
+import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 
@@ -93,8 +95,6 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
-    private static final int PATH_MAX = 4096;
-    private static final int L_ctermid = 9;
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
@@ -153,6 +153,9 @@ public final class NFIPosixSupport extends PosixSupport {
         call_readdir("(sint64, [sint8], uint64, [sint64]):sint32"),
         call_utimensat("(sint32, [sint8], [sint64], sint32):sint32"),
         call_futimens("(sint32, [sint64]):sint32"),
+        call_futimes("(sint32, [sint64]):sint32"),
+        call_lutimes("([sint8], [sint64]):sint32"),
+        call_utimes("([sint8], [sint64]):sint32"),
         call_renameat("(sint32, [sint8], sint32, [sint8]):sint32"),
         call_faccessat("(sint32, [sint8], sint32, sint32, sint32):sint32"),
         call_fchmodat("(sint32, [sint8], sint32, sint32):sint32"),
@@ -812,6 +815,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void utimensat(int dirFd, Object pathname, long[] timespec, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert PosixConstants.HAVE_UTIMENSAT.value;
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(this, PosixNativeFunction.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
         if (ret != 0) {
@@ -822,8 +826,39 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void futimens(int fd, long[] timespec,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert PosixConstants.HAVE_FUTIMENS.value;
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(this, PosixNativeFunction.call_futimens, fd, wrap(timespec));
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void futimes(int fd, Timeval[] timeval,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert timeval == null || timeval.length == 2;
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_futimes, fd, wrap(timeval));
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void lutimes(Object filename, Timeval[] timeval,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert timeval == null || timeval.length == 2;
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_lutimes, pathToCString(filename), wrap(timeval));
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void utimes(Object filename, Timeval[] timeval,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert timeval == null || timeval.length == 2;
+        int ret = invokeNode.callInt(this, PosixNativeFunction.call_utimes, pathToCString(filename), wrap(timeval));
         if (ret != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -869,8 +904,8 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public Object readlinkat(int dirFd, Object path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Buffer buffer = Buffer.allocate(PATH_MAX);
-        long n = invokeNode.callLong(this, PosixNativeFunction.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX);
+        Buffer buffer = Buffer.allocate(PATH_MAX.value);
+        long n = invokeNode.callLong(this, PosixNativeFunction.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX.value);
         if (n < 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
@@ -967,7 +1002,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public String ctermid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        byte[] buf = new byte[L_ctermid];
+        byte[] buf = new byte[L_ctermid.value];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_ctermid, wrap(buf));
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
@@ -1378,6 +1413,11 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private Object wrap(int[] ints) {
         return context.getEnv().asGuestValue(ints);
+    }
+
+    private Object wrap(Timeval[] timeval) {
+        long[] longs = timeval == null ? null : new long[]{timeval[0].getSeconds(), timeval[0].getMicroseconds(), timeval[1].getSeconds(), timeval[1].getMicroseconds()};
+        return wrap(longs);
     }
 
     private Object wrap(Buffer buffer) {

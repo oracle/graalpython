@@ -169,7 +169,7 @@ public abstract class BZ2Object extends PythonBuiltinObject {
             assert size >= inputBufferSize;
             byte[] tmp = new byte[size];
             if (inputBuffer != null && getBzsAvailInReal() != 0) {
-                PythonUtils.arraycopy(inputBuffer, 0, tmp, 0, getBzsAvailInReal());
+                PythonUtils.arraycopy(inputBuffer, 0, tmp, 0, inputBuffer.length);
             }
             this.inputBuffer = tmp;
             this.inputBufferSize = size;
@@ -187,10 +187,10 @@ public abstract class BZ2Object extends PythonBuiltinObject {
             return nextIn;
         }
 
-        public void setNextIn(byte[] in, PythonContext context) {
+        public void setNextIn(byte[] in) {
             assert in != null;
             this.nextIn = in;
-            this.nextInGuest = context.getEnv().asGuestValue(nextIn);
+            this.nextInGuest = null;
         }
 
         public void clearNextIn() {
@@ -198,7 +198,10 @@ public abstract class BZ2Object extends PythonBuiltinObject {
             this.nextInGuest = null;
         }
 
-        public Object getNextInGuest() {
+        public Object getNextInGuest(PythonContext context) {
+            if (nextInGuest == null) {
+                this.nextInGuest = context.getEnv().asGuestValue(nextIn);
+            }
             return nextInGuest;
         }
 

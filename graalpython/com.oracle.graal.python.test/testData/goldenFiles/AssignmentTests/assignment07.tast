@@ -45,37 +45,27 @@ ModuleRootNode Name: <module 'assignment07'> SourceSection: [0,29]`def fn():↵ 
                           PythonObjectFactoryNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <>temp3
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [3,<>temp3,Illegal]
+                          Frame: [3,<>temp3,Illegal]
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <>temp4
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [4,<>temp4,Illegal]
+                          Frame: [4,<>temp4,Illegal]
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <>temp5
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [5,<>temp5,Illegal]
+                          Frame: [5,<>temp5,Illegal]
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: a
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,a,Illegal]
-                          ReadLocalVariableNode SourceSection: None
+                          Frame: [0,a,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: None
                             Frame: [3,<>temp3,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: b
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [1,b,Illegal]
-                          ReadLocalVariableNode SourceSection: None
+                          Frame: [1,b,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: None
                             Frame: [4,<>temp4,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: c
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [2,c,Illegal]
-                          ReadLocalVariableNode SourceSection: None
+                          Frame: [2,c,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: None
                             Frame: [5,<>temp5,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [6,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

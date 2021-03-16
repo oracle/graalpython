@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_DEF;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MEMORYVIEW_EXPORTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_BASE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_EXPORTS;
@@ -1314,8 +1315,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     if (((DynamicObjectNativeWrapper) nativeWrapper).isMemberModifiable(key)) {
                         logGeneric(key);
                         lib.setItem(((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(lang), key, value);
+                    } else {
+                        throw UnknownIdentifierException.create(key);
                     }
-                    throw UnknownIdentifierException.create(key);
                 } else {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -1342,6 +1344,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         TP_FREE.getMemberName().equals(member) ||
                         TP_SUBCLASSES.getMemberName().equals(member) ||
                         MD_DEF.getMemberName().equals(member) ||
+                        MD_STATE.getMemberName().equals(member) ||
                         TP_DICT.getMemberName().equals(member) ||
                         TP_DICTOFFSET.getMemberName().equals(member) ||
                         MEMORYVIEW_EXPORTS.getMemberName().equals(member);

@@ -39,14 +39,12 @@ ModuleRootNode Name: <module 'functionDefCPT05'> SourceSection: [0,20]`def f(foo
                   Body: BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: foo
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,foo,Illegal]
+                      Frame: [0,foo,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     FunctionBodyNode SourceSection: [16,20]`pass`
                       ExpressionStatementNode SourceSection: [16,20]`pass`
                         EmptyNode SourceSection: [16,20]`pass`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

@@ -76,8 +76,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: format
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,format,Illegal]
+                                      Frame: [0,format,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -85,20 +84,17 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                       FrameReturnNode SourceSection: [43,65]`return (format % arg...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,<return_val>,Illegal]
+                                          Frame: [1,<return_val>,Illegal]
                                           BinaryArithmeticExpression SourceSection: [51,64]`format % args`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mod__
-                                            ReadLocalVariableNode SourceSection: [51,57]`format`
+                                            ReadLocalVariableNodeGen SourceSection: [51,57]`format`
                                               Frame: [0,format,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [60,64]`args`
                                               Identifier: args
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -129,15 +125,13 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                     BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: args
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,args,Illegal]
+                                        Frame: [0,args,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadVarArgsNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: kwds
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,kwds,Illegal]
+                                        Frame: [1,kwds,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadVarKeywordsNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -145,25 +139,21 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                       FrameReturnNode SourceSection: [102,128]`return self(*args, *...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
+                                          Frame: [2,<return_val>,Illegal]
                                           PythonCallNodeGen SourceSection: [109,128]`self(*args, **kwds)`
                                             CallNodeGen SourceSection: None
                                             PositionalArgumentsNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [115,119]`args`
+                                              ReadLocalVariableNodeGen SourceSection: [115,119]`args`
                                                 Frame: [0,args,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                               ExecutePositionalStarargsNodeGen SourceSection: None
                                             KeywordArgumentsNodeGen SourceSection: None
                                               ExecuteKeywordArgumentsNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [123,127]`kwds`
+                                              ReadLocalVariableNodeGen SourceSection: [123,127]`kwds`
                                                 Frame: [1,kwds,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [109,113]`self`
                                               Identifier: self
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

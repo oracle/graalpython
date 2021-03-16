@@ -44,13 +44,14 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsuppor
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PRawIOBase;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.mapPythonSeekWhenceToPosix;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.append;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.createStream;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.toByteArray;
 import static com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.BUFSIZ;
 import static com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_MODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_USE_CLOSEFD;
@@ -63,14 +64,14 @@ import static com.oracle.graal.python.nodes.ErrorMessages.OPENER_RETURNED_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNBOUNDED_READ_RETURNED_MORE_BYTES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.DEFAULT_DIR_FD;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.O_APPEND;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.O_CREAT;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.O_EXCL;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.O_RDONLY;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.O_RDWR;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.O_TRUNC;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.O_WRONLY;
+import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
+import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
+import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
+import static com.oracle.graal.python.runtime.PosixConstants.O_EXCL;
+import static com.oracle.graal.python.runtime.PosixConstants.O_RDONLY;
+import static com.oracle.graal.python.runtime.PosixConstants.O_RDWR;
+import static com.oracle.graal.python.runtime.PosixConstants.O_TRUNC;
+import static com.oracle.graal.python.runtime.PosixConstants.O_WRONLY;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -218,7 +219,7 @@ public class FileIOBuiltins extends PythonBuiltins {
             }
             while (true) {
                 try {
-                    return posixLib.openat(getPosixSupport(), DEFAULT_DIR_FD, path, flags, mode);
+                    return posixLib.openat(getPosixSupport(), AT_FDCWD.value, path, flags, mode);
                 } catch (PosixSupportLibrary.PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
@@ -277,7 +278,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         rwa = true;
                         self.setCreated();
                         self.setWritable();
-                        flags |= O_EXCL | O_CREAT;
+                        flags |= O_EXCL.value | O_CREAT.value;
                         break;
                     case 'r':
                         if (rwa) {
@@ -292,7 +293,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         }
                         rwa = true;
                         self.setWritable();
-                        flags |= O_CREAT | O_TRUNC;
+                        flags |= O_CREAT.value | O_TRUNC.value;
                         break;
                     case 'a':
                         if (rwa) {
@@ -301,7 +302,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         rwa = true;
                         self.setWritable();
                         self.setAppending();
-                        flags |= O_APPEND | O_CREAT;
+                        flags |= O_APPEND.value | O_CREAT.value;
                         break;
                     case 'b':
                         break;
@@ -322,9 +323,9 @@ public class FileIOBuiltins extends PythonBuiltins {
             }
 
             if (self.isReadable() && self.isWritable()) {
-                flags |= O_RDWR;
+                flags |= O_RDWR.value;
             } else {
-                flags |= self.isReadable() ? O_RDONLY : O_WRONLY;
+                flags |= self.isReadable() ? O_RDONLY.value : O_WRONLY.value;
             }
 
             auditNode.audit("open", nameobj, mode, flags);
@@ -399,7 +400,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                  * might be done only on the first write()).
                  */
                 try {
-                    long res = posixLib.lseek(getPosixSupport(), self.getFD(), 0, SEEK_END);
+                    long res = posixLib.lseek(getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
                     self.setSeekable(res >= 0 ? 1 : 0);
                 } catch (PosixSupportLibrary.PosixException e) {
                     exceptionProfile.enter();
@@ -481,7 +482,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached BranchProfile exceptionProfile) {
             int bufsize = SMALLCHUNK;
             try {
-                long pos = posixLib.lseek(getPosixSupport(), self.getFD(), 0L, SEEK_CUR);
+                long pos = posixLib.lseek(getPosixSupport(), self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
                 long[] status = posixLib.fstat(getPosixSupport(), self.getFD());
                 long end = status[6]; // TODO: st_size
                 if (end > 0 && end >= pos && pos >= 0 && end - pos < MAX_SIZE) {
@@ -497,7 +498,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 // ignore
             }
 
-            ByteArrayOutputStream result = createStream();
+            ByteArrayOutputStream result = createOutputStream();
             byte[] buffer;
             int bytesRead = 0;
             while (true) {
@@ -639,7 +640,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached BranchProfile exceptionProfile) {
             long pos = lib.asJavaLong(posobj, frame);
             try {
-                long res = posixLib.lseek(getPosixSupport(), self.getFD(), pos, whence);
+                long res = posixLib.lseek(getPosixSupport(), self.getFD(), pos, mapPythonSeekWhenceToPosix(whence));
                 if (self.getSeekable() < 0) {
                     self.setSeekable(1);
                 }
@@ -757,7 +758,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         Object unknown(PFileIO self,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
             try {
-                posixLib.lseek(getPosixSupport(), self.getFD(), 0, SEEK_CUR);
+                posixLib.lseek(getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_CUR));
                 self.setSeekable(1);
                 return true;
             } catch (PosixSupportLibrary.PosixException e) {

@@ -136,8 +136,11 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length == 1", "firstArgIterable(args, lib)", "!firstArgString(args)"})
         Object doVarargs(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @Cached SetDictStorageNode setStorage,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            setStorage.execute(self, getInitNode().execute(frame, args[0], kwargs));
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary storageLib) {
+            HashingStorage storage = self.getDictStorage();
+            storage = storageLib.addAllToOther(getInitNode().execute(frame, args[0], kwargs), storage);
+            setStorage.execute(self, storage);
             return PNone.NONE;
         }
 
@@ -155,10 +158,19 @@ public final class DictBuiltins extends PythonBuiltins {
             throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, 0, 1);
         }
 
-        @Specialization(guards = "args.length == 0")
+        @Specialization(guards = {"args.length == 0", "kwargs.length > 0"})
         Object doKeywords(VirtualFrame frame, PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
-                        @Cached SetDictStorageNode setStorage) {
-            setStorage.execute(self, getInitNode().execute(frame, NO_VALUE, kwargs));
+                        @Cached SetDictStorageNode setStorage,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary storageLib) {
+            HashingStorage storage = self.getDictStorage();
+            storage = storageLib.addAllToOther(getInitNode().execute(frame, NO_VALUE, kwargs), storage);
+            setStorage.execute(self, storage);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"args.length == 0", "kwargs.length == 0"})
+        Object doEmpty(PDict self, Object[] args, PKeyword[] kwargs) {
             return PNone.NONE;
         }
 

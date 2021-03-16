@@ -46,30 +46,23 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                               DestructuringAssignmentNodeGen SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: <>temp4
-                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                    Frame: [4,<>temp4,Illegal]
+                                  Frame: [4,<>temp4,Illegal]
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: <>temp5
-                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                    Frame: [5,<>temp5,Illegal]
+                                  Frame: [5,<>temp5,Illegal]
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: order
-                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                    Frame: [2,order,Illegal]
-                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                  Frame: [2,order,Illegal]
+                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [4,<>temp4,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                   Identifier: it
-                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                    Frame: [3,it,Illegal]
-                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                  Frame: [3,it,Illegal]
+                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [5,<>temp5,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: [48,62]`value = next()`
                               Identifier: value
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [1,value,Illegal]
+                              Frame: [1,value,Illegal]
                               PythonCallNodeGen SourceSection: [56,62]`next()`
                                 CallNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [56,60]`next`
@@ -87,9 +80,8 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                           ExpressionStatementNode SourceSection: [93,104]`yield value`
                             YieldNode SourceSection: [93,104]`yield value`
                               flagSlot: 0
-                              ReadGeneratorFrameVariableNode SourceSection: [99,104]`value`
+                              ReadGeneratorFrameVariableNodeGen SourceSection: [99,104]`value`
                                 Frame: [1,value,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
                             BinaryComparisonNodeGen SourceSection: [73,83]`len(h) > 1`
@@ -100,21 +92,18 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [73,76]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                ReadGeneratorFrameVariableNode SourceSection: [77,78]`h`
+                                ReadGeneratorFrameVariableNodeGen SourceSection: [77,78]`h`
                                   Frame: [0,h,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [82,83]`1`
                                 Value: 1
                           GeneratorAccessNode SourceSection: None
                         BlockNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [6,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: h
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,h,Illegal]
+                    Frame: [0,h,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

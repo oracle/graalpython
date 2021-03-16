@@ -25,35 +25,86 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundLocalError;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "read_local")
-public final class ReadLocalVariableNode extends ReadVariableNode {
+public abstract class ReadLocalVariableNode extends ExpressionNode implements ReadLocalNode, FrameSlotNode {
 
-    private ReadLocalVariableNode(FrameSlot slot) {
-        super(slot);
+    protected final FrameSlot frameSlot;
+
+    protected ReadLocalVariableNode(FrameSlot frameSlot) {
+        this.frameSlot = frameSlot;
     }
 
     public static ReadLocalVariableNode create(FrameSlot slot) {
-        return new ReadLocalVariableNode(slot);
+        return ReadLocalVariableNodeGen.create(slot);
+    }
+
+    @Override
+    public final FrameSlot getSlot() {
+        return frameSlot;
+    }
+
+    @Specialization(guards = "frame.isBoolean(frameSlot)")
+    boolean readLocalBoolean(VirtualFrame frame) {
+        return FrameUtil.getBooleanSafe(frame, frameSlot);
+    }
+
+    @Specialization(guards = "frame.isInt(frameSlot)")
+    int readLocalInt(VirtualFrame frame) {
+        return FrameUtil.getIntSafe(frame, frameSlot);
+    }
+
+    @Specialization(guards = "frame.isLong(frameSlot)")
+    long readLocalLong(VirtualFrame frame) {
+        return FrameUtil.getLongSafe(frame, frameSlot);
+    }
+
+    @Specialization(guards = "frame.isDouble(frameSlot)")
+    double readLocalDouble(VirtualFrame frame) {
+        return FrameUtil.getDoubleSafe(frame, frameSlot);
+    }
+
+    protected final Object getObjectResult(VirtualFrame frame) {
+        return FrameUtil.getObjectSafe(frame, frameSlot);
+    }
+
+    @Specialization(guards = {"frame.isObject(frameSlot)", "result != null"})
+    static Object readLocalObject(@SuppressWarnings("unused") VirtualFrame frame,
+                    @Bind("getObjectResult(frame)") Object result) {
+        return result;
+    }
+
+    @Specialization(guards = {"frame.isObject(frameSlot)", "getObjectResult(frame) == null"})
+    Object readLocalObjectNull(@SuppressWarnings("unused") VirtualFrame frame,
+                    @Cached PRaiseNode raise) {
+        if (frameSlot.getIdentifier() == RETURN_SLOT_ID) {
+            return PNone.NONE;
+        } else {
+            throw raise.raise(UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, frameSlot.getIdentifier());
+        }
     }
 
     @Override
     public StatementNode makeWriteNode(ExpressionNode rhs) {
         return WriteLocalVariableNode.create(frameSlot, rhs);
-    }
-
-    @Override
-    protected Frame getAccessingFrame(VirtualFrame frame) {
-        return frame;
     }
 
     @Override
@@ -63,6 +114,6 @@ public final class ReadLocalVariableNode extends ReadVariableNode {
 
     @Override
     public Object getNodeObject() {
-        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, getSlot().getIdentifier());
+        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, frameSlot.getIdentifier());
     }
 }

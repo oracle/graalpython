@@ -243,14 +243,30 @@ java_static_function = """    /**
 nfi_type_dict = {
     'int' : 'SINT32',
     'uInt' : 'UINT32',
+    'int*' : '[SINT32]',
+    'uint32_t' : 'UINT32',
+    'uint32_t*' : '[UINT32]',
+
     'long' : 'SINT64',
+    'int64_t' : 'SINT64',
     'ssize_t' : 'SINT64',
+    'long*' : '[SINT64]',
+    'int64_t*' : '[SINT64]',
+    'ssize_t*' : '[SINT64]',
     'uLong' : 'UINT64',
-    'double' : 'DOUBLE',
+    'uint64_t' : 'UINT64',
     'size_t' : 'UINT64',
+    'uint64_t*' : '[UINT64]',
+    'size_t*' : '[UINT64]',
+
+    'double' : 'DOUBLE',
+    'double*' : '[DOUBLE]',
+
     'Byte' : 'UINT8',
     'Byte*' : '[UINT8]',
+
     'char*' : 'STRING',
+
     'void' : 'VOID',
     'void*': 'POINTER'
 }
@@ -258,14 +274,23 @@ nfi_type_dict = {
 java_type_dict = {
     'int' : 'int',
     'uInt' : 'int',
-    'ssize_t' : 'long',
-    'size_t' : 'long',
+
+    'uint32_t' : 'long',
+
     'long' : 'long',
     'uLong' : 'long',
+    'int64_t' : 'long',
+    'uint64_t' : 'long',
+    'ssize_t' : 'long',
+    'size_t' : 'long',
+    
     'double' : 'double',
+
     'Byte' : 'byte',
+
+    'char*' : 'String',
+
     'void' : 'void',
-    'char*' : 'String'
 }
 
 java_ret_type_dict = {

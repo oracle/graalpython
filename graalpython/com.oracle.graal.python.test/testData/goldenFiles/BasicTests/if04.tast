@@ -47,8 +47,7 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                     Body: BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: a
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,a,Illegal]
+                        Frame: [0,a,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
@@ -56,11 +55,8 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                         FunctionBodyNode SourceSection: [52,53]`a`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
-                            WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [1,<return_val>,Illegal]
-                            ReadLocalVariableNode SourceSection: [52,53]`a`
+                            Frame: [1,<return_val>,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [52,53]`a`
                               Frame: [0,a,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                       Frame: [1,<return_val>,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None

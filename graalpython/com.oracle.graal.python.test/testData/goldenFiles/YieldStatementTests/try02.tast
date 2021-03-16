@@ -55,13 +55,11 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
                         BlockNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: x
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,x,Illegal]
+                    Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

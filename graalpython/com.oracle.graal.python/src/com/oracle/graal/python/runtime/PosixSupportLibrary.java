@@ -40,8 +40,13 @@
  */
 package com.oracle.graal.python.runtime;
 
-import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.PLATFORM_DARWIN;
-import static com.oracle.graal.python.util.PythonUtils.getPythonOSName;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFBLK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFCHR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFDIR;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFIFO;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFLNK;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFMT;
+import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -61,60 +66,12 @@ import com.oracle.truffle.api.library.LibraryFactory;
 @GenerateLibrary(receiverType = PosixSupport.class)
 public abstract class PosixSupportLibrary extends Library {
 
-    public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is
-                                                    // equal to AT_FDCWD
-
-    public static final int O_CLOEXEC = 524288;
-    public static final int O_APPEND = 1024;
-    public static final int O_TRUNC = 512;
-    public static final int O_EXCL = 128;
-    public static final int O_CREAT = 64;
-    public static final int O_RDWR = 2;
-    public static final int O_WRONLY = 1;
-    public static final int O_RDONLY = 0;
-
     public static final char POSIX_FILENAME_SEPARATOR = '/';
-
-    // from stat.h
-
-    /* Encoding of the file mode. */
-    public static final int S_IFMT = 0170000; /* These bits determine file type. */
-
-    /* File types. */
-    public static final int S_IFDIR = 0040000; /* Directory. */
-    public static final int S_IFCHR = 0020000; /* Character device. */
-    public static final int S_IFBLK = 0060000; /* Block device. */
-    public static final int S_IFREG = 0100000; /* Regular file. */
-    public static final int S_IFIFO = 0010000; /* FIFO. */
-    public static final int S_IFLNK = 0120000; /* Symbolic link. */
-    public static final int S_IFSOCK = 0140000; /* Socket. */
-
-    public static final int MAP_ANONYMOUS = getPythonOSName().equals(PLATFORM_DARWIN) ? 4096 : 0x20;
 
     // Constants for accessing the fields of the fstat result:
     // TODO: have these in posix.c (maybe posix.h) and extract them along with other constants
     public static final int ST_MODE = 0;
     public static final int ST_SIZE = 6;
-
-    public static final int DT_UNKNOWN = 0;
-    public static final int DT_DIR = 4;
-    public static final int DT_REG = 8;
-    public static final int DT_LNK = 10;
-
-    public static final int LOCK_SH = 1;
-    public static final int LOCK_EX = 2;
-    public static final int LOCK_NB = 4;
-    public static final int LOCK_UN = 8;
-
-    public static final int MAP_SHARED = 0x01;
-    public static final int MAP_PRIVATE = 0x02;
-
-    public static final int PROT_READ = 0x1; /* Page can be read. */
-    public static final int PROT_WRITE = 0x2; /* Page can be written. */
-    public static final int PROT_EXEC = 0x4; /* Page can be executed. */
-    public static final int PROT_NONE = 0x0; /* Page can not be accessed. */
-
-    public static final int FD_SETSIZE = 1024;
 
     public abstract String getBackend(Object recevier);
 
@@ -247,7 +204,7 @@ public abstract class PosixSupportLibrary extends Library {
      * 
      * @param timespec an array of 4 longs in this order:
      *            {@code atime.tv_sec, atime.tv_nsec, mtime.tv_sec, mtime.tv_nsec} or {@code null}
-     *            to set both times to 'now'
+     *            to set both times to 'now' TODO change long[] timespec to Timespec[] timespec
      */
     public abstract void utimensat(Object receiver, int dirFd, Object pathname, long[] timespec, boolean followSymlinks) throws PosixException;
 
@@ -255,6 +212,15 @@ public abstract class PosixSupportLibrary extends Library {
      * Equivalent of POSIX {@code futimens()}.
      */
     public abstract void futimens(Object receiver, int fd, long[] timespec) throws PosixException;
+
+    /**
+     * @param timeval either {@code null} or has two elements: access time and modification time
+     */
+    public abstract void futimes(Object receiver, int fd, Timeval[] timeval) throws PosixException;
+
+    public abstract void lutimes(Object receiver, Object filename, Timeval[] timeval) throws PosixException;
+
+    public abstract void utimes(Object receiver, Object filename, Timeval[] timeval) throws PosixException;
 
     public abstract void renameat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
@@ -494,31 +460,31 @@ public abstract class PosixSupportLibrary extends Library {
 
     // from stat.h macros
     private static boolean istype(long mode, int mask) {
-        return (mode & S_IFMT) == mask;
+        return (mode & S_IFMT.value) == mask;
     }
 
     public static boolean isDIR(long mode) {
-        return istype(mode, S_IFDIR);
+        return istype(mode, S_IFDIR.value);
     }
 
     public static boolean isCHR(long mode) {
-        return istype(mode, S_IFCHR);
+        return istype(mode, S_IFCHR.value);
     }
 
     public static boolean isBLK(long mode) {
-        return istype(mode, S_IFBLK);
+        return istype(mode, S_IFBLK.value);
     }
 
     public static boolean isREG(long mode) {
-        return istype(mode, S_IFREG);
+        return istype(mode, S_IFREG.value);
     }
 
     public static boolean isFIFO(long mode) {
-        return istype(mode, S_IFIFO);
+        return istype(mode, S_IFIFO.value);
     }
 
     public static boolean isLNK(long mode) {
-        return istype(mode, S_IFLNK);
+        return istype(mode, S_IFLNK.value);
     }
 
     public static class ChannelNotSelectableException extends UnsupportedPosixFeatureException {

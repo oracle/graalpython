@@ -220,7 +220,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Override
         public abstract Object execute(VirtualFrame frame, Object value);
 
-        @Specialization(guards = "isNoValue(none)")
+        @Specialization
         Object none(@SuppressWarnings("unused") PNone none) {
             return defaultValue;
         }
@@ -243,7 +243,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return x.intValue();
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "3")
+        @Specialization(guards = "!isPNone(value)", limit = "3")
         Object doOthers(VirtualFrame frame, Object value,
                         @Cached("createRec()") ExpectIntNode rec,
                         @CachedLibrary("value") PythonObjectLibrary lib) {

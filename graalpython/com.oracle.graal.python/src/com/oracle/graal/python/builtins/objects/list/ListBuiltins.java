@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
@@ -83,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -114,6 +115,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -191,21 +193,27 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ListInitNode extends PythonBinaryBuiltinNode {
 
         public abstract PNone execute(VirtualFrame frame, PList list, Object source);
 
         @Specialization
-        static PNone init(PList list, String value,
-                        @Cached("create()") AppendNode appendNode) {
+        static PNone initString(PList list, String value,
+                        @Shared("appendNode") @Cached AppendNode appendNode) {
             clearStorage(list);
             char[] chars = value.toCharArray();
             for (char c : chars) {
                 appendNode.execute(list, Character.toString(c));
             }
             return PNone.NONE;
+        }
+
+        @Specialization
+        static PNone initPString(PList list, PString value,
+                        @Cached CastToJavaStringNode castStr,
+                        @Shared("appendNode") @Cached AppendNode appendNode) {
+            return initString(list, castStr.execute(value), appendNode);
         }
 
         @Specialization(guards = "isNoValue(none)")

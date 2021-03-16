@@ -40,10 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import java.io.ByteArrayOutputStream;
-
-import com.oracle.truffle.api.CompilerDirectives;
-
 public class BufferedIOUtil {
 
     // start of the stream (the default); offset should be zero or positive
@@ -81,25 +77,5 @@ public class BufferedIOUtil {
      */
     protected static int minusLastBlock(PBuffered self, int size) {
         return (self.getBufferMask() != 0 ? (size & ~self.getBufferMask()) : (self.getBufferSize() * (size / self.getBufferSize())));
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    protected static ByteArrayOutputStream createStream() {
-        return new ByteArrayOutputStream();
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    protected static void append(ByteArrayOutputStream chunks, byte[] bytes, int off, int len) {
-        chunks.write(bytes, off, len);
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    protected static void append(ByteArrayOutputStream chunks, byte[] bytes, int len) {
-        append(chunks, bytes, 0, len);
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    protected static byte[] toByteArray(ByteArrayOutputStream chunks) {
-        return chunks.toByteArray();
     }
 }

@@ -170,6 +170,10 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
             }
         }
 
+        if (tokenId == Python3Parser.NEWLINE && (et.contains(Python3Parser.FINALLY) || et.contains(Python3Parser.EXCEPT))) {
+            return new PIncompleteSourceException("", null, -1);
+        }
+
         if ((tokenId != Python3Parser.INDENT_ERROR && tokenId != Python3Parser.TAB_ERROR && tokenId != Python3Parser.INDENT && tokenId != Python3Parser.DEDENT) &&
                         (et.contains(Python3Parser.INDENT) || et.contains(Python3Parser.NEWLINE) && et.size() == 1)) {
             return new PIncompleteSourceException(message, cause, line);
@@ -185,6 +189,12 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
         int tokenId = token.getType();
         if (tokenId == Python3Parser.LONG_QUOTES1 || tokenId == Python3Parser.LONG_QUOTES2) {
             return new PIncompleteSourceException("", null, -1);
+        }
+        if (tokenId == Python3Parser.UNKNOWN_CHAR) {
+            String text = token.getText();
+            if (text.startsWith("\'") || text.startsWith("\"")) {
+                return new PIncompleteSourceException("", null, -1);
+            }
         }
         if (isOpened(((Python3Parser) recognizer).getTokenStream())) {
             // The assumption is:

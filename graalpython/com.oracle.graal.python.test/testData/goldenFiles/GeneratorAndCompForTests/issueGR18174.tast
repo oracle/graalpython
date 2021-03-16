@@ -36,14 +36,12 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                 ExpressionStatementNode SourceSection: [1,2]`b`
                   YieldNode SourceSection: [1,2]`b`
                     flagSlot: 0
-                    ReadGeneratorFrameVariableNode SourceSection: [1,2]`b`
+                    ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`b`
                       Frame: [0,b,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: b
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,b,Illegal]
+                  Frame: [0,b,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -53,9 +51,8 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
@@ -91,14 +88,12 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                       ExpressionStatementNode SourceSection: [13,14]`a`
                         YieldNode SourceSection: [13,14]`a`
                           flagSlot: 0
-                          ReadGeneratorFrameVariableNode SourceSection: [13,14]`a`
+                          ReadGeneratorFrameVariableNodeGen SourceSection: [13,14]`a`
                             Frame: [0,a,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                         Identifier: a
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [0,a,Illegal]
+                        Frame: [0,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -108,9 +103,8 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                       GeneratorAccessNode SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
-                    ReadGeneratorFrameVariableNode SourceSection: None
+                    ReadGeneratorFrameVariableNodeGen SourceSection: None
                       Frame: [1,<return_val>,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None
                     BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                     PRaiseNodeGen SourceSection: None

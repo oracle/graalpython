@@ -40,16 +40,14 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                     BinaryArithmeticExpression SourceSection: [4,7]`x+2`
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __add__
-                      ReadGeneratorFrameVariableNode SourceSection: [4,5]`x`
+                      ReadGeneratorFrameVariableNodeGen SourceSection: [4,5]`x`
                         Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [6,7]`2`
                         Value: 2
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,x,Illegal]
+                  Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -59,9 +57,8 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

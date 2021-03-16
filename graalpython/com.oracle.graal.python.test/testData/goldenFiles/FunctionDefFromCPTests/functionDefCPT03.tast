@@ -36,21 +36,18 @@ ModuleRootNode Name: <module 'functionDefCPT03'> SourceSection: [0,24]`def f(*ar
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: args
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,args,Illegal]
+                        Frame: [0,args,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadVarArgsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: kw
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,kw,Illegal]
+                        Frame: [1,kw,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                     FunctionBodyNode SourceSection: [20,24]`pass`
                       ExpressionStatementNode SourceSection: [20,24]`pass`
                         EmptyNode SourceSection: [20,24]`pass`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

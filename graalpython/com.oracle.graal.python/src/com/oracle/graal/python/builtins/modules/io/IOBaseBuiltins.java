@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.append;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.createStream;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.toByteArray;
 import static com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins.PEEK;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES_NOT_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
@@ -424,7 +424,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile isBuffer) {
             /* For backwards compatibility, a (slowish) readline(). */
             Object peek = lib.lookupAttribute(self, frame, "peek");
-            ByteArrayOutputStream buffer = createStream();
+            ByteArrayOutputStream buffer = createOutputStream();
             while (limit < 0 || buffer.size() < limit) {
                 int nreadahead = 1;
                 if (hasPeek.profile(peek != PNone.NO_VALUE)) {

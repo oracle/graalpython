@@ -36,13 +36,11 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                     FunctionBodyNode SourceSection: [14,148]`a_local_var = "a loc...`
                       WriteLocalVariableNodeGen SourceSection: [14,41]`a_local_var = "a loc...`
                         Identifier: a_local_var
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,a_local_var,Illegal]
+                        Frame: [0,a_local_var,Illegal]
                         StringLiteralNode SourceSection: [28,41]`"a local var"`
                       WriteLocalVariableNodeGen SourceSection: [47,148]`def f():â†µ        cla...`
                         Identifier: f
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,f,Illegal]
+                        Frame: [1,f,Illegal]
                         FunctionDefinitionNode Name: f SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -68,8 +66,7 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                                   FunctionBodyNode SourceSection: [64,148]`class C(object):â†µ   ...`
                                     WriteLocalVariableNodeGen SourceSection: [64,128]`class C(object):â†µ   ...`
                                       Identifier: C
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,C,Illegal]
+                                      Frame: [0,C,Illegal]
                                       PythonCallTernary SourceSection: [64,128]`class C(object):â†µ   ...`
                                         CallTernaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
@@ -128,8 +125,7 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                                     FrameReturnNode SourceSection: [128,148]`return C.a_local_var...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,<return_val>,Illegal]
+                                        Frame: [1,<return_val>,Illegal]
                                         GetAttributeNode SourceSection: [135,148]`C.a_local_var`
                                           GetFixedAttributeNode SourceSection: None
                                             Key: a_local_var
@@ -137,12 +133,9 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [135,136]`C`
+                                          ReadLocalVariableNodeGen SourceSection: [135,136]`C`
                                             Frame: [0,C,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

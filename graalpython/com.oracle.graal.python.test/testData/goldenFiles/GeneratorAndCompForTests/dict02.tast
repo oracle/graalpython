@@ -45,15 +45,13 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                             YieldNode SourceSection: None
                               flagSlot: 0
                               TupleLiteralNode SourceSection: None
-                                ReadGeneratorFrameVariableNode SourceSection: [65,66]`k`
+                                ReadGeneratorFrameVariableNodeGen SourceSection: [65,66]`k`
                                   Frame: [0,k,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                                 BinaryArithmeticExpression SourceSection: [67,70]`v*2`
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __mul__
-                                  ReadGeneratorFrameVariableNode SourceSection: [67,68]`v`
+                                  ReadGeneratorFrameVariableNodeGen SourceSection: [67,68]`v`
                                     Frame: [1,v,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [69,70]`2`
                                     Value: 2
                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -61,26 +59,20 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                           DestructuringAssignmentNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: <>temp2
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [2,<>temp2,Illegal]
+                              Frame: [2,<>temp2,Illegal]
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: <>temp3
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [3,<>temp3,Illegal]
+                              Frame: [3,<>temp3,Illegal]
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: k
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [0,k,Illegal]
-                              ReadGeneratorFrameVariableNode SourceSection: None
+                              Frame: [0,k,Illegal]
+                              ReadGeneratorFrameVariableNodeGen SourceSection: None
                                 Frame: [2,<>temp2,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                               Identifier: v
-                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [1,v,Illegal]
-                              ReadGeneratorFrameVariableNode SourceSection: None
+                              Frame: [1,v,Illegal]
+                              ReadGeneratorFrameVariableNodeGen SourceSection: None
                                 Frame: [3,<>temp3,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
                               Index: 0
@@ -90,9 +82,8 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                           GeneratorAccessNode SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: None
+                        ReadGeneratorFrameVariableNodeGen SourceSection: None
                           Frame: [4,<return_val>,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         BlockNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                         PRaiseNodeGen SourceSection: None

@@ -40,12 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.append;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.createStream;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidReadBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.minusLastBlock;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.safeDowncast;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.toByteArray;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_SHOULD_RETURN_BYTES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -331,7 +331,7 @@ public class BufferedReaderNodes {
                 }
             }
 
-            ByteArrayOutputStream chunks = createStream();
+            ByteArrayOutputStream chunks = createOutputStream();
 
             while (true) {
                 if (data != null) {

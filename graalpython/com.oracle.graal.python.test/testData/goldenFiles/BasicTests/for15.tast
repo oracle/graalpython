@@ -41,26 +41,20 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
                               DestructuringAssignmentNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp2
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [2,<>temp2,Illegal]
+                                  Frame: [2,<>temp2,Illegal]
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <>temp3
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [3,<>temp3,Illegal]
+                                  Frame: [3,<>temp3,Illegal]
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: i
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [0,i,Illegal]
-                                  ReadLocalVariableNode SourceSection: None
+                                  Frame: [0,i,Illegal]
+                                  ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<>temp2,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: row
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [1,row,Illegal]
-                                  ReadLocalVariableNode SourceSection: None
+                                  Frame: [1,row,Illegal]
+                                  ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<>temp3,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [65,69]`pass`
                               EmptyNode SourceSection: [65,69]`pass`
                           GetIteratorExpressionNodeGen SourceSection: [42,51]`something`
@@ -71,10 +65,8 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
                       FrameReturnNode SourceSection: [78,87]`return 10`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [4,<return_val>,Illegal]
+                          Frame: [4,<return_val>,Illegal]
                           IntegerLiteralNode SourceSection: [85,87]`10`
                             Value: 10
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [4,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

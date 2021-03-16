@@ -53,6 +53,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -86,7 +87,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "compresslevel"})
-    @ArgumentClinic(name = "compresslevel", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "9", useDefaultForNone = true)
+    @ArgumentClinic(name = "compresslevel", conversion = ClinicConversion.Int, defaultValue = "9", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryClinicBuiltinNode {
 
@@ -124,7 +125,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
@@ -137,7 +138,7 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeObject(BZ2Object.BZ2Compressor self, Object data,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             synchronized (self) {
