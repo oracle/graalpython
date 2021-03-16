@@ -685,6 +685,7 @@ class ProcessTestCase(BaseTestCase):
             return ('VERSIONER' in n or '__CF' in n or  # MacOS
                     n == 'LD_PRELOAD' or n.startswith('SANDBOX') or # Gentoo
                     n == 'PWD' or n == 'SHLVL' or # Graalpython bash launcher
+                    n.startswith('JAVA_MAIN_CLASS') or # JVM on MacOS
                     n == 'LC_CTYPE') # Locale coercion triggered
 
         with subprocess.Popen([sys.executable, "-c",

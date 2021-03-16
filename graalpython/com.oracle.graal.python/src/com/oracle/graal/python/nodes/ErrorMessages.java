@@ -237,6 +237,7 @@ public abstract class ErrorMessages {
     public static final String EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = "exception causes must derive from BaseException";
     public static final String EXCEPTIONS_MUST_BE_CLASSES_OR_INSTANCES_DERIVING_FROM_BASE_EX = "exceptions must be classes or instances deriving from BaseException, not %p";
     public static final String EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX = "exceptions must derive from BaseException";
+    public static final String EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY = "execv() arg 2 first element cannot be empty";
     public static final String EXPECTED_ARG_TYPES_S_S_BUT_NOT_P_P = "expected argument types (%s) or (%s) but not (%p, %p)";
     public static final String EXPECTED_AT_MOST_D_ARGS_GOT_D = "%s expected at most %d arguments, got %d";
     public static final String EXPECTED_BYTESLIKE_GOT_P = "expected a bytes-like object, %p found";
