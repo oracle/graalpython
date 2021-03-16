@@ -47,8 +47,8 @@ import com.oracle.truffle.api.object.Shape;
 // TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PArray extends PythonBuiltinObject {
-    private BufferFormat format;
-    private String formatStr;
+    private final BufferFormat format;
+    private final String formatStr;
     private int length;
     private byte[] buffer;
     private volatile int exports;
@@ -177,20 +177,15 @@ public final class PArray extends PythonBuiltinObject {
     byte[] getBufferBytes(@Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return PythonUtils.arrayCopyOf(buffer, getBufferLength(gil));
+            return PythonUtils.arrayCopyOf(buffer, getBufferLength());
         } finally {
             gil.release(mustRelease);
         }
     }
 
     @ExportMessage
-    int getBufferLength(@Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return length * format.bytesize;
-        } finally {
-            gil.release(mustRelease);
-        }
+    int getBufferLength() {
+        return length * format.bytesize;
     }
 
     public enum MachineFormat {
