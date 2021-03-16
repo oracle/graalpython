@@ -198,7 +198,7 @@ class ExtensionCompiler:
             sources.append(extra_filename)
         #
         compile_args = [
-            '-g', '-O0',
+            '-g',                # '-O0',
             '-Wfatal-errors',    # stop after one error (unrelated to warnings)
             '-Werror',           # turn warnings into errors (all, for now)
         ]

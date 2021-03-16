@@ -81,10 +81,10 @@ def _get_posix_vars():
     g = {}
     g['CC'] = __graalpython__.get_toolchain_tool_path('CC')
     g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
-    g['OPT'] = "-stdlib=libc++ -DNDEBUG -O1"
+    g['OPT'] = "-stdlib=libc++ -DNDEBUG"
     g['CONFINCLUDEPY'] = get_python_inc()
     g['CPPFLAGS'] = '-I. -I' + get_python_inc()
-    g['CFLAGS'] = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -O1"
+    g['CFLAGS'] = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG"
     g['LDFLAGS'] = ""
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_tool_path('CC')
