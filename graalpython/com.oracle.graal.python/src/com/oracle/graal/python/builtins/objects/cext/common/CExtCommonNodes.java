@@ -116,11 +116,10 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class CExtCommonNodes {
-
     private static final int SIGABRT_EXIT_CODE = 134;
 
     @TruffleBoundary
-    public static PythonExitException fatalError(Node location, PythonContext context, String prefix, String msg, int status) {
+    public static void fatalError(Node location, PythonContext context, String prefix, String msg, int status) {
         PrintWriter stderr = new PrintWriter(context.getStandardErr());
         stderr.print("Fatal Python error: ");
         if (prefix != null) {

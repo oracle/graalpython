@@ -53,6 +53,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -138,25 +139,29 @@ public class HPyArrayWrappers {
         @ExportMessage
         static final class GetArraySize {
 
-            @Specialization(guards = "receiver.getDelegate() != null")
-            static long doManaged(HPyObjectArrayWrapper receiver) {
-                return receiver.delegate.length;
+            @Specialization(guards = "delegate != null")
+            static long doManaged(HPyObjectArrayWrapper receiver,
+                            @Bind("receiver.getDelegate()") Object[] delegate) {
+                assert receiver.getNativePointer() == null : "HPyObjectArrayWrapper is managed but there is a native pointer.";
+                return delegate.length;
             }
 
-            @Specialization(guards = "receiver.getDelegate() == null", replaces = "doManaged", limit = "1")
+            @Specialization(guards = "nativePointer != null", replaces = "doManaged", limit = "1")
             static long doNative(HPyObjectArrayWrapper receiver,
-                            @CachedLibrary("receiver.getNativePointer()") InteropLibrary lib) throws UnsupportedMessageException {
-                return lib.getArraySize(receiver.nativePointer);
+                            @Bind("receiver.getNativePointer()") Object nativePointer,
+                            @CachedLibrary("nativePointer") InteropLibrary lib) throws UnsupportedMessageException {
+                assert receiver.getDelegate() == null : "HPyObjectArrayWrapper is native but managed object wasn't free'd.";
+                return lib.getArraySize(nativePointer);
             }
 
             @Specialization(replaces = {"doManaged", "doNative"})
             static long doGeneric(HPyObjectArrayWrapper receiver,
                             @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-                Object[] delegate = receiver.delegate;
+                Object[] delegate = receiver.getDelegate();
                 if (delegate != null) {
                     return delegate.length;
                 }
-                return lib.getArraySize(receiver.nativePointer);
+                return lib.getArraySize(receiver.getNativePointer());
             }
         }
 
@@ -223,11 +228,12 @@ public class HPyArrayWrappers {
         @ExportMessage
         static final class ReadArrayElement {
 
-            @Specialization(guards = "receiver.getDelegate() != null", rewriteOn = OverflowException.class)
+            @Specialization(guards = "delegate != null", rewriteOn = OverflowException.class)
             static Object doManaged(HPyArrayWrapper receiver, long index,
+                            @Bind("receiver.getDelegate()") Object[] delegate,
                             @Shared("isHandleProfile") @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
                             @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) throws OverflowException {
-                Object[] delegate = receiver.getDelegate();
+                assert receiver.getNativePointer() == null : "HPyObjectArrayWrapper is managed but there is a native pointer.";
                 int i = PInt.intValueExact(index);
                 Object object = delegate[i];
                 if (!isHandleProfile.profile(object instanceof GraalHPyHandle)) {
@@ -237,26 +243,29 @@ public class HPyArrayWrappers {
                 return object;
             }
 
-            @Specialization(guards = "receiver.getDelegate() != null", replaces = "doManaged")
+            @Specialization(guards = "delegate != null", replaces = "doManaged")
             static Object doManagedOvf(HPyArrayWrapper receiver, long index,
+                            @Bind("receiver.getDelegate()") Object[] delegate,
                             @Shared("isHandleProfile") @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
                             @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) throws InvalidArrayIndexException {
                 try {
-                    return doManaged(receiver, index, isHandleProfile, asHandleNode);
+                    return doManaged(receiver, index, delegate, isHandleProfile, asHandleNode);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw InvalidArrayIndexException.create(index);
                 }
             }
 
-            @Specialization(guards = "receiver.getDelegate() == null", replaces = {"doManaged", "doManagedOvf"}, limit = "1")
+            @Specialization(guards = "nativePointer != null", replaces = {"doManaged", "doManagedOvf"}, limit = "1")
             static Object doNative(HPyArrayWrapper receiver, long index,
-                            @CachedLibrary("receiver.getNativePointer()") InteropLibrary lib,
+                            @Bind("receiver.getNativePointer()") Object nativePointer,
+                            @CachedLibrary("nativePointer") InteropLibrary lib,
                             @CachedContext(PythonLanguage.class) PythonContext context,
                             @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) throws UnsupportedMessageException, InvalidArrayIndexException {
+                assert receiver.getDelegate() == null : "HPyObjectArrayWrapper is native but managed object wasn't free'd.";
                 // read the array element; this will return a pointer to an HPy struct
                 try {
-                    Object element = lib.readArrayElement(receiver.getNativePointer(), index);
+                    Object element = lib.readArrayElement(nativePointer, index);
                     return ensureHandleNode.execute(context.getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
                 } catch (UnknownIdentifierException e) {
                     throw CompilerDirectives.shouldNotReachHere();
