@@ -259,7 +259,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 ReadLocalVariableNodeGen SourceSection: [1499,1502]`msg`
                                                   Frame: [1,msg,Illegal]
                                                 GetAttributeNode SourceSection: [1504,1515]`self.lineno`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: lineno
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -268,7 +268,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                   ReadLocalVariableNodeGen SourceSection: [1504,1508]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [1517,1527]`self.colno`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: colno
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -479,7 +479,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
                                         GetAttributeNode SourceSection: [1833,1842]`self.name`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: name
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -636,8 +636,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
                                   GetNextNode SourceSection: None
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -697,7 +695,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         flagSlot: 0
                                         TupleLiteralNode SourceSection: None
                                           GetAttributeNode SourceSection: [2075,2084]`item.name`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -716,8 +714,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                     GetNextNode SourceSection: None
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -1485,8 +1481,10 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       CachedDispatchFirst SourceSection: None
                   StringLiteralNode SourceSection: [5768,5785]`"sre_constants.h"`
                   StringLiteralNode SourceSection: [5787,5790]`"w"`
-                LookupSpecialMethodNodeGen SourceSection: None
-                LookupSpecialMethodNodeGen SourceSection: None
+                LookupSpecialMethodNode SourceSection: None
+                  LookupAttributeInMRONodeGen SourceSection: None
+                LookupSpecialMethodNode SourceSection: None
+                  LookupAttributeInMRONodeGen SourceSection: None
                 CachedDispatchFirst SourceSection: None
                 CallUnaryMethodNodeGen SourceSection: None
                 CallQuaternaryMethodNodeGen SourceSection: None

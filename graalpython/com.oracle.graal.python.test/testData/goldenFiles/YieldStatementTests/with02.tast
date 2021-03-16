@@ -57,16 +57,10 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: [19,20]`a`
                           Frame: [0,a,Illegal]
-<<<<<<< HEAD
-                        LookupSpecialMethodNodeGen SourceSection: None
-                        LookupSpecialMethodNodeGen SourceSection: None
-=======
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         LookupSpecialMethodNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                         LookupSpecialMethodNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
->>>>>>> Add special methods slots to managed classes and builtin types.
                         CachedDispatchFirst SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None

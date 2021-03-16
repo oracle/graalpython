@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
       WriteNameNodeGen SourceSection: [954,996]`iskeyword = frozense...`
         Identifier: iskeyword
         GetAttributeNode SourceSection: [966,996]`frozenset(kwlist).__...`
-          GetFixedAttributeNode SourceSection: None
+          GetFixedAttributeNodeGen SourceSection: None
             Key: __contains__
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
@@ -114,7 +114,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       Frame: [2,args,Illegal]
                       GetItemNodeGen SourceSection: [1041,1053]`sys.argv[1:]`
                         GetAttributeNode SourceSection: None
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: argv
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -193,8 +193,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1297,1301]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
                       CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
@@ -320,8 +322,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [1481,1488]`iptfile`
                           Frame: [3,iptfile,Illegal]
-                      LookupSpecialMethodNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
                       CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
@@ -388,7 +392,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [2019,2029]`sys.stderr`
-                                    GetFixedAttributeNode SourceSection: None
+                                    GetFixedAttributeNodeGen SourceSection: None
                                       Key: stderr
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -434,8 +438,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2138,2142]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
                       CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None

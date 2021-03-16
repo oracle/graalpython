@@ -510,7 +510,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadLocalVariableNodeGen SourceSection: [1554,1555]`x`
                                             Frame: [1,x,Illegal]
                                           GetAttributeNode SourceSection: [1557,1570]`self.maxlevel`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxlevel
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -571,7 +571,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Identifier: typename
                                       Frame: [3,typename,Illegal]
                                       GetAttributeNode SourceSection: [1623,1639]`type(x).__name__`
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: __name__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -781,7 +781,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [10,repr1,Illegal]
                                           GetAttributeNode SourceSection: [2125,2135]`self.repr1`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: repr1
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -843,8 +843,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
                                                       GetNextNode SourceSection: None
-                                                        LookupAndCallUnaryNodeGen SourceSection: None
-                                                          Op: __next__
                                                       GeneratorAccessNode SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
@@ -992,7 +990,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           StringLiteralNode SourceSection: [2477,2480]`'('`
                                           StringLiteralNode SourceSection: [2482,2485]`')'`
                                           GetAttributeNode SourceSection: [2487,2500]`self.maxtuple`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxtuple
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1066,7 +1064,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           StringLiteralNode SourceSection: [2588,2591]`'['`
                                           StringLiteralNode SourceSection: [2593,2596]`']'`
                                           GetAttributeNode SourceSection: [2598,2610]`self.maxlist`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxlist
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1139,7 +1137,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Op: __mod__
                                             StringLiteralNode SourceSection: [2686,2699]`"array('%s')"`
                                             GetAttributeNode SourceSection: [2702,2712]`x.typecode`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: typecode
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1156,7 +1154,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           Op: __mod__
                                         StringLiteralNode SourceSection: [2730,2745]`"array('%s', ["`
                                         GetAttributeNode SourceSection: [2748,2758]`x.typecode`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: typecode
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -1178,7 +1176,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [3,header,Illegal]
                                           StringLiteralNode SourceSection: [2812,2816]`'])'`
                                           GetAttributeNode SourceSection: [2818,2831]`self.maxarray`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxarray
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1271,7 +1269,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           StringLiteralNode SourceSection: [2990,2993]`'{'`
                                           StringLiteralNode SourceSection: [2995,2998]`'}'`
                                           GetAttributeNode SourceSection: [3000,3011]`self.maxset`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxset
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1364,7 +1362,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           StringLiteralNode SourceSection: [3182,3195]`'frozenset({'`
                                           StringLiteralNode SourceSection: [3197,3201]`'})'`
                                           GetAttributeNode SourceSection: [3238,3255]`self.maxfrozenset`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxfrozenset
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1437,7 +1435,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           StringLiteralNode SourceSection: [3339,3348]`'deque(['`
                                           StringLiteralNode SourceSection: [3350,3354]`'])'`
                                           GetAttributeNode SourceSection: [3356,3369]`self.maxdeque`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxdeque
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1551,7 +1549,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       Identifier: repr1
                                       Frame: [5,repr1,Illegal]
                                       GetAttributeNode SourceSection: [3540,3550]`self.repr1`
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: repr1
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1627,7 +1625,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               ReadLocalVariableNodeGen SourceSection: [3614,3615]`x`
                                                 Frame: [1,x,Illegal]
                                             GetAttributeNode SourceSection: [3618,3630]`self.maxdict`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: maxdict
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1644,7 +1642,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadLocalVariableNodeGen SourceSection: [3790,3791]`n`
                                             Frame: [3,n,Illegal]
                                           GetAttributeNode SourceSection: [3794,3806]`self.maxdict`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxdict
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1746,7 +1744,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             PythonObjectFactoryNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
                                             GetAttributeNode SourceSection: [3952,3966]`self.maxstring`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: maxstring
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1768,7 +1766,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNodeGen SourceSection: [3984,3985]`s`
                                               Frame: [3,s,Illegal]
                                           GetAttributeNode SourceSection: [3989,4003]`self.maxstring`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxstring
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1794,7 +1792,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
                                                 GetAttributeNode SourceSection: [4029,4043]`self.maxstring`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxstring
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -1823,7 +1821,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
                                                 GetAttributeNode SourceSection: [4074,4088]`self.maxstring`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxstring
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -1993,7 +1991,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNodeGen SourceSection: [4321,4322]`s`
                                               Frame: [3,s,Illegal]
                                           GetAttributeNode SourceSection: [4326,4338]`self.maxlong`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxlong
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2019,7 +2017,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
                                                 GetAttributeNode SourceSection: [4364,4376]`self.maxlong`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxlong
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -2048,7 +2046,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
                                                 GetAttributeNode SourceSection: [4407,4419]`self.maxlong`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxlong
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -2178,14 +2176,14 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 StringLiteralNode SourceSection: [4724,4746]`'<%s instance at %#x...`
                                                 TupleLiteralNode SourceSection: [4749,4778]`(x.__class__.__name_...`
                                                   GetAttributeNode SourceSection: [4750,4770]`x.__class__.__name__...`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __name__
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
                                                     GetAttributeNode SourceSection: [4750,4761]`x.__class__`
-                                                      GetFixedAttributeNode SourceSection: None
+                                                      GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __class__
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
@@ -2218,7 +2216,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNodeGen SourceSection: [4794,4795]`s`
                                               Frame: [3,s,Illegal]
                                           GetAttributeNode SourceSection: [4799,4812]`self.maxother`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxother
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2244,7 +2242,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
                                                 GetAttributeNode SourceSection: [4838,4851]`self.maxother`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxother
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -2273,7 +2271,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __sub__
                                                 GetAttributeNode SourceSection: [4882,4895]`self.maxother`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxother
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -2411,7 +2409,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
           WriteNameNodeGen SourceSection: [5249,5266]`repr = aRepr.repr`
             Identifier: repr
             GetAttributeNode SourceSection: [5256,5266]`aRepr.repr`
-              GetFixedAttributeNode SourceSection: None
+              GetFixedAttributeNodeGen SourceSection: None
                 Key: repr
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
