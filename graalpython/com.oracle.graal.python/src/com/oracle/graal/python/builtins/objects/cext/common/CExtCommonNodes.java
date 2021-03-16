@@ -136,8 +136,7 @@ public abstract class CExtCommonNodes {
 
         if (status < 0) {
             // In CPython, this will use 'abort()' which sets a special exit code.
-            System.exit(SIGABRT_EXIT_CODE);
-            throw CompilerDirectives.shouldNotReachHere();
+            throw new PythonExitException(location, SIGABRT_EXIT_CODE);
         }
         throw new PythonExitException(location, status);
     }
