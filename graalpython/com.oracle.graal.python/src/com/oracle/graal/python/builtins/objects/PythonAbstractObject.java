@@ -242,44 +242,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void writeMember(String key, Object value,
-                    @Shared("setItemNode") @Cached PInteropSubscriptAssignNode setItemNode,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
-                    @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
-                    @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Cached PInteropSetAttributeNode setAttributeNode,
                     @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            try {
-                String attrKey = getAttributeKey.execute(key);
-                if (attrKey != null) {
-                    setAttributeNode.execute(this, attrKey, value);
-                    return;
-                }
-
-                String itemKey = getItemKey.execute(key);
-                if (itemKey != null) {
-                    setItemNode.execute(this, itemKey, value);
-                    return;
-                }
-
-                if (this instanceof PythonObject) {
-                    if (objectHasAttribute(this, key)) {
-                        setAttributeNode.execute(this, key, value);
-                        return;
-                    }
-                }
-                if (isAbstractMapping(dataModelLibrary)) {
-                    setItemNode.execute(this, key, value);
-                } else {
-                    setAttributeNode.execute(this, key, value);
-                }
-            } catch (PException e) {
-                e.expectAttributeError(attrErrorProfile);
-                // TODO(fa) not accurate; distinguish between read-only and non-existing
-                throw UnknownIdentifierException.create(key);
-            }
+            setAttributeNode.execute(this, key, value);
+        } catch (PException e) {
+            e.expectAttributeError(attrErrorProfile);
+            // TODO(fa) not accurate; distinguish between read-only and non-existing
+            throw UnknownIdentifierException.create(key);
         } finally {
             gil.release(mustRelease);
         }
@@ -287,51 +259,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object readMember(String key,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                    @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
-                    @Exclusive @Cached KeyForItemAccess getItemKey,
-                    @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
+        Object value = null;
         try {
-            String attrKey = getAttributeKey.execute(key);
-            Object attrGetattribute = null;
-            if (attrKey != null) {
-                try {
-                    attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
-                    return toForeign.executeConvert(callGetattributeNode.executeObject(attrGetattribute, this, attrKey));
-                } catch (PException e) {
-                    // pass, we might be reading an item that starts with "@"
-                }
-            }
-
-            String itemKey = getItemKey.execute(key);
-            if (itemKey != null) {
-                return toForeign.executeConvert(getItemNode.execute(this, itemKey));
-            }
-
-            try {
-                if (attrGetattribute == null) {
-                    attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
-                }
-                return toForeign.executeConvert(callGetattributeNode.executeObject(attrGetattribute, this, key));
-            } catch (PException e) {
-                // pass
-            }
-            if (dataModelLibrary.isSequence(this)) {
-                try {
-                    return toForeign.executeConvert(getItemNode.execute(this, key));
-                } catch (PException e) {
-                    // pass
-                }
-            }
-
-            throw UnknownIdentifierException.create(key);
+            value = lib.lookupAttribute(this, null, key);
         } finally {
             gil.release(mustRelease);
+        }
+        if (value != PNone.NO_VALUE) {
+            return value;
+        } else {
+            throw UnknownIdentifierException.create(key);
         }
     }
 
@@ -351,7 +291,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object readArrayElement(long key,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
+                    @Cached PTypeToForeignNode toForeign,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -367,9 +307,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         throw InvalidArrayIndexException.create(key);
                     }
                 }
-            }
 
-            throw UnsupportedMessageException.create();
+                throw UnsupportedMessageException.create();
         } finally {
             gil.release(mustRelease);
         }
@@ -378,7 +317,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public void writeArrayElement(long key, Object value,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
-                    @Shared("setItemNode") @Cached PInteropSubscriptAssignNode setItemNode,
+                    @Cached PInteropSubscriptAssignNode setItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
@@ -390,8 +329,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // it's a sequence, so we assume the index is wrong
                     throw InvalidArrayIndexException.create(key);
                 }
-            } else {
-                throw UnsupportedMessageException.create();
             }
         } finally {
             gil.release(mustRelease);
@@ -505,93 +442,51 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberReadable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO write specialized nodes for the appropriate property
-            return (keyInfoNode.execute(this, member) & PKeyInfoNode.READABLE) != 0;
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return keyInfoNode.execute(this, member, PKeyInfoNode.READABLE);
     }
 
     @ExportMessage
     public boolean isMemberModifiable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO write specialized nodes for the appropriate property
-            return (keyInfoNode.execute(this, member) & PKeyInfoNode.MODIFIABLE) != 0;
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return keyInfoNode.execute(this, member, PKeyInfoNode.MODIFIABLE);
     }
 
     @ExportMessage
     public boolean isMemberInsertable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO write specialized nodes for the appropriate property
-            return (keyInfoNode.execute(this, member) & PKeyInfoNode.INSERTABLE) != 0;
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return keyInfoNode.execute(this, member, PKeyInfoNode.INSERTABLE);
     }
 
     @ExportMessage
     public boolean isMemberInvocable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO write specialized nodes for the appropriate property
-            return (keyInfoNode.execute(this, member) & PKeyInfoNode.INVOCABLE) != 0;
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return keyInfoNode.execute(this, member, PKeyInfoNode.INVOCABLE);
     }
 
     @ExportMessage
     public boolean isMemberRemovable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO write specialized nodes for the appropriate property
-            return (keyInfoNode.execute(this, member) & PKeyInfoNode.REMOVABLE) != 0;
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return keyInfoNode.execute(this, member, PKeyInfoNode.REMOVABLE);
     }
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO write specialized nodes for the appropriate property
-            return (keyInfoNode.execute(this, member) & PKeyInfoNode.READ_SIDE_EFFECTS) != 0;
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return keyInfoNode.execute(this, member, PKeyInfoNode.READ_SIDE_EFFECTS);
     }
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // TODO write specialized nodes for the appropriate property
-            return (keyInfoNode.execute(this, member) & PKeyInfoNode.WRITE_SIDE_EFFECTS) != 0;
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode) {
+        // TODO write specialized nodes for the appropriate property
+        return keyInfoNode.execute(this, member, PKeyInfoNode.WRITE_SIDE_EFFECTS);
     }
 
     @ExportMessage
@@ -692,45 +587,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void removeMember(String member,
-                    @Exclusive @Cached KeyForItemAccess getItemKey,
-                    @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
-                    @Exclusive @Cached PInteropDeleteItemNode delItemNode,
                     @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
-            try {
-                String attrKey = getAttributeKey.execute(member);
-                if (attrKey != null) {
-                    deleteAttributeNode.execute(this, attrKey);
-                    return;
-                }
-
-                String itemKey = getItemKey.execute(member);
-                if (itemKey != null) {
-                    delItemNode.execute(this, itemKey);
-                    return;
-                }
-
-                if (this instanceof PythonObject) {
-                    if (objectHasAttribute(this, member)) {
-                        deleteAttributeNode.execute(this, member);
-                        return;
-                    }
-                }
-                if (isAbstractMapping(dataModelLibrary) && getDelItemNode.execute(this, __DELITEM__) != PNone.NO_VALUE) {
-                    delItemNode.execute(this, member);
-                } else {
-                    deleteAttributeNode.execute(this, member);
-                }
-            } catch (PException e) {
-                e.expectAttributeError(attrErrorProfile);
-                // TODO(fa) not accurate; distinguish between read-only and non-existing
-                throw UnknownIdentifierException.create(member);
-            }
+            deleteAttributeNode.execute(this, member);
+        } catch (PException e) {
+            e.expectAttributeError(attrErrorProfile);
+            // TODO(fa) not accurate; distinguish between read-only and non-existing
+            throw UnknownIdentifierException.create(member);
         } finally {
             gil.release(mustRelease);
         }
@@ -1543,7 +1409,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @GenerateUncached
     public abstract static class PKeyInfoNode extends Node {
-        private static final int NONE = 0;
         private static final int READABLE = 0x1;
         private static final int READ_SIDE_EFFECTS = 0x2;
         private static final int WRITE_SIDE_EFFECTS = 0x4;
@@ -1552,10 +1417,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         private static final int INVOCABLE = 0x20;
         private static final int INSERTABLE = 0x40;
 
-        public abstract int execute(Object receiver, String fieldName);
+        public abstract boolean execute(Object receiver, String fieldName, int infoType);
 
         @Specialization
-        static int access(Object object, String fieldName,
+        static boolean access(Object object, String attrKeyName, int type,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary dataModelLibrary,
@@ -1564,102 +1429,78 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsImmutable isImmutable,
-                        @Cached KeyForItemAccess itemKey,
-                        @Cached KeyForAttributeAccess attrKey,
                         @Cached GetMroNode getMroNode,
-                        @Cached PInteropSubscriptNode getItemNode) {
-
-            String itemFieldName = itemKey.execute(fieldName);
-            if (itemFieldName != null) {
-                return READABLE | MODIFIABLE | REMOVABLE;
-            }
-
-            Object owner = object;
-            int info = NONE;
-            Object attr = PNone.NO_VALUE;
-
-            Object klass = getClassNode.execute(object);
-
-            String attrKeyName = attrKey.execute(fieldName);
-            if (attrKeyName == null) {
-                attrKeyName = fieldName;
-            }
-
-            for (PythonAbstractClass c : getMroNode.execute(klass)) {
-                // n.b. we need to use a different node because it makes a difference if the type is
-                // native
-                attr = readTypeAttrNode.execute(c, attrKeyName);
-                if (attr != PNone.NO_VALUE) {
-                    owner = c;
-                    break;
-                }
-            }
-
-            if (attr == PNone.NO_VALUE) {
-                attr = readObjectAttrNode.execute(owner, attrKeyName);
-            }
-
-            if (attr != PNone.NO_VALUE) {
-                info |= READABLE;
-
-                if (owner != object) {
-                    if (attr instanceof PFunction || attr instanceof PBuiltinFunction) {
-                        // if the attr is a known getter, we mark it invocable
-                        // for other attributes, we look for a __call__ method later
-                        info |= INVOCABLE;
-                    } else {
-                        // attr is inherited and might be a descriptor object other than a function
-                        if (getGetNode.execute(attr, __GET__) != PNone.NO_VALUE) {
-                            // is a getter, read may have side effects
-                            info |= READ_SIDE_EFFECTS;
-                        }
-                        if (getSetNode.execute(attr, __SET__) != PNone.NO_VALUE || getDeleteNode.execute(attr, __DELETE__) != PNone.NO_VALUE) {
-                            info |= WRITE_SIDE_EFFECTS;
-                        }
-                    }
-                }
-            }
-
-            if (attr != PNone.NO_VALUE) {
-                if (!isImmutable.execute(owner)) {
-                    info |= REMOVABLE;
-                    info |= MODIFIABLE;
-                } else if (owner != object && (info & WRITE_SIDE_EFFECTS) == 0) {
-                    // we already checked the owner to be immutable at this point, so we definitely
-                    // cannot remove it (lookup will always lead to that not mutable owner). But if
-                    // it's not a setter, we may still be able to write that attribute directly on
-                    // the object
-                    if (!isImmutable.execute(object)) {
-                        info |= MODIFIABLE;
-                    }
-                }
-            } else {
-                if (dataModelLibrary.isSequence(object) && isItemReadable(object, fieldName, getItemNode)) {
-                    info |= READABLE;
-                }
-                if (!isImmutable.execute(object) || isAbstractMapping(object, dataModelLibrary)) {
-                    // If the member does not exist yet, it is insertable if this object is mutable,
-                    // i.e., it's not a builtin object or it is a mapping.
-                    info |= INSERTABLE;
-                }
-            }
-
-            if ((info & READ_SIDE_EFFECTS) == 0 && (info & INVOCABLE) == 0) {
-                // if this is not a getter, we check if the value inherits a __call__ attr
-                // if it is a getter, we just cannot really tell if the attr is invocable
-                if (dataModelLibrary.isCallable(attr)) {
-                    info |= INVOCABLE;
-                }
-            }
-
-            return info;
-        }
-
-        private static boolean isItemReadable(Object object, String key, PInteropSubscriptNode getItemNode) {
+                        @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
             try {
-                return getItemNode.execute(object, key) != PNone.NO_VALUE;
-            } catch (PException e) {
-                return false;
+                Object owner = object;
+                Object attr = PNone.NO_VALUE;
+
+                Object klass = getClassNode.execute(object);
+                for (PythonAbstractClass c : getMroNode.execute(klass)) {
+                    // n.b. we need to use a different node because it makes a difference if the type is
+                    // native
+                    attr = readTypeAttrNode.execute(c, attrKeyName);
+                    if (attr != PNone.NO_VALUE) {
+                        owner = c;
+                        break;
+                    }
+                }
+                if (attr == PNone.NO_VALUE) {
+                    attr = readObjectAttrNode.execute(owner, attrKeyName);
+                }
+
+                switch (type) {
+                case READABLE:
+                    return attr != PNone.NO_VALUE;
+                case INSERTABLE:
+                    return attr == PNone.NO_VALUE && !isImmutable.execute(object);
+                case REMOVABLE:
+                    return attr != PNone.NO_VALUE && !isImmutable.execute(owner);
+                case MODIFIABLE:
+                    if (attr != PNone.NO_VALUE) {
+                        if (owner == object) {
+                            // can only modify if the object is not immutable
+                            return !isImmutable.execute(owner);
+                        } else if (getSetNode.execute(attr, __SET__) == PNone.NO_VALUE) {
+                            // an inherited attribute may be overridable unless it's a setter, than we don't know
+                            return !isImmutable.execute(object);
+                        }
+                    }
+                    return false;
+                case INVOCABLE:
+                    if (attr != PNone.NO_VALUE) {
+                        if (owner != object) {
+                            if (attr instanceof PFunction || attr instanceof PBuiltinFunction) {
+                                // if the attr is a known getter, we mark it invocable
+                                // for other attributes, we look for a __call__ method later
+                                return true;
+                            }
+                            if (getGetNode.execute(attr, __GET__) != PNone.NO_VALUE) {
+                                // is a getter, read may have side effects, we cannot tell if the result will be invocable
+                                return false;
+                            }
+                        }
+                        return dataModelLibrary.isCallable(attr);
+                    }
+                    return false;
+                case READ_SIDE_EFFECTS:
+                    if (attr != PNone.NO_VALUE && owner != object && !(attr instanceof PFunction || attr instanceof PBuiltinFunction)) {
+                        // attr is inherited and might be a descriptor object other than a function
+                        return getGetNode.execute(attr, __GET__) != PNone.NO_VALUE;
+                    }
+                    return false;
+                case WRITE_SIDE_EFFECTS:
+                    if (attr != PNone.NO_VALUE && owner != object && !(attr instanceof PFunction || attr instanceof PBuiltinFunction)) {
+                        // attr is inherited and might be a descriptor object other than a function
+                        return getSetNode.execute(attr, __SET__) != PNone.NO_VALUE || getDeleteNode.execute(attr, __DELETE__) != PNone.NO_VALUE;
+                    }
+                    return false;
+                default:
+                    return false;
+                }
+            } finally {
+                gil.release(mustRelease);
             }
         }
     }
@@ -1690,46 +1531,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         public static IsImmutable getUncached() {
             return PythonAbstractObjectFactory.IsImmutableNodeGen.getUncached();
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class KeyForAttributeAccess extends Node {
-
-        public abstract String execute(String key);
-
-        @Specialization(guards = "isAttributeAccess(key)")
-        static String doAttributeAccess(String key) {
-            return key.substring(1);
-        }
-
-        @Specialization(guards = "!isAttributeAccess(key)")
-        static String doOther(@SuppressWarnings("unused") String key) {
-            return null;
-        }
-
-        static boolean isAttributeAccess(String key) {
-            return key.length() > 1 && key.charAt(0) == '@';
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class KeyForItemAccess extends Node {
-
-        public abstract String execute(String key);
-
-        @Specialization(guards = "isItemAccess(key)")
-        static String doItemAccess(String key) {
-            return key.substring(1);
-        }
-
-        @Specialization(guards = "!isItemAccess(key)")
-        static String doOther(@SuppressWarnings("unused") String key) {
-            return null;
-        }
-
-        static boolean isItemAccess(String key) {
-            return key.length() > 1 && key.charAt(0) == '[';
         }
     }
 
