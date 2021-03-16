@@ -93,6 +93,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -101,7 +102,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -730,18 +730,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             int[] pipe;
-            boolean thrown = false;
             gil.release(true);
             try {
                 pipe = posixLib.pipe(getPosixSupport());
             } catch (PosixException e) {
-                thrown = true;
                 gil.acquire(); // need to acquire the gil to construct the OSError object
                 throw raiseOSErrorFromPosixException(frame, e);
             } finally {
-                if (!thrown) {
-                    gil.acquire();
-                }
+                gil.acquire();
             }
             return factory().createTuple(new Object[]{pipe[0], pipe[1]});
         }
