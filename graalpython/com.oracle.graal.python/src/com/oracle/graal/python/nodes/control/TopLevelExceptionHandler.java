@@ -60,9 +60,9 @@ import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -87,6 +87,8 @@ public class TopLevelExceptionHandler extends RootNode {
     private final SourceSection sourceSection;
     @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
+
+    @Child GilNode gilNode = GilNode.create();
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
@@ -121,7 +123,8 @@ public class TopLevelExceptionHandler extends RootNode {
     @Override
     @SuppressWarnings("try")
     public Object execute(VirtualFrame frame) {
-        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+        boolean wasAcquired = gilNode.acquire();
+        try {
             if (exception != null) {
                 throw handlePythonException(exception.getEscapedException());
             } else {
@@ -140,6 +143,8 @@ public class TopLevelExceptionHandler extends RootNode {
                     throw e;
                 }
             }
+        } finally {
+            gilNode.release(wasAcquired);
         }
     }
 
