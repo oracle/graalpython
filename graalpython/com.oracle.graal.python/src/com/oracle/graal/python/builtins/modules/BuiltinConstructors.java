@@ -153,7 +153,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -263,6 +262,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -2515,7 +2515,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         // TODO avoid if native slots are inherited
                         try {
                             String mangledName = PythonSSTNodeFactory.mangleName(name, slotName);
-                            HiddenPythonKey hiddenSlotKey = new HiddenPythonKey(mangledName);
+
+                            HiddenKey hiddenSlotKey = createTypeKey(mangledName);
                             HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
                             pythonClass.setAttribute(mangledName, slotDesc);
                         } catch (OverflowException e) {
@@ -2549,6 +2550,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             return pythonClass;
+        }
+
+        @TruffleBoundary
+        private static HiddenKey createTypeKey(String name) {
+            return PythonLanguage.getCurrent().typeHiddenKeys.computeIfAbsent(name, n -> new HiddenKey(n));
         }
 
         @TruffleBoundary
