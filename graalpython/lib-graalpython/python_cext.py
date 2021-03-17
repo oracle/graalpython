@@ -459,36 +459,6 @@ def PyNumber_Check(v):
     return _safe_check(v, lambda x: isinstance(int(x), int)) or _safe_check(v, lambda x: isinstance(float(x), float))
 
 
-@may_raise
-def PyNumber_BinOp(v, w, binop):
-    if binop == 0:
-        return v + w
-    elif binop == 1:
-        return v - w
-    elif binop == 2:
-        return v * w
-    elif binop == 3:
-        return v / w
-    elif binop == 4:
-        return v << w
-    elif binop == 5:
-        return v >> w
-    elif binop == 6:
-        return v | w
-    elif binop == 7:
-        return v & w
-    elif binop == 8:
-        return v ^ w
-    elif binop == 9:
-        return v // w
-    elif binop == 10:
-        return v % w
-    elif binop == 12:
-        return v @ w
-    else:
-        raise SystemError("unknown binary operator (code=%s)" % binop)
-
-
 def _binop_name(binop):
     if binop == 0:
         return "+"
