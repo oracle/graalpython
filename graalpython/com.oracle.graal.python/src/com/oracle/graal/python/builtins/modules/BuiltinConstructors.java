@@ -1281,19 +1281,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                 } else {
                     acceptUnderscore = true;
-                    if (base <= 10) {
-                        if (c < '0' || c > ('0' - 1 + base)) {
-                            // invalid char
-                            return null;
-                        }
-                    } else {
-                        if (c < '0' || c > '9') {
-                            // not in 0-9, check for a-z/A-Z
-                            if ((c < 'a' || c > ('a' - 11 + base)) && (c < 'A' || c > ('A' - 11 + base))) {
-                                // invalid char
-                                return null;
-                            }
-                        }
+                    if (Character.digit(c, base) == -1) {
+                        // invalid char
+                        return null;
                     }
                 }
             }
