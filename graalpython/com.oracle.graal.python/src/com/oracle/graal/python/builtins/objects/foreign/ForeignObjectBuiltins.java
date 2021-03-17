@@ -101,7 +101,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -261,14 +260,14 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"lib.isString(left)"})
+        @Specialization(guards = {"lib.isString(left)", "lib.isString(right)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 if (!reverse) {
-                    return op.executeObject(frame, lib.asString(left), right);
+                    return op.executeObject(frame, lib.asString(left), lib.asString(right));
                 } else {
-                    return op.executeObject(frame, right, lib.asString(left));
+                    return op.executeObject(frame, lib.asString(right), lib.asString(left));
                 }
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -589,14 +588,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
-                        @Cached PTypeToForeignNode toForeignNode,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
-                Object[] convertedArgs = new Object[arguments.length];
-                for (int i = 0; i < arguments.length; i++) {
-                    convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
-                }
-                Object res = lib.instantiate(callee, convertedArgs);
+                Object res = lib.instantiate(callee, arguments);
                 return toPTypeNode.executeConvert(res);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
@@ -628,21 +622,16 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached PTypeToForeignNode toForeignNode,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
-                Object[] convertedArgs = new Object[arguments.length];
-                for (int i = 0; i < arguments.length; i++) {
-                    convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
-                }
                 Object res = null;
                 Object state = IndirectCallContext.enter(frame, context, this);
                 try {
                     if (lib.isExecutable(callee)) {
-                        res = lib.execute(callee, convertedArgs);
+                        res = lib.execute(callee, arguments);
                         return toPTypeNode.executeConvert(res);
                     } else {
-                        res = lib.instantiate(callee, convertedArgs);
+                        res = lib.instantiate(callee, arguments);
                         return toPTypeNode.executeConvert(res);
                     }
                 } finally {

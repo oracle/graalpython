@@ -126,7 +126,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -291,13 +290,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object readArrayElement(long key,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Cached PTypeToForeignNode toForeign,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             if (dataModelLibrary.isSequence(this)) {
                 try {
-                    return toForeign.executeConvert(getItemNode.execute(this, key));
+                    return getItemNode.execute(this, key);
                 } catch (PException e) {
                     if (isAbstractMapping(dataModelLibrary)) {
                         throw UnsupportedMessageException.create();
@@ -307,8 +305,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         throw InvalidArrayIndexException.create(key);
                     }
                 }
-
-                throw UnsupportedMessageException.create();
+            }
+            throw UnsupportedMessageException.create();
         } finally {
             gil.release(mustRelease);
         }
@@ -1573,16 +1571,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)"})
         Object doVarargsBuiltinMethod(Object receiver, Object[] arguments,
-                        @Exclusive @Cached PTypeToForeignNode toForeign,
                         @Cached CallVarargsMethodNode callVarargsMethodNode,
                         @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
             Object[] convertedArgs = convertArgsNode.execute(arguments);
-            return toForeign.executeConvert(callVarargsMethodNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
+            return callVarargsMethodNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(limit = "1", replaces = "doVarargsBuiltinMethod")
         Object doExecute(Object receiver, Object[] arguments,
-                        @Exclusive @Cached PTypeToForeignNode toForeign,
                         @CachedLibrary("receiver") PythonObjectLibrary dataModelLibrary,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
@@ -1590,7 +1586,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 throw UnsupportedMessageException.create();
             }
             Object[] convertedArgs = convertArgsNode.execute(arguments);
-            return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
+            return callNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS);
         }
 
         static boolean isBuiltinFunctionOrMethod(Object object) {
