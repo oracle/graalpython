@@ -104,35 +104,21 @@ public abstract class DictLiteralNode {
             }
         }
 
-        static final class Keys {
-            public final Object[] keys;
-            public final boolean allStrings;
-
-            Keys(Object[] keys, boolean allStrings) {
-                this.keys = keys;
-                this.allStrings = allStrings;
-            }
-        }
-
         @ExplodeLoop
-        private Keys evalKeys(VirtualFrame frame) {
+        private HashingStorage eval(VirtualFrame frame, PythonLanguage lang, ConditionProfile hasFrame) {
             boolean allStrings = true;
             Object[] evalKeys = new Object[this.keys.length];
+            Object[] evalValues = new Object[this.values.length];
             for (int i = 0; i < values.length; i++) {
                 evalKeys[i] = keys[i].execute(frame);
-                if (!(evalKeys[i] instanceof String)) {
+                evalValues[i] = values[i].execute(frame);
+                if (allStrings && !(evalKeys[i] instanceof String)) {
                     allStrings = false;
                 }
             }
-            return new Keys(evalKeys, allStrings);
-        }
-
-        @ExplodeLoop
-        private HashingStorage evalAndSetValues(VirtualFrame frame, HashingStorage dictStorage, Keys evalKeys, ConditionProfile hasFrame) {
-            HashingStorage storage = dictStorage;
+            HashingStorage storage = PDict.createNewStorage(lang, allStrings, evalKeys.length);
             for (int i = 0; i < values.length; i++) {
-                Object val = values[i].execute(frame);
-                storage = libs[i].setItemWithFrame(storage, evalKeys.keys[i], val, hasFrame, frame);
+                storage = libs[i].setItemWithFrame(storage, evalKeys[i], evalValues[i], hasFrame, frame);
             }
             return storage;
         }
@@ -141,9 +127,7 @@ public abstract class DictLiteralNode {
         public PDict create(VirtualFrame frame,
                         @CachedLanguage PythonLanguage lang,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame) {
-            Keys evalKeys = evalKeys(frame);
-            HashingStorage dictStorage = PDict.createNewStorage(lang, evalKeys.allStrings, evalKeys.keys.length);
-            dictStorage = evalAndSetValues(frame, dictStorage, evalKeys, hasFrame);
+            HashingStorage dictStorage = eval(frame, lang, hasFrame);
             return factory.createDict(dictStorage);
         }
     }
