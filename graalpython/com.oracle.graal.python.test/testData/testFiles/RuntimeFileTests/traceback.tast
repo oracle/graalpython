@@ -1729,7 +1729,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -4770,7 +4770,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                             ArgumentExpressionNode SourceSection: None
                                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                                 Index: 0
-                                                            GetNextNode SourceSection: None
+                                                            GetNextCached SourceSection: None
                                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                                 Op: __next__
                                                             GeneratorAccessNode SourceSection: None
@@ -4901,7 +4901,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ExpressionStatementNode SourceSection: [22624,22669]`yield from self.__ca...`
                                                 YieldFromNode SourceSection: [22624,22669]`yield from self.__ca...`
                                                   CachedDispatchFirst SourceSection: None
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
@@ -4974,7 +4974,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 ExpressionStatementNode SourceSection: [22822,22869]`yield from self.__co...`
                                                   YieldFromNode SourceSection: [22822,22869]`yield from self.__co...`
                                                     CachedDispatchFirst SourceSection: None
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -5041,7 +5041,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         ExpressionStatementNode SourceSection: [23017,23047]`yield from self.stac...`
                                           YieldFromNode SourceSection: [23017,23047]`yield from self.stac...`
                                             CachedDispatchFirst SourceSection: None
-                                            GetNextNode SourceSection: None
+                                            GetNextCached SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None
@@ -5072,7 +5072,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         ExpressionStatementNode SourceSection: [23056,23095]`yield from self.form...`
                                           YieldFromNode SourceSection: [23056,23095]`yield from self.form...`
                                             CachedDispatchFirst SourceSection: None
-                                            GetNextNode SourceSection: None
+                                            GetNextCached SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None

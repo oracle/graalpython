@@ -70,6 +70,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -208,14 +209,14 @@ public class JArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPSequence(sequence)")
-        Object fromIterable(Object sequence, Object type,
+        Object fromIterable(VirtualFrame frame, Object sequence, Object type,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @CachedLibrary(limit = "5") InteropLibrary lib,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ZerosNode zerosNode) {
-            PList list = constructListNode.execute(sequence);
+            PList list = constructListNode.execute(frame, sequence);
             return fromSequence(list, type, lib, getSequenceStorageNode, lenNode, getItemScalarNode, zerosNode);
         }
     }

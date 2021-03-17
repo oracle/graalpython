@@ -1660,7 +1660,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             @Cached CastToJavaStringNode cast,
                             @Cached ListNodes.ConstructListNode constructListNode,
                             @Cached PRaiseNode raiseNode) {
-                PList list = constructListNode.execute(readAttributeFromObjectNode.execute(type, __ABSTRACTMETHODS__));
+                PList list = constructListNode.execute(frame, readAttributeFromObjectNode.execute(type, __ABSTRACTMETHODS__));
                 int methodCount = lib.lengthWithFrame(list, frame);
                 lib.lookupAndCallRegularMethod(list, frame, "sort");
                 String joined = cast.execute(lib.lookupAndCallRegularMethod(", ", frame, "join", list));

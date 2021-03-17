@@ -130,7 +130,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [4,Y,Illegal]
                                                 ReadFromCellNodeGen SourceSection: None
-                                            GetNextNode SourceSection: None
+                                            GetNextCached SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None
@@ -145,7 +145,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                             CallNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [146,150]`doit`
                                               Frame: [0,doit,Illegal]
-                                        GetNextNode SourceSection: None
+                                        GetNextCached SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None

@@ -187,7 +187,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             // repeatedly in the loop condition
             ArrayBuilder<Object> objects = new ArrayBuilder<>();
             IntArrayBuilder fds = new IntArrayBuilder();
-            PSequence pSequence = constructListNode.execute(sequence);
+            PSequence pSequence = constructListNode.execute(frame, sequence);
             boolean containsSocket = false;
             for (int i = 0; i < sequenceLib.lengthWithState(sequence, threadState); i++) {
                 Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);

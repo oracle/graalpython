@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
                         GetIteratorExpressionNodeGen SourceSection: [26,29]`arg`
                           ReadGeneratorFrameVariableNodeGen SourceSection: [26,29]`arg`
                             Frame: [0,arg,Illegal]
-                        GetNextNode SourceSection: None
+                        GetNextCached SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None

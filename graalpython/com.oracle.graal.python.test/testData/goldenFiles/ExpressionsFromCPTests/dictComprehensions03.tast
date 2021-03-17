@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`seq2`
                       Identifier: seq2
                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  GetNextNode SourceSection: None
+                  GetNextCached SourceSection: None
                     LookupAndCallUnaryNodeGen SourceSection: None
                       Op: __next__
                   GeneratorAccessNode SourceSection: None
@@ -76,7 +76,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextNode SourceSection: None
+                GetNextCached SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
