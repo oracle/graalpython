@@ -98,7 +98,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     public abstract Object executeObject(VirtualFrame frame, Object receiver);
 
     public abstract Object executeObject(VirtualFrame frame, int receiver);
-    
+
     public abstract Object executeObject(VirtualFrame frame, long receiver);
 
     public abstract Object executeObject(VirtualFrame frame, double receiver);
