@@ -54,6 +54,7 @@ import static org.graalvm.polyglot.tck.TypeDescriptor.STRING;
 import static org.graalvm.polyglot.tck.TypeDescriptor.TIME;
 import static org.graalvm.polyglot.tck.TypeDescriptor.TIME_ZONE;
 import static org.graalvm.polyglot.tck.TypeDescriptor.array;
+import static org.graalvm.polyglot.tck.TypeDescriptor.hash;
 import static org.graalvm.polyglot.tck.TypeDescriptor.iterable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.iterator;
 import static org.graalvm.polyglot.tck.TypeDescriptor.executable;
@@ -116,7 +117,7 @@ public class PythonProvider implements LanguageProvider {
     }
 
     private static final TypeDescriptor dict(TypeDescriptor keyType, @SuppressWarnings("unused") TypeDescriptor valueType) {
-        return intersection(OBJECT, iterable(keyType));
+        return intersection(OBJECT, iterable(keyType), hash(keyType, valueType));
     }
 
     private static final TypeDescriptor set(TypeDescriptor componentType) {
@@ -242,6 +243,10 @@ public class PythonProvider implements LanguageProvider {
 
         addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
         addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
+
+        // addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, dict(ANY, ANY), ANY));
+        // addExpressionSnippet(context, snippets, "[a:b]", "lambda x: x[:]", union(STRING, array(ANY)), union(STRING, array(ANY));
+
         // @formatter:on
         return snippets;
     }
