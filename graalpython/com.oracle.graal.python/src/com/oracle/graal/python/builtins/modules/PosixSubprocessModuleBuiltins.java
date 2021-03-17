@@ -138,7 +138,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     throw raise(RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
                 }
                 Object o = getItemNode.execute(frame, argsStorage, i);
-                argsArray[i] = objectToOpaquePathNode.execute(frame, o);
+                argsArray[i] = objectToOpaquePathNode.execute(frame, o, false);
             }
             return argsArray;
         }
@@ -241,7 +241,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
             Object[] processArgs = args;
             int[] fdsToKeep = convertFdSequence(frame, fdsToKeepTuple, lenNode, getItemNode, castToIntNode);
-            Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj);
+            Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable));
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
