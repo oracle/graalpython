@@ -111,6 +111,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -127,6 +128,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
@@ -809,95 +811,61 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         protected final String method = __STR__;
         @Child private LookupAndCallUnaryNode callStrNode;
+        @Child private CastToListNode castToListNode;
         @Child protected PythonUnaryBuiltinNode objectStrNode;
 
-        @Specialization(guards = {"lib.isNull(object)"})
-        protected Object doNull(VirtualFrame frame, @SuppressWarnings("unused") Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return getCallStrNode().executeObject(frame, PNone.NONE);
-        }
-
-        @Specialization(guards = {"lib.isBoolean(object)"})
-        protected Object doBool(VirtualFrame frame, Object object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+        @Specialization
+        Object str(VirtualFrame frame, Object object,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached BranchProfile isNull,
+                        @Cached BranchProfile isBoolean,
+                        @Cached BranchProfile isString,
+                        @Cached BranchProfile isLong,
+                        @Cached BranchProfile isDouble,
+                        @Cached BranchProfile isArray,
+                        @Cached BranchProfile isHostObject) {
             try {
-                return getCallStrNode().executeObject(frame, lib.asBoolean(object));
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
-            }
-        }
-
-        @Specialization(guards = {"lib.isString(object)"})
-        protected Object doStr(VirtualFrame frame, Object object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return getCallStrNode().executeObject(frame, lib.asString(object));
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
-            }
-        }
-
-        @Specialization(guards = {"lib.fitsInLong(object)"})
-        protected Object doLong(VirtualFrame frame, Object object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return getCallStrNode().executeObject(frame, lib.asLong(object));
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
-            }
-        }
-
-        @Specialization(guards = {"lib.fitsInDouble(object)"})
-        protected Object doDouble(VirtualFrame frame, Object object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return getCallStrNode().executeObject(frame, lib.asDouble(object));
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
-            }
-        }
-
-        @Specialization(guards = {"lib.hasArrayElements(object)"})
-        protected Object doArray(VirtualFrame frame, Object object,
-                        @Cached CastToListNode asList,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                long size = lib.getArraySize(object);
-                if (size <= Integer.MAX_VALUE && size >= 0) {
-                    PForeignArrayIterator iterable = factory().createForeignArrayIterator(object);
-                    return getCallStrNode().executeObject(frame, asList.execute(frame, iterable));
+                if (lib.isNull(object)) {
+                    isNull.enter();
+                    return getCallStrNode().executeObject(frame, PNone.NONE);
+                } else if (lib.isBoolean(object)) {
+                    isBoolean.enter();
+                    return getCallStrNode().executeObject(frame, lib.asBoolean(object));
+                } else if (lib.isString(object)) {
+                    isString.enter();
+                    return getCallStrNode().executeObject(frame, lib.asString(object));
+                } else if (lib.fitsInLong(object)) {
+                    isLong.enter();
+                    return getCallStrNode().executeObject(frame, lib.asLong(object));
+                } else if (lib.fitsInDouble(object)) {
+                    isDouble.enter();
+                    return getCallStrNode().executeObject(frame, lib.asDouble(object));
+                } else if (lib.hasArrayElements(object)) {
+                    isArray.enter();
+                    long size = lib.getArraySize(object);
+                    if (size <= Integer.MAX_VALUE && size >= 0) {
+                        PForeignArrayIterator iterable = factory().createForeignArrayIterator(object);
+                        return getCallStrNode().executeObject(frame, getCastToListNode().execute(frame, iterable));
+                    }
+                } else if (getContext().getEnv().isHostObject(object)) {
+                    isHostObject.enter();
+                    boolean isMetaObject = lib.isMetaObject(object);
+                    Object metaObject = isMetaObject
+                                    ? object
+                                    : lib.hasMetaObject(object) ? lib.getMetaObject(object) : null;
+                    if (metaObject != null) {
+                        Object displayName = lib.toDisplayString(metaObject);
+                        String text = createDisplayName(isMetaObject, displayName);
+                        return PythonUtils.format("<%s at 0x%x>", text, PythonAbstractObject.systemHashCode(object));
+                    }
                 }
             } catch (UnsupportedMessageException e) {
-                // fall through
+                // Fall back to the generic impl
             }
-            return doIt(frame, object);
+            return getObjectStrNode().call(frame, object);
         }
 
-        @Specialization(guards = "getContext().getEnv().isHostObject(self)")
-        Object doHostObject(VirtualFrame frame, Object self,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                boolean isMetaObject = lib.isMetaObject(self);
-                Object metaObject = isMetaObject
-                                ? self
-                                : lib.hasMetaObject(self) ? lib.getMetaObject(self) : null;
-                if (metaObject != null) {
-                    Object displayName = lib.toDisplayString(metaObject);
-                    String text = createDisplayName(isMetaObject, displayName);
-                    return PythonUtils.format("<%s at 0x%x>", text, PythonAbstractObject.systemHashCode(self));
-                }
-
-            } catch (UnsupportedMessageException ex) {
-                // do nothing
-            }
-            return doIt(frame, self);
-        }
-
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static String createDisplayName(boolean isMetaObject, Object object) {
             StringBuilder sb = new StringBuilder();
             sb.append(isMetaObject ? "JavaClass[" : "JavaObject[");
@@ -906,17 +874,20 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             return sb.toString();
         }
 
-        @Fallback
-        protected Object doIt(VirtualFrame frame, Object object) {
-            return getObjectStrNode().call(frame, object);
-        }
-
         private LookupAndCallUnaryNode getCallStrNode() {
             if (callStrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callStrNode = insert(LookupAndCallUnaryNode.create(method));
             }
             return callStrNode;
+        }
+
+        private CastToListNode getCastToListNode() {
+            if (castToListNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToListNode = insert(CastToListNode.create());
+            }
+            return castToListNode;
         }
 
         protected PythonUnaryBuiltinNode getObjectStrNode() {
