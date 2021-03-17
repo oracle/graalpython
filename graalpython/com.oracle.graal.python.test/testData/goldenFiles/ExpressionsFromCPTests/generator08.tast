@@ -46,7 +46,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
-                GetNextNode SourceSection: None
+                GetNextCached SourceSection: None
                   LookupAndCallUnaryNodeGen SourceSection: None
                     Op: __next__
                 GeneratorAccessNode SourceSection: None

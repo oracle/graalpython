@@ -1467,7 +1467,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
@@ -1682,7 +1682,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             CachedDispatchFirst SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [6414,6415]`b`
                                                           Frame: [1,b,Illegal]
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -1694,7 +1694,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
@@ -1806,7 +1806,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ArgumentExpressionNode SourceSection: None
                                                             ReadIndexedArgumentNodeGen SourceSection: None
                                                               Index: 0
-                                                          GetNextNode SourceSection: None
+                                                          GetNextCached SourceSection: None
                                                             LookupAndCallUnaryNodeGen SourceSection: None
                                                               Op: __next__
                                                           GeneratorAccessNode SourceSection: None
@@ -3025,7 +3025,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
@@ -3309,7 +3309,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
@@ -5071,7 +5071,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             CachedDispatchFirst SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [22774,22777]`cls`
                                                           Frame: [1,cls,Illegal]
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -5083,7 +5083,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
@@ -5665,7 +5665,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -6785,7 +6785,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ArgumentExpressionNode SourceSection: None
                                                             ReadIndexedArgumentNodeGen SourceSection: None
                                                               Index: 0
-                                                          GetNextNode SourceSection: None
+                                                          GetNextCached SourceSection: None
                                                             LookupAndCallUnaryNodeGen SourceSection: None
                                                               Op: __next__
                                                           GeneratorAccessNode SourceSection: None
@@ -7079,7 +7079,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             ArgumentExpressionNode SourceSection: None
                                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                                 Index: 0
-                                                            GetNextNode SourceSection: None
+                                                            GetNextCached SourceSection: None
                                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                                 Op: __next__
                                                             GeneratorAccessNode SourceSection: None
@@ -8711,7 +8711,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
-                                        GetNextNode SourceSection: None
+                                        GetNextCached SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
@@ -8886,7 +8886,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                    GetNextNode SourceSection: None
+                                    GetNextCached SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
@@ -9002,7 +9002,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                    GetNextNode SourceSection: None
+                                    GetNextCached SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None

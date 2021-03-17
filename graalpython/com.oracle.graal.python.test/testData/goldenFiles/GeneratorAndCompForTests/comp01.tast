@@ -101,7 +101,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 0
-                                          GetNextNode SourceSection: None
+                                          GetNextCached SourceSection: None
                                             LookupAndCallUnaryNodeGen SourceSection: None
                                               Op: __next__
                                           GeneratorAccessNode SourceSection: None
@@ -125,7 +125,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                         GetIteratorExpressionNodeGen SourceSection: [92,93]`t`
                           ReadGeneratorFrameVariableNodeGen SourceSection: [92,93]`t`
                             Frame: [1,t,Illegal]
-                        GetNextNode SourceSection: None
+                        GetNextCached SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
@@ -137,7 +137,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
-                      GetNextNode SourceSection: None
+                      GetNextCached SourceSection: None
                         LookupAndCallUnaryNodeGen SourceSection: None
                           Op: __next__
                       GeneratorAccessNode SourceSection: None

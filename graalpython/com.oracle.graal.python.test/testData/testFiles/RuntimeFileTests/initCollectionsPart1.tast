@@ -346,7 +346,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   ExpressionStatementNode SourceSection: [2511,2545]`yield from reversed(...`
                                     YieldFromNode SourceSection: [2511,2545]`yield from reversed(...`
                                       CachedDispatchFirst SourceSection: None
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -509,7 +509,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 CachedDispatchFirst SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [2661,2665]`self`
                                               Frame: [0,self,Illegal]
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -645,7 +645,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 CachedDispatchFirst SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [2838,2842]`self`
                                               Frame: [0,self,Illegal]
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -3718,7 +3718,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -6878,7 +6878,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
-                                                      GetNextNode SourceSection: None
+                                                      GetNextCached SourceSection: None
                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                           Op: __next__
                                                       GeneratorAccessNode SourceSection: None

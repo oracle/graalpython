@@ -305,7 +305,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
-                                        GetNextNode SourceSection: None
+                                        GetNextCached SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
@@ -329,7 +329,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       GetIteratorExpressionNodeGen SourceSection: [2270,2271]`t`
                         ReadGeneratorFrameVariableNodeGen SourceSection: [2270,2271]`t`
                           Frame: [1,t,Illegal]
-                      GetNextNode SourceSection: None
+                      GetNextCached SourceSection: None
                         LookupAndCallUnaryNodeGen SourceSection: None
                           Op: __next__
                       GeneratorAccessNode SourceSection: None
@@ -341,7 +341,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
-                    GetNextNode SourceSection: None
+                    GetNextCached SourceSection: None
                       LookupAndCallUnaryNodeGen SourceSection: None
                         Op: __next__
                     GeneratorAccessNode SourceSection: None
@@ -3777,7 +3777,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                    GetNextNode SourceSection: None
+                                    GetNextCached SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
@@ -5867,7 +5867,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -6905,7 +6905,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             ArgumentExpressionNode SourceSection: None
                                                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                                                 Index: 0
-                                                                            GetNextNode SourceSection: None
+                                                                            GetNextCached SourceSection: None
                                                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                                                 Op: __next__
                                                                             GeneratorAccessNode SourceSection: None
@@ -7875,7 +7875,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                                 ArgumentExpressionNode SourceSection: None
                                                                                                   ReadIndexedArgumentNodeGen SourceSection: None
                                                                                                     Index: 0
-                                                                                                GetNextNode SourceSection: None
+                                                                                                GetNextCached SourceSection: None
                                                                                                   LookupAndCallUnaryNodeGen SourceSection: None
                                                                                                     Op: __next__
                                                                                                 GeneratorAccessNode SourceSection: None

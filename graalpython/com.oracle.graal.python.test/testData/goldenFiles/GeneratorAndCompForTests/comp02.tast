@@ -108,7 +108,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
-                                            GetNextNode SourceSection: None
+                                            GetNextCached SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None
@@ -204,7 +204,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                    GetNextNode SourceSection: None
+                                    GetNextCached SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None

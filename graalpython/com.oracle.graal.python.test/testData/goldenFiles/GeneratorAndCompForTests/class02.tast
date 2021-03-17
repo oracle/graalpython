@@ -150,7 +150,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None

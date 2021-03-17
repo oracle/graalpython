@@ -2497,7 +2497,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                       ArgumentExpressionNode SourceSection: None
                                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                                           Index: 0
-                                                                      GetNextNode SourceSection: None
+                                                                      GetNextCached SourceSection: None
                                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                                           Op: __next__
                                                                       GeneratorAccessNode SourceSection: None
@@ -3021,7 +3021,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                       ArgumentExpressionNode SourceSection: None
                                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                                           Index: 0
-                                                                      GetNextNode SourceSection: None
+                                                                      GetNextCached SourceSection: None
                                                                         LookupAndCallUnaryNodeGen SourceSection: None
                                                                           Op: __next__
                                                                       GeneratorAccessNode SourceSection: None
@@ -3679,7 +3679,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None

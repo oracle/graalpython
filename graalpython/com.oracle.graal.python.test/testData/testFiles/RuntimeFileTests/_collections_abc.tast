@@ -4996,7 +4996,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -5202,7 +5202,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   GetIteratorExpressionNodeGen SourceSection: [12807,12808]`s`
                                                     ReadGeneratorFrameVariableNodeGen SourceSection: [12807,12808]`s`
                                                       Frame: [1,s,Illegal]
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
@@ -5214,7 +5214,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadIndexedArgumentNodeGen SourceSection: None
                                                     Index: 0
-                                                GetNextNode SourceSection: None
+                                                GetNextCached SourceSection: None
                                                   LookupAndCallUnaryNodeGen SourceSection: None
                                                     Op: __next__
                                                 GeneratorAccessNode SourceSection: None
@@ -5412,7 +5412,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -5578,7 +5578,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -7610,7 +7610,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   ExpressionStatementNode SourceSection: [18776,18800]`yield from self._map...`
                                     YieldFromNode SourceSection: [18776,18800]`yield from self._map...`
                                       CachedDispatchFirst SourceSection: None
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -7950,7 +7950,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CachedDispatchFirst SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19224,19228]`self`
                                             Frame: [0,self,Illegal]
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -8201,7 +8201,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CachedDispatchFirst SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19619,19623]`self`
                                             Frame: [0,self,Illegal]
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -9377,7 +9377,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [23334,23338]`self`
                                                 Frame: [0,self,Illegal]
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -9708,7 +9708,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None

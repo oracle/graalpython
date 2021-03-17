@@ -1622,7 +1622,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ExpressionStatementNode SourceSection: [15086,15110]`yield from next.__se...`
                               YieldFromNode SourceSection: [15086,15110]`yield from next.__se...`
                                 CachedDispatchFirst SourceSection: None
-                                GetNextNode SourceSection: None
+                                GetNextCached SourceSection: None
                                   LookupAndCallUnaryNodeGen SourceSection: None
                                     Op: __next__
                                 GeneratorAccessNode SourceSection: None
@@ -1933,7 +1933,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ExpressionStatementNode SourceSection: [15792,15816]`yield from next.__se...`
                           YieldFromNode SourceSection: [15792,15816]`yield from next.__se...`
                             CachedDispatchFirst SourceSection: None
-                            GetNextNode SourceSection: None
+                            GetNextCached SourceSection: None
                               LookupAndCallUnaryNodeGen SourceSection: None
                                 Op: __next__
                             GeneratorAccessNode SourceSection: None
@@ -2260,7 +2260,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -2458,7 +2458,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
-                                        GetNextNode SourceSection: None
+                                        GetNextCached SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
@@ -2553,7 +2553,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                  GetNextNode SourceSection: None
+                                  GetNextCached SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
@@ -2781,7 +2781,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                    GetNextNode SourceSection: None
+                                    GetNextCached SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
@@ -3076,7 +3076,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
@@ -3289,7 +3289,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
-                                        GetNextNode SourceSection: None
+                                        GetNextCached SourceSection: None
                                           LookupAndCallUnaryNodeGen SourceSection: None
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
@@ -3384,7 +3384,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                  GetNextNode SourceSection: None
+                                  GetNextCached SourceSection: None
                                     LookupAndCallUnaryNodeGen SourceSection: None
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
@@ -3627,7 +3627,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                    GetNextNode SourceSection: None
+                                    GetNextCached SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None

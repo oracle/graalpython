@@ -581,7 +581,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         GetIteratorExpressionNodeGen SourceSection: [3530,3538]`grouping`
                           ReadGeneratorFrameVariableNodeGen SourceSection: [3530,3538]`grouping`
                             Frame: [0,grouping,Illegal]
-                        GetNextNode SourceSection: None
+                        GetNextCached SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
