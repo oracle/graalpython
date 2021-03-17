@@ -459,67 +459,6 @@ def PyNumber_Check(v):
     return _safe_check(v, lambda x: isinstance(int(x), int)) or _safe_check(v, lambda x: isinstance(float(x), float))
 
 
-def _binop_name(binop):
-    if binop == 0:
-        return "+"
-    elif binop == 1:
-        return "-"
-    elif binop == 2:
-        return "*"
-    elif binop == 3:
-        return "/"
-    elif binop == 4:
-        return "<<"
-    elif binop == 5:
-        return ">>"
-    elif binop == 6:
-        return "|"
-    elif binop == 7:
-        return "&"
-    elif binop == 8:
-        return "^"
-    elif binop == 9:
-        return "//"
-    elif binop == 10:
-        return "%"
-    elif binop == 12:
-        return "@"
-
-
-@may_raise
-def PyNumber_InPlaceBinOp(v, w, binop):
-    if binop == 0:
-        v += w
-    elif binop == 1:
-        v -= w
-    elif binop == 2:
-        v *= w
-    elif binop == 3:
-        v /= w
-    elif binop == 4:
-        v <<= w
-    elif binop == 5:
-        v >>= w
-    elif binop == 6:
-        v |= w
-    elif binop == 7:
-        v &= w
-    elif binop == 8:
-        v ^= w
-    elif binop == 9:
-        v //= w
-    elif binop == 10:
-        v %= w
-    elif binop == 12:
-        v @= w
-    else:
-        raise SystemError("unknown in-place binary operator (code=%s)" % binop)
-
-    # nothing else required; the operator will automatically fall back if
-    # no in-place operation is available
-    return v
-
-
 @may_raise
 def PyNumber_UnaryOp(v, unaryop):
     if unaryop == 0:

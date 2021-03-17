@@ -228,6 +228,8 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
+import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -4131,7 +4133,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return toSulongNode.execute(result);
         }
 
-        private static Object extract(PrimitiveNativeWrapper wrapper) {
+        static Object extract(PrimitiveNativeWrapper wrapper) {
             if (wrapper.isIntLike()) {
                 return wrapper.getLong();
             }
@@ -4177,6 +4179,102 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     return BinaryArithmetic.Mod;
                 case 12:
                     return BinaryArithmetic.MatMul;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("invalid binary operator");
+            }
+        }
+
+    }
+
+    @Builtin(name = "PyNumber_InPlaceBinOp", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyNumberInPlaceBinOp extends PythonTernaryBuiltinNode {
+        static int MAX_CACHE_SIZE = InplaceArithmetic.values().length;
+
+        @Specialization(guards = {"cachedOp == op", "left.isIntLike()", "right.isIntLike()"}, limit = "MAX_CACHE_SIZE")
+        static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, PrimitiveNativeWrapper right, @SuppressWarnings("unused") int op,
+                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
+                        @Cached("createCallNode(op)") LookupAndCallInplaceNode callNode,
+                        @Cached ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return toSulongNode.execute(callNode.execute(frame, left.getLong(), right.getLong()));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return toSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        @Specialization(guards = "cachedOp == op", limit = "MAX_CACHE_SIZE", replaces = "doIntLikePrimitiveWrapper")
+        static Object doObject(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") int op,
+                        @Cached AsPythonObjectNode leftToJava,
+                        @Cached AsPythonObjectNode rightToJava,
+                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
+                        @Cached("createCallNode(op)") LookupAndCallInplaceNode callNode,
+                        @Cached ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            // still try to avoid expensive materialization of primitives
+            Object result;
+            try {
+                if (left instanceof PrimitiveNativeWrapper || right instanceof PrimitiveNativeWrapper) {
+                    Object leftValue;
+                    Object rightValue;
+                    if (left instanceof PrimitiveNativeWrapper) {
+                        leftValue = PyNumberBinOp.extract((PrimitiveNativeWrapper) left);
+                    } else {
+                        leftValue = leftToJava.execute(left);
+                    }
+                    if (right instanceof PrimitiveNativeWrapper) {
+                        rightValue = PyNumberBinOp.extract((PrimitiveNativeWrapper) right);
+                    } else {
+                        rightValue = rightToJava.execute(right);
+                    }
+                    result = callNode.execute(frame, leftValue, rightValue);
+                } else {
+                    result = callNode.execute(frame, leftToJava.execute(left), rightToJava.execute(right));
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                result = getNativeNullNode.execute();
+            }
+            return toSulongNode.execute(result);
+        }
+
+        /**
+         * This needs to stay in sync with {@code abstract.c: enum e_binop}.
+         */
+        static LookupAndCallInplaceNode createCallNode(int op) {
+            return getInplaceArithmetic(op).create();
+        }
+
+        private static InplaceArithmetic getInplaceArithmetic(int op) {
+            switch (op) {
+                case 0:
+                    return InplaceArithmetic.IAdd;
+                case 1:
+                    return InplaceArithmetic.ISub;
+                case 2:
+                    return InplaceArithmetic.IMul;
+                case 3:
+                    return InplaceArithmetic.ITrueDiv;
+                case 4:
+                    return InplaceArithmetic.ILShift;
+                case 5:
+                    return InplaceArithmetic.IRShift;
+                case 6:
+                    return InplaceArithmetic.IOr;
+                case 7:
+                    return InplaceArithmetic.IAnd;
+                case 8:
+                    return InplaceArithmetic.IXor;
+                case 9:
+                    return InplaceArithmetic.IFloorDiv;
+                case 10:
+                    return InplaceArithmetic.IMod;
+                case 12:
+                    return InplaceArithmetic.IMatMul;
                 default:
                     throw CompilerDirectives.shouldNotReachHere("invalid binary operator");
             }

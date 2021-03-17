@@ -76,9 +76,9 @@ MUST_INLINE static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop) {
     return _jls_PyNumber_BinOp(native_to_java(v), native_to_java(w), (int32_t)binop);
 }
 
-UPCALL_ID(PyNumber_InPlaceBinOp);
+UPCALL_TYPED_ID(PyNumber_InPlaceBinOp, binop_fun_t);
 MUST_INLINE static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop) {
-    return UPCALL_CEXT_O(_jls_PyNumber_InPlaceBinOp, native_to_java(v), native_to_java(w), binop);
+    return _jls_PyNumber_InPlaceBinOp(native_to_java(v), native_to_java(w), (int32_t)binop);
 }
 
 PyObject * PyNumber_Add(PyObject *o1, PyObject *o2) {
