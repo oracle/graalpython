@@ -45,6 +45,7 @@
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_leak_fast_process_del_killed
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_pass_fds
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_pass_fds_inheritable
+*graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_pipe_cloexec_real_tools
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_preexec
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_preexec_errpipe_does_not_double_close_pipes
 *graalpython.lib-python.3.test.test_subprocess.POSIXProcessTestCase.test_preexec_exception

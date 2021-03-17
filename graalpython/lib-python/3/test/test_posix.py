@@ -811,6 +811,7 @@ class PosixTester(unittest.TestCase):
             for name in names:
                 self.assertIs(type(name), bytes)
 
+    @support.impl_detail("[GR-30188] interferes with other tests executed concurrently", graalvm=False)
     @unittest.skipUnless(posix.listdir in os.supports_fd,
                          "test needs fd support for posix.listdir()")
     def test_listdir_fd(self):

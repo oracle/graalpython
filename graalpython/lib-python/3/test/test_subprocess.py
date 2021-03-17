@@ -230,7 +230,7 @@ class ProcessTestCase(BaseTestCase):
                     # Some heavily loaded buildbots (sparc Debian 3.x) require
                     # this much time to start and print.
                     # Graalpython: increased timeout for jvm launcher startup
-                    timeout=15)
+                    timeout=20)
             self.fail("Expected TimeoutExpired.")
         self.assertEqual(c.exception.output, b'BDFL')
 
@@ -1127,7 +1127,7 @@ class ProcessTestCase(BaseTestCase):
         # Some heavily loaded buildbots (sparc Debian 3.x) require this much
         # time to start.
         # Graalpython: increased timeout for jvm launcher startup
-        self.assertEqual(p.wait(timeout=15), 0)
+        self.assertEqual(p.wait(timeout=20), 0)
 
     def test_invalid_bufsize(self):
         # an invalid type of the bufsize argument should raise
@@ -1500,7 +1500,7 @@ class RunFuncTestCase(BaseTestCase):
                     # Some heavily loaded buildbots (sparc Debian 3.x) require
                     # this much time to start and print.
                     # Graalpython: increased timeout for jvm launcher startup
-                    timeout=15, stdout=subprocess.PIPE)
+                    timeout=20, stdout=subprocess.PIPE)
         self.assertEqual(c.exception.output, b'BDFL')
         # output is aliased to stdout
         self.assertEqual(c.exception.stdout, b'BDFL')
@@ -2393,6 +2393,7 @@ class POSIXProcessTestCase(BaseTestCase):
                          "found %r" %
                               (unwanted_fds, result_fds & unwanted_fds))
 
+    @unittest.skipIf(sys.platform == 'darwin', '[GR-30189] hangs on graalpython on OS X')
     def test_pipe_cloexec_real_tools(self):
         qcat = support.findfile("qcat.py", subdir="subprocessdata")
         qgrep = support.findfile("qgrep.py", subdir="subprocessdata")
