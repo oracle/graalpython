@@ -187,6 +187,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PHashInfo("hash_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PThreadInfo("thread_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PUnraisableHookArgs("UnraisableHookArgs", Flags.PUBLIC_DERIVED_WODICT),
+    PSSLSession("SSLSession", "_ssl"),
+    PSSLContext("_SSLContext", "_ssl"),
+    PSSLSocket("_SSLSocket", "_ssl"),
+    PMemoryBIO("MemoryBIO", "_ssl"),
 
     // Errors and exceptions:
 
@@ -239,6 +243,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SocketTimeout("timeout", "_socket", Flags.EXCEPTION),
     BinasciiError("Error", "binascii", Flags.EXCEPTION),
     BinasciiIncomplete("Incomplete", "binascii", Flags.EXCEPTION),
+    SSLError("SSLError", "_ssl", Flags.EXCEPTION),
+    SSLZeroReturnError("SSLZeroReturnError", "_ssl", Flags.EXCEPTION),
+    SSLWantReadError("SSLWantReadError", "_ssl", Flags.EXCEPTION),
+    SSLWantWriteError("SSLWantWriteError", "_ssl", Flags.EXCEPTION),
+    SSLSyscallError("SSLSyscallError", "_ssl", Flags.EXCEPTION),
+    SSLEOFError("SSLEOFError", "_ssl", Flags.EXCEPTION),
+    SSLCertVerificationError("SSLCertVerificationError", "_ssl", Flags.EXCEPTION),
 
     // todo: all OS errors
 
@@ -430,6 +441,14 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SocketGAIError.base = OSError;
         SocketHError.base = OSError;
         SocketTimeout.base = OSError;
+
+        SSLError.base = OSError;
+        SSLZeroReturnError.base = SSLError;
+        SSLWantReadError.base = SSLError;
+        SSLWantWriteError.base = SSLError;
+        SSLSyscallError.base = SSLError;
+        SSLCertVerificationError.base = SSLError;
+        SSLEOFError.base = SSLError;
 
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;

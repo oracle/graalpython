@@ -5,6 +5,10 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 21.1.0
 
+* Added SSL/TLS support (the `ssl` module)
+
+## Version 21.1.0
+
 * Added subclassing of Java classes in JVM mode
 * Use native posix functions in the GraalPython Launcher
 * Support iterating over Python objects from Java and other languages as well as iterating over foreign objects in Python
