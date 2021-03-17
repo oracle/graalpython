@@ -1537,9 +1537,14 @@ public final class EmulatedPosixSupport extends PosixResources {
                 throw posixException(OSErrorEnum.ESRCH);
             }
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            interruptThread();
             throw posixException(OSErrorEnum.EINTR);
         }
+    }
+
+    @TruffleBoundary
+    private static void interruptThread() {
+        Thread.currentThread().interrupt();
     }
 
     // TODO the implementation of the following builtins is taken from posix.py,
