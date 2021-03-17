@@ -65,9 +65,10 @@ int PyNumber_Check(PyObject *o) {
     return 0;
 }
 
-UPCALL_ID(PyNumber_UnaryOp);
+typedef PyObject *(*unaryop_fun_t)(PyObject *, int32_t);
+UPCALL_TYPED_ID(PyNumber_UnaryOp, unaryop_fun_t);
 static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop) {
-    return UPCALL_CEXT_O(_jls_PyNumber_UnaryOp, native_to_java(v), unaryop);
+    return _jls_PyNumber_UnaryOp(native_to_java(v), (int32_t)unaryop);
 }
 
 typedef PyObject *(*binop_fun_t)(PyObject *, PyObject *, int32_t);

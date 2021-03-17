@@ -230,6 +230,7 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -4077,6 +4078,75 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    // directly called without landing function
+    @Builtin(name = "PyNumber_UnaryOp", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyNumberUnaryOp extends PythonBinaryBuiltinNode {
+        static int MAX_CACHE_SIZE = UnaryArithmetic.values().length;
+
+        @Specialization(guards = {"cachedOp == op", "left.isIntLike()"}, limit = "MAX_CACHE_SIZE")
+        static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, @SuppressWarnings("unused") int op,
+                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
+                        @Cached("createCallNode(op)") LookupAndCallUnaryNode callNode,
+                        @Cached ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return toSulongNode.execute(callNode.executeObject(frame, left.getLong()));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return toSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        @Specialization(guards = "cachedOp == op", limit = "MAX_CACHE_SIZE", replaces = "doIntLikePrimitiveWrapper")
+        static Object doObject(VirtualFrame frame, Object left, @SuppressWarnings("unused") int op,
+                        @Cached AsPythonObjectNode leftToJava,
+                        @Cached("op") @SuppressWarnings("unused") int cachedOp,
+                        @Cached("createCallNode(op)") LookupAndCallUnaryNode callNode,
+                        @Cached ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            // still try to avoid expensive materialization of primitives
+            Object result;
+            try {
+                Object leftValue;
+                if (left instanceof PrimitiveNativeWrapper) {
+                    leftValue = PyNumberBinOp.extract((PrimitiveNativeWrapper) left);
+                } else {
+                    leftValue = leftToJava.execute(left);
+                }
+                result = callNode.executeObject(frame, leftValue);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                result = getNativeNullNode.execute();
+            }
+            return toSulongNode.execute(result);
+        }
+
+        /**
+         * This needs to stay in sync with {@code abstract.c: enum e_unaryop}.
+         */
+        static LookupAndCallUnaryNode createCallNode(int op) {
+            UnaryArithmetic unaryArithmetic;
+            switch (op) {
+                case 0:
+                    unaryArithmetic = UnaryArithmetic.Pos;
+                    break;
+                case 1:
+                    unaryArithmetic = UnaryArithmetic.Neg;
+                    break;
+                case 2:
+                    unaryArithmetic = UnaryArithmetic.Invert;
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere("invalid unary operator");
+            }
+            return unaryArithmetic.create();
+        }
+    }
+
+    // directly called without landing function
     @Builtin(name = "PyNumber_BinOp", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyNumberBinOp extends PythonTernaryBuiltinNode {
@@ -4186,6 +4256,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     }
 
+    // directly called without landing function
     @Builtin(name = "PyNumber_InPlaceBinOp", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyNumberInPlaceBinOp extends PythonTernaryBuiltinNode {

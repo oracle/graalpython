@@ -460,18 +460,6 @@ def PyNumber_Check(v):
 
 
 @may_raise
-def PyNumber_UnaryOp(v, unaryop):
-    if unaryop == 0:
-        return +v
-    elif unaryop == 1:
-        return -v
-    elif unaryop == 2:
-        return ~v
-    else:
-        raise SystemError("unknown unary operator (code=%s)" % unaryop)
-
-
-@may_raise
 def PyNumber_Index(v):
     if not hasattr(v, "__index__"):
         raise TypeError("'%s' object cannot be interpreted as an integer" % type(v))
