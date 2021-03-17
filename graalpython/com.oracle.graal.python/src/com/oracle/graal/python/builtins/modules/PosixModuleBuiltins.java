@@ -2124,13 +2124,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return stringOrBytesToOpaquePathNode.execute(fspathNode.call(frame, obj));
         }
 
-        @Specialization(replaces = "noCheck", limit = "2")
-        Object withCheck(VirtualFrame frame, Object obj, boolean checkEmpty,
+        @Specialization(guards = "checkEmpty", limit = "2")
+        Object withCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Cached FspathNode fspathNode,
                         @CachedLibrary("obj") PythonObjectLibrary lib,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             Object stringOrBytes = fspathNode.call(frame, obj);
-            if (checkEmpty && lib.lengthWithFrame(obj, frame) == 0) {
+            if (lib.lengthWithFrame(obj, frame) == 0) {
                 throw raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
             }
             return stringOrBytesToOpaquePathNode.execute(stringOrBytes);
