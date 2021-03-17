@@ -159,6 +159,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyHasAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyInplaceArithmetic;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsCallTupleDict;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsCallable;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsNumber;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsTrue;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListAppend;
@@ -231,14 +233,10 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public final class GraalHPyContext extends CExtContext implements TruffleObject {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
-    enum HPyContextTypeMember {
-
-    }
-
     /**
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
-    enum HPyContextMembers {
+    enum HPyContextMember {
         CTX_VERSION("ctx_version"),
 
         // constants
@@ -385,6 +383,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_POWER("ctx_Power"),
         CTX_INPLACEPOWER("ctx_InPlacePower"),
 
+        CTX_CALLABLE_CHECK("ctx_Callable_Check"),
+        CTX_CALLTUPLEDICT("ctx_CallTupleDict"),
         CTX_ERR_NOMEMORY("ctx_Err_NoMemory"),
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
         CTX_ERR_SETOBJECT("ctx_Err_SetObject"),
@@ -434,6 +434,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_HASH("ctx_Hash"),
         CTX_NUMBER_CHECK("ctx_Number_Check"),
         CTX_LENGTH("ctx_Length"),
+        CTX_TUPLE_CHECK("ctx_Tuple_Check"),
         CTX_TUPLE_FROMARRAY("ctx_Tuple_FromArray"),
         CTX_TUPLE_BUILDER_NEW("ctx_TupleBuilder_New"),
         CTX_TUPLE_BUILDER_SET("ctx_TupleBuilder_Set"),
@@ -451,14 +452,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         private final String name;
 
-        HPyContextMembers(String name) {
+        HPyContextMember(String name) {
             this.name = name;
         }
 
-        @CompilationFinal(dimensions = 1) private static final HPyContextMembers[] VALUES = values();
+        @CompilationFinal(dimensions = 1) private static final HPyContextMember[] VALUES = values();
 
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        public static HPyContextMembers getByName(String name) {
+        public static HPyContextMember getByName(String name) {
             for (int i = 0; i < VALUES.length; i++) {
                 if (VALUES[i].name.equals(name)) {
                     return VALUES[i];
@@ -723,9 +724,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @ExplodeLoop
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        String[] names = new String[HPyContextMembers.VALUES.length];
+        String[] names = new String[HPyContextMember.VALUES.length];
         for (int i = 0; i < names.length; i++) {
-            names[i] = HPyContextMembers.VALUES[i].name;
+            names[i] = HPyContextMember.VALUES[i].name;
         }
         return new PythonAbstractObject.Keys(names);
     }
@@ -733,7 +734,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean isMemberReadable(String key) {
-        return HPyContextMembers.getByName(key) != null;
+        return HPyContextMember.getByName(key) != null;
     }
 
     @ExportMessage
@@ -754,7 +755,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @GenerateUncached
-    @ImportStatic(HPyContextMembers.class)
+    @ImportStatic(HPyContextMember.class)
     abstract static class GraalHPyReadMemberNode extends Node {
 
         public abstract Object execute(GraalHPyContext hpyContext, String key);
@@ -773,236 +774,246 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
 
         static int getIndex(String key) {
-            HPyContextMembers member = HPyContextMembers.getByName(key);
+            HPyContextMember member = HPyContextMember.getByName(key);
             return member != null ? member.ordinal() : -1;
         }
     }
 
     private static Object[] createMembers(PythonContext context) {
-        Object[] members = new Object[HPyContextMembers.VALUES.length];
+        Object[] members = new Object[HPyContextMember.VALUES.length];
         PythonCore core = context.getCore();
 
-        createConstant(members, HPyContextMembers.H_NONE, PNone.NONE);
-        createConstant(members, HPyContextMembers.H_TRUE, core.getTrue());
-        createConstant(members, HPyContextMembers.H_FALSE, core.getFalse());
+        createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
 
-        createTypeConstant(members, HPyContextMembers.H_BASEEXCEPTION, core, PBaseException);
-        createTypeConstant(members, HPyContextMembers.H_EXCEPTION, core, PythonBuiltinClassType.Exception);
-        createTypeConstant(members, HPyContextMembers.H_STOPASYNCITERATION, core, StopAsyncIteration);
-        createTypeConstant(members, HPyContextMembers.H_STOPITERATION, core, StopIteration);
-        createTypeConstant(members, HPyContextMembers.H_GENERATOREXIT, core, GeneratorExit);
-        createTypeConstant(members, HPyContextMembers.H_ARITHMETICERROR, core, ArithmeticError);
-        createTypeConstant(members, HPyContextMembers.H_LOOKUPERROR, core, LookupError);
-        createTypeConstant(members, HPyContextMembers.H_ASSERTIONERROR, core, PythonBuiltinClassType.AssertionError);
-        createTypeConstant(members, HPyContextMembers.H_ATTRIBUTEERROR, core, AttributeError);
-        createTypeConstant(members, HPyContextMembers.H_BUFFERERROR, core, BufferError);
-        createTypeConstant(members, HPyContextMembers.H_EOFERROR, core, EOFError);
-        createTypeConstant(members, HPyContextMembers.H_FLOATINGPOINTERROR, core, FloatingPointError);
-        createTypeConstant(members, HPyContextMembers.H_OSERROR, core, OSError);
-        createTypeConstant(members, HPyContextMembers.H_IMPORTERROR, core, ImportError);
-        createTypeConstant(members, HPyContextMembers.H_MODULENOTFOUNDERROR, core, ModuleNotFoundError);
-        createTypeConstant(members, HPyContextMembers.H_INDEXERROR, core, IndexError);
-        createTypeConstant(members, HPyContextMembers.H_KEYERROR, core, KeyError);
-        createTypeConstant(members, HPyContextMembers.H_KEYBOARDINTERRUPT, core, KeyboardInterrupt);
-        createTypeConstant(members, HPyContextMembers.H_MEMORYERROR, core, MemoryError);
-        createTypeConstant(members, HPyContextMembers.H_NAMEERROR, core, NameError);
-        createTypeConstant(members, HPyContextMembers.H_OVERFLOWERROR, core, OverflowError);
-        createTypeConstant(members, HPyContextMembers.H_RUNTIMEERROR, core, RuntimeError);
-        createTypeConstant(members, HPyContextMembers.H_RECURSIONERROR, core, RecursionError);
-        createTypeConstant(members, HPyContextMembers.H_NOTIMPLEMENTEDERROR, core, NotImplementedError);
-        createTypeConstant(members, HPyContextMembers.H_SYNTAXERROR, core, SyntaxError);
-        createTypeConstant(members, HPyContextMembers.H_INDENTATIONERROR, core, IndentationError);
-        createTypeConstant(members, HPyContextMembers.H_TABERROR, core, TabError);
-        createTypeConstant(members, HPyContextMembers.H_REFERENCEERROR, core, ReferenceError);
-        createTypeConstant(members, HPyContextMembers.H_SYSTEMERROR, core, SystemError);
-        createTypeConstant(members, HPyContextMembers.H_SYSTEMEXIT, core, SystemExit);
-        createTypeConstant(members, HPyContextMembers.H_TYPEERROR, core, TypeError);
-        createTypeConstant(members, HPyContextMembers.H_UNBOUNDLOCALERROR, core, UnboundLocalError);
-        createTypeConstant(members, HPyContextMembers.H_UNICODEERROR, core, UnicodeError);
-        createTypeConstant(members, HPyContextMembers.H_UNICODEENCODEERROR, core, UnicodeEncodeError);
-        createTypeConstant(members, HPyContextMembers.H_UNICODEDECODEERROR, core, UnicodeDecodeError);
-        createTypeConstant(members, HPyContextMembers.H_UNICODETRANSLATEERROR, core, UnicodeTranslateError);
-        createTypeConstant(members, HPyContextMembers.H_VALUEERROR, core, ValueError);
-        createTypeConstant(members, HPyContextMembers.H_ZERODIVISIONERROR, core, ZeroDivisionError);
-        createTypeConstant(members, HPyContextMembers.H_BLOCKINGIOERROR, core, BlockingIOError);
-        createTypeConstant(members, HPyContextMembers.H_BROKENPIPEERROR, core, BrokenPipeError);
-        createTypeConstant(members, HPyContextMembers.H_CHILDPROCESSERROR, core, ChildProcessError);
-        createTypeConstant(members, HPyContextMembers.H_CONNECTIONERROR, core, ConnectionError);
-        createTypeConstant(members, HPyContextMembers.H_CONNECTIONABORTEDERROR, core, ConnectionAbortedError);
-        createTypeConstant(members, HPyContextMembers.H_CONNECTIONREFUSEDERROR, core, ConnectionRefusedError);
-        createTypeConstant(members, HPyContextMembers.H_CONNECTIONRESETERROR, core, ConnectionResetError);
-        createTypeConstant(members, HPyContextMembers.H_FILEEXISTSERROR, core, FileExistsError);
-        createTypeConstant(members, HPyContextMembers.H_FILENOTFOUNDERROR, core, FileNotFoundError);
-        createTypeConstant(members, HPyContextMembers.H_INTERRUPTEDERROR, core, InterruptedError);
-        createTypeConstant(members, HPyContextMembers.H_ISADIRECTORYERROR, core, IsADirectoryError);
-        createTypeConstant(members, HPyContextMembers.H_NOTADIRECTORYERROR, core, NotADirectoryError);
-        createTypeConstant(members, HPyContextMembers.H_PERMISSIONERROR, core, PermissionError);
-        createTypeConstant(members, HPyContextMembers.H_PROCESSLOOKUPERROR, core, ProcessLookupError);
-        createTypeConstant(members, HPyContextMembers.H_TIMEOUTERROR, core, TimeoutError);
-        createTypeConstant(members, HPyContextMembers.H_WARNING, core, Warning);
-        createTypeConstant(members, HPyContextMembers.H_USERWARNING, core, UserWarning);
-        createTypeConstant(members, HPyContextMembers.H_DEPRECATIONWARNING, core, DeprecationWarning);
-        createTypeConstant(members, HPyContextMembers.H_PENDINGDEPRECATIONWARNING, core, PendingDeprecationWarning);
-        createTypeConstant(members, HPyContextMembers.H_SYNTAXWARNING, core, SyntaxWarning);
-        createTypeConstant(members, HPyContextMembers.H_RUNTIMEWARNING, core, RuntimeWarning);
-        createTypeConstant(members, HPyContextMembers.H_FUTUREWARNING, core, FutureWarning);
-        createTypeConstant(members, HPyContextMembers.H_IMPORTWARNING, core, ImportWarning);
-        createTypeConstant(members, HPyContextMembers.H_UNICODEWARNING, core, UnicodeWarning);
-        createTypeConstant(members, HPyContextMembers.H_BYTESWARNING, core, BytesWarning);
-        createTypeConstant(members, HPyContextMembers.H_RESOURCEWARNING, core, ResourceWarning);
+        createConstant(members, HPyContextMember.H_NONE, PNone.NONE);
+        createConstant(members, HPyContextMember.H_TRUE, core.getTrue());
+        createConstant(members, HPyContextMember.H_FALSE, core.getFalse());
 
-        createTypeConstant(members, HPyContextMembers.H_BASEOBJECTTYPE, core, PythonObject);
-        createTypeConstant(members, HPyContextMembers.H_TYPETYPE, core, PythonClass);
-        createTypeConstant(members, HPyContextMembers.H_LONGTYPE, core, PInt);
-        createTypeConstant(members, HPyContextMembers.H_UNICODETYPE, core, PString);
-        createTypeConstant(members, HPyContextMembers.H_TUPLETYPE, core, PTuple);
-        createTypeConstant(members, HPyContextMembers.H_LISTTYPE, core, PList);
+        createTypeConstant(members, HPyContextMember.H_BASEEXCEPTION, core, PBaseException);
+        createTypeConstant(members, HPyContextMember.H_EXCEPTION, core, PythonBuiltinClassType.Exception);
+        createTypeConstant(members, HPyContextMember.H_STOPASYNCITERATION, core, StopAsyncIteration);
+        createTypeConstant(members, HPyContextMember.H_STOPITERATION, core, StopIteration);
+        createTypeConstant(members, HPyContextMember.H_GENERATOREXIT, core, GeneratorExit);
+        createTypeConstant(members, HPyContextMember.H_ARITHMETICERROR, core, ArithmeticError);
+        createTypeConstant(members, HPyContextMember.H_LOOKUPERROR, core, LookupError);
+        createTypeConstant(members, HPyContextMember.H_ASSERTIONERROR, core, PythonBuiltinClassType.AssertionError);
+        createTypeConstant(members, HPyContextMember.H_ATTRIBUTEERROR, core, AttributeError);
+        createTypeConstant(members, HPyContextMember.H_BUFFERERROR, core, BufferError);
+        createTypeConstant(members, HPyContextMember.H_EOFERROR, core, EOFError);
+        createTypeConstant(members, HPyContextMember.H_FLOATINGPOINTERROR, core, FloatingPointError);
+        createTypeConstant(members, HPyContextMember.H_OSERROR, core, OSError);
+        createTypeConstant(members, HPyContextMember.H_IMPORTERROR, core, ImportError);
+        createTypeConstant(members, HPyContextMember.H_MODULENOTFOUNDERROR, core, ModuleNotFoundError);
+        createTypeConstant(members, HPyContextMember.H_INDEXERROR, core, IndexError);
+        createTypeConstant(members, HPyContextMember.H_KEYERROR, core, KeyError);
+        createTypeConstant(members, HPyContextMember.H_KEYBOARDINTERRUPT, core, KeyboardInterrupt);
+        createTypeConstant(members, HPyContextMember.H_MEMORYERROR, core, MemoryError);
+        createTypeConstant(members, HPyContextMember.H_NAMEERROR, core, NameError);
+        createTypeConstant(members, HPyContextMember.H_OVERFLOWERROR, core, OverflowError);
+        createTypeConstant(members, HPyContextMember.H_RUNTIMEERROR, core, RuntimeError);
+        createTypeConstant(members, HPyContextMember.H_RECURSIONERROR, core, RecursionError);
+        createTypeConstant(members, HPyContextMember.H_NOTIMPLEMENTEDERROR, core, NotImplementedError);
+        createTypeConstant(members, HPyContextMember.H_SYNTAXERROR, core, SyntaxError);
+        createTypeConstant(members, HPyContextMember.H_INDENTATIONERROR, core, IndentationError);
+        createTypeConstant(members, HPyContextMember.H_TABERROR, core, TabError);
+        createTypeConstant(members, HPyContextMember.H_REFERENCEERROR, core, ReferenceError);
+        createTypeConstant(members, HPyContextMember.H_SYSTEMERROR, core, SystemError);
+        createTypeConstant(members, HPyContextMember.H_SYSTEMEXIT, core, SystemExit);
+        createTypeConstant(members, HPyContextMember.H_TYPEERROR, core, TypeError);
+        createTypeConstant(members, HPyContextMember.H_UNBOUNDLOCALERROR, core, UnboundLocalError);
+        createTypeConstant(members, HPyContextMember.H_UNICODEERROR, core, UnicodeError);
+        createTypeConstant(members, HPyContextMember.H_UNICODEENCODEERROR, core, UnicodeEncodeError);
+        createTypeConstant(members, HPyContextMember.H_UNICODEDECODEERROR, core, UnicodeDecodeError);
+        createTypeConstant(members, HPyContextMember.H_UNICODETRANSLATEERROR, core, UnicodeTranslateError);
+        createTypeConstant(members, HPyContextMember.H_VALUEERROR, core, ValueError);
+        createTypeConstant(members, HPyContextMember.H_ZERODIVISIONERROR, core, ZeroDivisionError);
+        createTypeConstant(members, HPyContextMember.H_BLOCKINGIOERROR, core, BlockingIOError);
+        createTypeConstant(members, HPyContextMember.H_BROKENPIPEERROR, core, BrokenPipeError);
+        createTypeConstant(members, HPyContextMember.H_CHILDPROCESSERROR, core, ChildProcessError);
+        createTypeConstant(members, HPyContextMember.H_CONNECTIONERROR, core, ConnectionError);
+        createTypeConstant(members, HPyContextMember.H_CONNECTIONABORTEDERROR, core, ConnectionAbortedError);
+        createTypeConstant(members, HPyContextMember.H_CONNECTIONREFUSEDERROR, core, ConnectionRefusedError);
+        createTypeConstant(members, HPyContextMember.H_CONNECTIONRESETERROR, core, ConnectionResetError);
+        createTypeConstant(members, HPyContextMember.H_FILEEXISTSERROR, core, FileExistsError);
+        createTypeConstant(members, HPyContextMember.H_FILENOTFOUNDERROR, core, FileNotFoundError);
+        createTypeConstant(members, HPyContextMember.H_INTERRUPTEDERROR, core, InterruptedError);
+        createTypeConstant(members, HPyContextMember.H_ISADIRECTORYERROR, core, IsADirectoryError);
+        createTypeConstant(members, HPyContextMember.H_NOTADIRECTORYERROR, core, NotADirectoryError);
+        createTypeConstant(members, HPyContextMember.H_PERMISSIONERROR, core, PermissionError);
+        createTypeConstant(members, HPyContextMember.H_PROCESSLOOKUPERROR, core, ProcessLookupError);
+        createTypeConstant(members, HPyContextMember.H_TIMEOUTERROR, core, TimeoutError);
+        createTypeConstant(members, HPyContextMember.H_WARNING, core, Warning);
+        createTypeConstant(members, HPyContextMember.H_USERWARNING, core, UserWarning);
+        createTypeConstant(members, HPyContextMember.H_DEPRECATIONWARNING, core, DeprecationWarning);
+        createTypeConstant(members, HPyContextMember.H_PENDINGDEPRECATIONWARNING, core, PendingDeprecationWarning);
+        createTypeConstant(members, HPyContextMember.H_SYNTAXWARNING, core, SyntaxWarning);
+        createTypeConstant(members, HPyContextMember.H_RUNTIMEWARNING, core, RuntimeWarning);
+        createTypeConstant(members, HPyContextMember.H_FUTUREWARNING, core, FutureWarning);
+        createTypeConstant(members, HPyContextMember.H_IMPORTWARNING, core, ImportWarning);
+        createTypeConstant(members, HPyContextMember.H_UNICODEWARNING, core, UnicodeWarning);
+        createTypeConstant(members, HPyContextMember.H_BYTESWARNING, core, BytesWarning);
+        createTypeConstant(members, HPyContextMember.H_RESOURCEWARNING, core, ResourceWarning);
 
-        members[HPyContextMembers.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
-        members[HPyContextMembers.CTX_DUP.ordinal()] = new GraalHPyDup();
-        members[HPyContextMembers.CTX_CLOSE.ordinal()] = new GraalHPyClose();
-        members[HPyContextMembers.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
+        createTypeConstant(members, HPyContextMember.H_BASEOBJECTTYPE, core, PythonObject);
+        createTypeConstant(members, HPyContextMember.H_TYPETYPE, core, PythonClass);
+        createTypeConstant(members, HPyContextMember.H_LONGTYPE, core, PInt);
+        createTypeConstant(members, HPyContextMember.H_UNICODETYPE, core, PString);
+        createTypeConstant(members, HPyContextMember.H_TUPLETYPE, core, PTuple);
+        createTypeConstant(members, HPyContextMember.H_LISTTYPE, core, PList);
+
+        members[HPyContextMember.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
+        members[HPyContextMember.CTX_DUP.ordinal()] = new GraalHPyDup();
+        members[HPyContextMember.CTX_CLOSE.ordinal()] = new GraalHPyClose();
+        members[HPyContextMember.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
         GraalHPyLongFromLong fromSignedLong = new GraalHPyLongFromLong();
         GraalHPyLongFromLong fromUnsignedLong = new GraalHPyLongFromLong(false);
-        members[HPyContextMembers.CTX_LONG_FROMLONG.ordinal()] = fromSignedLong;
-        members[HPyContextMembers.CTX_LONG_FROMUNSIGNEDLONG.ordinal()] = fromUnsignedLong;
-        members[HPyContextMembers.CTX_LONG_FROMLONGLONG.ordinal()] = fromSignedLong;
-        members[HPyContextMembers.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = fromUnsignedLong;
-        members[HPyContextMembers.CTX_LONG_FROMSSIZE_T.ordinal()] = fromSignedLong;
-        members[HPyContextMembers.CTX_LONG_FROMSIZE_T.ordinal()] = fromUnsignedLong;
+        members[HPyContextMember.CTX_LONG_FROMLONG.ordinal()] = fromSignedLong;
+        members[HPyContextMember.CTX_LONG_FROMUNSIGNEDLONG.ordinal()] = fromUnsignedLong;
+        members[HPyContextMember.CTX_LONG_FROMLONGLONG.ordinal()] = fromSignedLong;
+        members[HPyContextMember.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = fromUnsignedLong;
+        members[HPyContextMember.CTX_LONG_FROMSSIZE_T.ordinal()] = fromSignedLong;
+        members[HPyContextMember.CTX_LONG_FROMSIZE_T.ordinal()] = fromUnsignedLong;
         GraalHPyLongAsPrimitive asSignedLong = new GraalHPyLongAsPrimitive(1, Long.BYTES, true);
-        GraalHPyLongAsPrimitive asUnsignedLong = new GraalHPyLongAsPrimitive(0, Long.BYTES, true);
+        GraalHPyLongAsPrimitive asUnsignedLong = new GraalHPyLongAsPrimitive(0, Long.BYTES, true, true);
         GraalHPyLongAsPrimitive asUnsignedLongMask = new GraalHPyLongAsPrimitive(0, Long.BYTES, false);
-        members[HPyContextMembers.CTX_LONG_ASLONG.ordinal()] = asSignedLong;
-        members[HPyContextMembers.CTX_LONG_ASLONGLONG.ordinal()] = asSignedLong;
-        members[HPyContextMembers.CTX_LONG_ASUNSIGNEDLONG.ordinal()] = asUnsignedLong;
-        members[HPyContextMembers.CTX_LONG_ASUNSIGNEDLONGLONG.ordinal()] = asUnsignedLong;
-        members[HPyContextMembers.CTX_LONG_ASUNSIGNEDLONGMASK.ordinal()] = asUnsignedLongMask;
-        members[HPyContextMembers.CTX_LONG_ASUNSIGNEDLONGLONGMASK.ordinal()] = asUnsignedLongMask;
-        members[HPyContextMembers.CTX_LONG_ASSIZE_T.ordinal()] = asUnsignedLong;
-        members[HPyContextMembers.CTX_LONG_ASSSIZE_T.ordinal()] = asSignedLong;
-        members[HPyContextMembers.CTX_NEW.ordinal()] = new GraalHPyNew();
-        members[HPyContextMembers.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
-        members[HPyContextMembers.CTX_CAST.ordinal()] = new GraalHPyCast();
+        members[HPyContextMember.CTX_LONG_ASLONG.ordinal()] = asSignedLong;
+        members[HPyContextMember.CTX_LONG_ASLONGLONG.ordinal()] = asSignedLong;
+        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONG.ordinal()] = asUnsignedLong;
+        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONG.ordinal()] = asUnsignedLong;
+        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK.ordinal()] = asUnsignedLongMask;
+        members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK.ordinal()] = asUnsignedLongMask;
+        members[HPyContextMember.CTX_LONG_ASSIZE_T.ordinal()] = asUnsignedLong;
+        members[HPyContextMember.CTX_LONG_ASSSIZE_T.ordinal()] = new GraalHPyLongAsPrimitive(1, Long.BYTES, true, true);
+        members[HPyContextMember.CTX_NEW.ordinal()] = new GraalHPyNew();
+        members[HPyContextMember.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
+        members[HPyContextMember.CTX_CAST.ordinal()] = new GraalHPyCast();
 
         // unary
-        members[HPyContextMembers.CTX_NEGATIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Neg);
-        members[HPyContextMembers.CTX_POSITIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Pos);
-        members[HPyContextMembers.CTX_ABSOLUTE.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ABS, 1);
-        members[HPyContextMembers.CTX_INVERT.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Invert);
-        members[HPyContextMembers.CTX_INDEX.ordinal()] = new GraalHPyAsIndex();
-        members[HPyContextMembers.CTX_LONG.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.INT, 1);
-        members[HPyContextMembers.CTX_FLOAT.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.FLOAT, 1);
+        members[HPyContextMember.CTX_NEGATIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Neg);
+        members[HPyContextMember.CTX_POSITIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Pos);
+        members[HPyContextMember.CTX_ABSOLUTE.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ABS, 1);
+        members[HPyContextMember.CTX_INVERT.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Invert);
+        members[HPyContextMember.CTX_INDEX.ordinal()] = new GraalHPyAsIndex();
+        members[HPyContextMember.CTX_LONG.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.INT, 1);
+        members[HPyContextMember.CTX_FLOAT.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.FLOAT, 1);
 
         // binary
-        members[HPyContextMembers.CTX_ADD.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Add);
-        members[HPyContextMembers.CTX_SUB.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Sub);
-        members[HPyContextMembers.CTX_MULTIPLY.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Mul);
-        members[HPyContextMembers.CTX_MATRIXMULTIPLY.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.MatMul);
-        members[HPyContextMembers.CTX_FLOORDIVIDE.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.FloorDiv);
-        members[HPyContextMembers.CTX_TRUEDIVIDE.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.TrueDiv);
-        members[HPyContextMembers.CTX_REMAINDER.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Mod);
-        members[HPyContextMembers.CTX_DIVMOD.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.DivMod);
-        members[HPyContextMembers.CTX_LSHIFT.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.LShift);
-        members[HPyContextMembers.CTX_RSHIFT.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.RShift);
-        members[HPyContextMembers.CTX_AND.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.And);
-        members[HPyContextMembers.CTX_XOR.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Xor);
-        members[HPyContextMembers.CTX_OR.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Or);
-        members[HPyContextMembers.CTX_INPLACEADD.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IAdd);
-        members[HPyContextMembers.CTX_INPLACESUBTRACT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ISub);
-        members[HPyContextMembers.CTX_INPLACEMULTIPLY.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMul);
-        members[HPyContextMembers.CTX_INPLACEMATRIXMULTIPLY.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMatMul);
-        members[HPyContextMembers.CTX_INPLACEFLOORDIVIDE.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IFloorDiv);
-        members[HPyContextMembers.CTX_INPLACETRUEDIVIDE.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ITrueDiv);
-        members[HPyContextMembers.CTX_INPLACEREMAINDER.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMod);
-        members[HPyContextMembers.CTX_INPLACELSHIFT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ILShift);
-        members[HPyContextMembers.CTX_INPLACERSHIFT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IRShift);
-        members[HPyContextMembers.CTX_INPLACEAND.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IAnd);
-        members[HPyContextMembers.CTX_INPLACEXOR.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IXor);
-        members[HPyContextMembers.CTX_INPLACEOR.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IOr);
+        members[HPyContextMember.CTX_ADD.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Add);
+        members[HPyContextMember.CTX_SUB.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Sub);
+        members[HPyContextMember.CTX_MULTIPLY.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Mul);
+        members[HPyContextMember.CTX_MATRIXMULTIPLY.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.MatMul);
+        members[HPyContextMember.CTX_FLOORDIVIDE.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.FloorDiv);
+        members[HPyContextMember.CTX_TRUEDIVIDE.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.TrueDiv);
+        members[HPyContextMember.CTX_REMAINDER.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Mod);
+        members[HPyContextMember.CTX_DIVMOD.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.DivMod);
+        members[HPyContextMember.CTX_LSHIFT.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.LShift);
+        members[HPyContextMember.CTX_RSHIFT.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.RShift);
+        members[HPyContextMember.CTX_AND.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.And);
+        members[HPyContextMember.CTX_XOR.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Xor);
+        members[HPyContextMember.CTX_OR.ordinal()] = new GraalHPyBinaryArithmetic(BinaryArithmetic.Or);
+        members[HPyContextMember.CTX_INPLACEADD.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IAdd);
+        members[HPyContextMember.CTX_INPLACESUBTRACT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ISub);
+        members[HPyContextMember.CTX_INPLACEMULTIPLY.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMul);
+        members[HPyContextMember.CTX_INPLACEMATRIXMULTIPLY.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMatMul);
+        members[HPyContextMember.CTX_INPLACEFLOORDIVIDE.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IFloorDiv);
+        members[HPyContextMember.CTX_INPLACETRUEDIVIDE.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ITrueDiv);
+        members[HPyContextMember.CTX_INPLACEREMAINDER.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IMod);
+        members[HPyContextMember.CTX_INPLACELSHIFT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.ILShift);
+        members[HPyContextMember.CTX_INPLACERSHIFT.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IRShift);
+        members[HPyContextMember.CTX_INPLACEAND.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IAnd);
+        members[HPyContextMember.CTX_INPLACEXOR.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IXor);
+        members[HPyContextMember.CTX_INPLACEOR.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IOr);
 
         // ternary
-        members[HPyContextMembers.CTX_POWER.ordinal()] = new GraalHPyTernaryArithmetic(TernaryArithmetic.Pow);
-        members[HPyContextMembers.CTX_INPLACEPOWER.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IPow);
+        members[HPyContextMember.CTX_POWER.ordinal()] = new GraalHPyTernaryArithmetic(TernaryArithmetic.Pow);
+        members[HPyContextMember.CTX_INPLACEPOWER.ordinal()] = new GraalHPyInplaceArithmetic(InplaceArithmetic.IPow);
 
-        members[HPyContextMembers.CTX_DICT_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PDict);
-        members[HPyContextMembers.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
-        members[HPyContextMembers.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
-        members[HPyContextMembers.CTX_DICT_GETITEM.ordinal()] = new GraalHPyDictGetItem();
-        members[HPyContextMembers.CTX_LIST_NEW.ordinal()] = new GraalHPyListNew();
-        members[HPyContextMembers.CTX_LIST_APPEND.ordinal()] = new GraalHPyListAppend();
-        members[HPyContextMembers.CTX_FLOAT_FROMDOUBLE.ordinal()] = new GraalHPyFloatFromDouble();
-        members[HPyContextMembers.CTX_FLOAT_ASDOUBLE.ordinal()] = new GraalHPyFloatAsDouble();
-        members[HPyContextMembers.CTX_BYTES_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PBytes);
-        members[HPyContextMembers.CTX_BYTES_GET_SIZE.ordinal()] = new GraalHPyBytesGetSize();
-        members[HPyContextMembers.CTX_BYTES_SIZE.ordinal()] = new GraalHPyBytesGetSize();
-        members[HPyContextMembers.CTX_BYTES_AS_STRING.ordinal()] = new GraalHPyBytesAsString();
-        members[HPyContextMembers.CTX_BYTES_ASSTRING.ordinal()] = new GraalHPyBytesAsString();
-        members[HPyContextMembers.CTX_BYTES_FROMSTRING.ordinal()] = new GraalHPyBytesFromStringAndSize(false);
-        members[HPyContextMembers.CTX_BYTES_FROMSTRINGANDSIZE.ordinal()] = new GraalHPyBytesFromStringAndSize(true);
+        members[HPyContextMember.CTX_CALLABLE_CHECK.ordinal()] = new GraalHPyIsCallable();
+        members[HPyContextMember.CTX_CALLTUPLEDICT.ordinal()] = new GraalHPyIsCallTupleDict();
 
-        members[HPyContextMembers.CTX_ERR_NOMEMORY.ordinal()] = new GraalHPyErrRaisePredefined(MemoryError);
-        members[HPyContextMembers.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString(true);
-        members[HPyContextMembers.CTX_ERR_SETOBJECT.ordinal()] = new GraalHPyErrSetString(false);
-        members[HPyContextMembers.CTX_ERR_OCCURRED.ordinal()] = new GraalHPyErrOccurred();
-        members[HPyContextMembers.CTX_ERR_CLEAR.ordinal()] = new GraalHPyErrClear();
-        members[HPyContextMembers.CTX_FATALERROR.ordinal()] = new GraalHPyFatalError();
-        members[HPyContextMembers.CTX_FROMPYOBJECT.ordinal()] = new GraalHPyFromPyObject();
-        members[HPyContextMembers.CTX_UNICODE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PString);
-        members[HPyContextMembers.CTX_ISTRUE.ordinal()] = new GraalHPyIsTrue();
-        members[HPyContextMembers.CTX_UNICODE_ASUTF8STRING.ordinal()] = new GraalHPyUnicodeAsUTF8String();
-        members[HPyContextMembers.CTX_UNICODE_FROMSTRING.ordinal()] = new GraalHPyUnicodeFromString();
-        members[HPyContextMembers.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
-        members[HPyContextMembers.CTX_TYPE_FROM_SPEC.ordinal()] = new GraalHPyTypeFromSpec();
-        members[HPyContextMembers.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(OBJECT);
-        members[HPyContextMembers.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(CHAR_PTR);
-        members[HPyContextMembers.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(OBJECT);
-        members[HPyContextMembers.CTX_HASATTR_S.ordinal()] = new GraalHPyHasAttr(CHAR_PTR);
-        members[HPyContextMembers.CTX_SETATTR.ordinal()] = new GraalHPySetAttr(OBJECT);
-        members[HPyContextMembers.CTX_SETATTR_S.ordinal()] = new GraalHPySetAttr(CHAR_PTR);
-        members[HPyContextMembers.CTX_GETITEM.ordinal()] = new GraalHPyGetItem(OBJECT);
-        members[HPyContextMembers.CTX_GETITEM_S.ordinal()] = new GraalHPyGetItem(CHAR_PTR);
-        members[HPyContextMembers.CTX_GETITEM_I.ordinal()] = new GraalHPyGetItem(INT32);
-        members[HPyContextMembers.CTX_SETITEM.ordinal()] = new GraalHPySetItem(OBJECT);
-        members[HPyContextMembers.CTX_SETITEM_S.ordinal()] = new GraalHPySetItem(CHAR_PTR);
-        members[HPyContextMembers.CTX_SETITEM_I.ordinal()] = new GraalHPySetItem(INT32);
-        members[HPyContextMembers.CTX_REPR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.REPR, 1);
-        members[HPyContextMembers.CTX_STR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.STR, 1);
-        members[HPyContextMembers.CTX_ASCII.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ASCII, 1);
-        members[HPyContextMembers.CTX_BYTES.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.BYTES, 1);
-        members[HPyContextMembers.CTX_RICHCOMPARE.ordinal()] = new GraalHPyRichcompare(false);
-        members[HPyContextMembers.CTX_RICHCOMPAREBOOL.ordinal()] = new GraalHPyRichcompare(true);
-        members[HPyContextMembers.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.HASH, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
-        members[HPyContextMembers.CTX_NUMBER_CHECK.ordinal()] = new GraalHPyIsNumber();
-        members[HPyContextMembers.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.LEN, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
-        members[HPyContextMembers.CTX_TUPLE_FROMARRAY.ordinal()] = new GraalHPyTupleFromArray();
+        members[HPyContextMember.CTX_DICT_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PDict);
+        members[HPyContextMember.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
+        members[HPyContextMember.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
+        members[HPyContextMember.CTX_DICT_GETITEM.ordinal()] = new GraalHPyDictGetItem();
+        members[HPyContextMember.CTX_LIST_NEW.ordinal()] = new GraalHPyListNew();
+        members[HPyContextMember.CTX_LIST_APPEND.ordinal()] = new GraalHPyListAppend();
+        members[HPyContextMember.CTX_FLOAT_FROMDOUBLE.ordinal()] = new GraalHPyFloatFromDouble();
+        members[HPyContextMember.CTX_FLOAT_ASDOUBLE.ordinal()] = new GraalHPyFloatAsDouble();
+        members[HPyContextMember.CTX_BYTES_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PBytes);
+        members[HPyContextMember.CTX_BYTES_GET_SIZE.ordinal()] = new GraalHPyBytesGetSize();
+        members[HPyContextMember.CTX_BYTES_SIZE.ordinal()] = new GraalHPyBytesGetSize();
+        members[HPyContextMember.CTX_BYTES_AS_STRING.ordinal()] = new GraalHPyBytesAsString();
+        members[HPyContextMember.CTX_BYTES_ASSTRING.ordinal()] = new GraalHPyBytesAsString();
+        members[HPyContextMember.CTX_BYTES_FROMSTRING.ordinal()] = new GraalHPyBytesFromStringAndSize(false);
+        members[HPyContextMember.CTX_BYTES_FROMSTRINGANDSIZE.ordinal()] = new GraalHPyBytesFromStringAndSize(true);
+
+        members[HPyContextMember.CTX_ERR_NOMEMORY.ordinal()] = new GraalHPyErrRaisePredefined(MemoryError);
+        members[HPyContextMember.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString(true);
+        members[HPyContextMember.CTX_ERR_SETOBJECT.ordinal()] = new GraalHPyErrSetString(false);
+        members[HPyContextMember.CTX_ERR_OCCURRED.ordinal()] = new GraalHPyErrOccurred();
+        members[HPyContextMember.CTX_ERR_CLEAR.ordinal()] = new GraalHPyErrClear();
+        members[HPyContextMember.CTX_FATALERROR.ordinal()] = new GraalHPyFatalError();
+        members[HPyContextMember.CTX_FROMPYOBJECT.ordinal()] = new GraalHPyFromPyObject();
+        members[HPyContextMember.CTX_UNICODE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PString);
+        members[HPyContextMember.CTX_ISTRUE.ordinal()] = new GraalHPyIsTrue();
+        members[HPyContextMember.CTX_UNICODE_ASUTF8STRING.ordinal()] = new GraalHPyUnicodeAsUTF8String();
+        members[HPyContextMember.CTX_UNICODE_FROMSTRING.ordinal()] = new GraalHPyUnicodeFromString();
+        members[HPyContextMember.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
+        members[HPyContextMember.CTX_TYPE_FROM_SPEC.ordinal()] = new GraalHPyTypeFromSpec();
+        members[HPyContextMember.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(OBJECT);
+        members[HPyContextMember.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(CHAR_PTR);
+        members[HPyContextMember.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(OBJECT);
+        members[HPyContextMember.CTX_HASATTR_S.ordinal()] = new GraalHPyHasAttr(CHAR_PTR);
+        members[HPyContextMember.CTX_SETATTR.ordinal()] = new GraalHPySetAttr(OBJECT);
+        members[HPyContextMember.CTX_SETATTR_S.ordinal()] = new GraalHPySetAttr(CHAR_PTR);
+        members[HPyContextMember.CTX_GETITEM.ordinal()] = new GraalHPyGetItem(OBJECT);
+        members[HPyContextMember.CTX_GETITEM_S.ordinal()] = new GraalHPyGetItem(CHAR_PTR);
+        members[HPyContextMember.CTX_GETITEM_I.ordinal()] = new GraalHPyGetItem(INT32);
+        members[HPyContextMember.CTX_SETITEM.ordinal()] = new GraalHPySetItem(OBJECT);
+        members[HPyContextMember.CTX_SETITEM_S.ordinal()] = new GraalHPySetItem(CHAR_PTR);
+        members[HPyContextMember.CTX_SETITEM_I.ordinal()] = new GraalHPySetItem(INT32);
+        members[HPyContextMember.CTX_REPR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.REPR, 1);
+        members[HPyContextMember.CTX_STR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.STR, 1);
+        members[HPyContextMember.CTX_ASCII.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ASCII, 1);
+        members[HPyContextMember.CTX_BYTES.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.BYTES, 1);
+        members[HPyContextMember.CTX_RICHCOMPARE.ordinal()] = new GraalHPyRichcompare(false);
+        members[HPyContextMember.CTX_RICHCOMPAREBOOL.ordinal()] = new GraalHPyRichcompare(true);
+        members[HPyContextMember.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.HASH, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
+        members[HPyContextMember.CTX_NUMBER_CHECK.ordinal()] = new GraalHPyIsNumber();
+        members[HPyContextMember.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.LEN, 1, ReturnType.INT, GraalHPyConversionNodeSupplier.TO_INT64);
+        members[HPyContextMember.CTX_TUPLE_FROMARRAY.ordinal()] = new GraalHPyTupleFromArray();
+        members[HPyContextMember.CTX_TUPLE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PTuple);
 
         GraalHPyBuilderNew graalHPyBuilderNew = new GraalHPyBuilderNew();
         GraalHPyBuilderSet graalHPyBuilderSet = new GraalHPyBuilderSet();
         GraalHPyBuilderCancel graalHPyBuilderCancel = new GraalHPyBuilderCancel();
-        members[HPyContextMembers.CTX_TUPLE_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
-        members[HPyContextMembers.CTX_TUPLE_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
-        members[HPyContextMembers.CTX_TUPLE_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PTuple);
-        members[HPyContextMembers.CTX_TUPLE_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
+        members[HPyContextMember.CTX_TUPLE_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
+        members[HPyContextMember.CTX_TUPLE_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
+        members[HPyContextMember.CTX_TUPLE_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PTuple);
+        members[HPyContextMember.CTX_TUPLE_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
 
-        members[HPyContextMembers.CTX_LIST_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PList);
-        members[HPyContextMembers.CTX_LIST_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
-        members[HPyContextMembers.CTX_LIST_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
-        members[HPyContextMembers.CTX_LIST_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PList);
-        members[HPyContextMembers.CTX_LIST_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
+        members[HPyContextMember.CTX_LIST_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PList);
+        members[HPyContextMember.CTX_LIST_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
+        members[HPyContextMember.CTX_LIST_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
+        members[HPyContextMember.CTX_LIST_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PList);
+        members[HPyContextMember.CTX_LIST_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
 
-        members[HPyContextMembers.CTX_TRACKER_NEW.ordinal()] = new GraalHPyTrackerNew();
-        members[HPyContextMembers.CTX_TRACKER_ADD.ordinal()] = new GraalHPyTrackerAdd();
-        members[HPyContextMembers.CTX_TRACKER_FORGET_ALL.ordinal()] = new GraalHPyTrackerCleanup(true);
-        members[HPyContextMembers.CTX_TRACKER_CLOSE.ordinal()] = new GraalHPyTrackerCleanup(false);
+        members[HPyContextMember.CTX_TRACKER_NEW.ordinal()] = new GraalHPyTrackerNew();
+        members[HPyContextMember.CTX_TRACKER_ADD.ordinal()] = new GraalHPyTrackerAdd();
+        members[HPyContextMember.CTX_TRACKER_FORGET_ALL.ordinal()] = new GraalHPyTrackerCleanup(true);
+        members[HPyContextMember.CTX_TRACKER_CLOSE.ordinal()] = new GraalHPyTrackerCleanup(false);
         return members;
     }
 
-    private static void createConstant(Object[] members, HPyContextMembers member, Object value) {
+    private static void createIntConstant(Object[] members, HPyContextMember member, int value) {
+        members[member.ordinal()] = value;
+    }
+
+    private static void createConstant(Object[] members, HPyContextMember member, Object value) {
         members[member.ordinal()] = new GraalHPyHandle(value);
     }
 
-    private static void createTypeConstant(Object[] members, HPyContextMembers member, PythonCore core, PythonBuiltinClassType value) {
+    private static void createTypeConstant(Object[] members, HPyContextMember member, PythonCore core, PythonBuiltinClassType value) {
         members[member.ordinal()] = new GraalHPyHandle(core.lookupType(value));
     }
 
