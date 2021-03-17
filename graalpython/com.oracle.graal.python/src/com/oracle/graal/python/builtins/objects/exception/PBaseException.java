@@ -228,7 +228,18 @@ public final class PBaseException extends PythonObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return getFormattedMessage(PythonObjectLibrary.getUncached());
+        // We *MUST NOT* call anything here that may need a context!
+        StringBuilder sb = new StringBuilder(GetLazyPythonClass.getInitialClass(this).toString());
+        if (messageArgs != null && messageArgs.length > 0) {
+            sb.append("(fmt=\"").append(messageFormat).append("\", args = (");
+            for (Object arg : messageArgs) {
+                sb.append(arg).append(", ");
+            }
+            sb.append(") )");
+        } else if (hasMessageFormat) {
+            sb.append("(fmt=\"").append(messageFormat).append('"');
+        }
+        return sb.toString();
     }
 
     public LazyTraceback internalReifyException(PFrame.Reference curFrameInfo) {
