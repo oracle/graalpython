@@ -62,7 +62,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
     }
 
     @Override
-    public void doWrite(VirtualFrame frame, Object value) {
+    public void writeObject(VirtualFrame frame, Object value) {
         executeWithValue(frame, value);
     }
 

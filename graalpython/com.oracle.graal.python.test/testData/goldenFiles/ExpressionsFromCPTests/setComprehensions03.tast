@@ -41,9 +41,8 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                       ReadGlobalOrBuiltinNodeGen SourceSection: [22,31]`condition`
                         Identifier: condition
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
+                      ReadGeneratorFrameVariableNodeGen SourceSection: [32,33]`x`
                         Frame: [0,x,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                   ExpressionStatementNode SourceSection: [1,5]`f(x)`
                     YieldNode SourceSection: [1,5]`f(x)`
                       flagSlot: 0
@@ -52,15 +51,13 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1,2]`f`
                           Identifier: f
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [3,4]`x`
                           Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,x,Illegal]
+                  Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -70,9 +67,8 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

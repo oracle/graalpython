@@ -53,7 +53,7 @@ def __dir__(klass):
         # we merge classes is unimportant
         for base in bases:
             names.update(_classdir(base))
-    return sorted(list(names))
+    return sorted(names)
 _classdir = __dir__
 
 
@@ -70,7 +70,7 @@ def __dir__(obj):
     klass = getattr(obj, '__class__', None)
     if klass is not None:
         names.update(_classdir(klass))
-    return sorted(list(names))
+    return sorted(names)
 _objectdir = __dir__
 
 

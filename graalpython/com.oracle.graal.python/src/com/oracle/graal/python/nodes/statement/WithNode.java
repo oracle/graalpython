@@ -83,7 +83,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
         if (targetNode == null) {
             return;
         } else {
-            targetNode.doWrite(frame, asNameValue);
+            targetNode.writeObject(frame, asNameValue);
             return;
         }
     }

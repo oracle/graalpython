@@ -76,8 +76,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                      Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -86,15 +85,13 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                         EmptyNode SourceSection: [53,71]`nonlocal __class__`
                                       WriteLocalCellNodeGen SourceSection: [88,102]`__class__ = YN`
                                         Identifier: __class__
-                                        ReadLocalVariableNode SourceSection: None
+                                        ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [1,__class__,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [100,102]`YN`
                                           Identifier: YN
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [115,175]`def fn2(self):↵     ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -124,8 +121,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                      Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -133,16 +129,13 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                       FrameReturnNode SourceSection: [146,162]`return __class__`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
+                                          Frame: [2,<return_val>,Illegal]
                                           ReadLocalCellNodeGen SourceSection: [153,162]`__class__`
-                                            ReadLocalVariableNode SourceSection: None
+                                            ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [1,__class__,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [175,258]`def fn3(slef):↵     ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -172,8 +165,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: slef
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,slef,Illegal]
+                                      Frame: [0,slef,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -183,23 +175,19 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                       FrameReturnNode SourceSection: [241,257]`return __class__`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
+                                          Frame: [2,<return_val>,Illegal]
                                           ReadLocalCellNodeGen SourceSection: [248,257]`__class__`
-                                            ReadLocalVariableNode SourceSection: None
+                                            ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [1,__class__,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                         StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: None
                           Frame: [0,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

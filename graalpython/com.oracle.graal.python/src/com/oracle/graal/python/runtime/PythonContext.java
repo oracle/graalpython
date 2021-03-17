@@ -206,6 +206,7 @@ public final class PythonContext {
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
     @CompilationFinal private NFIBz2Support nativeBz2lib;
+    @CompilationFinal private NFILZMASupport nativeLZMA;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -347,6 +348,10 @@ public final class PythonContext {
 
     public NFIBz2Support getNFIBz2Support() {
         return nativeBz2lib;
+    }
+
+    public NFILZMASupport getNFILZMASupport() {
+        return nativeLZMA;
     }
 
     public TruffleLanguage.Env getEnv() {
@@ -531,6 +536,7 @@ public final class PythonContext {
     private void setupRuntimeInformation(boolean isPatching) {
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
+        nativeLZMA = NFILZMASupport.createNative(this, "");
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 

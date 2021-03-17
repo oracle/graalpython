@@ -36,9 +36,8 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                     FunctionBodyNode SourceSection: [15,94]`def recursionInner(a...`
                       WriteLocalCellNodeGen SourceSection: [15,77]`def recursionInner(a...`
                         Identifier: recursionInner
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: None
                           Frame: [0,recursionInner,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                         FunctionDefinitionNode Name: recursionInner SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -63,8 +62,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                 Body: BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: arg
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [0,arg,Illegal]
+                                    Frame: [0,arg,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -72,36 +70,30 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                     FrameReturnNode SourceSection: [44,74]`return recursionInne...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
+                                        Frame: [2,<return_val>,Illegal]
                                         PythonCallUnary SourceSection: [51,74]`recursionInner(arg +...`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [51,65]`recursionInner`
-                                            ReadLocalVariableNode SourceSection: None
+                                            ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [1,recursionInner,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
                                           BinaryArithmeticExpression SourceSection: [66,73]`arg + 1`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __add__
-                                            ReadLocalVariableNode SourceSection: [66,69]`arg`
+                                            ReadLocalVariableNodeGen SourceSection: [66,69]`arg`
                                               Frame: [0,arg,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [72,73]`1`
                                               Value: 1
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [77,94]`recursionInner(0)`
                         PythonCallUnary SourceSection: [77,94]`recursionInner(0)`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [77,91]`recursionInner`
-                            ReadLocalVariableNode SourceSection: None
+                            ReadLocalVariableNodeGen SourceSection: None
                               Frame: [0,recursionInner,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [92,93]`0`
                             Value: 0
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

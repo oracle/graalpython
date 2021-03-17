@@ -37,9 +37,7 @@ ModuleRootNode Name: <module 'functionDoc01'> SourceSection: [0,65]`↵def test 
                       FrameReturnNode SourceSection: [53,65]`return "bla"`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
-                          WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,<return_val>,Illegal]
+                          Frame: [0,<return_val>,Illegal]
                           StringLiteralNode SourceSection: [60,65]`"bla"`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

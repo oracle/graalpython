@@ -75,7 +75,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * argument. Thus, storages must ensure to cache the hash value if a call could be observed.
  */
 @GenerateLibrary
-@SuppressWarnings("unused")
 public abstract class HashingStorageLibrary extends Library {
     /**
      * @return the length of {@code self}
@@ -299,7 +298,7 @@ public abstract class HashingStorageLibrary extends Library {
      * @return {@code true} if the storage has elements with a potential side effect, otherwise
      *         {@code false}.
      */
-    public boolean hasSideEffect(HashingStorage self) {
+    public boolean hasSideEffect(@SuppressWarnings("unused") HashingStorage self) {
         return false;
     }
 
@@ -473,7 +472,7 @@ public abstract class HashingStorageLibrary extends Library {
 
         @Override
         public HashingStorageIterator<T> iterator() {
-            return new HashingStorageIterator<T>(this.iterator);
+            return new HashingStorageIterator<>(this.iterator);
         }
     }
 

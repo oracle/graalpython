@@ -344,28 +344,32 @@ class WithTempFilesTests(unittest.TestCase):
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
 
-    def test_utime_basic(self):
-        stat_result = os.stat(TEST_FULL_PATH1)
+    def test_utimes(self):
         os.utime(TEST_FULL_PATH2, (-952468575.678901234, 1579569825.123456789))         # follows symlink
         self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
-        os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(stat_result.st_atime_ns, stat_result.st_mtime_ns))
-        self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime - stat_result.st_atime) < 10)
-        with open(TEST_FULL_PATH2, os.O_RDWR) as fd:
-            os.utime(fd, times=(12345, 67890))
-            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10000000000)
+
+    def test_utimes(self):
+        os.utime(TEST_FULL_PATH2)
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java',
                          'Due to bug in OpenJDK 8 on Linux we cannot set atime/mtime of symlinks')
-    def test_utime_basic_no_follow_symlinks(self):
-        stat_result = os.stat(TEST_FULL_PATH1)
+    def test_lutimes(self):
         os.utime(TEST_FULL_PATH2, (-952468575.678901234, 1579569825.123456789))         # follows symlink
         self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
         os.utime(TEST_FULL_PATH2, ns=(952468575678901234, 1579569825123456789), follow_symlinks=False)
         self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
         self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_mtime - 1579569825) < 10)
         self.assertTrue(os.stat(TEST_FULL_PATH2, follow_symlinks=False).st_atime > 900000000)
-        os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(stat_result.st_atime_ns, stat_result.st_mtime_ns))
-        self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime - stat_result.st_atime) < 10)
+
+    def test_utimensat(self):
+        if sys.platform == 'darwin':
+            with self.assertRaises(NotImplementedError):
+                os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(952468575678901234, 1579569825123456789))
+        else:
+            os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(952468575678901234, 1579569825123456789))
+            self.assertTrue(os.stat(TEST_FULL_PATH2).st_atime > 900000000)
+
+    def test_futimes_and_futimens(self):
         with open(TEST_FULL_PATH2, os.O_RDWR) as fd:
             os.utime(fd, times=(12345, 67890))
             self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10000000000)

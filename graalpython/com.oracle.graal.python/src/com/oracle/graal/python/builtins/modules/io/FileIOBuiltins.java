@@ -47,11 +47,11 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.mapPythonSeekWhenceToPosix;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.append;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.createStream;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.toByteArray;
 import static com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.BUFSIZ;
 import static com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_MODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_USE_CLOSEFD;
@@ -501,7 +501,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 // ignore
             }
 
-            ByteArrayOutputStream result = createStream();
+            ByteArrayOutputStream result = createOutputStream();
             byte[] buffer;
             int bytesRead = 0;
             while (true) {

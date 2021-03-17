@@ -89,8 +89,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                   Body: BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                      Frame: [0,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -98,11 +97,9 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                       FrameReturnNode SourceSection: [88,108]`return 'hello world'...`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
-                                          WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,<return_val>,Illegal]
+                                          Frame: [1,<return_val>,Illegal]
                                           StringLiteralNode SourceSection: [95,108]`'hello world'`
-                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

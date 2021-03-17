@@ -41,8 +41,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                     GeneratorBlockNode SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: [18,64]`caretspace = (c.issp...`
                         Identifier: caretspace
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [1,caretspace,Illegal]
+                        Frame: [1,caretspace,Illegal]
                         GeneratorExpressionNode SourceSection: [32,63]`c.isspace() for c in...`
                           Name: <genexpr>
                           FrameDescriptor: 2 slots [c, <return_val>]
@@ -72,14 +71,12 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                                       PythonCallNodeGen SourceSection: [32,43]`c.isspace()`
                                         CallNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [32,33]`c`
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: [32,33]`c`
                                             Frame: [0,c,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: c
-                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [0,c,Illegal]
+                                    Frame: [0,c,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -89,32 +86,27 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
-                                ReadGeneratorFrameVariableNode SourceSection: None
+                                ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [53,63]`caretspace`
-                            ReadGeneratorFrameVariableNode SourceSection: [53,63]`caretspace`
+                            ReadGeneratorFrameVariableNodeGen SourceSection: [53,63]`caretspace`
                               Frame: [1,caretspace,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [69,85]`yield caretspace`
                         YieldNode SourceSection: [69,85]`yield caretspace`
                           flagSlot: 0
-                          ReadGeneratorFrameVariableNode SourceSection: [75,85]`caretspace`
+                          ReadGeneratorFrameVariableNodeGen SourceSection: [75,85]`caretspace`
                             Frame: [1,caretspace,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                  ReadGeneratorFrameVariableNode SourceSection: None
+                  ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: self
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,self,Illegal]
+                    Frame: [0,self,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

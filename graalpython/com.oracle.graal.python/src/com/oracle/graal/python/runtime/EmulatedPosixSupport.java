@@ -1320,6 +1320,38 @@ public final class EmulatedPosixSupport extends PosixResources {
         setUTimeNode.execute(file, timespec, true);
     }
 
+    @ExportMessage
+    public void futimes(int fd, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String path = getFilePath(fd);
+        TruffleFile file = getTruffleFile(path);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), true);
+    }
+
+    @ExportMessage
+    public void lutimes(Object filename, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String filenameStr = pathToJavaStr(filename);
+        TruffleFile file = getTruffleFile(filenameStr);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), false);
+    }
+
+    @ExportMessage
+    public void utimes(Object filename, Timeval[] timeval,
+                    @Shared("setUTime") @Cached SetUTimeNode setUTimeNode) throws PosixException {
+        String filenameStr = pathToJavaStr(filename);
+        TruffleFile file = getTruffleFile(filenameStr);
+        setUTimeNode.execute(file, timevalToTimespec(timeval), true);
+    }
+
+    private static long[] timevalToTimespec(Timeval[] timeval) {
+        if (timeval == null) {
+            return null;
+        }
+        return new long[]{timeval[0].getSeconds(), timeval[0].getMicroseconds() * 1000,
+                        timeval[1].getSeconds(), timeval[1].getMicroseconds() * 1000};
+    }
+
     @GenerateUncached
     public abstract static class SetUTimeNode extends Node {
         abstract void execute(TruffleFile file, long[] timespec, boolean followSymlinks) throws PosixException;

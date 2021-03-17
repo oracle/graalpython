@@ -66,7 +66,7 @@ public final class ScopeInfo {
 
     private final String scopeId;
     private FrameDescriptor frameDescriptor;
-    private final ArrayList<String> identifierToIndex;
+    private final ArrayList<Object> identifierToIndex;
     private ScopeKind scopeKind;
     private final ScopeInfo parent;
 
@@ -218,12 +218,12 @@ public final class ScopeInfo {
         return parent;
     }
 
-    public FrameSlot findFrameSlot(String identifier) {
+    public FrameSlot findFrameSlot(Object identifier) {
         assert identifier != null : "identifier is null!";
         return this.getFrameDescriptor().findFrameSlot(identifier);
     }
 
-    public FrameSlot createSlotIfNotPresent(String identifier) {
+    public FrameSlot createSlotIfNotPresent(Object identifier) {
         assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
@@ -437,7 +437,7 @@ public final class ScopeInfo {
         sb.append("Kind: ").append(scopeKind).append("\n");
         Set<String> names = new HashSet<>();
         frameDescriptor.getIdentifiers().forEach((id) -> {
-            names.add((String) id);
+            names.add(id.toString());
         });
         indent(sb, indent + 1);
         sb.append("FrameDescriptor: ");
@@ -514,10 +514,7 @@ public final class ScopeInfo {
         List<String> names = new ArrayList<>();
         for (Object identifier : identifiers) {
             if (identifier instanceof String) {
-                String name = (String) identifier;
-                if (!name.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX) && !name.startsWith(FrameSlotIDs.RETURN_SLOT_ID)) {
-                    names.add((String) identifier);
-                }
+                names.add((String) identifier);
             }
         }
         out.writeInt(names.size());

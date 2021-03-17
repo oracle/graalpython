@@ -36,13 +36,11 @@ ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ 
                     FunctionBodyNode SourceSection: [16,34]`foo = await smth()`
                       WriteLocalVariableNodeGen SourceSection: [16,34]`foo = await smth()`
                         Identifier: foo
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,foo,Illegal]
+                        Frame: [0,foo,Illegal]
                         PythonCallNodeGen SourceSection: [22,34]`await smth()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`smth`
                             Identifier: smth
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

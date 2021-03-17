@@ -78,10 +78,14 @@ includes = '''
 type_defs = {
     'i': ('Int', '%d'),
     'x': ('Int', '0x%08X'),
+    'b': ('Boolean', None)
 }
 
 # Asterisks mark optional constants
 constant_defs = '''
+  b HAVE_FUTIMENS
+  b HAVE_UTIMENSAT
+
   i FD_SETSIZE
   i PATH_MAX
   i L_ctermid
@@ -275,6 +279,10 @@ def generate_platform():
         f.write(includes)
         f.write('\nint main() {\n')
         for c in constants:
+            if c.format is None:
+                val = 'true' if platform == 'Linux' else 'false'
+                f.write(f'    printf("        constants.put(\\"{c.name}\\", {val});\\n");\n')
+                continue
             if c.optional:
                 f.write(f'#ifdef {c.name}\n')
             f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.format});\\n", {c.name});\n')
@@ -282,7 +290,7 @@ def generate_platform():
                 f.write(f'#endif\n')
         f.write('    return 0;\n}\n')
 
-    flags = '-D_GNU_SOURCE' if sys.platform == 'linux' else ''
+    flags = '-D_GNU_SOURCE' if platform == 'Linux' else ''
     cc = os.environ.get('CC', 'cc')
     subprocess.run(f'{cc} -Wall -Werror {flags} -o {c_executable_file} {c_source_file}', shell=True, check=True)
 

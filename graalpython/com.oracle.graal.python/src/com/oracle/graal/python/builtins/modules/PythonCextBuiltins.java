@@ -3015,17 +3015,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_FatalError", minNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTruffle_FatalError", parameterNames = {"prefix", "msg", "status"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_FatalError extends PythonBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         Object doStrings(String prefix, String msg, int status) {
-            throw CExtCommonNodes.fatalError(this, getContext(), prefix, msg, status);
+            CExtCommonNodes.fatalError(this, PythonLanguage.getContext(), prefix, msg, status);
+            return PNone.NONE;
         }
 
         @Specialization
+        @TruffleBoundary
         Object doGeneric(Object prefixObj, Object msgObj, int status) {
             String prefix = prefixObj == PNone.NO_VALUE ? null : (String) prefixObj;
             String msg = msgObj == PNone.NO_VALUE ? null : (String) msgObj;

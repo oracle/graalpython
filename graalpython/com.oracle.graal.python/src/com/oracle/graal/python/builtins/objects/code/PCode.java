@@ -61,7 +61,6 @@ import com.oracle.graal.python.nodes.PRootNodeWithFileName;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
@@ -265,9 +264,7 @@ public final class PCode extends PythonBuiltinObject {
             if (identifier instanceof String) {
                 String varName = (String) identifier;
 
-                if (FrameSlotIDs.RETURN_SLOT_ID.equals(varName) || varName.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX)) {
-                    // pass
-                } else if (!varNameList.contains(varName)) {
+                if (!varNameList.contains(varName)) {
                     if (StringUtils.isIdentifier(varName)) {
                         if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
                             varNameList.add(varName);

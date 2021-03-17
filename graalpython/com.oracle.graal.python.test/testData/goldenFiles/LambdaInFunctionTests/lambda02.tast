@@ -59,8 +59,7 @@ ModuleRootNode Name: <module 'lambda02'> SourceSection: [0,23]`def fn():↵  lam
                                 Body: BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: x
-                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [0,x,Illegal]
+                                    Frame: [0,x,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -68,13 +67,10 @@ ModuleRootNode Name: <module 'lambda02'> SourceSection: [0,23]`def fn():↵  lam
                                     FunctionBodyNode SourceSection: [22,23]`0`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,<return_val>,Illegal]
+                                        Frame: [1,<return_val>,Illegal]
                                         IntegerLiteralNode SourceSection: [22,23]`0`
                                           Value: 0
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

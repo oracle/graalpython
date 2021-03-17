@@ -42,9 +42,9 @@
 
 UPCALL_ID(PyTruffle_FatalError);
 void _Py_NO_RETURN Py_FatalError(const char *msg) {
-	UPCALL_CEXT_VOID(_jls_PyTruffle_FatalError, Py_NoValue, polyglot_from_string(msg, SRC_CS), -1);
-	/* should never be reached; avoids compiler warning */
-	exit(1);
+	UPCALL_CEXT_VOID(_jls_PyTruffle_FatalError, polyglot_from_string(msg, SRC_CS), -1);
+	/* If the above upcall returns, then we just fall through to the 'abort' call. */
+	abort();
 }
 
 PyOS_sighandler_t PyOS_setsig(int sig, PyOS_sighandler_t handler) {

@@ -44,22 +44,19 @@ ModuleRootNode Name: <module 'lambda10'> SourceSection: [0,35]`lambda foo=bar, b
               BlockNode SourceSection: None
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: foo
-                  WriteLocalFrameSlotNodeGen SourceSection: None
-                    Frame: [0,foo,Illegal]
+                  Frame: [0,foo,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 0
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: blaz
-                  WriteLocalFrameSlotNodeGen SourceSection: None
-                    Frame: [1,blaz,Illegal]
+                  Frame: [1,blaz,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 1
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: z
-                  WriteLocalFrameSlotNodeGen SourceSection: None
-                    Frame: [2,z,Illegal]
+                  Frame: [2,z,Illegal]
                   ArgumentExpressionNode SourceSection: None
                     ReadVarKeywordsNodeGen SourceSection: None
                       PythonObjectFactoryNodeGen SourceSection: None
@@ -67,10 +64,8 @@ ModuleRootNode Name: <module 'lambda10'> SourceSection: [0,35]`lambda foo=bar, b
                 FunctionBodyNode SourceSection: [34,35]`0`
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: <return_val>
-                    WriteLocalFrameSlotNodeGen SourceSection: None
-                      Frame: [3,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Illegal]
                     IntegerLiteralNode SourceSection: [34,35]`0`
                       Value: 0
-            Return Expresssion: ReadLocalVariableNode SourceSection: None
+            Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
               Frame: [3,<return_val>,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None

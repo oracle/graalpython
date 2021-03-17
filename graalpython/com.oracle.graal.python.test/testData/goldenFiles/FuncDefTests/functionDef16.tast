@@ -41,8 +41,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                     FunctionBodyNode SourceSection: [14,125]`def inner (end):↵   ...`
                       WriteLocalVariableNodeGen SourceSection: [14,110]`def inner (end):↵   ...`
                         Identifier: inner
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,inner,Illegal]
+                        Frame: [0,inner,Illegal]
                         FunctionDefinitionNode Name: inner SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -67,17 +66,15 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                 Body: BlockNode SourceSection: None
                                   WriteLocalCellNodeGen SourceSection: None
                                     Identifier: end
-                                    ReadLocalVariableNode SourceSection: None
+                                    ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [0,end,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                   FunctionBodyNode SourceSection: [35,107]`def inner_inner():↵ ...`
                                     WriteLocalVariableNodeGen SourceSection: [35,94]`def inner_inner():↵ ...`
                                       Identifier: inner_inner
-                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [1,inner_inner,Illegal]
+                                      Frame: [1,inner_inner,Illegal]
                                       FunctionDefinitionNode Name: inner_inner SourceSection: None
                                         Arguments: None
                                         KwArguments: None
@@ -109,33 +106,27 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                                         ExecuteKeywordArgumentsNode SourceSection: None
                                                           KeywordLiteralNode SourceSection: None
                                                             ReadLocalCellNodeGen SourceSection: [85,88]`end`
-                                                              ReadLocalVariableNode SourceSection: None
+                                                              ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [0,end,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                               ReadFromCellNodeGen SourceSection: None
                                                         EmptyNode SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [60,65]`print`
                                                         Identifier: print
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                              Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [1,<return_val>,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [94,107]`inner_inner()`
                                       PythonCallNodeGen SourceSection: [94,107]`inner_inner()`
                                         CallNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: [94,105]`inner_inner`
+                                        ReadLocalVariableNodeGen SourceSection: [94,105]`inner_inner`
                                           Frame: [1,inner_inner,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [110,125]`inner(" baf\n")`
                         PythonCallUnary SourceSection: [110,125]`inner(" baf\n")`
                           CallUnaryMethodNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [110,115]`inner`
+                          ReadLocalVariableNodeGen SourceSection: [110,115]`inner`
                             Frame: [0,inner,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [116,124]`" baf\n"`
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

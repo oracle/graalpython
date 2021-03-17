@@ -38,14 +38,12 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
                     FormatStringLiteralNode SourceSection: [8,17]`f'{name}'`
                       Parts: 1
                       FormatStringExpressionNode SourceSection: [11,15]`name`
-                        ReadGeneratorFrameVariableNode SourceSection: [1,5]`name`
+                        ReadGeneratorFrameVariableNodeGen SourceSection: [1,5]`name`
                           Frame: [0,name,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: name
-                  WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,name,Illegal]
+                  Frame: [0,name,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -55,9 +53,8 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-              ReadGeneratorFrameVariableNode SourceSection: None
+              ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

@@ -41,8 +41,7 @@ ModuleRootNode Name: <module 'call18'> SourceSection: [0,35]`def fn(arg = [1,2])
                   Body: BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: arg
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,arg,Illegal]
+                      Frame: [0,arg,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -61,6 +60,5 @@ ModuleRootNode Name: <module 'call18'> SourceSection: [0,35]`def fn(arg = [1,2])
                           ReadGlobalOrBuiltinNodeGen SourceSection: [21,24]`foo`
                             Identifier: foo
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

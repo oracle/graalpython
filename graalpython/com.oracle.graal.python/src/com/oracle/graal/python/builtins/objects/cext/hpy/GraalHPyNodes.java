@@ -101,6 +101,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyCloseArrayWrapperNode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -116,6 +118,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -136,6 +140,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -1116,52 +1121,67 @@ public class GraalHPyNodes {
 
         @Specialization(guards = {"hpyContext != null", "interopLibrary.isPointer(handle)"}, limit = "2")
         static GraalHPyHandle doPointer(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object handle,
-                        @CachedLibrary("handle") InteropLibrary interopLibrary,
-                        @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary("handle") InteropLibrary interopLibrary) {
             try {
-                return doLongOvfWithContext(hpyContext, interopLibrary.asPointer(handle), raiseNode);
+                return doLongOvfWithContext(hpyContext, interopLibrary.asPointer(handle));
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalStateException("");
+                throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
-        @Specialization(guards = "hpyContext == null")
+        @SuppressWarnings("unused")
+        @Specialization(guards = "handle == 0")
+        static GraalHPyHandle doNullInt(GraalHPyContext hpyContext, int handle) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "handle == 0")
+        static GraalHPyHandle doNullLong(GraalHPyContext hpyContext, long handle) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @Specialization(guards = "hpyContext == null", replaces = "doNullInt")
         static GraalHPyHandle doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext().getObjectForHPyHandle(handle);
         }
 
-        @Specialization(guards = "hpyContext == null", rewriteOn = OverflowException.class)
+        @Specialization(guards = "hpyContext == null", rewriteOn = OverflowException.class, replaces = "doNullLong")
         static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws OverflowException {
             return context.getHPyContext().getObjectForHPyHandle(PInt.intValueExact(handle));
         }
 
-        @Specialization(guards = "hpyContext == null", replaces = "doLong")
+        @Specialization(guards = "hpyContext == null", replaces = {"doLong", "doNullLong"})
         static GraalHPyHandle doLongOvf(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            return doLongOvfWithContext(context.getHPyContext(), handle, raiseNode);
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return doLongOvfWithContext(context.getHPyContext(), handle);
         }
 
-        @Specialization(guards = "hpyContext != null")
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"hpyContext != null", "handle == 0"})
+        static GraalHPyHandle doNullIntWithContext(GraalHPyContext hpyContext, int handle) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @Specialization(guards = "hpyContext != null", replaces = "doNullInt")
         static GraalHPyHandle doIntWithContext(GraalHPyContext hpyContext, int handle) {
             return hpyContext.getObjectForHPyHandle(handle);
         }
 
-        @Specialization(guards = "hpyContext != null", rewriteOn = OverflowException.class)
+        @Specialization(guards = "hpyContext != null", rewriteOn = OverflowException.class, replaces = "doNullLong")
         static GraalHPyHandle doLongWithContext(GraalHPyContext hpyContext, long handle) throws OverflowException {
             return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle));
         }
 
-        @Specialization(guards = "hpyContext != null", replaces = "doLongWithContext")
-        static GraalHPyHandle doLongOvfWithContext(GraalHPyContext hpyContext, long handle,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        @Specialization(guards = "hpyContext != null", replaces = {"doLongWithContext", "doNullLong"})
+        static GraalHPyHandle doLongOvfWithContext(GraalHPyContext hpyContext, long handle) {
             try {
                 return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle));
             } catch (OverflowException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "unknown handle: %d", handle);
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("unknown handle: " + handle);
             }
         }
     }
@@ -2103,4 +2123,56 @@ public class GraalHPyNodes {
         }
     }
 
+    @GenerateUncached
+    public abstract static class HPyCastArgsNode extends Node {
+
+        public abstract Object[] execute(GraalHPyHandle argsHandle);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "argsHandle.isNull()")
+        static Object[] doNull(GraalHPyHandle argsHandle) {
+            return PythonUtils.EMPTY_OBJECT_ARRAY;
+        }
+
+        @Specialization(guards = "!argsHandle.isNull()")
+        static Object[] doNotNull(GraalHPyHandle argsHandle,
+                        @Cached ExecutePositionalStarargsInteropNode expandArgsNode,
+                        @Cached PRaiseNode raiseNode) {
+            Object args = argsHandle.getDelegate();
+            if (PGuards.isPTuple(args)) {
+                return expandArgsNode.executeWithGlobalState(args);
+            }
+            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires args to be a tuple or null handle");
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HPyCastKwargsNode extends Node {
+
+        public abstract PKeyword[] execute(GraalHPyHandle kwargsHandle);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "kwargsHandle.isNull() || isEmptyDict(lenNode, delegate)", limit = "1")
+        static PKeyword[] doNoKeywords(GraalHPyHandle kwargsHandle,
+                        @Bind("kwargsHandle.getDelegate()") Object delegate,
+                        @Shared("lenNode") @Cached HashingCollectionNodes.LenNode lenNode) {
+            return PKeyword.EMPTY_KEYWORDS;
+        }
+
+        @Specialization(guards = {"!kwargsHandle.isNull()", "!isEmptyDict(lenNode, delegate)"}, limit = "1")
+        static PKeyword[] doKeywords(@SuppressWarnings("unused") GraalHPyHandle kwargsHandle,
+                        @Bind("kwargsHandle.getDelegate()") Object delegate,
+                        @Shared("lenNode") @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (PGuards.isDict(delegate)) {
+                return expandKwargsNode.execute(delegate);
+            }
+            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires kw to be a dict or null handle");
+        }
+
+        static boolean isEmptyDict(HashingCollectionNodes.LenNode lenNode, Object delegate) {
+            return delegate instanceof PDict && lenNode.execute((PDict) delegate) == 0;
+        }
+    }
 }

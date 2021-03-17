@@ -87,7 +87,7 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
     }
 
     @Override
-    public final void doWrite(VirtualFrame frame, Object value) {
+    public final void writeObject(VirtualFrame frame, Object value) {
         executeVoid(frame, getObject().execute(frame), value);
     }
 

@@ -535,6 +535,39 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void futimes(int fd, Timeval[] timeval,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("futimes", "%d, %s", fd, timeval);
+        try {
+            lib.futimes(delegate, fd, timeval);
+        } catch (PosixException e) {
+            throw logException("futimes", e);
+        }
+    }
+
+    @ExportMessage
+    final void lutimes(Object filename, Timeval[] timeval,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("lutimes", "%s, %s", filename, timeval);
+        try {
+            lib.lutimes(delegate, filename, timeval);
+        } catch (PosixException e) {
+            throw logException("lutimes", e);
+        }
+    }
+
+    @ExportMessage
+    final void utimes(Object filename, Timeval[] timeval,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("utimes", "%s, %s", filename, timeval);
+        try {
+            lib.utimes(delegate, filename, timeval);
+        } catch (PosixException e) {
+            throw logException("utimes", e);
+        }
+    }
+
+    @ExportMessage
     final void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("renameAt", "%d, %s, %d, %s", oldDirFd, oldPath, newDirFd, newPath);

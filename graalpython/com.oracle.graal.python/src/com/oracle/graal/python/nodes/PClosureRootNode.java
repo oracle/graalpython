@@ -114,13 +114,17 @@ public abstract class PClosureRootNode extends PRootNodeWithFileName {
 
     public abstract void initializeFrame(VirtualFrame frame);
 
-    public String[] getFreeVars() {
+    public final String[] getFreeVars() {
         if (freeVarSlots != null) {
             String[] freeVars = new String[freeVarSlots.length];
+            int count = 0;
             for (int i = 0; i < freeVarSlots.length; i++) {
-                freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+                Object identifier = freeVarSlots[i].getIdentifier();
+                if (identifier instanceof String) {
+                    freeVars[count++] = (String) identifier;
+                }
             }
-            return freeVars;
+            return freeVars.length == count ? freeVars : PythonUtils.arrayCopyOf(freeVars, count);
         }
         return PythonUtils.EMPTY_STRING_ARRAY;
     }

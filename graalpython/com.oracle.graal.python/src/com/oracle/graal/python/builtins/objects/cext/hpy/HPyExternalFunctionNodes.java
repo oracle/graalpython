@@ -928,7 +928,7 @@ public abstract class HPyExternalFunctionNodes {
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @ImportStatic(PGuards.class)
-    abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
+    public abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
 
         @Specialization(guards = "value == 0")
         Object doIntegerNull(PythonContext context, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") int value,

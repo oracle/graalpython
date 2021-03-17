@@ -51,6 +51,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -81,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListRev
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -105,10 +108,13 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -124,6 +130,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -861,6 +868,92 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
+    abstract static class SimpleSortNode extends Node {
+
+        protected static final String SORT = "_sort";
+
+        protected abstract void execute(VirtualFrame frame, PList list, SequenceStorage storage);
+
+        @Specialization
+        @TruffleBoundary
+        void sort(@SuppressWarnings("unused") PList list, BoolSequenceStorage storage) {
+            int length = storage.length();
+            int trueValues = 0;
+            boolean[] array = storage.getInternalBoolArray();
+            for (int i = 0; i < length; i++) {
+                if (array[i]) {
+                    trueValues++;
+                }
+            }
+            Arrays.fill(array, 0, length - trueValues, false);
+            Arrays.fill(array, length - trueValues, length, true);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        void sort(@SuppressWarnings("unused") PList list, ByteSequenceStorage storage) {
+            Arrays.sort(storage.getInternalByteArray(), 0, storage.length());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        void sort(@SuppressWarnings("unused") PList list, IntSequenceStorage storage) {
+            Arrays.sort(storage.getInternalIntArray(), 0, storage.length());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        void sort(@SuppressWarnings("unused") PList list, LongSequenceStorage storage) {
+            Arrays.sort(storage.getInternalLongArray(), 0, storage.length());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        void sort(@SuppressWarnings("unused") PList list, DoubleSequenceStorage storage) {
+            Arrays.sort(storage.getInternalDoubleArray(), 0, storage.length());
+        }
+
+        private static final class StringComparator implements Comparator<Object> {
+            public int compare(Object o1, Object o2) {
+                return StringUtils.compareToUnicodeAware((String) o1, (String) o2);
+            }
+        }
+
+        private static final StringComparator COMPARATOR = new StringComparator();
+
+        @Specialization(guards = "isStringOnly(storage)")
+        @TruffleBoundary
+        void sort(@SuppressWarnings("unused") PList list, ObjectSequenceStorage storage) {
+            Arrays.sort(storage.getInternalArray(), 0, storage.length(), COMPARATOR);
+        }
+
+        @TruffleBoundary
+        protected static boolean isStringOnly(ObjectSequenceStorage storage) {
+            int length = storage.length();
+            Object[] array = storage.getInternalArray();
+            for (int i = 0; i < length; i++) {
+                Object value = array[i];
+                if (!(value instanceof String)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        protected static boolean isSimpleType(SequenceStorage storage) {
+            return storage instanceof BoolSequenceStorage || storage instanceof ByteSequenceStorage || storage instanceof IntSequenceStorage || storage instanceof LongSequenceStorage ||
+                            storage instanceof DoubleSequenceStorage || (storage instanceof ObjectSequenceStorage && isStringOnly((ObjectSequenceStorage) storage));
+        }
+
+        @Specialization(guards = "!isSimpleType(storage)")
+        void defaultSort(VirtualFrame frame, PList list, @SuppressWarnings("unused") SequenceStorage storage,
+                        @Cached("create(SORT)") GetAttributeNode sort,
+                        @Cached CallNode callSort) {
+            Object sortMethod = sort.executeObject(frame, list);
+            callSort.execute(frame, sortMethod, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+        }
+    }
+
     // list.sort(key=, reverse=)
     @Builtin(name = SORT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true)
     @GenerateNodeFactory
@@ -878,10 +971,10 @@ public class ListBuiltins extends PythonBuiltins {
                 return true;
             }
             if (keywords.length > 0) {
-                if (keywords[0].getName().equals(KEY)) {
+                if (KEY.equals(keywords[0].getName())) {
                     return true;
                 }
-                if (keywords.length > 1 && keywords[1].getName().equals(KEY)) {
+                if (keywords.length > 1 && KEY.equals(keywords[1].getName())) {
                     return true;
                 }
             }
@@ -898,6 +991,14 @@ public class ListBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object none(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isSortable(list, lenNode)", "arguments.length == 0", "keywords.length == 0", "!maySideEffect(list, keywords)"})
+        Object simple(VirtualFrame frame, PList list, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached SimpleSortNode simpleSort,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
+            simpleSort.execute(frame, list, list.getSequenceStorage());
             return PNone.NONE;
         }
 
@@ -921,7 +1022,7 @@ public class ListBuiltins extends PythonBuiltins {
                         @Cached CallNode callSort,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
             Object sortMethod = sort.executeObject(frame, list);
-            callSort.execute(sortMethod, arguments, keywords);
+            callSort.execute(frame, sortMethod, arguments, keywords);
             return PNone.NONE;
         }
 

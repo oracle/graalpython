@@ -36,18 +36,15 @@ ModuleRootNode Name: <module 'basicInFn04'> SourceSection: [0,38]`def fn():↵  
                     FunctionBodyNode SourceSection: [19,38]`sys as system, math`
                       WriteLocalVariableNodeGen SourceSection: [19,32]`sys as system`
                         Identifier: system
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,system,Illegal]
+                        Frame: [0,system,Illegal]
                         ImportExpression SourceSection: None
                           ImportNode SourceSection: None
                             Module: sys
                       WriteLocalVariableNodeGen SourceSection: [34,38]`math`
                         Identifier: math
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,math,Illegal]
+                        Frame: [1,math,Illegal]
                         ImportExpression SourceSection: None
                           ImportNode SourceSection: None
                             Module: math
-                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                  Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]
-                    ReadVariableFromFrameNodeGen SourceSection: None

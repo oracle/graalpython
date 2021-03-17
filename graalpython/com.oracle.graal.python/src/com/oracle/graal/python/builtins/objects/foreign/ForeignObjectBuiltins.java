@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
@@ -873,6 +874,35 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 // fall through
             }
             return doIt(frame, object);
+        }
+
+        @Specialization(guards = "getContext().getEnv().isHostObject(self)")
+        Object doHostObject(VirtualFrame frame, Object self,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+            try {
+                boolean isMetaObject = lib.isMetaObject(self);
+                Object metaObject = isMetaObject
+                                ? self
+                                : lib.hasMetaObject(self) ? lib.getMetaObject(self) : null;
+                if (metaObject != null) {
+                    Object displayName = lib.toDisplayString(metaObject);
+                    String text = createDisplayName(isMetaObject, displayName);
+                    return PythonUtils.format("<%s at 0x%x>", text, PythonAbstractObject.systemHashCode(self));
+                }
+
+            } catch (UnsupportedMessageException ex) {
+                // do nothing
+            }
+            return doIt(frame, self);
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private static String createDisplayName(boolean isMetaObject, Object object) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(isMetaObject ? "JavaClass[" : "JavaObject[");
+            sb.append(object.toString());
+            sb.append("]");
+            return sb.toString();
         }
 
         @Fallback

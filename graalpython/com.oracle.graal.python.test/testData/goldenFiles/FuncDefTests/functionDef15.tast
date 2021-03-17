@@ -50,9 +50,8 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                           CachedDispatchFirst SourceSection: None
                         BooleanLiteralNode SourceSection: [73,77]`True`
                       BlockNode SourceSection: None
-                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [0,<return_val>,Illegal]
-                  ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -90,6 +89,5 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                           ExpressionStatementNode SourceSection: [110,114]`pass`
                             EmptyNode SourceSection: [110,114]`pass`
                           BlockNode SourceSection: None
-                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                       Frame: [0,<return_val>,Illegal]
-                      ReadVariableFromFrameNodeGen SourceSection: None

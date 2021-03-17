@@ -61,9 +61,8 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                         ReadGlobalOrBuiltinNodeGen SourceSection: [107,108]`c`
                           Identifier: c
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [0,<return_val>,Illegal]
-                  ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [111,116]`add()`
         PythonCallNodeGen SourceSection: [111,116]`add()`
           CallNodeGen SourceSection: None

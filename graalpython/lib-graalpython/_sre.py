@@ -42,12 +42,13 @@ from array import array
 
 _mappingproxy = type(type.__dict__)
 
+from sys import maxsize as _sys_maxsize 
+
 def default(value, default):
     return default if not value else value
 
 def maxsize():
-    import sys
-    return sys.maxsize
+    return _sys_maxsize
 
 class _NamedCaptureGroups:
     def __init__(self, groupindex):
@@ -325,7 +326,7 @@ class Pattern():
 
     @staticmethod
     def __check_pos(pos):
-        if pos > maxsize():
+        if pos > _sys_maxsize:
             raise OverflowError('Python int too large to convert to Java int')
 
     def __tregex_compile(self, pattern, flags=None):
