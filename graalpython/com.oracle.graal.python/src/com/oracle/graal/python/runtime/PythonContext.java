@@ -216,6 +216,12 @@ public final class PythonContext {
     /* for fast access to the PythonThreadState object by the owning thread */
     private final ContextThreadLocal<PythonThreadState> threadState;
 
+    /*
+     * Workaround for GR-30072 - we cannot use the threadState above during native image build time,
+     * so we use a temporary one just for the build
+     */
+    private final PythonThreadState buildThreadState;
+
     /* map of thread IDs to indices for array 'threadStates' */
     private Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
 
@@ -257,6 +263,11 @@ public final class PythonContext {
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core, ContextThreadLocal<PythonThreadState> threadState) {
         this.language = language;
+        if (ImageInfo.inImageBuildtimeCode()) {
+            this.buildThreadState = new PythonThreadState(this, Thread.currentThread());
+        } else {
+            this.buildThreadState = null;
+        }
         this.threadState = threadState;
         this.core = core;
         this.env = env;
@@ -978,7 +989,7 @@ public final class PythonContext {
         try {
             globalInterpreterLock.lockInterruptibly();
         } catch (InterruptedException e) {
-            if (threadState.get().isShuttingDown()) {
+            if (!ImageInfo.inImageBuildtimeCode() && threadState.get().isShuttingDown()) {
                 // This is a thread being killed during normal context shutdown. This thread
                 // should exit now. This should usually only happen for daemon threads on
                 // context shutdown. This is the equivalent to the logic in pylifecycle.c and
@@ -1096,7 +1107,7 @@ public final class PythonContext {
     }
 
     private PythonThreadState getThreadState() {
-        PythonThreadState curThreadState = threadState.get();
+        PythonThreadState curThreadState = getThreadStateInternal();
         if (curThreadState.isShuttingDown()) {
             // we're shutting down, just release and die
             if (ownsGil()) {
@@ -1107,9 +1118,17 @@ public final class PythonContext {
         return curThreadState;
     }
 
+    private PythonThreadState getThreadStateInternal() {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            return buildThreadState;
+        } else {
+            return threadState.get();
+        }
+    }
+
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
         if (language.singleThreadedAssumption.isValid()) {
-            action.accept(threadState.get());
+            action.accept(getThreadStateInternal());
         } else {
             synchronized (this) {
                 for (PythonThreadState ts : threadStateMapping.values()) {
