@@ -47,7 +47,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -62,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -115,6 +113,9 @@ public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
+    /**
+     * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
+     */
     public static final class PythonThreadState {
         private boolean shuttingDown = false;
 
@@ -135,6 +136,13 @@ public final class PythonContext {
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
 
+        /* corresponds to 'PyThreadState.dict' */
+        PDict dict;
+
+        /*
+         * The constructor needs to have this particular signature such that we can use it for
+         * ContextThreadLocal.
+         */
         @SuppressWarnings("unused")
         public PythonThreadState(PythonContext context, Thread owner) {
         }
@@ -158,6 +166,30 @@ public final class PythonContext {
         @TruffleBoundary
         void reprLeave(Object item) {
             reprObjectSet.remove(item);
+        }
+
+        public PException getCurrentException() {
+            return currentException;
+        }
+
+        public void setCurrentException(PException currentException) {
+            this.currentException = currentException;
+        }
+
+        public PException getCaughtException() {
+            return caughtException;
+        }
+
+        public void setCaughtException(PException caughtException) {
+            this.caughtException = caughtException;
+        }
+
+        public PDict getDict() {
+            return dict;
+        }
+
+        public void setDict(PDict dict) {
+            this.dict = dict;
         }
     }
 
@@ -231,9 +263,6 @@ public final class PythonContext {
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
     private final ReentrantLock globalInterpreterLock = new ReentrantLock();
-
-    /** The thread-local state object. */
-    private ThreadLocal<PThreadState> customThreadState;
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
@@ -831,10 +860,6 @@ public final class PythonContext {
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
         }
-        // destroy thread state
-        if (customThreadState != null) {
-            customThreadState.set(null);
-        }
     }
 
     @TruffleBoundary
@@ -897,16 +922,6 @@ public final class PythonContext {
             LOGGER.finest("got interrupt while joining threads");
             Thread.currentThread().interrupt();
         }
-    }
-
-    @TruffleBoundary
-    public PThreadState getCustomThreadState() {
-        if (customThreadState == null) {
-            ThreadLocal<PThreadState> threadLocal = new ThreadLocal<>();
-            threadLocal.set(new PThreadState());
-            customThreadState = threadLocal;
-        }
-        return customThreadState.get();
     }
 
     public void initializeMainModule(String path) {
@@ -1092,14 +1107,10 @@ public final class PythonContext {
 
     public Thread[] getThreads() {
         CompilerAsserts.neverPartOfCompilation();
-        Set<Thread> threads = new HashSet<>();
-        for (Thread th : threadStateMapping.keySet()) {
-            threads.add(th);
-        }
-        return threads.toArray(new Thread[0]);
+        return threadStateMapping.keySet().toArray(new Thread[0]);
     }
 
-    private PythonThreadState getThreadState() {
+    public PythonThreadState getThreadState() {
         PythonThreadState curThreadState = getThreadStateInternal();
         if (curThreadState.isShuttingDown()) {
             // we're shutting down, just release and die
