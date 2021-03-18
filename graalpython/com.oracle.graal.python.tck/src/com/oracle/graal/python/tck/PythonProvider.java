@@ -244,7 +244,7 @@ public class PythonProvider implements LanguageProvider {
         addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
         addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
 
-        // addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, dict(ANY, ANY), ANY));
+        addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, dict(ANY, ANY), ANY));
         // addExpressionSnippet(context, snippets, "[a:b]", "lambda x: x[:]", union(STRING, array(ANY)), union(STRING, array(ANY));
 
         // @formatter:on
@@ -443,6 +443,49 @@ public class PythonProvider implements LanguageProvider {
         }
 
         private static final MulVerifier INSTANCE = new MulVerifier();
+    }
+
+    private static class GetItemVerifier extends PResultVerifier {
+
+        public void accept(SnippetRun snippetRun) throws PolyglotException {
+            List<? extends Value> parameters = snippetRun.getParameters();
+            assert parameters.size() == 2;
+
+            Value par0 = parameters.get(0);
+            Value par1 = parameters.get(1);
+
+            long len = -1;
+
+            if (par0.hasArrayElements()) {
+                len = par0.getArraySize();
+            } else if (par0.isString()) {
+                len = par0.asString().length();
+            }
+            if (len >= 0) {
+                int idx;
+                if (par1.isBoolean()) {
+                    idx = par1.asBoolean() ? 1 : 0;
+                } else if (par1.isNumber() && par1.fitsInInt()) {
+                    idx = par1.asInt();
+                } else {
+                    assert snippetRun.getException() != null;
+                    return;
+                }
+                if (par0.getArraySize() > idx) {
+                    assert snippetRun.getException() == null;
+                } else {
+                    assert snippetRun.getException() != null;
+                }
+            } else if (par0.hasHashEntries()) {
+                if (par0.getHashValueOrDefault(par1, null) != null) {
+                    assert snippetRun.getException() == null;
+                } else {
+                    assert snippetRun.getException() != null;
+                }
+            }
+        }
+
+        private static final GetItemVerifier INSTANCE = new GetItemVerifier();
     }
 
     /**
