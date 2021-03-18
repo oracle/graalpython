@@ -61,6 +61,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -140,6 +143,14 @@ public final class PythonContext {
         PDict dict;
 
         /*
+         * This is the native wrapper object if we need to expose the thread state as PyThreadState
+         * object. We need to store it here because the wrapper may receive 'toNative' in which case
+         * a handle is allocated. In order to avoid leaks, the handle needs to be free'd when the
+         * owning thread (or the whole context) is disposed.
+         */
+        PThreadState nativeWrapper;
+
+        /*
          * The constructor needs to have this particular signature such that we can use it for
          * ContextThreadLocal.
          */
@@ -190,6 +201,26 @@ public final class PythonContext {
 
         public void setDict(PDict dict) {
             this.dict = dict;
+        }
+
+        public PThreadState getNativeWrapper() {
+            return nativeWrapper;
+        }
+
+        public void setNativeWrapper(PThreadState nativeWrapper) {
+            this.nativeWrapper = nativeWrapper;
+        }
+
+        public void dispose() {
+            ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
+            if (dict != null && dict.getNativeWrapper() != null) {
+                releaseHandleNode.execute(dict.getNativeWrapper());
+            }
+            dict = null;
+            if (nativeWrapper != null) {
+                releaseHandleNode.execute(nativeWrapper);
+                nativeWrapper = null;
+            }
         }
     }
 
@@ -245,8 +276,8 @@ public final class PythonContext {
      */
     private final PythonThreadState buildThreadState;
 
-    /* map of thread IDs to indices for array 'threadStates' */
-    private Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
+    /* map of thread IDs to the corresponding 'threadStates' */
+    private final Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -860,6 +891,16 @@ public final class PythonContext {
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
         }
+        assert threadStateMapping != null;
+        for (PythonThreadState threadState : threadStateMapping.values()) {
+            threadState.dispose();
+        }
+        ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
+        for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
+            if (singletonNativeWrapper != null) {
+                releaseHandleNode.execute(singletonNativeWrapper);
+            }
+        }
     }
 
     @TruffleBoundary
@@ -1166,6 +1207,7 @@ public final class PythonContext {
         }
         ts.shutdown();
         threadStateMapping.remove(thread);
+        ts.dispose();
         releaseSentinelLock(ts.sentinelLock);
     }
 
