@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -66,8 +65,7 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
     @ExplodeLoop
     @Specialization
     protected Object concat(VirtualFrame frame,
-                    @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                    @Cached GetDictStorageNode getStore,
+                    @Cached ConditionProfile hasFrame,
                     @CachedLibrary(limit = "2") HashingStorageLibrary firstlib,
                     @CachedLibrary(limit = "1") HashingStorageLibrary otherlib,
                     @Cached BranchProfile sameKeyProfile) {
@@ -78,16 +76,16 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
                 first = expectDict(n.execute(frame));
             } else {
                 other = expectDict(n.execute(frame));
-                addAllToDict(frame, first, other, hasFrame, firstlib, otherlib, getStore, sameKeyProfile);
+                addAllToDict(frame, first, other, hasFrame, firstlib, otherlib, sameKeyProfile);
             }
         }
         return first;
     }
 
     private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other, ConditionProfile hasFrame,
-                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib, GetDictStorageNode getStore, BranchProfile sameKeyProfile) {
-        HashingStorage dictStorage = getStore.execute(dict);
-        HashingStorage otherStorage = getStore.execute(other);
+                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib, BranchProfile sameKeyProfile) {
+        HashingStorage dictStorage = dict.getDictStorage();
+        HashingStorage otherStorage = other.getDictStorage();
         for (Object key : otherlib.keys(otherStorage)) {
             Object value = otherlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
             if (firstlib.hasKey(dictStorage, key)) {

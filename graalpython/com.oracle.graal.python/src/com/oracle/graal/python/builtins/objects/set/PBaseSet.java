@@ -31,47 +31,25 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public abstract class PBaseSet extends PHashingCollection {
 
-    protected HashingStorage set;
-
     public PBaseSet(Object clazz, Shape instanceShape) {
-        super(clazz, instanceShape);
-        this.set = EconomicMapStorage.create();
+        super(clazz, instanceShape, EconomicMapStorage.create());
     }
 
     public PBaseSet(Object clazz, Shape instanceShape, HashingStorage set) {
-        super(clazz, instanceShape);
-        this.set = set;
-    }
-
-    @Override
-    public final HashingStorage getDictStorage() {
-        return set;
-    }
-
-    @Override
-    public void setDictStorage(HashingStorage storage) {
-        set = storage;
+        super(clazz, instanceShape, set);
     }
 
     @ExportMessage(limit = "1")
-    int lengthWithState(ThreadState state,
-                    @Exclusive @Cached ConditionProfile gotState,
-                    @CachedLibrary("this.set") HashingStorageLibrary lib) {
-        if (gotState.profile(state != null)) {
-            return lib.lengthWithState(set, state);
-        } else {
-            return lib.length(set);
-        }
+    int lengthWithState(@SuppressWarnings("unused") ThreadState state,
+                    @CachedLibrary("this.getDictStorage()") HashingStorageLibrary lib) {
+        return lib.length(storage);
     }
 }

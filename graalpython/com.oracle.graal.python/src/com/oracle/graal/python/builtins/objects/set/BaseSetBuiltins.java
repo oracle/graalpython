@@ -266,11 +266,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseIsDisjointNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "self == other", limit = "2")
-        static boolean isDisjointSameObject(VirtualFrame frame, PBaseSet self, @SuppressWarnings("unused") PBaseSet other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+        static boolean isDisjointSameObject(PBaseSet self, @SuppressWarnings("unused") PBaseSet other,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
-            return lib.lengthWithState(self.getDictStorage(), state) == 0;
+            return lib.length(self.getDictStorage()) == 0;
         }
 
         @Specialization(guards = {"self != other", "cannotBeOverridden(pLib.getLazyPythonClass(other))"}, limit = "2")
@@ -360,8 +358,8 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached ConditionProfile sizeProfile) {
-            final int len1 = hlib.lengthWithFrame(self.getDictStorage(), hasFrameProfile, frame);
-            final int len2 = hlib.lengthWithFrame(other.getDictStorage(), hasFrameProfile, frame);
+            final int len1 = hlib.length(self.getDictStorage());
+            final int len2 = hlib.length(other.getDictStorage());
             if (sizeProfile.profile(len1 >= len2)) {
                 return false;
             }
@@ -384,8 +382,8 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached ConditionProfile sizeProfile) {
-            final int len1 = hlib.lengthWithFrame(self.getDictStorage(), hasFrameProfile, frame);
-            final int len2 = hlib.lengthWithFrame(other.getDictStorage(), hasFrameProfile, frame);
+            final int len1 = hlib.length(self.getDictStorage());
+            final int len2 = hlib.length(other.getDictStorage());
             if (sizeProfile.profile(len1 <= len2)) {
                 return false;
             }

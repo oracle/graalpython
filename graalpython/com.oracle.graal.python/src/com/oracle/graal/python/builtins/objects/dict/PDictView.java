@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -121,8 +120,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
-                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
                         @Cached PythonObjectFactory factory) {
             return factory.createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
@@ -151,8 +149,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
-                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
                         @Cached PythonObjectFactory factory) {
             return factory.createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
@@ -192,8 +189,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
-                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
                         @Cached PythonObjectFactory factory) {
             return factory.createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));

@@ -1133,6 +1133,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private static Object stringToIntInternal(String num, int base) {
             try {
                 BigInteger bi = asciiToBigInteger(num, base);
+                if (bi == null) {
+                    return null;
+                }
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                     return bi;
                 } else {
@@ -1267,9 +1270,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 base = 10;
             }
 
-            int i = b;
-            while (i < e) {
-                if (str.charAt(i) == '_') {
+            // reject invalid characters without going to BigInteger
+            for (int i = b; i < e; i++) {
+                char c = str.charAt(i);
+                if (c == '_') {
                     if (!acceptUnderscore || i == e - 1) {
                         throw new NumberFormatException("Illegal underscore in int literal");
                     } else {
@@ -1277,8 +1281,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                 } else {
                     acceptUnderscore = true;
+                    if (Character.digit(c, base) == -1) {
+                        // invalid char
+                        return null;
+                    }
                 }
-                ++i;
             }
 
             String s = str;
@@ -2273,7 +2280,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached IsIdentifierNode isIdentifier,
-                        @Cached HashingCollectionNodes.SetDictStorageNode setStorage,
                         @Cached HashingStorage.InitNode initNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
@@ -2290,7 +2296,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = factory().createDict();
-                setStorage.execute(namespace, initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
+                namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
                                 isIdentifier);
 

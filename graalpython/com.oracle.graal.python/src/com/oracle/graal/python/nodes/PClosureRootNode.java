@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -55,8 +56,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public abstract class PClosureRootNode extends PRootNodeWithFileName {
     private final Assumption singleContextAssumption;
     private final boolean annotationsAvailable;
-    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
-    @CompilerDirectives.CompilationFinal(dimensions = 1) protected PCell[] closure;
+    @CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
+    @CompilationFinal(dimensions = 1) protected PCell[] closure;
     private final int length;
 
     protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, FrameSlot[] freeVarSlots, boolean hasAnnotations) {
@@ -67,7 +68,7 @@ public abstract class PClosureRootNode extends PRootNodeWithFileName {
         this.annotationsAvailable = hasAnnotations;
     }
 
-    protected void addClosureCellsToLocals(Frame frame) {
+    protected final void addClosureCellsToLocals(Frame frame) {
         PCell[] frameClosure = PArguments.getClosure(frame);
         if (frameClosure != null) {
             if (singleContextAssumption.isValid() && closure == null) {
@@ -95,20 +96,20 @@ public abstract class PClosureRootNode extends PRootNodeWithFileName {
         }
     }
 
-    protected void addClosureCellsToLocalsLoop(Frame frame, PCell[] frameClosure) {
+    protected final void addClosureCellsToLocalsLoop(Frame frame, PCell[] frameClosure) {
         for (int i = 0; i < length; i++) {
             frame.setObject(freeVarSlots[i], frameClosure[i]);
         }
     }
 
     @ExplodeLoop
-    protected void addClosureCellsToLocalsExploded(Frame frame, PCell[] frameClosure) {
+    protected final void addClosureCellsToLocalsExploded(Frame frame, PCell[] frameClosure) {
         for (int i = 0; i < length; i++) {
             frame.setObject(freeVarSlots[i], frameClosure[i]);
         }
     }
 
-    public boolean hasFreeVars() {
+    public final boolean hasFreeVars() {
         return freeVarSlots != null && freeVarSlots.length > 0;
     }
 

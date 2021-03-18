@@ -102,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateTimeMode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -976,9 +975,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(SET_USED, key)", limit = "1")
         static long doSetUsed(PSet object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStorageNode,
-                        @CachedLibrary("getStorageNode.execute(object)") HashingStorageLibrary lib) {
-            return lib.length(getStorageNode.execute(object));
+                        @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
+            return lib.length(object.getDictStorage());
         }
 
         @Specialization(guards = "eq(MMAP_DATA, key)")
@@ -1208,11 +1206,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             static void doTpSubclasses(PythonClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value,
                             @Cached GetSubclassesNode getSubclassesNode,
                             @Cached EachSubclassAdd eachNode,
-                            @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
                             @CachedLibrary("value") PythonNativeWrapperLibrary lib,
                             @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
                 PDict dict = (PDict) lib.getDelegate(value);
-                HashingStorage storage = getStorage.execute(dict);
+                HashingStorage storage = dict.getDictStorage();
                 Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(object);
                 hashLib.forEach(storage, eachNode, new SubclassAddState(storage, hashLib, subclasses));
             }

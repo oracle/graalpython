@@ -51,6 +51,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -91,9 +92,10 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
-    @Specialization(guards = "isModule(getGlobals(frame))", replaces = "readGlobalCached")
-    protected Object readGlobal(VirtualFrame frame) {
-        Object result = readFromModuleNode.execute(PArguments.getGlobals(frame), attributeId);
+    @Specialization(guards = "isModule(globals)", replaces = "readGlobalCached")
+    protected Object readGlobal(@SuppressWarnings("unused") VirtualFrame frame,
+                    @Bind("getGlobals(frame)") Object globals) {
+        Object result = readFromModuleNode.execute(globals, attributeId);
         return returnGlobalOrBuiltin(result);
     }
 

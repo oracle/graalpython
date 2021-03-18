@@ -326,13 +326,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                 // To avoid calling the costly length message we use SIZE_THRESHOLD
                 newStore = new HashMapStorage(SIZE_THRESHOLD);
             } else {
-                int len;
-                if (gotState.profile(state != null)) {
-                    len = lib.lengthWithState(self, state);
-                } else {
-                    len = lib.length(self);
-                }
-                newStore = EconomicMapStorage.create(len);
+                newStore = EconomicMapStorage.create(lib.length(self));
             }
 
             newStore = lib.addAllToOther(self, newStore);

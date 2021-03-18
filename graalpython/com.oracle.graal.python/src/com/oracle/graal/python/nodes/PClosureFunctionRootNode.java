@@ -60,7 +60,7 @@ public abstract class PClosureFunctionRootNode extends PClosureRootNode {
         this.signature = signature;
     }
 
-    public String[] getCellVars() {
+    public final String[] getCellVars() {
         String[] cellVars = new String[cellVarSlots.length];
         for (int i = 0; i < cellVars.length; i++) {
             cellVars[i] = (String) cellVarSlots[i].getIdentifier();
@@ -69,7 +69,7 @@ public abstract class PClosureFunctionRootNode extends PClosureRootNode {
     }
 
     @Override
-    public Signature getSignature() {
+    public final Signature getSignature() {
         return signature;
     }
 }

@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -224,7 +223,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         } else {
             dict = PythonObjectLibrary.getUncached().getDict(klass);
         }
-        if (dict != null && HashingStorageLibrary.getUncached().hasSideEffect(GetDictStorageNode.getUncached().execute(dict))) {
+        if (dict != null && HashingStorageLibrary.getUncached().hasSideEffect(dict.getDictStorage())) {
             return null;
         }
         MroSequenceStorage mro = getMro(klass);
