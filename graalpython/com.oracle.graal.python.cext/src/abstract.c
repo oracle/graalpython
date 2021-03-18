@@ -65,19 +65,21 @@ int PyNumber_Check(PyObject *o) {
     return 0;
 }
 
-UPCALL_ID(PyNumber_UnaryOp);
+typedef PyObject *(*unaryop_fun_t)(PyObject *, int32_t);
+UPCALL_TYPED_ID(PyNumber_UnaryOp, unaryop_fun_t);
 static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop) {
-    return UPCALL_CEXT_O(_jls_PyNumber_UnaryOp, native_to_java(v), unaryop);
+    return _jls_PyNumber_UnaryOp(native_to_java(v), (int32_t)unaryop);
 }
 
-UPCALL_ID(PyNumber_BinOp);
+typedef PyObject *(*binop_fun_t)(PyObject *, PyObject *, int32_t);
+UPCALL_TYPED_ID(PyNumber_BinOp, binop_fun_t);
 MUST_INLINE static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop) {
-    return UPCALL_CEXT_O(_jls_PyNumber_BinOp, native_to_java(v), native_to_java(w), binop);
+    return _jls_PyNumber_BinOp(native_to_java(v), native_to_java(w), (int32_t)binop);
 }
 
-UPCALL_ID(PyNumber_InPlaceBinOp);
+UPCALL_TYPED_ID(PyNumber_InPlaceBinOp, binop_fun_t);
 MUST_INLINE static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop) {
-    return UPCALL_CEXT_O(_jls_PyNumber_InPlaceBinOp, native_to_java(v), native_to_java(w), binop);
+    return _jls_PyNumber_InPlaceBinOp(native_to_java(v), native_to_java(w), (int32_t)binop);
 }
 
 PyObject * PyNumber_Add(PyObject *o1, PyObject *o2) {
