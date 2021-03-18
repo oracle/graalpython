@@ -41,12 +41,14 @@
 
 package com.oracle.graal.python.test.parser;
 
+import com.oracle.graal.python.test.PythonTests;
+import org.junit.Assert;
+import org.junit.Test;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.source.Source;
-import org.junit.Assert;
-import org.junit.Test;
 
 /**
  * This test checks throwing IncompleteSourceException that is used in Python shell, to find out if
@@ -55,7 +57,7 @@ import org.junit.Test;
 public class IncompleteCodeTests extends ParserTestBase {
 
     @Test
-    public void testCheckSyntaxErrors() throws Exception {
+    public void testCheckSyntaxErrors() {
         // these are the codes, where the syntax error was not raised in interactive mode
         checkSyntaxErrorMessage("f(a+b=1)", "SyntaxError: keyword can't be an expression");
     }
@@ -158,22 +160,24 @@ public class IncompleteCodeTests extends ParserTestBase {
         return Source.newBuilder(PythonLanguage.ID, code, "<stdin>").interactive(true).build();
     }
 
-    public void checkNoError(String source) throws Exception {
+    public void checkNoError(String source) {
         try {
             parse(createInteractiveSource(source), PythonParser.ParserMode.Statement);
         } catch (PException e) {
-            Assert.assertTrue("Source:'" + source + "' should not throw any error, but '" + e.getMessage() + "' was thrown.", false);
+            Assert.assertTrue("Source:'" + source + "' should not throw any error, but '" + PythonTests.getExceptionMessage(e) + "' was thrown.", false);
         }
-
     }
 
     @Override
-    public void checkSyntaxErrorMessage(String source, String expectedMessage) throws Exception {
+    public void checkSyntaxErrorMessage(String source, String expectedMessage) {
         try {
             parse(createInteractiveSource(source), PythonParser.ParserMode.Statement);
-        } catch (Exception e) {
-            Assert.assertEquals("Source:'" + source + "' should throw '" + expectedMessage + "', but '" + e.getMessage() + "' was thrown.", expectedMessage, e.getMessage());
+        } catch (PException e) {
+            String exceptionMessage = PythonTests.getExceptionMessage(e);
+            Assert.assertEquals("Source:'" + source + "' should throw '" + expectedMessage + "', but '" + exceptionMessage + "' was thrown.", expectedMessage, exceptionMessage);
             return;
+        } catch (Exception e) {
+            Assert.fail("Unexpected exception " + e);
         }
 
         Assert.assertTrue("Source:'" + source + "' should throw '" + expectedMessage + "', but was not thrown.", false);

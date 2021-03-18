@@ -157,10 +157,7 @@ public class ParserTestBase {
             parse(source, name.getMethodName(), PythonParser.ParserMode.File);
         } catch (PException e) {
             thrown = isSyntaxError(e);
-            InteropLibrary interop = InteropLibrary.getUncached();
-            Object exceptionMessageObject = interop.getExceptionMessage(e);
-            Assert.assertTrue(interop.isString(exceptionMessageObject));
-            String exceptionMessage = interop.asString(exceptionMessageObject);
+            String exceptionMessage = PythonTests.getExceptionMessage(e);
             Assert.assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + exceptionMessage + "\"", exceptionMessage.contains(expectedMessage));
         }
 
@@ -173,10 +170,7 @@ public class ParserTestBase {
             parse(source, name.getMethodName(), PythonParser.ParserMode.File);
         } catch (PException e) {
             thrown = isSyntaxError(e);
-            InteropLibrary interop = InteropLibrary.getUncached();
-            Object exceptionMessage = interop.getExceptionMessage(e);
-            Assert.assertTrue(interop.isString(exceptionMessage));
-            Assert.assertEquals(expectedMessage, interop.asString(exceptionMessage));
+            Assert.assertEquals(expectedMessage, PythonTests.getExceptionMessage(e));
         }
 
         assertTrue("Expected SyntaxError was not thrown.", thrown);

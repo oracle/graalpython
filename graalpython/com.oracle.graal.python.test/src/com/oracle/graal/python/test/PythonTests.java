@@ -48,6 +48,9 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
@@ -64,6 +67,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.LiteralBuilder;
+import org.junit.Assert;
 
 public class PythonTests {
     static {
@@ -390,7 +394,8 @@ public class PythonTests {
 
     public static void runThrowableScript(String[] args, String source, OutputStream out, OutputStream err) {
         try {
-            runScript(args, source, out, err);
+            enterContext(args);
+            context.eval(org.graalvm.polyglot.Source.create("python", source));
         } catch (PolyglotException t) {
             Object e;
             try {
@@ -410,6 +415,27 @@ public class PythonTests {
             } else {
                 throw new RuntimeException(e.toString());
             }
+        } finally {
+            flush(out, err);
+            closeContext();
+        }
+    }
+
+    /**
+     * This method returns the properly formatted error message of the given Python exception. It
+     * does not use {@code PException.toString} since this method is just meant for debugging an
+     * does not reliably return a properly formatted string. Instead, this method uses the
+     * {@link InteropLibrary} which provides interop messages to get the error message.
+     */
+    public static String getExceptionMessage(PException e) {
+        InteropLibrary interop = InteropLibrary.getUncached();
+        Assert.assertTrue("PException claims to be not an exception", interop.isException(e));
+        try {
+            Object exceptionMessageObject = interop.getExceptionMessage(e);
+            Assert.assertTrue("returned message object is not a string", interop.isString(exceptionMessageObject));
+            return interop.asString(exceptionMessageObject);
+        } catch (UnsupportedMessageException ume) {
+            throw new IllegalStateException("should not be reached");
         }
     }
 }
