@@ -198,7 +198,7 @@ class Match():
                 if 0 <= int_idx < self.__compiled_regex.groupCount:
                     return int_idx
             else:
-                return self.__compiled_regex.groups[idx]
+                return getattr(self.__compiled_regex.groups, idx)
         except Exception:
             pass
         raise IndexError("no such group")
@@ -301,7 +301,7 @@ class Pattern():
             self.groupindex = {}
         else:
             group_names = dir(groups)
-            self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
+            self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
 
     @property
     def flags(self):
