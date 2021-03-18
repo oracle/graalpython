@@ -515,15 +515,22 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
         return NULL;
     }
 
+    PyObject* result;
     switch (PyList_Size(v->list)) {
     case 0:
-        return Py_None;
+        result = Py_None;
+        break;
     case 1:
         // single item gets unwrapped
-        return PyList_GetItem(v->list, 0);
+        result = PyList_GetItem(v->list, 0);
+        Py_DECREF(v->list);
+        break;
     default:
-        return PyList_AsTuple(v->list);
+        result = PyList_AsTuple(v->list);
+        Py_DECREF(v->list);
+        break;
     }
+    return result;
 }
 
 PyObject* Py_VaBuildValue(const char *format, va_list va) {
