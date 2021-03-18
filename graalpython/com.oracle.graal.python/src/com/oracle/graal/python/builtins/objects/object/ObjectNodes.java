@@ -132,6 +132,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ObjectNodes {
@@ -765,23 +766,27 @@ public abstract class ObjectNodes {
         public abstract Object execute(Frame frame, Object object);
 
         @Specialization(limit = "3")
-        Object repr(VirtualFrame frame, Object obj,
+        static Object repr(VirtualFrame frame, Object obj,
                         @CachedLibrary("obj") PythonObjectLibrary objLib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached DefaultObjectReprNode defaultRepr,
                         @Cached ConditionProfile hasRepr,
                         @Cached ConditionProfile isString,
-                        @Cached ConditionProfile isPString) {
+                        @Cached ConditionProfile isPString,
+                        @Cached BranchProfile getRaisedException,
+                        @Cached PRaiseNode raiseNode) {
             Object reprMethod = objLib.lookupAttributeOnType(obj, __REPR__);
             if (hasRepr.profile(reprMethod != PNone.NO_VALUE)) {
-                Object result = methodLib.callUnboundMethod(reprMethod, frame, obj);
+                Object result = methodLib.callUnboundMethodIgnoreGetException(reprMethod, frame, obj);
                 if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
                     return result;
                 }
-                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.RETURNED_NON_STRING, __REPR__, obj);
-            } else {
-                return defaultRepr.execute(frame, obj);
+                if (result != PNone.NO_VALUE) {
+                    throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, __REPR__, obj);
+                }
+                getRaisedException.enter();
             }
+            return defaultRepr.execute(frame, obj);
         }
 
         public static ReprAsObjectNode create() {
