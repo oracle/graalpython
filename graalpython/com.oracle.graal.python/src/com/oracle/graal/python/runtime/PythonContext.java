@@ -135,7 +135,8 @@ public final class PythonContext {
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
 
-        public PythonThreadState(@SuppressWarnings("unused") PythonContext context, Thread owner) {
+        @SuppressWarnings("unused")
+        public PythonThreadState(PythonContext context, Thread owner) {
         }
 
         void shutdown() {

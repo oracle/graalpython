@@ -328,7 +328,7 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage clear(@Exclusive @Cached GilNode gil) {
+    public static HashingStorage clear(@Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return EconomicMapStorage.create();

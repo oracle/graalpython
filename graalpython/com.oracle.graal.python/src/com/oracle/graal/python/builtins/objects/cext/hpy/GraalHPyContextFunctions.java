@@ -154,8 +154,8 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -367,7 +367,8 @@ public abstract class GraalHPyContextFunctions {
                                 writeAttrNode.execute(module, fun.getName(), method);
                             }
                         } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                            // should not happen since we check if 'legacyMethods' has array elements
+                            // should not happen since we check if 'legacyMethods' has array
+                            // elements
                             throw CompilerDirectives.shouldNotReachHere();
                         }
                     }
@@ -688,7 +689,8 @@ public abstract class GraalHPyContextFunctions {
                     }
                     return context.getNullHandle();
                 } catch (PException e) {
-                    // This function has the same (odd) error behavior as PyDict_GetItem: If an error
+                    // This function has the same (odd) error behavior as PyDict_GetItem: If an
+                    // error
                     // occurred, the error is cleared and NULL is returned.
                     return context.getNullHandle();
                 }
@@ -1493,7 +1495,8 @@ public abstract class GraalHPyContextFunctions {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
-                // IMPORTANT: this is not stealing the reference. The CPython implementation actually
+                // IMPORTANT: this is not stealing the reference. The CPython implementation
+                // actually
                 // increases the reference count by 1.
                 Object resolvedPyObject = asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(arguments[1]), false));
                 return asHandleNode.execute(asContextNode.execute(arguments[0]), resolvedPyObject);
