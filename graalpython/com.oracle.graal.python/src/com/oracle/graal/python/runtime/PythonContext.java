@@ -117,7 +117,6 @@ public final class PythonContext {
     private volatile boolean finalizing;
 
     public static final class PythonThreadState {
-        private final WeakReference<Thread> owner;
         private boolean shuttingDown = false;
 
         /*
@@ -138,7 +137,6 @@ public final class PythonContext {
         HashSet<Object> reprObjectSet;
 
         public PythonThreadState(@SuppressWarnings("unused") PythonContext context, Thread owner) {
-            this.owner = new WeakReference<>(owner);
         }
 
         void shutdown() {
@@ -147,14 +145,6 @@ public final class PythonContext {
 
         boolean isShuttingDown() {
             return shuttingDown;
-        }
-
-        boolean isOwner(Thread thread) {
-            return owner.get() == thread;
-        }
-
-        WeakReference<Thread> getOwner() {
-            return owner;
         }
 
         @TruffleBoundary
@@ -1104,11 +1094,8 @@ public final class PythonContext {
     public Thread[] getThreads() {
         CompilerAsserts.neverPartOfCompilation();
         Set<Thread> threads = new HashSet<>();
-        for (PythonThreadState ts : threadStateMapping.values()) {
-            Thread th = ts.getOwner().get();
-            if (th != null) {
-                threads.add(th);
-            }
+        for (Thread th : threadStateMapping.keySet()) {
+            threads.add(th);
         }
         return threads.toArray(new Thread[0]);
     }
@@ -1167,7 +1154,6 @@ public final class PythonContext {
             // ts already removed, that is valid during context shutdown for daemon threads
             return;
         }
-        assert ts.isOwner(thread) : "thread state owner was changed before this thread was disposed!";
         ts.shutdown();
         threadStateMapping.remove(thread);
         releaseSentinelLock(ts.sentinelLock);
