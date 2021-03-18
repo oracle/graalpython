@@ -155,6 +155,12 @@ abstract class AccessForeignItemNodes {
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
+            } else if (lib.isBoolean(key)) {
+                try {
+                    return readForeignIndex(object, lib.asBoolean(key) ? 1 : 0, lib);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
             } else {
                 throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, object, key);
             }
@@ -253,6 +259,13 @@ abstract class AccessForeignItemNodes {
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
+            } else if (lib.isBoolean(key)) {
+                try {
+                    writeForeignIndex(object, lib.asBoolean(key) ? 1 : 0, value, lib, unsupportedType, wrongIndex);
+                    return PNone.NONE;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
             } else {
                 unsupportedMessage.enter();
                 throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, object, key);
@@ -328,6 +341,13 @@ abstract class AccessForeignItemNodes {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
                 try {
                     removeForeignValue(object, lib.asInt(key), lib);
+                    return PNone.NONE;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            } else if (lib.isBoolean(key)) {
+                try {
+                    removeForeignValue(object, lib.asBoolean(key) ? 1 : 0, lib);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
