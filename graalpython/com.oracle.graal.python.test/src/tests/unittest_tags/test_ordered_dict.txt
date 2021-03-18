@@ -4,6 +4,8 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_delitem_hash_collision
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_detect_deletion_during_iteration
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_highly_nested
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_highly_nested_subclass
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_init
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_override_update
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_popitem
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_setitem
@@ -37,8 +39,10 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_setitem
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_dict_update
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_equality
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_free_after_iterating
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_fromkeys
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_highly_nested
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_highly_nested_subclass
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_init
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_init_calls
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_issue24347
@@ -54,6 +58,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_popitem
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_popitem_last
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_reduce_not_too_fat
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_reference_loop
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_reinsert
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_repr
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictSubclassTests.test_repr_recursive
@@ -82,8 +87,10 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_dict_setitem
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_dict_update
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_equality
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_free_after_iterating
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_fromkeys
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_highly_nested
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_highly_nested_subclass
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_init
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_init_calls
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_issue24347
@@ -99,6 +106,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_popitem
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_popitem_last
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_reduce_not_too_fat
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_reference_loop
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_reinsert
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_repr
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonOrderedDictTests.test_repr_recursive
@@ -155,8 +163,10 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_setitem
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_dict_update
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_equality
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_free_after_iterating
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_fromkeys
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_highly_nested
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_highly_nested_subclass
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init_calls
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24347
@@ -172,6 +182,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_popitem
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_popitem_last
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_reduce_not_too_fat
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_reference_loop
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_reinsert
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_repr
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_repr_recursive
@@ -198,8 +209,10 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_setitem
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_dict_update
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_equality
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_free_after_iterating
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_fromkeys
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_highly_nested
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_highly_nested_subclass
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_init
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_init_calls
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_issue24347
@@ -215,6 +228,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_popitem
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_popitem_last
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_reduce_not_too_fat
+*graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_reference_loop
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_reinsert
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_repr
 *graalpython.lib-python.3.test.test_ordered_dict.PurePythonOrderedDictTests.test_repr_recursive
