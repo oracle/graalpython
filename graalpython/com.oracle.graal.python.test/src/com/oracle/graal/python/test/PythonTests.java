@@ -48,13 +48,11 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
+import org.junit.Assert;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -64,10 +62,11 @@ import com.oracle.graal.python.test.interop.JavaInteropTest;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.LiteralBuilder;
-import org.junit.Assert;
 
 public class PythonTests {
     static {

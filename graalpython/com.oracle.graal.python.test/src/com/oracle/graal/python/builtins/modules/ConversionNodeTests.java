@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
-import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
@@ -77,11 +76,6 @@ public class ConversionNodeTests {
         protected void describeMismatchSafely(PException item, Description description) {
             description.appendText("message ");
             matcher.describeMismatch(PythonTests.getExceptionMessage(item), description);
-        }
-
-        @Factory
-        public static <T extends Throwable> Matcher<T> hasMessage(final Matcher<String> matcher) {
-            return new org.junit.internal.matchers.ThrowableMessageMatcher<T>(matcher);
         }
     }
 
