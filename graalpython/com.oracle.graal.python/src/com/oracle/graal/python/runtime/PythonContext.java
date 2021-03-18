@@ -969,7 +969,6 @@ public final class PythonContext {
         return null;
     }
 
-    @TruffleBoundary
     boolean ownsGil() {
         return globalInterpreterLock.isHeldByCurrentThread();
     }
