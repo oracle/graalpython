@@ -1450,7 +1450,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
     ],
     priority=5,
-    supported=False,
+    stability="experimental",
 ))
 
 
@@ -1491,7 +1491,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
         )
     ],
     priority=5,
-    supported=False,
+    stability="experimental",
 ))
 
 
