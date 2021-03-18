@@ -1662,7 +1662,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         PThreadState get() {
             // does not require a 'to_sulong' since it is already a native wrapper type
-            return getContext().getCustomThreadState();
+            return new PThreadState(getContext().getThreadState());
         }
     }
 
