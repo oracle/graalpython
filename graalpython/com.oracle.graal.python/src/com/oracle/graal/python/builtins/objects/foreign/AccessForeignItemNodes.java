@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.GetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.RemoveForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
@@ -148,10 +149,11 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"lib.hasArrayElements(object)", "!isPSlice(key)"})
         Object doArrayIndex(Object object, Object key,
+                        @Cached NormalizeIndexNode normalize,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
                 try {
-                    return readForeignIndex(object, lib.asInt(key), lib);
+                    return readForeignIndex(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), lib);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
@@ -248,13 +250,14 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"lib.hasArrayElements(object)", "!isPSlice(key)"})
         Object doArrayIndex(Object object, Object key, Object value,
+                        @Cached NormalizeIndexNode normalize,
                         @Cached BranchProfile unsupportedMessage,
                         @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
                 try {
-                    writeForeignIndex(object, lib.asInt(key), value, lib, unsupportedType, wrongIndex);
+                    writeForeignIndex(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), value, lib, unsupportedType, wrongIndex);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
@@ -337,10 +340,11 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"lib.hasArrayElements(object)", "!isPSlice(key)"})
         Object doArrayIndex(Object object, Object key,
+                        @Cached NormalizeIndexNode normalize,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
                 try {
-                    removeForeignValue(object, lib.asInt(key), lib);
+                    removeForeignValue(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), lib);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);

@@ -244,8 +244,8 @@ public class PythonProvider implements LanguageProvider {
         addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
         addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
 
-        addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, dict(ANY, ANY), ANY));
-        // addExpressionSnippet(context, snippets, "[a:b]", "lambda x: x[:]", union(STRING, array(ANY)), union(STRING, array(ANY));
+        addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, dict(ANY, ANY)), ANY);
+        addExpressionSnippet(context, snippets, "[a:b]", "lambda x: x[:]", union(STRING, array(ANY)), union(STRING, array(ANY)));
 
         // @formatter:on
         return snippets;
@@ -471,17 +471,21 @@ public class PythonProvider implements LanguageProvider {
                     assert snippetRun.getException() != null;
                     return;
                 }
-                if (par0.getArraySize() > idx) {
-                    assert snippetRun.getException() == null;
+                if ((idx >= 0 && len > idx) || (len - idx >= 0 && len > len - idx)) {
+                    assert snippetRun.getException() == null : snippetRun.getException().toString();
                 } else {
                     assert snippetRun.getException() != null;
                 }
             } else if (par0.hasHashEntries()) {
-                if (par0.getHashValueOrDefault(par1, null) != null) {
-                    assert snippetRun.getException() == null;
-                } else {
+                Value v = par0.getHashValueOrDefault(par1, PythonProvider.class.getName());
+                if (v.isString() && v.asString().equals(PythonProvider.class.getName())) {
                     assert snippetRun.getException() != null;
+                } else {
+                    assert snippetRun.getException() == null : snippetRun.getException().toString();
                 }
+            } else {
+                // argument type error, rethrow
+                throw snippetRun.getException();
             }
         }
 
