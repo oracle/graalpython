@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -157,6 +157,17 @@ abstract class AccessForeignItemNodes {
                 }
             } else {
                 throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, object, key);
+            }
+        }
+
+        @Specialization(guards = {"lib.isString(object)", "!lib.hasArrayElements(object)"})
+        Object doString(VirtualFrame frame, Object object, Object idx,
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Cached StringBuiltins.StrGetItemNode getItemNode) {
+            try {
+                return getItemNode.call(frame, lib.asString(object), idx);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
