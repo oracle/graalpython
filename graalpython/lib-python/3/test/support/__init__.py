@@ -2895,13 +2895,14 @@ class SuppressCrashReport:
                     self.old_modes[report_type] = old_mode, old_file
 
         else:
-            if resource is not None:
-                try:
-                    self.old_value = resource.getrlimit(resource.RLIMIT_CORE)
-                    resource.setrlimit(resource.RLIMIT_CORE,
-                                       (0, self.old_value[1]))
-                except (ValueError, OSError):
-                    pass
+            # Graalpython does not support getrlimit/setrlimit yet
+            # if resource is not None:
+            #     try:
+            #         self.old_value = resource.getrlimit(resource.RLIMIT_CORE)
+            #         resource.setrlimit(resource.RLIMIT_CORE,
+            #                            (0, self.old_value[1]))
+            #     except (ValueError, OSError):
+            #         pass
 
             if sys.platform == 'darwin':
                 # Check if the 'Crash Reporter' on OSX was configured
@@ -2937,11 +2938,13 @@ class SuppressCrashReport:
                     msvcrt.CrtSetReportMode(report_type, old_mode)
                     msvcrt.CrtSetReportFile(report_type, old_file)
         else:
-            if resource is not None:
-                try:
-                    resource.setrlimit(resource.RLIMIT_CORE, self.old_value)
-                except (ValueError, OSError):
-                    pass
+            # Graalpython does not support getrlimit/setrlimit yet
+            # if resource is not None:
+            #     try:
+            #         resource.setrlimit(resource.RLIMIT_CORE, self.old_value)
+            #     except (ValueError, OSError):
+            #         pass
+            pass
 
 
 def patch(test_instance, object_to_patch, attr_name, new_value):

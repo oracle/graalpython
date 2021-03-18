@@ -1912,7 +1912,7 @@ public abstract class GraalHPyContextFunctions {
             try {
                 int idx = castToJavaIntExactNode.execute(arguments[2]);
                 Object value = asPythonObjectNode.execute(nativeContext, arguments[3]);
-                setItemNode.execute(NoGeneralizationNode.DEFAULT, storage, idx, value);
+                setItemNode.execute(null, NoGeneralizationNode.DEFAULT, storage, idx, value);
             } catch (CannotCastException e) {
                 // fall through
             } catch (PException e) {

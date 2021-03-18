@@ -49,8 +49,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
@@ -233,13 +231,12 @@ public final class DictReprBuiltin extends PythonBuiltins {
         public Object repr(PDict dict,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create(3)") ForEachDictRepr consumerNode,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             if (!ctxt.reprEnter(dict)) {
                 return "{...}";
             }
             StringBuilder sb = PythonUtils.newStringBuilder("{");
-            HashingStorage dictStorage = getDictStorage.execute(dict);
+            HashingStorage dictStorage = dict.getDictStorage();
             lib.forEach(dictStorage, consumerNode, new ReprState(dict, dictStorage, sb));
             PythonUtils.append(sb, "}");
             ctxt.reprLeave(dict);
@@ -249,31 +246,28 @@ public final class DictReprBuiltin extends PythonBuiltins {
         @Specialization// use same limit as for EachRepr nodes library
         public Object repr(PDictKeysView view,
                         @Cached("create(3)") ForEachKeyRepr consumerNode,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            return viewRepr(view, PythonBuiltinClassType.PDictKeysView.getName(), getDictStorage, lib, consumerNode);
+            return viewRepr(view, PythonBuiltinClassType.PDictKeysView.getName(), lib, consumerNode);
         }
 
         @Specialization // use same limit as for EachRepr nodes library
         public Object repr(PDictValuesView view,
                         @Cached("create(3)") ForEachValueRepr consumerNode,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            return viewRepr(view, PythonBuiltinClassType.PDictValuesView.getName(), getDictStorage, lib, consumerNode);
+            return viewRepr(view, PythonBuiltinClassType.PDictValuesView.getName(), lib, consumerNode);
         }
 
         @Specialization// use same limit as for EachRepr nodes library
         public Object repr(PDictItemsView view,
                         @Cached("create(3)") ForEachItemRepr consumerNode,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            return viewRepr(view, PythonBuiltinClassType.PDictItemsView.getName(), getDictStorage, lib, consumerNode);
+            return viewRepr(view, PythonBuiltinClassType.PDictItemsView.getName(), lib, consumerNode);
         }
 
-        private static String viewRepr(PDictView view, String type, GetDictStorageNode getDictStorage, HashingStorageLibrary lib, AbstractForEachRepr consumerNode) {
+        private static String viewRepr(PDictView view, String type, HashingStorageLibrary lib, AbstractForEachRepr consumerNode) {
             StringBuilder sb = PythonUtils.newStringBuilder(type);
             PythonUtils.append(sb, "([");
-            HashingStorage dictStorage = getDictStorage.execute(view.getWrappedDict());
+            HashingStorage dictStorage = view.getWrappedDict().getDictStorage();
             lib.forEach(dictStorage, consumerNode, new ReprState(view, dictStorage, sb));
             PythonUtils.append(sb, "])");
             return PythonUtils.sbToString(sb);

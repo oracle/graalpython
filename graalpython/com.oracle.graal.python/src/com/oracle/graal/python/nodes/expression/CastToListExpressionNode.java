@@ -156,7 +156,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             PythonContext context = contextRef.get();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return constructListNode.execute(value);
+                return constructListNode.execute(frame, value);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
@@ -171,7 +171,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             PythonContext context = contextRef.get();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return constructListNode.execute(v);
+                return constructListNode.execute(frame, v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
                 throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);

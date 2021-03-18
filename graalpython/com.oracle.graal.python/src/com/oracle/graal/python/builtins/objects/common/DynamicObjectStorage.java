@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -50,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
@@ -78,6 +76,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.object.ShapeImpl;
 
 /**
  * This storage keeps a reference to the MRO when used for a type dict. Writing to this storage will
@@ -123,25 +122,11 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     protected static Object[] keyArray(Shape shape) {
-        List<Object> keyList = keyList(shape);
-        return keyList.toArray(new Object[keyList.size()]);
+        return ((ShapeImpl) shape).getKeyArray();
     }
 
     protected static List<Object> keyList(Shape shape) {
-        return filter(shape.getKeyList());
-    }
-
-    @TruffleBoundary
-    private static List<Object> filter(List<Object> l) {
-        ArrayList<Object> keyList = new ArrayList<>(l.size());
-        Iterator<Object> it = l.iterator();
-        while (it.hasNext()) {
-            Object n = it.next();
-            if (!(n instanceof HiddenPythonKey)) {
-                keyList.add(n);
-            }
-        }
-        return keyList;
+        return shape.getKeyList();
     }
 
     @ExportMessage
@@ -389,13 +374,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                     // To avoid calling the costly length message we use SIZE_THRESHOLD
                     newStore = new HashMapStorage(SIZE_THRESHOLD);
                 } else {
-                    int len;
-                    if (gotState.profile(state != null)) {
-                        len = lib.lengthWithState(self, state);
-                    } else {
-                        len = lib.length(self);
-                    }
-                    newStore = EconomicMapStorage.create(len);
+                    newStore = EconomicMapStorage.create(lib.length(self));
                 }
 
                 newStore = lib.addAllToOther(self, newStore);

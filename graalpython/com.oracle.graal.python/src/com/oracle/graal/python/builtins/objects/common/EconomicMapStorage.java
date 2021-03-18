@@ -550,7 +550,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                if (self.map.size() != otherlib.lengthWithState(other, state)) {
+                if (self.map.size() != otherlib.length(other)) {
                     return false;
                 }
                 MapCursor<DictKey, Object> cursor = self.map.getEntries();

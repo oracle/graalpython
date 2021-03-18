@@ -1086,9 +1086,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ToListNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object tolist(PArray self,
+        static Object tolist(VirtualFrame frame, PArray self,
                         @Cached ListNodes.ConstructListNode constructListNode) {
-            return constructListNode.execute(self);
+            return constructListNode.execute(frame, self);
         }
     }
 

@@ -52,7 +52,6 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -64,6 +63,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PythonUtils {
 
@@ -88,6 +88,7 @@ public final class PythonUtils {
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int[] EMPTY_INT_ARRAY = new int[0];
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
+    public static final char[] EMPTY_CHAR_ARRAY = new char[0];
 
     /**
      * Executes System.arraycopy and puts all exceptions on the slow path.
@@ -350,6 +351,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
+    public static ByteBuffer wrapByteBuffer(byte[] array, int offset, int length) {
+        return ByteBuffer.wrap(array, offset, length);
+    }
+
+    @TruffleBoundary
     public static byte[] getBufferArray(ByteBuffer buffer) {
         return buffer.array();
     }
@@ -357,6 +363,16 @@ public final class PythonUtils {
     @TruffleBoundary
     public static int getBufferPosition(ByteBuffer buffer) {
         return buffer.position();
+    }
+
+    @TruffleBoundary
+    public static int getBufferLimit(ByteBuffer buffer) {
+        return buffer.limit();
+    }
+
+    @TruffleBoundary
+    public static int getBufferRemaining(ByteBuffer buffer) {
+        return buffer.remaining();
     }
 
     @TruffleBoundary

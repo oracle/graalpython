@@ -37,6 +37,7 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -125,7 +126,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -193,6 +193,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         addConstants(PosixConstants.openFlags);
         addConstants(PosixConstants.waitOptions);
         addConstants(PosixConstants.accessMode);
+        addConstants(PosixConstants.rtld);
 
         addConstant(PosixConstants.SEEK_DATA);
         addConstant(PosixConstants.SEEK_HOLE);
@@ -213,7 +214,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        builtinConstants.put("_have_functions", core.factory().createList());
+        ArrayList<String> haveFunctions = new ArrayList<>();
+        Collections.addAll(haveFunctions, "HAVE_FACCESSAT", "HAVE_FCHDIR", "HAVE_FCHMOD", "HAVE_FCHMODAT", "HAVE_FDOPENDIR", "HAVE_FSTATAT", "HAVE_FTRUNCATE", "HAVE_FUTIMES", "HAVE_LUTIMES",
+                        "HAVE_MKDIRAT", "HAVE_OPENAT", "HAVE_READLINKAT", "HAVE_RENAMEAT", "HAVE_SYMLINKAT", "HAVE_UNLINKAT");
+        // Not implemented yet:
+        // "HAVE_FCHOWN", "HAVE_FCHOWNAT", "HAVE_FEXECVE", "HAVE_FPATHCONF", "HAVE_FSTATVFS",
+        // "HAVE_FUTIMESAT", "HAVE_LINKAT", "HAVE_LCHFLAGS", "HAVE_LCHMOD", "HAVE_LCHOWN",
+        // "HAVE_LSTAT", "HAVE_MEMFD_CREATE", "HAVE_MKFIFOAT", "HAVE_MKNODAT"
+        if (PosixConstants.HAVE_FUTIMENS.value) {
+            haveFunctions.add("HAVE_FUTIMENS");
+        }
+        if (PosixConstants.HAVE_UTIMENSAT.value) {
+            haveFunctions.add("HAVE_UTIMENSAT");
+        }
+        builtinConstants.put("_have_functions", core.factory().createList(haveFunctions.toArray()));
         builtinConstants.put("environ", core.factory().createDict());
 
         StructSequence.initType(core, STAT_RESULT_DESC);
@@ -387,7 +401,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
             Object[] opaqueArgs = new Object[args.length];
             for (int i = 0; i < args.length; ++i) {
-                opaqueArgs[i] = toOpaquePathNode.execute(frame, args[i]);
+                opaqueArgs[i] = toOpaquePathNode.execute(frame, args[i], i == 0);
             }
             // TODO ValueError "execv() arg 2 first element cannot be empty"
 
@@ -2154,14 +2168,26 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Similar to {@code PyUnicode_FSConverter}, but the actual conversion is delegated to the
      * {@link PosixSupportLibrary} implementation.
      */
-    abstract static class ObjectToOpaquePathNode extends Node {
-        abstract Object execute(VirtualFrame frame, Object obj);
+    abstract static class ObjectToOpaquePathNode extends PNodeWithRaise {
+        abstract Object execute(VirtualFrame frame, Object obj, boolean checkEmpty);
 
-        @Specialization
-        Object doIt(VirtualFrame frame, Object obj,
+        @Specialization(guards = "!checkEmpty")
+        Object noCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Cached FspathNode fspathNode,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             return stringOrBytesToOpaquePathNode.execute(fspathNode.call(frame, obj));
+        }
+
+        @Specialization(guards = "checkEmpty", limit = "2")
+        Object withCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
+                        @Cached FspathNode fspathNode,
+                        @CachedLibrary("obj") PythonObjectLibrary lib,
+                        @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
+            Object stringOrBytes = fspathNode.call(frame, obj);
+            if (lib.lengthWithFrame(obj, frame) == 0) {
+                throw raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
+            }
+            return stringOrBytesToOpaquePathNode.execute(stringOrBytes);
         }
     }
 

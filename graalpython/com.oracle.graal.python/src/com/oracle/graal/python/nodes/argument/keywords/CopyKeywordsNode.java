@@ -63,8 +63,10 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
@@ -145,18 +147,23 @@ public abstract class CopyKeywordsNode extends Node {
 
     @Specialization(guards = "!isBuiltinDict(starargs, classProfile)", limit = "getCallSiteInlineCacheMaxDepth()")
     void doDict(PArguments.ThreadState state, PDict starargs, PKeyword[] keywords,
-                    @Cached GetNextNode.GetNextWithoutFrameNode getNextNode,
+                    @Cached GetNextNode getNextNode,
                     @Cached CastToJavaStringNode castToJavaStringNode,
                     @Cached IsBuiltinClassProfile errorProfile,
                     @CachedLibrary("starargs") PythonObjectLibrary pol,
                     @Cached PRaiseNode raiseNode,
+                    @Cached ConditionProfile gotState,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile classProfile) {
         Object iter = pol.getIteratorWithState(starargs, state);
         int i = 0;
         while (true) {
             Object key;
             try {
-                key = getNextNode.executeWithGlobalState(iter);
+                VirtualFrame frame = null;
+                if (gotState.profile(state != null)) {
+                    frame = PArguments.frameForCall(state);
+                }
+                key = getNextNode.execute(frame, iter);
                 Object value = pol.lookupAndCallSpecialMethodWithState(starargs, state, __GETITEM__, key);
                 keywords[i++] = new PKeyword(castToJavaStringNode.execute(key), value);
             } catch (PException e) {

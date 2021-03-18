@@ -457,7 +457,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                           Frame: [2,files,Illegal]
                                                         ReadFromCellNodeGen SourceSection: None
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
@@ -469,7 +469,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None

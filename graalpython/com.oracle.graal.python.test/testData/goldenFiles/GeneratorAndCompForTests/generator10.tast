@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                           GetIteratorExpressionNodeGen SourceSection: [73,74]`f`
                             ReadGeneratorFrameVariableNodeGen SourceSection: [73,74]`f`
                               Frame: [2,f,Illegal]
-                          GetNextNode SourceSection: None
+                          GetNextCached SourceSection: None
                             LookupAndCallUnaryNodeGen SourceSection: None
                               Op: __next__
                           GeneratorAccessNode SourceSection: None

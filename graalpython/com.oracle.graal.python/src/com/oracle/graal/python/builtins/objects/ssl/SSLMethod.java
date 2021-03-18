@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,45 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.getsetdescriptor;
+package com.oracle.graal.python.builtins.objects.ssl;
 
-import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-/**
- * Use instead of {@link HiddenKey} which does comparison based on object identity.
- */
-public final class HiddenPythonKey {
-    private final String name;
+public enum SSLMethod {
+    SSL3(1, SSLProtocol.SSLv3),
+    TLS(2),
+    TLS1(3, SSLProtocol.TLSv1),
+    TLS1_1(4, SSLProtocol.TLSv1_1),
+    TLS1_2(5, SSLProtocol.TLSv1_2),
+    TLS_CLIENT(0x10),
+    TLS_SERVER(0x11);
 
-    public HiddenPythonKey(String name) {
-        assert name != null;
-        this.name = name;
+    private final int pythonId;
+    private final SSLProtocol singleVersion;
+
+    SSLMethod(int pythonId, SSLProtocol singleVersion) {
+        this.pythonId = pythonId;
+        this.singleVersion = singleVersion;
     }
 
-    public String getName() {
-        return name;
+    SSLMethod(int pythonId) {
+        this.pythonId = pythonId;
+        this.singleVersion = null;
     }
 
-    @Override
-    public String toString() {
-        return name;
+    public int getPythonId() {
+        return pythonId;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
+    public boolean allowsProtocol(SSLProtocol protocol) {
+        return singleVersion == null || singleVersion == protocol;
+    }
+
+    public boolean isSingleVersion() {
+        return singleVersion != null;
+    }
+
+    @ExplodeLoop
+    public static SSLMethod fromPythonId(int pythonId) {
+        for (SSLMethod method : SSLMethod.values()) {
+            if (method.getPythonId() == pythonId) {
+                return method;
+            }
         }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        final HiddenPythonKey other = (HiddenPythonKey) obj;
-        return name.equals(other.name);
+        return null;
     }
-
-    @Override
-    public int hashCode() {
-        return name.hashCode();
-    }
-
 }

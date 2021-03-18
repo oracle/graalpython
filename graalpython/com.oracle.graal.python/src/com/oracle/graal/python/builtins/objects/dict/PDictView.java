@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -123,8 +122,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
-                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
                         @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
@@ -158,8 +156,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
-                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
                         @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
@@ -204,8 +201,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
-                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
-                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
                         @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();

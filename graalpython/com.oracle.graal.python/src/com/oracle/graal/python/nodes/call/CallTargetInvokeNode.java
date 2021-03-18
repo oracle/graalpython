@@ -54,6 +54,7 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -107,7 +108,7 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     protected Object doNoClosure(VirtualFrame frame, PFunction callee, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
                     @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
                     @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
         optionallySetClassBodySpecial(arguments, ct, classBodyProfile);
         optionallySetGeneratorFunction(arguments, ct, generatorFunctionProfile, callee);
@@ -117,6 +118,7 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         // 2. This invoke node is (indirectly) used behind a TruffleBoundary.
         // This is preferably prepared using 'IndirectCallContext.enter'.
         if (profileIsNullFrame(frame == null)) {
+            PythonContext context = contextRef.get();
             PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, ct);
             try {
                 return callNode.call(arguments);
@@ -133,10 +135,10 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     protected Object doGeneric(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments,
                     @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
                     @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        return doNoClosure(frame, callee, null, null, arguments, classBodyProfile, generatorFunctionProfile, context);
+        return doNoClosure(frame, callee, null, null, arguments, classBodyProfile, generatorFunctionProfile, contextRef);
     }
 
     public final CallTarget getCallTarget() {

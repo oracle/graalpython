@@ -1,3 +1,4 @@
+*graalpython.lib-python.3.test.test_os.BlockingTests.test_blocking
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_compare_to_walk
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_dir_fd
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_fd_leak
@@ -43,8 +44,10 @@
 *graalpython.lib-python.3.test.test_os.EnvironTests.test_read
 *graalpython.lib-python.3.test.test_os.EnvironTests.test_setdefault
 *graalpython.lib-python.3.test.test_os.EnvironTests.test_update
+*graalpython.lib-python.3.test.test_os.EnvironTests.test_update2
 *graalpython.lib-python.3.test.test_os.EnvironTests.test_values
 *graalpython.lib-python.3.test.test_os.EnvironTests.test_write
+*graalpython.lib-python.3.test.test_os.ExecTests.test_execv_with_bad_arglist
 *graalpython.lib-python.3.test.test_os.ExecTests.test_execve_with_empty_path
 *graalpython.lib-python.3.test.test_os.ExecTests.test_execvpe_with_bad_program
 *graalpython.lib-python.3.test.test_os.ExportsTests.test_os_all
@@ -52,8 +55,10 @@
 *graalpython.lib-python.3.test.test_os.ExtendedAttributeTests.test_lpath
 *graalpython.lib-python.3.test.test_os.ExtendedAttributeTests.test_simple
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_dup
+*graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_dup2
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_dup_nul
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_dup_standard_stream
+*graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_get_set_inheritable
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_open
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_openpty
 *graalpython.lib-python.3.test.test_os.FDInheritanceTests.test_pipe
@@ -92,14 +97,17 @@
 *graalpython.lib-python.3.test.test_os.MakedirTests.test_exist_ok_existing_regular_file
 *graalpython.lib-python.3.test.test_os.MakedirTests.test_exist_ok_s_isgid_directory
 *graalpython.lib-python.3.test.test_os.MakedirTests.test_makedir
+*graalpython.lib-python.3.test.test_os.MakedirTests.test_mode
 *graalpython.lib-python.3.test.test_os.MemfdCreateTests.test_memfd_create
 *graalpython.lib-python.3.test.test_os.MiscTests.test_getcwd
 *graalpython.lib-python.3.test.test_os.MiscTests.test_getcwd_long_path
 *graalpython.lib-python.3.test.test_os.MiscTests.test_getcwdb
 *graalpython.lib-python.3.test.test_os.NonLocalSymlinkTests.test_directory_link_nonlocal
+*graalpython.lib-python.3.test.test_os.OSErrorTests.test_oserror_filename
 *graalpython.lib-python.3.test.test_os.PathTConverterTests.test_path_t_converter
 *graalpython.lib-python.3.test.test_os.PathTConverterTests.test_path_t_converter_and_custom_class
 *graalpython.lib-python.3.test.test_os.Pep383Tests.test_statvfs
+*graalpython.lib-python.3.test.test_os.PidTests.test_getppid
 *graalpython.lib-python.3.test.test_os.PidTests.test_waitpid_windows
 *graalpython.lib-python.3.test.test_os.PosixUidGidTests.test_setegid
 *graalpython.lib-python.3.test.test_os.PosixUidGidTests.test_seteuid
@@ -146,7 +154,10 @@
 *graalpython.lib-python.3.test.test_os.StatAttributeTests.test_statvfs_result_pickle
 *graalpython.lib-python.3.test.test_os.TermsizeTests.test_does_not_crash
 *graalpython.lib-python.3.test.test_os.TermsizeTests.test_stty_match
+*graalpython.lib-python.3.test.test_os.TestInvalidFD.test_blocking
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_closerange
+*graalpython.lib-python.3.test.test_os.TestInvalidFD.test_dup
+*graalpython.lib-python.3.test.test_os.TestInvalidFD.test_dup2
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fchdir
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fchmod
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fchown
@@ -155,6 +166,8 @@
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fpathconf
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fstat
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fstatvfs
+*graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fsync
+*graalpython.lib-python.3.test.test_os.TestInvalidFD.test_inheritable
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_isatty
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_lseek
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_read
@@ -184,6 +197,7 @@
 *graalpython.lib-python.3.test.test_os.TestScandir.test_bad_path_type
 *graalpython.lib-python.3.test.test_os.TestScandir.test_broken_symlink
 *graalpython.lib-python.3.test.test_os.TestScandir.test_bytes
+*graalpython.lib-python.3.test.test_os.TestScandir.test_bytes_like
 *graalpython.lib-python.3.test.test_os.TestScandir.test_close
 *graalpython.lib-python.3.test.test_os.TestScandir.test_consume_iterator_twice
 *graalpython.lib-python.3.test.test_os.TestScandir.test_context_manager
@@ -194,7 +208,10 @@
 *graalpython.lib-python.3.test.test_os.TestScandir.test_fd
 *graalpython.lib-python.3.test.test_os.TestScandir.test_fspath_protocol
 *graalpython.lib-python.3.test.test_os.TestScandir.test_fspath_protocol_bytes
+*graalpython.lib-python.3.test.test_os.TestScandir.test_removed_dir
+*graalpython.lib-python.3.test.test_os.TestScandir.test_removed_file
 *graalpython.lib-python.3.test.test_os.TestScandir.test_repr
+*graalpython.lib-python.3.test.test_os.TestScandir.test_resource_warning
 *graalpython.lib-python.3.test.test_os.TestSendfile.test_flags
 *graalpython.lib-python.3.test.test_os.TestSendfile.test_headers
 *graalpython.lib-python.3.test.test_os.TestSendfile.test_headers_overflow_32bits
@@ -218,6 +235,7 @@
 *graalpython.lib-python.3.test.test_os.UtimeTests.test_utime_dir_fd
 *graalpython.lib-python.3.test.test_os.UtimeTests.test_utime_directory
 *graalpython.lib-python.3.test.test_os.UtimeTests.test_utime_fd
+*graalpython.lib-python.3.test.test_os.UtimeTests.test_utime_invalid_arguments
 *graalpython.lib-python.3.test.test_os.UtimeTests.test_utime_nofollow_symlinks
 *graalpython.lib-python.3.test.test_os.WalkTests.test_file_like_path
 *graalpython.lib-python.3.test.test_os.WalkTests.test_walk_bad_dir

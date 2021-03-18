@@ -153,7 +153,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -262,6 +261,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -1132,6 +1132,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private static Object stringToIntInternal(String num, int base) {
             try {
                 BigInteger bi = asciiToBigInteger(num, base);
+                if (bi == null) {
+                    return null;
+                }
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                     return bi;
                 } else {
@@ -1266,9 +1269,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 base = 10;
             }
 
-            int i = b;
-            while (i < e) {
-                if (str.charAt(i) == '_') {
+            // reject invalid characters without going to BigInteger
+            for (int i = b; i < e; i++) {
+                char c = str.charAt(i);
+                if (c == '_') {
                     if (!acceptUnderscore || i == e - 1) {
                         throw new NumberFormatException("Illegal underscore in int literal");
                     } else {
@@ -1276,8 +1280,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                 } else {
                     acceptUnderscore = true;
+                    if (Character.digit(c, base) == -1) {
+                        // invalid char
+                        return null;
+                    }
                 }
-                ++i;
             }
 
             String s = str;
@@ -1659,7 +1666,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             @Cached CastToJavaStringNode cast,
                             @Cached ListNodes.ConstructListNode constructListNode,
                             @Cached PRaiseNode raiseNode) {
-                PList list = constructListNode.execute(readAttributeFromObjectNode.execute(type, __ABSTRACTMETHODS__));
+                PList list = constructListNode.execute(frame, readAttributeFromObjectNode.execute(type, __ABSTRACTMETHODS__));
                 int methodCount = lib.lengthWithFrame(list, frame);
                 lib.lookupAndCallRegularMethod(list, frame, "sort");
                 String joined = cast.execute(lib.lookupAndCallRegularMethod(", ", frame, "join", list));
@@ -2271,7 +2278,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached IsIdentifierNode isIdentifier,
-                        @Cached HashingCollectionNodes.SetDictStorageNode setStorage,
                         @Cached HashingStorage.InitNode initNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
@@ -2288,7 +2294,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = factory().createDict();
-                setStorage.execute(namespace, initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
+                namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
                                 isIdentifier);
 
@@ -2513,7 +2519,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         // TODO avoid if native slots are inherited
                         try {
                             String mangledName = PythonSSTNodeFactory.mangleName(name, slotName);
-                            HiddenPythonKey hiddenSlotKey = new HiddenPythonKey(mangledName);
+
+                            HiddenKey hiddenSlotKey = createTypeKey(mangledName);
                             HiddenKeyDescriptor slotDesc = factory().createHiddenKeyDescriptor(hiddenSlotKey, pythonClass);
                             pythonClass.setAttribute(mangledName, slotDesc);
                         } catch (OverflowException e) {
@@ -2547,6 +2554,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             return pythonClass;
+        }
+
+        @TruffleBoundary
+        private static HiddenKey createTypeKey(String name) {
+            return PythonLanguage.getCurrent().typeHiddenKeys.computeIfAbsent(name, n -> new HiddenKey(n));
         }
 
         @TruffleBoundary

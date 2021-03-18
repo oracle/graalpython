@@ -486,7 +486,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             Object localsDict = LocalsNode.getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
             Object keysObj = callKeysNode.executeObject(frame, localsDict);
-            PList list = constructListNode.execute(keysObj);
+            PList list = constructListNode.execute(frame, keysObj);
             sortNode.sort(frame, list);
             return list;
         }
@@ -496,7 +496,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            PList list = constructListNode.execute(lib.lookupAndCallSpecialMethod(object, frame, __DIR__));
+            PList list = constructListNode.execute(frame, lib.lookupAndCallSpecialMethod(object, frame, __DIR__));
             sortNode.sort(frame, list);
             return list;
         }
@@ -1509,7 +1509,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             try {
                 end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.END_MUST_BE_NONE_OR_STRING, sepIn);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_BE_NONE_OR_STRING, "end", sepIn);
             }
 
             Object file;
@@ -1699,7 +1699,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object sorted(VirtualFrame frame, Object iterable, PKeyword[] keywords,
                         @Cached ConstructListNode constructListNode,
                         @Cached ListSortNode sortNode) {
-            PList list = constructListNode.execute(iterable);
+            PList list = constructListNode.execute(frame, iterable);
             sortNode.execute(frame, list, PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
             return list;
         }
