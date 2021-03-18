@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.AnnotationSSTNode;
 import com.oracle.graal.python.parser.sst.ArgListBuilder;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
@@ -324,7 +325,13 @@ public final class PythonSSTNodeFactory {
         return new AssignmentSSTNode(lhs, rhs, start, stop);
     }
 
-    public SSTNode createAnnAssignment(SSTNode lhs, SSTNode type, SSTNode rhs, int start, int end) {
+    public SSTNode createAnnAssignment(AnnotationSSTNode annotation, SSTNode rhs, int start, int end) {
+        checkAssignable(annotation.getLhs(), start, end);
+        declareVar(annotation.getLhs());
+        return new AnnAssignmentSSTNode(annotation, rhs, start, end);
+    }
+
+    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int start, int end) {
         // checking if the annotation has the right target
         if (!(lhs instanceof VarLookupSSTNode || lhs instanceof GetAttributeSSTNode || lhs instanceof SubscriptSSTNode)) {
             if (lhs instanceof CollectionSSTNode) {
@@ -337,12 +344,10 @@ public final class PythonSSTNodeFactory {
             }
             throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), ErrorMessages.ILLEGAL_TARGET_FOR_ANNOTATION);
         }
-        checkAssignable(lhs, start, end);
-        declareVar(lhs);
         if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
             scopeEnvironment.getCurrentScope().setHasAnnotations(true);
         }
-        return new AnnAssignmentSSTNode(lhs, type, rhs, start, end);
+        return new AnnotationSSTNode(lhs, type, start, end);
     }
 
     public SSTNode createAugAssignment(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {

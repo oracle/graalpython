@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,22 @@
  */
 package com.oracle.graal.python.parser.sst;
 
-public class AnnAssignmentSSTNode extends AssignmentSSTNode {
-    protected final AnnotationSSTNode annotation;
+public class AnnotationSSTNode extends SSTNode {
+    protected final SSTNode lhs;
+    protected final SSTNode type;
 
-    public AnnAssignmentSSTNode(AnnotationSSTNode annotation, SSTNode rhs, int start, int end) {
-        super(new SSTNode[]{annotation.lhs}, rhs, start, end);
-        this.annotation = annotation;
+    public AnnotationSSTNode(SSTNode lhs, SSTNode type, int startOffset, int endOffset) {
+        super(startOffset, endOffset);
+        this.lhs = lhs;
+        this.type = type;
+    }
+
+    public SSTNode getLhs() {
+        return lhs;
+    }
+
+    public SSTNode getType() {
+        return type;
     }
 
     @Override

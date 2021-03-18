@@ -109,10 +109,19 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.rhs.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.type.accept(this)) != null) {
+            return node.annotation.accept(this);
+        }
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(AnnotationSSTNode node) {
+        if (isSubNode(node)) {
+            SSTNodeWithScope result;
+            if ((result = node.lhs.accept(this)) != null) {
                 return result;
             }
-            return visitNodes(node.lhs);
+            return node.type.accept(this);
         }
         return null;
     }
