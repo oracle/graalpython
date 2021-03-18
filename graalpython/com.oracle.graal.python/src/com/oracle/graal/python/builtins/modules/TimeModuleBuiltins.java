@@ -86,6 +86,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.time.format.TextStyle;
+import java.util.Locale;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
@@ -181,7 +183,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[TM_WDAY] = zonedDateTime.getDayOfWeek().getValue() - 1; /* Want Monday == 0 */
         timeStruct[TM_YDAY] = zonedDateTime.getDayOfYear(); /* Want January, 1 == 1 */
         timeStruct[TM_ISDST] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
-        timeStruct[9] = zone.getId();
+        timeStruct[9] = zone.getDisplayName(TextStyle.SHORT, Locale.ROOT);
         timeStruct[10] = zonedDateTime.getOffset().getTotalSeconds();
 
         return timeStruct;
