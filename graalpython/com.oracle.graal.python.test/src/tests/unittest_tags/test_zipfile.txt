@@ -201,6 +201,7 @@
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_implied_dirs_performance
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_iterdir_and_types
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_joinpath
+*graalpython.lib-python.3.test.test_zipfile.TestPath.test_joinpath_constant_time
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_missing_dir_parent
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_mutability
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_open

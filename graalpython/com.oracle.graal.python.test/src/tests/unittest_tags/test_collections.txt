@@ -23,6 +23,7 @@
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue16373
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue26915
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue8750
+*graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue_4920
 *graalpython.lib-python.3.test.test_collections.TestCollectionABCs.test_issue_5647
 *graalpython.lib-python.3.test.test_collections.TestCounter.test_basics
 *graalpython.lib-python.3.test.test_collections.TestCounter.test_conversions

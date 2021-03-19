@@ -1249,10 +1249,11 @@ class ContextTests(unittest.TestCase):
             ctx.maximum_version, ssl.TLSVersion.MAXIMUM_SUPPORTED
         )
 
+        # XXX GraalVM change - don't assume that TLSv1.1 is the lowest available version, for us it can be TLSv1.2
         ctx.maximum_version = ssl.TLSVersion.MINIMUM_SUPPORTED
         self.assertIn(
             ctx.maximum_version,
-            {ssl.TLSVersion.TLSv1, ssl.TLSVersion.SSLv3}
+            {ssl.TLSVersion.TLSv1, ssl.TLSVersion.TLSv1_2, ssl.TLSVersion.SSLv3}
         )
 
         ctx.minimum_version = ssl.TLSVersion.MAXIMUM_SUPPORTED
@@ -3855,6 +3856,7 @@ class ThreadedTests(unittest.TestCase):
 
     @requires_minimum_version
     @requires_tls_version('TLSv1_2')
+    @requires_tls_version('TLSv1')
     def test_min_max_version_mismatch(self):
         client_context, server_context, hostname = testing_context()
         # client 1.0, server 1.2 (mismatch)

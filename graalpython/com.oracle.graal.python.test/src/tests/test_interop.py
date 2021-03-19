@@ -638,17 +638,17 @@ if sys.implementation.name == "graalpython":
             assert True
         else:
             assert False, "should throw a type error again"
-            
+
+    @skipIf(is_native, "not supported in native mode")
     def test_foreign_repl():
         from java.util.logging import LogRecord
         from java.util.logging import Level
-        
+
         lr = LogRecord(Level.ALL, "message")
         assert repr(LogRecord).startswith('<JavaClass[java.util.logging.LogRecord] at')
         assert repr(lr).startswith('<JavaObject[java.util.logging.LogRecord] at')
-        
+
         from java.lang import Integer
         i = Integer('22')
         assert repr(Integer).startswith('<JavaClass[java.lang.Integer] at')
         assert repr(i) == '22'
-        

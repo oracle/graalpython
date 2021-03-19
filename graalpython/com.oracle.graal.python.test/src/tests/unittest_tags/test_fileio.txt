@@ -91,3 +91,4 @@
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUtf8BytesOpen
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testWarnings
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.test_open_code
+*graalpython.lib-python.3.test.test_fileio.TestMain.test_main

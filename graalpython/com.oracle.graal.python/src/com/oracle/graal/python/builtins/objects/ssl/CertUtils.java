@@ -61,7 +61,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URI;
 import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -86,6 +85,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -107,11 +109,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.nodes.Node;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
-import sun.security.provider.certpath.OCSP;
 import sun.security.util.DerValue;
 import sun.security.x509.AccessDescription;
 import sun.security.x509.AuthorityInfoAccessExtension;
@@ -121,6 +119,7 @@ import sun.security.x509.GeneralName;
 import sun.security.x509.GeneralNameInterface;
 import sun.security.x509.GeneralNames;
 import sun.security.x509.URIName;
+import sun.security.x509.X509CertImpl;
 
 public final class CertUtils {
 
@@ -352,9 +351,24 @@ public final class CertUtils {
 
     @TruffleBoundary
     private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) {
-        URI ocsp = OCSP.getResponderURI(cert);
-        if (ocsp != null) {
-            return factory.createTuple(new String[]{ocsp.toString()});
+        // Inlined from sun.security.provider.certpath.OCSP#getResponderURI
+        // Examine the certificate's AuthorityInfoAccess extension
+        X509CertImpl certImpl = (X509CertImpl) cert;
+        AuthorityInfoAccessExtension aia = certImpl.getAuthorityInfoAccessExtension();
+        if (aia == null) {
+            return null;
+        }
+
+        List<AccessDescription> descriptions = aia.getAccessDescriptions();
+        for (AccessDescription description : descriptions) {
+            if (description.getAccessMethod().equals(
+                            (Object) AccessDescription.Ad_OCSP_Id)) {
+                GeneralName generalName = description.getAccessLocation();
+                if (generalName.getType() == GeneralNameInterface.NAME_URI) {
+                    URIName uri = (URIName) generalName.getName();
+                    return factory.createTuple(new String[]{uri.getURI().toString()});
+                }
+            }
         }
         return null;
     }

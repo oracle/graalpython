@@ -321,6 +321,9 @@ public class SocketBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @SuppressWarnings("try")
         Object listen(PSocket socket, int backlog) {
+            if (socket.getServerSocket() != null) {
+                return PNone.NONE;
+            }
             try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 InetAddress host = InetAddress.getByName(socket.serverHost);
                 InetSocketAddress socketAddress = new InetSocketAddress(host, socket.serverPort);
