@@ -161,21 +161,25 @@ public final class CertUtils {
      * _ssl.c#_decode_certificate
      */
     @TruffleBoundary
-    public static PDict decodeCertificate(X509Certificate cert) throws IOException, CertificateParsingException {
+    public static PDict decodeCertificate(Node node, X509Certificate cert) throws IOException, CertificateParsingException {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
         HashingStorageLibrary hlib = HashingStorageLibrary.getUncached();
-        storage = setItem(hlib, storage, JAVA_X509_OCSP, parseOCSP(cert, factory));
-        storage = setItem(hlib, storage, JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
-        storage = setItem(hlib, storage, JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerDN().getName(), factory));
-        storage = setItem(hlib, storage, JAVA_X509_NOT_AFTER, getNotAfter(cert));
-        storage = setItem(hlib, storage, JAVA_X509_NOT_BEFORE, getNotBefore(cert));
-        storage = setItem(hlib, storage, JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
-        storage = setItem(hlib, storage, JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
-        storage = setItem(hlib, storage, JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectDN().getName(), factory));
-        storage = setItem(hlib, storage, JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
-        storage = setItem(hlib, storage, JAVA_X509_VERSION, getVersion(cert));
+        try {
+            storage = setItem(hlib, storage, JAVA_X509_OCSP, parseOCSP(cert, factory));
+            storage = setItem(hlib, storage, JAVA_X509_CA_ISSUERS, parseCAIssuers(cert, factory));
+            storage = setItem(hlib, storage, JAVA_X509_ISSUER, createTupleForX509Name(cert.getIssuerX500Principal().getName("RFC1779"), factory));
+            storage = setItem(hlib, storage, JAVA_X509_NOT_AFTER, getNotAfter(cert));
+            storage = setItem(hlib, storage, JAVA_X509_NOT_BEFORE, getNotBefore(cert));
+            storage = setItem(hlib, storage, JAVA_X509_SERIAL_NUMBER, getSerialNumber(cert));
+            storage = setItem(hlib, storage, JAVA_X509_CRL_DISTRIBUTION_POINTS, parseCRLPoints(cert, factory));
+            storage = setItem(hlib, storage, JAVA_X509_SUBJECT, createTupleForX509Name(cert.getSubjectX500Principal().getName("RFC1779"), factory));
+            storage = setItem(hlib, storage, JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, factory));
+            storage = setItem(hlib, storage, JAVA_X509_VERSION, getVersion(cert));
+        } catch (RuntimeException re) {
+            throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, re);
+        }
         dict.setDictStorage(storage);
         return dict;
     }
