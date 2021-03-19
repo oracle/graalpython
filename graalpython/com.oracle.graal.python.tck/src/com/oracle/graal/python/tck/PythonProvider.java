@@ -244,7 +244,7 @@ public class PythonProvider implements LanguageProvider {
         addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
         addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
 
-        addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, dict(ANY, ANY)), ANY);
+        addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, hash(ANY, ANY)), ANY);
         addExpressionSnippet(context, snippets, "[a:b]", "lambda x: x[:]", union(STRING, array(ANY)), union(STRING, array(ANY)));
 
         // @formatter:on
@@ -446,6 +446,7 @@ public class PythonProvider implements LanguageProvider {
     }
 
     private static class GetItemVerifier extends PResultVerifier {
+        private static final String[] UNHASHABLE_TYPES = new String[] {"list", "dict", "bytearray", "set"};
 
         public void accept(SnippetRun snippetRun) throws PolyglotException {
             List<? extends Value> parameters = snippetRun.getParameters();
@@ -477,6 +478,16 @@ public class PythonProvider implements LanguageProvider {
                     assert snippetRun.getException() != null;
                 }
             } else if (par0.hasHashEntries()) {
+                if (par1.getMetaObject() != null) {
+                    String metaName = par1.getMetaObject().getMetaQualifiedName();
+                    for (String s : UNHASHABLE_TYPES) {
+                        if (metaName.equals(s)) {
+                            // those don't work, but that's expected
+                            assert snippetRun.getException() != null;
+                            return;
+                        }
+                    }
+                }
                 Value v = par0.getHashValueOrDefault(par1, PythonProvider.class.getName());
                 if (v.isString() && v.asString().equals(PythonProvider.class.getName())) {
                     assert snippetRun.getException() != null;
