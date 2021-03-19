@@ -285,6 +285,7 @@ public abstract class ErrorMessages {
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
     public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
+    public static final String S_ILLEGAL_TIME_TUPLE_ARG = "%s: illegal time tuple argument";
     public static final String IMPORT_STAR_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
     public static final String INCOMPLETE_FORMAT = "incomplete format";
     public static final String INDEX_NOT_INT = "%s: index not int";
@@ -507,6 +508,7 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NULL_WO_SETTING_ERROR = "%s returned NULL without setting an error";
     public static final String RETURNED_RESULT_WITH_ERROR_SET = "%s returned a result with an error set";
     public static final String RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = "%s returned an unexpected return code; expected 'int' but was %s";
+    public static final String EMBEDDED_NULL_CHARACTER = "embedded null character";
     public static final String S_EMBEDDED_NULL_CHARACTER_IN_S = "%sembedded null character in %s";
     public static final String S_MUST_BE_S = "%s must be %s";
     public static final String S_NOT_SUPPORTED = "%s not supported";

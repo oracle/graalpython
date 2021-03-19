@@ -78,6 +78,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -86,6 +87,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.time.format.TextStyle;
+import java.util.Locale;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
@@ -181,7 +184,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[TM_WDAY] = zonedDateTime.getDayOfWeek().getValue() - 1; /* Want Monday == 0 */
         timeStruct[TM_YDAY] = zonedDateTime.getDayOfYear(); /* Want January, 1 == 1 */
         timeStruct[TM_ISDST] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
-        timeStruct[9] = zone.getId();
+        timeStruct[9] = zone.getDisplayName(TextStyle.SHORT, Locale.ROOT);
         timeStruct[10] = zonedDateTime.getOffset().getTotalSeconds();
 
         return timeStruct;
@@ -541,8 +544,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         CastToJavaIntExactNode toJavaIntExact,
                         PRaiseNode raise) {
             Object[] otime = getInternalObjectArrayNode.execute(time.getSequenceStorage());
-            if (lenNode.execute(time.getSequenceStorage()) < 9) {
-                throw raise.raise(TypeError, ErrorMessages.FUNC_TAKES_AT_LEAST_D_ARGS, 9, otime.length);
+            if (lenNode.execute(time.getSequenceStorage()) != 9) {
+                throw raise.raise(TypeError, ErrorMessages.S_ILLEGAL_TIME_TUPLE_ARG, "asctime()");
             }
             int[] date = new int[9];
             for (int i = 0; i < 9; i++) {
@@ -551,7 +554,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
             // This is specific to java
             if (date[TM_YEAR] < Year.MIN_VALUE || date[TM_YEAR] > Year.MAX_VALUE) {
-                throw raise.raise(ValueError, "year out of range");
+                throw raise.raise(OverflowError, "year out of range");
             }
 
             if (date[TM_MON] == 0) {
@@ -837,6 +840,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public String formatTime(String format, @SuppressWarnings("unused") PNone time) {
+            if (format.indexOf(0) > -1) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
+            }
             return format(format, getIntLocalTimeStruct((long) timeSeconds()));
         }
 
@@ -846,6 +852,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached CastToJavaIntExactNode castToInt) {
+            if (format.indexOf(0) > -1) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
+            }
             int[] date = checkStructtime(time, getArray, lenNode, lib, castToInt, getRaiseNode());
             return format(format, date);
         }
@@ -939,6 +948,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonObjectLibrary asPIntLib,
                         @Cached CastToJavaIntExactNode toJavaIntExact) {
             return format(StrfTimeNode.checkStructtime(time, getArray, lenNode, asPIntLib, toJavaIntExact, getRaiseNode()));
+        }
+
+        @Fallback
+        public Object localtime(@SuppressWarnings("unused") Object time) {
+            throw raise(TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
 
         protected static String format(int[] tm) {
