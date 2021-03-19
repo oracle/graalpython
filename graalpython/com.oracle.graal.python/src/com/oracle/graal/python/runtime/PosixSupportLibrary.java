@@ -83,7 +83,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int openat(Object receiver, int dirFd, Object pathname, int flags, int mode) throws PosixException;
 
-    public abstract void close(Object receiver, int fd) throws PosixException;
+    public abstract int close(Object receiver, int fd) throws PosixException;
 
     public abstract Buffer read(Object receiver, int fd, long length) throws PosixException;
 

@@ -2257,7 +2257,7 @@ def threading_setup():
 def threading_cleanup(*original_values):
     global environment_altered
 
-    _MAX_COUNT = 100
+    _MAX_COUNT = 10
 
     for count in range(_MAX_COUNT):
         values = _thread._count(), threading._dangling
@@ -2298,7 +2298,7 @@ def reap_threads(func):
 
 
 @contextlib.contextmanager
-def wait_threads_exit(timeout=60.0):
+def wait_threads_exit(timeout=6.0):
     """
     bpo-31234: Context manager to wait until all threads created in the with
     statement exit.
@@ -2332,7 +2332,7 @@ def wait_threads_exit(timeout=60.0):
             gc_collect()
 
 
-def join_thread(thread, timeout=30.0):
+def join_thread(thread, timeout=3.0):
     """Join a thread. Raise an AssertionError if the thread is still alive
     after timeout seconds.
     """
@@ -2997,6 +2997,7 @@ def run_in_subinterp(code):
             raise unittest.SkipTest("run_in_subinterp() cannot be used "
                                      "if tracemalloc module is tracing "
                                      "memory allocations")
+    assert sys.implementation.name != "graalpython", "Truffle change - we do not support subinterp yet"
     import _testcapi
     return _testcapi.run_in_subinterp(code)
 

@@ -124,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -222,7 +223,7 @@ public abstract class PythonObjectFactory extends Node {
         return executeGetShape(cls, true);
     }
 
-    public final <T> T trace(T allocatedObject) {
+    public final synchronized <T> T trace(T allocatedObject) {
         executeTrace(allocatedObject, AllocationReporter.SIZE_UNKNOWN);
         return allocatedObject;
     }
@@ -929,6 +930,10 @@ public abstract class PythonObjectFactory extends Node {
     /*
      * Threading
      */
+
+    public PThreadLocal createThreadLocal(Object cls, Object[] args, PKeyword[] kwArgs) {
+        return trace(new PThreadLocal(cls, getShape(cls), args, kwArgs));
+    }
 
     public final PLock createLock() {
         return createLock(PythonBuiltinClassType.PLock);

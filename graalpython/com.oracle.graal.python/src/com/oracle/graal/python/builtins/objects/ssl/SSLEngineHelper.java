@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -392,6 +393,7 @@ public class SSLEngineHelper {
         throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_SSL, e.toString());
     }
 
+    @SuppressWarnings("try")
     private static int obtainMoreInput(PNodeWithRaise node, SSLEngine engine, PMemoryBIO networkInboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException, OverflowException {
         if (socket != null) {
             if (socket.getSocket() == null) {
@@ -426,7 +428,7 @@ public class SSLEngineHelper {
             ByteBuffer writeBuffer = networkInboundBIO.getBufferForWriting();
             // Avoid reading more that we determined
             writeBuffer.limit(writeBuffer.position() + toRead);
-            try {
+            try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 return SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
             } finally {
                 networkInboundBIO.applyWrite(writeBuffer);
@@ -443,21 +445,24 @@ public class SSLEngineHelper {
         }
     }
 
+    @SuppressWarnings("try")
     private static void emitOutputOrRaiseWantWrite(PNodeWithRaise node, PMemoryBIO networkOutboundBIO, PSocket socket, TimeoutHelper timeoutHelper) throws IOException {
         if (socket != null && networkOutboundBIO.getPending() > 0) {
             if (socket.getSocket() == null) {
                 // TODO use raiseOsError with ENOTCONN
                 throw node.raise(OSError);
             }
+            int pendingBytes = networkOutboundBIO.getPending();
             // Network output
             ByteBuffer readBuffer = networkOutboundBIO.getBufferForReading();
-            try {
-                int writtenBytes = SocketUtils.send(node, socket, readBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
-                if (writtenBytes == 0) {
-                    throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
-                }
+            int writtenBytes;
+            try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
+                writtenBytes = SocketUtils.send(node, socket, readBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
             } finally {
                 networkOutboundBIO.applyRead(readBuffer);
+            }
+            if (writtenBytes < pendingBytes) {
+                throw PRaiseSSLErrorNode.raiseUncached(node, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
             }
         }
     }

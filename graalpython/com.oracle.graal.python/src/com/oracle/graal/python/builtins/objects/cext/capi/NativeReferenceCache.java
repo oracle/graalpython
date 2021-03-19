@@ -48,11 +48,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNod
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -87,15 +89,20 @@ public final class NativeReferenceCache implements TruffleObject {
     @ExportMessage
     Object execute(Object[] arguments,
                     @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                    @Cached("createIdentityProfile()") IntValueProfile arityProfile) throws ArityException {
-        int profiledArity = arityProfile.profile(arguments.length);
-        if (profiledArity == 1) {
-            return resolveNativeReferenceNode.execute(arguments[0], steal);
-        } else if (profiledArity == 2) {
-            return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
+                    @Cached("createIdentityProfile()") IntValueProfile arityProfile, @Exclusive @Cached GilNode gil) throws ArityException {
+        boolean mustRelease = gil.acquire();
+        try {
+            int profiledArity = arityProfile.profile(arguments.length);
+            if (profiledArity == 1) {
+                return resolveNativeReferenceNode.execute(arguments[0], steal);
+            } else if (profiledArity == 2) {
+                return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw ArityException.create(1, arguments.length);
+        } finally {
+            gil.release(mustRelease);
         }
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw ArityException.create(1, arguments.length);
     }
 
     @GenerateUncached

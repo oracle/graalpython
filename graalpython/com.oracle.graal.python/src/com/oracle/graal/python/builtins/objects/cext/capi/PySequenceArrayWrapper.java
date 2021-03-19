@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -153,8 +154,13 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     final Object readArrayElement(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ReadArrayItemNode readArrayItemNode) {
-        return readArrayItemNode.execute(lib.getDelegate(this), index);
+                    @Exclusive @Cached ReadArrayItemNode readArrayItemNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readArrayItemNode.execute(lib.getDelegate(this), index);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     static int getCallSiteInlineCacheMaxDepth() {
@@ -282,8 +288,13 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     public void writeArrayElement(long index, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteArrayItemNode writeArrayItemNode) throws UnsupportedMessageException {
-        writeArrayItemNode.execute(lib.getDelegate(this), index, value);
+                    @Cached WriteArrayItemNode writeArrayItemNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            writeArrayItemNode.execute(lib.getDelegate(this), index, value);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage

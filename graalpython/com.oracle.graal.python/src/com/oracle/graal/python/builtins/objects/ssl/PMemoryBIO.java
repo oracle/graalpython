@@ -81,14 +81,15 @@ public class PMemoryBIO extends PythonObject {
 
     /**
      * Update read position from a buffer previously obtained using {@link #getBufferForReading()}
-     * The caller is responsible for making sure the buffer was obtained for this BIO, that this BIO
-     * was not concurrently updated since the {@link #getBufferForReading()} call and that the
-     * position was not moved backwards.
+     * The caller is responsible for making sure the buffer was obtained for this BIO and that the
+     * position was not moved backwards. If the BIO was concurrently modified, the contents are
+     * undefined, but the structure stays valid.
      */
     public void applyRead(ByteBuffer buffer) {
-        readPosition = buffer.position();
-        assert buffer.array() == bytes;
-        assert readPosition <= writePosition;
+        if (buffer.array() == bytes) {
+            readPosition = buffer.position();
+            assert readPosition <= writePosition;
+        }
     }
 
     /**
@@ -104,14 +105,15 @@ public class PMemoryBIO extends PythonObject {
 
     /**
      * Update write position from a buffer previously obtained using {@link #getBufferForWriting()}.
-     * The caller is responsible for making sure the buffer was obtained for this BIO, that this BIO
-     * was not concurrently updated since the {@link #getBufferForWriting()} call and that the
-     * position was not moved backwards.
+     * The caller is responsible for making sure the buffer was obtained for this BIO and that the
+     * position was not moved backwards. If the BIO was concurrently modified, the contents are
+     * undefined, but the structure stays valid.
      */
     public void applyWrite(ByteBuffer buffer) {
-        writePosition = buffer.position();
-        assert buffer.array() == bytes;
-        assert readPosition <= writePosition;
+        if (buffer.array() == bytes) {
+            writePosition = buffer.position();
+            assert readPosition <= writePosition;
+        }
     }
 
     /**

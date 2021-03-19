@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -113,7 +114,8 @@ public class LockBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout) {
+        boolean doAcquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
+                        @Cached GilNode gil) {
             // args setup
             boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeBoolean(frame, blocking);
             double timeoutSeconds = UNSET_TIMEOUT;
@@ -137,10 +139,15 @@ public class LockBuiltins extends PythonBuiltins {
             if (isBlockingProfile.profile(!isBlocking)) {
                 return self.acquireNonBlocking();
             } else {
-                if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
-                    return acquireBlocking(self);
-                } else {
-                    return self.acquireTimeout(timeoutSeconds);
+                gil.release(true);
+                try {
+                    if (defaultTimeoutProfile.profile(timeoutSeconds == UNSET_TIMEOUT)) {
+                        return acquireBlocking(self);
+                    } else {
+                        return self.acquireTimeout(timeoutSeconds);
+                    }
+                } finally {
+                    gil.acquire();
                 }
             }
         }
@@ -174,7 +181,16 @@ public class LockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doRelease(AbstractPythonLock self) {
+        Object doRelease(PLock self) {
+            self.release();
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doRelease(PRLock self) {
+            if (!self.isOwned()) {
+                throw raise(PythonBuiltinClassType.RuntimeError, "lock not held");
+            }
             self.release();
             return PNone.NONE;
         }

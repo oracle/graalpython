@@ -606,6 +606,9 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
 
         private TruffleFile toTruffleFile(PythonObjectLibrary lib, Object path) throws PException {
+            if (path == null) {
+                return null;
+            }
             TruffleFile file;
             try {
                 file = getContext().getEnv().getPublicTruffleFile(lib.asPath(path));

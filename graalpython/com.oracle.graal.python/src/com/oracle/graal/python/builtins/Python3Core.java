@@ -197,6 +197,7 @@ import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.SemLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -249,7 +250,6 @@ public final class Python3Core implements PythonCore {
                         "str",
                         "type",
                         "_imp",
-                        "_thread",
                         "function",
                         "_functools",
                         "method",
@@ -460,6 +460,7 @@ public final class Python3Core implements PythonCore {
                         new QueueModuleBuiltins(),
                         new ThreadModuleBuiltins(),
                         new ThreadBuiltins(),
+                        new ThreadLocalBuiltins(),
                         new LockBuiltins(),
                         new RLockBuiltins(),
                         new PwdModuleBuiltins(),

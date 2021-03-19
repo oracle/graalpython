@@ -80,6 +80,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -237,6 +238,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
                         @CachedLibrary("executableList") PythonObjectLibrary lib,
+                        @Cached GilNode gil,
                         @Cached ToBytesNode toBytesNode) {
 
             Object[] processArgs = args;
@@ -267,11 +269,16 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     executables[i] = createPathFromBytes(bytes, posixLib);
                 }
             }
+
+            gil.release(true);
             try {
                 return posixLib.forkExec(getPosixSupport(), executables, processArgs, cwd, env == null ? null : (Object[]) env, stdinRead, stdinWrite, stdoutRead, stdoutWrite, stderrRead, stderrWrite,
                                 errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, fdsToKeep);
             } catch (PosixException e) {
+                gil.acquire();
                 throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                gil.acquire();
             }
         }
 

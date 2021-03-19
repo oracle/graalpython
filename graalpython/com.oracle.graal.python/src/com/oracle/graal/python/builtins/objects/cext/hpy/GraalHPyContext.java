@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ArithmeticError;
@@ -697,8 +698,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @ExportMessage(limit = "1")
     @SuppressWarnings("static-method")
-    long asPointer(
-                    @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+    long asPointer(@CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
         if (isPointer()) {
             return interopLibrary.asPointer(nativePointer);
         }
@@ -707,8 +707,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @ExportMessage
-    void toNative(
-                    @Cached PCallHPyFunction callContextToNativeNode) {
+    void toNative(@Cached PCallHPyFunction callContextToNativeNode) {
         if (!isPointer()) {
             nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
         }
@@ -1033,7 +1032,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return -1;
     }
 
-    public int getHPyHandleForObject(GraalHPyHandle object) {
+    public synchronized int getHPyHandleForObject(GraalHPyHandle object) {
         // find free association
         int handle = allocateHandle();
         if (handle == -1) {
@@ -1052,7 +1051,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return handle;
     }
 
-    public GraalHPyHandle getObjectForHPyHandle(int handle) {
+    public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
         // find free association
         return hpyHandleTable[handle];
     }
@@ -1068,7 +1067,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    public void releaseHPyHandleForObject(int handle) {
+    public synchronized void releaseHPyHandleForObject(int handle) {
         assert handle != 0 : "NULL handle cannot be released";
         assert hpyHandleTable[handle] != null : PythonUtils.format("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {

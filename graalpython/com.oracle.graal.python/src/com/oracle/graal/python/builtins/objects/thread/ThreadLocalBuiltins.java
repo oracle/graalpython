@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,49 +38,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// skip GIL
-package com.oracle.graal.python.builtins.objects.cext.capi;
+package com.oracle.graal.python.builtins.objects.thread;
 
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(InteropLibrary.class)
-public final class PyCFunctionDecorator implements TruffleObject {
-
-    final Object nativeFunction;
-    final Object resultConverter;
-
-    public PyCFunctionDecorator(Object nativeFunction, Object resultConverter) {
-        this.nativeFunction = nativeFunction;
-        this.resultConverter = resultConverter;
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PThreadLocal)
+public class ThreadLocalBuiltins extends PythonBuiltins {
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return ThreadLocalBuiltinsFactory.getFactories();
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isExecutable() {
-        return true;
+    @Builtin(name = SpecialMethodNames.__INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InitNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone repr(@SuppressWarnings("unused") PThreadLocal self) {
+            return PNone.NONE;
+        }
     }
 
-    @ExportMessage
-    Object execute(Object[] arguments,
-                    @CachedLibrary("this.nativeFunction") InteropLibrary nativeFunctionLib,
-                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib)
-                    throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
-        Object res = nativeFunctionLib.execute(nativeFunction, arguments);
-        return resultConverterLib.execute(resultConverter, res);
-    }
-
-    public Object getNativeFunction() {
-        return nativeFunction;
-    }
-
-    public Object getResultConverter() {
-        return resultConverter;
+    @Builtin(name = SpecialAttributeNames.__DICT__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class DictNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "1")
+        PDict repr(PThreadLocal self,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            return lib.getDict(self);
+        }
     }
 }

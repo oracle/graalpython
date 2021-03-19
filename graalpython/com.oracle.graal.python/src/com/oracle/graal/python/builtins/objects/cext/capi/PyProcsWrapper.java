@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -137,17 +138,22 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Exclusive @Cached IsBuiltinClassProfile errProfile,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached AddRefCntNode incRefNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
-            if (arguments.length != 2) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(2, arguments.length);
-            }
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
             try {
-                return incRefNode.inc(toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]))));
-            } catch (PException e) {
-                e.expectAttributeError(errProfile);
-                transformExceptionToNativeNode.execute(null, e);
-                return toSulongNode.execute(getNativeNullNode.execute());
+                if (arguments.length != 2) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(2, arguments.length);
+                }
+                try {
+                    return incRefNode.inc(toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]))));
+                } catch (PException e) {
+                    e.expectAttributeError(errProfile);
+                    transformExceptionToNativeNode.execute(null, e);
+                    return toSulongNode.execute(getNativeNullNode.execute());
+                }
+            } finally {
+                gil.release(mustRelease);
             }
         }
     }
@@ -166,18 +172,23 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToJavaNode toJavaNode,
                         @Cached("createBinaryProfile()") ConditionProfile arityProfile,
                         @Cached BranchProfile errorProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
-            if (arityProfile.profile(arguments.length != 3)) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, arguments.length);
-            }
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
             try {
-                callTernaryMethodNode.execute(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
-                return 0;
-            } catch (PException e) {
-                errorProfile.enter();
-                transformExceptionToNativeNode.execute(null, e);
-                return -1;
+                if (arityProfile.profile(arguments.length != 3)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(3, arguments.length);
+                }
+                try {
+                    callTernaryMethodNode.execute(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
+                    return 0;
+                } catch (PException e) {
+                    errorProfile.enter();
+                    transformExceptionToNativeNode.execute(null, e);
+                    return -1;
+                }
+            } finally {
+                gil.release(mustRelease);
             }
         }
 
@@ -202,18 +213,23 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToJavaNode toJavaNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached ToSulongNode nullToSulongNode) throws ArityException {
-            if (arguments.length != 2) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(2, arguments.length);
-            }
-            assert arguments[1] instanceof Number;
+                        @Cached ToSulongNode nullToSulongNode, @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
             try {
-                Object result = executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), arguments[1]);
-                return newRef ? toNewRefNode.execute(result) : toSulongNode.execute(result);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, e);
-                return nullToSulongNode.execute(getNativeNullNode.execute());
+                if (arguments.length != 2) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(2, arguments.length);
+                }
+                assert arguments[1] instanceof Number;
+                try {
+                    Object result = executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), arguments[1]);
+                    return newRef ? toNewRefNode.execute(result) : toSulongNode.execute(result);
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(null, e);
+                    return nullToSulongNode.execute(getNativeNullNode.execute());
+                }
+            } finally {
+                gil.release(mustRelease);
             }
         }
     }

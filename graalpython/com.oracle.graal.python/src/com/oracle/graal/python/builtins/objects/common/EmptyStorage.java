@@ -48,8 +48,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.For
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -68,38 +70,53 @@ public class EmptyStorage extends HashingStorage {
     @ExportMessage(limit = "1")
     public Object getItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        // must call __hash__ for potential side-effect
-        getHashWithState(key, lib, state, gotState);
-        return null;
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // must call __hash__ for potential side-effect
+            getHashWithState(key, lib, state, gotState);
+            return null;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLanguage PythonLanguage lang,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        HashingStorage newStore;
-        if (key instanceof String) {
-            newStore = new DynamicObjectStorage(lang);
-        } else {
-            newStore = EconomicMapStorage.create();
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            HashingStorage newStore;
+            if (key instanceof String) {
+                newStore = new DynamicObjectStorage(lang);
+            } else {
+                newStore = EconomicMapStorage.create();
+            }
+            if (gotState.profile(state != null)) {
+                lib.setItemWithState(newStore, key, value, state);
+            } else {
+                lib.setItem(newStore, key, value);
+            }
+            return newStore;
+        } finally {
+            gil.release(mustRelease);
         }
-        if (gotState.profile(state != null)) {
-            lib.setItemWithState(newStore, key, value, state);
-        } else {
-            lib.setItem(newStore, key, value);
-        }
-        return newStore;
     }
 
     @ExportMessage(limit = "1")
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        // must call __hash__ for potential side-effect
-        getHashWithState(key, lib, state, gotState);
-        return this;
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // must call __hash__ for potential side-effect
+            getHashWithState(key, lib, state, gotState);
+            return this;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @Override

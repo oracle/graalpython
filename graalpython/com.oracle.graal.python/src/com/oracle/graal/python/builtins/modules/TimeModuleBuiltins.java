@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -408,9 +409,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
         @Specialization(guards = "isPositive(seconds)")
-        Object sleep(VirtualFrame frame, long seconds) {
+        Object sleep(VirtualFrame frame, long seconds,
+                        @Cached GilNode gil) {
             long deadline = (long) timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            gil.release(true);
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                gil.acquire();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
@@ -422,9 +429,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPositive(seconds)")
-        Object sleep(VirtualFrame frame, double seconds) {
+        Object sleep(VirtualFrame frame, double seconds,
+                        @Cached GilNode gil) {
             double deadline = timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            gil.release(true);
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                gil.acquire();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
@@ -438,13 +451,19 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.canBeJavaDouble(secondsObj)")
         Object sleepObj(VirtualFrame frame, Object secondsObj,
                         @Cached ConditionProfile negErr,
+                        @Cached GilNode gil,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             double seconds = lib.asJavaDouble(secondsObj);
             if (negErr.profile(seconds < 0)) {
                 throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
             }
             double deadline = timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            gil.release(true);
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                gil.acquire();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
@@ -461,8 +480,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     Thread.sleep(secs * 1000);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
+                    return;
                 }
-
                 secs = deadline - (long) timeSeconds();
             } while (secs >= 0);
         }
@@ -479,6 +498,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     Thread.sleep(millis, nanos);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
+                    return;
                 }
                 secs = deadline - timeSeconds();
             } while (secs >= 0);

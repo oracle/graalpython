@@ -5,6 +5,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 21.1.0
 
+* Support multi-threading with a global interpreter lock by default.
 * Added SSL/TLS support (the `ssl` module)
 
 ## Version 21.1.0

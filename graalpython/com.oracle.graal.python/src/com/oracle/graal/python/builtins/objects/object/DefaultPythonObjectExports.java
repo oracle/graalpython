@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -90,40 +91,50 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static Object asIndexWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary("receiver") InteropLibrary interopLib) {
-        if (interopLib.fitsInLong(receiver)) {
-            try {
-                return interopLib.asLong(receiver);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
+                    @CachedLibrary("receiver") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (interopLib.fitsInLong(receiver)) {
+                try {
+                    return interopLib.asLong(receiver);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
+            } else if (interopLib.isBoolean(receiver)) {
+                try {
+                    return interopLib.asBoolean(receiver) ? 1 : 0;
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
+            } else {
+                throw raise.raiseIntegerInterpretationError(receiver);
             }
-        } else if (interopLib.isBoolean(receiver)) {
-            try {
-                return interopLib.asBoolean(receiver) ? 1 : 0;
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
-        } else {
-            throw raise.raiseIntegerInterpretationError(receiver);
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     static int asSizeWithState(Object receiver, Object type, ThreadState state,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "2") InteropLibrary interopLib) {
-        Object index = asIndexWithState(receiver, state, raise, interopLib);
-        if (interopLib.fitsInInt(index)) {
-            try {
-                return interopLib.asInt(index);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
+                    @CachedLibrary(limit = "2") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object index = asIndexWithState(receiver, state, raise, interopLib, gil);
+            if (interopLib.fitsInInt(index)) {
+                try {
+                    return interopLib.asInt(index);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
+            } else {
+                throw raise.raiseNumberTooLarge(type, index);
             }
-        } else {
-            throw raise.raiseNumberTooLarge(type, index);
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -134,29 +145,38 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     @TruffleBoundary
-    static long hashWithState(Object receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver.hashCode();
+    static long hashWithState(Object receiver, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return receiver.hashCode();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     static int lengthWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary("receiver") InteropLibrary interopLib) {
-        if (interopLib.hasArrayElements(receiver)) {
-            long sz;
-            try {
-                sz = interopLib.getArraySize(receiver);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
-            if (sz == (int) sz) {
-                return (int) sz;
+                    @CachedLibrary("receiver") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (interopLib.hasArrayElements(receiver)) {
+                long sz;
+                try {
+                    sz = interopLib.getArraySize(receiver);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+                if (sz == (int) sz) {
+                    return (int) sz;
+                } else {
+                    throw raise.raiseNumberTooLarge(PythonBuiltinClassType.OverflowError, sz);
+                }
             } else {
-                throw raise.raiseNumberTooLarge(PythonBuiltinClassType.OverflowError, sz);
+                throw raise.raiseHasNoLength(receiver);
             }
-        } else {
-            throw raise.raiseHasNoLength(receiver);
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -168,8 +188,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.asBoolean(receiver);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -179,8 +198,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.asLong(receiver) != 0;
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -190,8 +208,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.asDouble(receiver) != 0.0;
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -201,8 +218,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.getArraySize(receiver) > 0;
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -240,13 +256,17 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     static boolean isForeignObject(Object receiver,
-                    @CachedLibrary("receiver") InteropLibrary lib) {
+                    @CachedLibrary("receiver") InteropLibrary lib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            return !lib.hasLanguage(receiver) || lib.getLanguage(receiver) != PythonLanguage.class;
-        } catch (UnsupportedMessageException e) {
-            // cannot happen due to check
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException(e);
+            try {
+                return !lib.hasLanguage(receiver) || lib.getLanguage(receiver) != PythonLanguage.class;
+            } catch (UnsupportedMessageException e) {
+                // cannot happen due to check
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -268,18 +288,21 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static double asJavaDoubleWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-        if (canBeJavaDouble(receiver, interopLib)) {
-            try {
-                return interopLib.asDouble(receiver);
-            } catch (UnsupportedMessageException ex) {
-                // cannot happen due to check
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(ex);
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (canBeJavaDouble(receiver, interopLib)) {
+                try {
+                    return interopLib.asDouble(receiver);
+                } catch (UnsupportedMessageException ex) {
+                    // cannot happen due to check
+                    throw CompilerDirectives.shouldNotReachHere(ex);
+                }
             }
+            throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
+        } finally {
+            gil.release(mustRelease);
         }
-        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
-
     }
 
     @ExportMessage
@@ -291,17 +314,21 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static long asJavaLongWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-        if (canBeJavaDouble(receiver, interopLib)) {
-            try {
-                return interopLib.asLong(receiver);
-            } catch (UnsupportedMessageException ex) {
-                // cannot happen due to check
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(ex);
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (canBeJavaDouble(receiver, interopLib)) {
+                try {
+                    return interopLib.asLong(receiver);
+                } catch (UnsupportedMessageException ex) {
+                    // cannot happen due to check
+                    throw CompilerDirectives.shouldNotReachHere(ex);
+                }
             }
+            throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
+        } finally {
+            gil.release(mustRelease);
         }
-        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
     }
 
     @ExportMessage
@@ -313,51 +340,75 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static long asPIntWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("receiver") InteropLibrary lib,
-                    @Exclusive @Cached PRaiseNode raise) {
-        if (lib.fitsInLong(receiver)) {
-            try {
-                return lib.asLong(receiver);
-            } catch (UnsupportedMessageException ex) {
-                // cannot happen due to check
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(ex);
+                    @Exclusive @Cached PRaiseNode raise, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (lib.fitsInLong(receiver)) {
+                try {
+                    return lib.asLong(receiver);
+                } catch (UnsupportedMessageException ex) {
+                    // cannot happen due to check
+                    throw CompilerDirectives.shouldNotReachHere(ex);
+                }
             }
+            throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
+        } finally {
+            gil.release(mustRelease);
         }
-        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
     }
 
     @ExportMessage
     static Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return lookup.execute(frame, receiver, name, strict);
+        } finally {
+            gil.release(mustRelease);
         }
-        return lookup.execute(frame, receiver, name, strict);
     }
 
     @ExportMessage
     static Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
-        return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     static Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
-        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
+            return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     static Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
-        return methodLib.callObjectWithState(method, state, arguments);
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
+            return methodLib.callObjectWithState(method, state, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -383,26 +434,36 @@ final class DefaultPythonObjectExports {
         static PForeignArrayIterator doForeignArray(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
+                        @CachedLibrary("receiver") InteropLibrary lib, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
             try {
-                long size = lib.getArraySize(receiver);
-                if (size < Integer.MAX_VALUE) {
-                    return factory.createForeignArrayIterator(receiver);
+                try {
+                    long size = lib.getArraySize(receiver);
+                    if (size < Integer.MAX_VALUE) {
+                        return factory.createForeignArrayIterator(receiver);
+                    }
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere("foreign objects claims to be an array but isn't");
                 }
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("foreign objects claims to be an array but isn't");
+                throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+            } finally {
+                gil.release(mustRelease);
             }
-            throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
 
         @Specialization(guards = "lib.isString(receiver)")
         static PStringIterator doBoxedString(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
+                        @CachedLibrary("receiver") InteropLibrary lib, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
             try {
-                return factory.createStringIterator(lib.asString(receiver));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("foreign objects claims to be a string but isn't");
+                try {
+                    return factory.createStringIterator(lib.asString(receiver));
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere("foreign objects claims to be a string but isn't");
+                }
+            } finally {
+                gil.release(mustRelease);
             }
         }
 
@@ -410,21 +471,26 @@ final class DefaultPythonObjectExports {
         static Object doGeneric(Object receiver, ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
-            if (lib.isIterator(receiver)) {
-                return receiver;
-            } else if (lib.hasIterator(receiver)) {
-                try {
-                    return lib.getIterator(receiver);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                        @CachedLibrary("receiver") InteropLibrary lib, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (lib.isIterator(receiver)) {
+                    return receiver;
+                } else if (lib.hasIterator(receiver)) {
+                    try {
+                        return lib.getIterator(receiver);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                } else if (lib.hasArrayElements(receiver)) {
+                    return doForeignArray(receiver, threadState, factory, raiseNode, lib, gil);
+                } else if (lib.isString(receiver)) {
+                    return doBoxedString(receiver, threadState, factory, lib, gil);
                 }
-            } else if (lib.hasArrayElements(receiver)) {
-                return doForeignArray(receiver, threadState, factory, raiseNode, lib);
-            } else if (lib.isString(receiver)) {
-                return doBoxedString(receiver, threadState, factory, lib);
+                throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+            } finally {
+                gil.release(mustRelease);
             }
-            throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
 
     }

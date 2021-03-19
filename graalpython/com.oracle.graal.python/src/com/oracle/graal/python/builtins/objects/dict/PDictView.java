@@ -48,10 +48,12 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -122,8 +124,13 @@ public abstract class PDictView extends PythonBuiltinObject {
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
+                        @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return factory.createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
@@ -151,8 +158,13 @@ public abstract class PDictView extends PythonBuiltinObject {
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
+                        @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return factory.createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
@@ -191,8 +203,13 @@ public abstract class PDictView extends PythonBuiltinObject {
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));
+                        @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return factory.createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 }
