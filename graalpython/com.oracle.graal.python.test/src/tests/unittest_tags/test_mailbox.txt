@@ -353,3 +353,4 @@
 *graalpython.lib-python.3.test.test_mailbox.TestProxyFile.test_read
 *graalpython.lib-python.3.test.test_mailbox.TestProxyFile.test_readline
 *graalpython.lib-python.3.test.test_mailbox.TestProxyFile.test_readlines
+*graalpython.lib-python.3.test.test_mailbox.TestProxyFile.test_seek_and_tell

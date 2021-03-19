@@ -27,3 +27,4 @@
 *graalpython.lib-python.3.test.test_file.PyOtherFileTests.testIteration
 *graalpython.lib-python.3.test.test_file.PyOtherFileTests.testModeStrings
 *graalpython.lib-python.3.test.test_file.PyOtherFileTests.testSetBufferSize
+*graalpython.lib-python.3.test.test_file.PyOtherFileTests.testTruncateOnWindows

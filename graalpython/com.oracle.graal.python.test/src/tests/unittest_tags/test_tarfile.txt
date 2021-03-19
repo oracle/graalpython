@@ -44,6 +44,7 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_null_tarfile
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_parallel_iteration
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_pathlike_name
+*graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_premature_end_of_archive
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_v7_dirtype
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_xstar_type
 *graalpython.lib-python.3.test.test_tarfile.Bz2PartialReadTest.test_partial_input_bz2
@@ -53,6 +54,7 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_ignore_zeros
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_non_existent_tarfile
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_null_tarfile
+*graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_premature_end_of_archive
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_provoke_stream_error
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamReadTest.test_read_through
 *graalpython.lib-python.3.test.test_tarfile.Bz2StreamWriteTest.test_eof_marker
@@ -84,6 +86,7 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2WriteTest.test_open_nonwritable_fileobj
 *graalpython.lib-python.3.test.test_tarfile.Bz2WriteTest.test_ordered_recursion
 *graalpython.lib-python.3.test.test_tarfile.Bz2WriteTest.test_pathnames
+*graalpython.lib-python.3.test.test_tarfile.Bz2WriteTest.test_symlink_size
 *graalpython.lib-python.3.test.test_tarfile.Bz2WriteTest.test_tar_size
 *graalpython.lib-python.3.test.test_tarfile.CommandLineTest.test_bad_use
 *graalpython.lib-python.3.test.test_tarfile.CommandLineTest.test_create_command

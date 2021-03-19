@@ -182,6 +182,8 @@
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_ellipsis
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_float
 *graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_float_format
+*graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_framed_write_sizes_with_delayed_writer
+*graalpython.lib-python.3.test.test_pickle.PyPicklerTests.test_framing_large_objects
 *test.pickletester.AbstractHookTests.test_reducer_override_no_reference_cycle
 *test.pickletester.AbstractPickleModuleTests.test_dump_load_oob_buffers
 *test.pickletester.AbstractPickleModuleTests.test_dumps_loads_oob_buffers
