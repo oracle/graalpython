@@ -179,6 +179,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return lib.getArraySize(self);
                 } else if (lib.isIterator(self) || lib.hasIterator(self)) {
                     return 0; // a value signifying it has a length, but it's unknown
+                } else if (lib.hasHashEntries(self)) {
+                    return lib.getHashSize(self);
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
