@@ -82,12 +82,12 @@ public class PythonProvider implements LanguageProvider {
 
     private static final String ID = "python";
 
-    private static final TypeDescriptor INT = intersection(OBJECT, NUMBER);
-    // as per interop contract, we cannot be boolean and number at the same time
-    private static final TypeDescriptor BOOL = intersection(OBJECT, BOOLEAN);
-    private static final TypeDescriptor FLOAT = intersection(OBJECT, NUMBER);
+    private static final TypeDescriptor INT = NUMBER;
+    // as per interop contract, we cannot be boolean and number at the same time, so it's only a boolean
+    private static final TypeDescriptor BOOL = BOOLEAN;
+    private static final TypeDescriptor FLOAT = NUMBER;
     private static final TypeDescriptor COMPLEX = intersection(OBJECT);
-    private static final TypeDescriptor NONE = intersection(OBJECT, NULL);
+    private static final TypeDescriptor NONE = NULL;
     private static final TypeDescriptor STR = intersection(OBJECT, STRING, ITERABLE, array(STRING));
     private static final TypeDescriptor BYTES = intersection(OBJECT, ITERABLE, array(INT));
     private static final TypeDescriptor BYTEARRAY = intersection(OBJECT, ITERABLE, array(INT));
