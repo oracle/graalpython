@@ -212,6 +212,7 @@ public final class PythonContext {
         }
 
         public void dispose() {
+            // This method may be called twice on the same object.
             ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
             if (dict != null && dict.getNativeWrapper() != null) {
                 releaseHandleNode.execute(dict.getNativeWrapper());
@@ -854,6 +855,8 @@ public final class PythonContext {
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             shutdownThreads();
             runShutdownHooks();
+            disposeThreadStates();
+            cleanupCApiResources();
         }
     }
 
@@ -891,10 +894,26 @@ public final class PythonContext {
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
         }
-        assert threadStateMapping != null;
-        for (PythonThreadState threadState : threadStateMapping.values()) {
-            threadState.dispose();
+    }
+
+    /**
+     * Release all resources held by the thread states. This function needs to run as long as the
+     * context is still valid because it may call into LLVM to release handles.
+     */
+    @TruffleBoundary
+    private void disposeThreadStates() {
+        for (PythonThreadState ts : threadStateMapping.values()) {
+            ts.dispose();
         }
+        threadStateMapping.clear();
+    }
+
+    /**
+     * Release all native wrappers of singletons. This function needs to run as long as the context
+     * is still valid because it may call into LLVM to release handles.
+     */
+    @TruffleBoundary
+    private void cleanupCApiResources() {
         ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
         for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
             if (singletonNativeWrapper != null) {
