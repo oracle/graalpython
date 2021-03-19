@@ -49,7 +49,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @ClinicBuiltinBaseClass
 public abstract class PythonQuaternaryClinicBuiltinNode extends PythonQuaternaryBuiltinNode {
-    @Children ArgumentCastNode[] castNodes;
+    private @Child ArgumentCastNode castNode0;
+    private @Child ArgumentCastNode castNode1;
+    private @Child ArgumentCastNode castNode2;
+    private @Child ArgumentCastNode castNode3;
 
     /**
      * Returns the provider of argument clinic logic. It should be singleton instance of a class
@@ -57,32 +60,45 @@ public abstract class PythonQuaternaryClinicBuiltinNode extends PythonQuaternary
      */
     protected abstract ArgumentClinicProvider getArgumentClinic();
 
-    private Object cast(ArgumentClinicProvider clinic, VirtualFrame frame, int argIndex, Object value) {
-        if (!clinic.hasCastNode(argIndex)) {
-            return value;
-        } else {
-            return castWithNode(clinic, frame, argIndex, value);
+    private Object cast0WithNode(ArgumentClinicProvider clinic, VirtualFrame frame, Object value) {
+        if (castNode0 == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castNode0 = insert(clinic.createCastNode(0, this));
         }
+        return castNode0.execute(frame, value);
     }
 
-    protected Object castWithNode(ArgumentClinicProvider clinic, VirtualFrame frame, int argIndex, Object value) {
-        ArgumentCastNode castNode;
-        if (castNodes == null) {
+    private Object cast1WithNode(ArgumentClinicProvider clinic, VirtualFrame frame, Object value) {
+        if (castNode1 == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castNodes = new ArgumentCastNode[4];
+            castNode1 = insert(clinic.createCastNode(1, this));
         }
-        castNode = castNodes[argIndex];
-        if (castNode == null) {
+        return castNode1.execute(frame, value);
+    }
+
+    private Object cast2WithNode(ArgumentClinicProvider clinic, VirtualFrame frame, Object value) {
+        if (castNode2 == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castNode = insert(clinic.createCastNode(argIndex, this));
-            castNodes[argIndex] = castNode;
+            castNode2 = insert(clinic.createCastNode(2, this));
         }
-        return castNode.execute(frame, value);
+        return castNode2.execute(frame, value);
+    }
+
+    private Object cast3WithNode(ArgumentClinicProvider clinic, VirtualFrame frame, Object value) {
+        if (castNode3 == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castNode3 = insert(clinic.createCastNode(3, this));
+        }
+        return castNode3.execute(frame, value);
     }
 
     @Override
-    public Object call(VirtualFrame frame, Object arg, Object arg2, Object arg3, Object arg4) {
+    public final Object call(VirtualFrame frame, Object arg, Object arg2, Object arg3, Object arg4) {
         ArgumentClinicProvider clinic = getArgumentClinic();
-        return super.call(frame, cast(clinic, frame, 0, arg), cast(clinic, frame, 1, arg2), cast(clinic, frame, 2, arg3), cast(clinic, frame, 3, arg4));
+        Object val = clinic.hasCastNode(0) ? cast0WithNode(clinic, frame, arg) : arg;
+        Object val2 = clinic.hasCastNode(1) ? cast1WithNode(clinic, frame, arg2) : arg2;
+        Object val3 = clinic.hasCastNode(2) ? cast2WithNode(clinic, frame, arg3) : arg3;
+        Object val4 = clinic.hasCastNode(3) ? cast3WithNode(clinic, frame, arg4) : arg4;
+        return super.call(frame, val, val2, val3, val4);
     }
 }
