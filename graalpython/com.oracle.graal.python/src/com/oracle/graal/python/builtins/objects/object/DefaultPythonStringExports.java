@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -123,15 +124,20 @@ final class DefaultPythonStringExports {
 
         @Specialization
         static int sP(String receiver, PString other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Cached CastToJavaStringNode castNode) {
-            // n.b.: subclassing is ignored in this direction in CPython
-            String otherString = null;
+                        @Cached CastToJavaStringNode castNode, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
             try {
-                otherString = castNode.execute(other);
-            } catch (CannotCastException e) {
-                return -1;
+                // n.b.: subclassing is ignored in this direction in CPython
+                String otherString = null;
+                try {
+                    otherString = castNode.execute(other);
+                } catch (CannotCastException e) {
+                    return -1;
+                }
+                return ss(receiver, otherString, threadState);
+            } finally {
+                gil.release(mustRelease);
             }
-            return ss(receiver, otherString, threadState);
         }
 
         @Fallback
@@ -188,12 +194,17 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static Object lookupAttributeInternal(String receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return lookup.execute(frame, receiver, name, strict);
+        } finally {
+            gil.release(mustRelease);
         }
-        return lookup.execute(frame, receiver, name, strict);
     }
 
     @ExportMessage
@@ -205,25 +216,40 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static Object lookupAndCallSpecialMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
-        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
+            return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     static Object lookupAndCallRegularMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
-        return methodLib.callObjectWithState(method, state, arguments);
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
+            return methodLib.callObjectWithState(method, state, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     static boolean typeCheck(@SuppressWarnings("unused") String receiver, Object type,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
-        Object instanceClass = PythonBuiltinClassType.PString;
-        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
+                    @Cached IsSubtypeNode isSubtypeNode, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object instanceClass = PythonBuiltinClassType.PString;
+            return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage

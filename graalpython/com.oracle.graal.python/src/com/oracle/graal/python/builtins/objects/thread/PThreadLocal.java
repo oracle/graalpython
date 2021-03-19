@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,91 +38,76 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.interop;
+package com.oracle.graal.python.builtins.objects.thread;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
 
-/**
- * A container class used to store per-node attributes used by the instrumentation framework.
- *
- */
-@ExportLibrary(InteropLibrary.class)
-public final class InteropMap implements TruffleObject {
-    private final Map<String, Object> data;
+@ExportLibrary(PythonObjectLibrary.class)
+public final class PThreadLocal extends PythonBuiltinObject {
+    private final ThreadLocal<PDict> threadLocalDict;
+    private final Object[] args;
+    private final PKeyword[] keywords;
 
-    public InteropMap(Map<String, Object> data) {
-        this.data = data;
+    public PThreadLocal(Object cls, Shape instanceShape, Object[] args, PKeyword[] keywords) {
+        super(cls, instanceShape);
+        threadLocalDict = new ThreadLocal<>();
+        this.args = args;
+        this.keywords = keywords;
     }
 
-    @SuppressWarnings("static-method")
     @ExportMessage
-    boolean hasMembers() {
+    @SuppressWarnings("static-method")
+    boolean hasDict() {
         return true;
     }
 
-    @ExportMessage(name = "readMember")
+    @ExportMessage
     @TruffleBoundary
-    Object getKey(String name, @Exclusive @Cached GilNode gil) {
+    PDict getDict(@CachedLibrary("this") PythonObjectLibrary lib,
+                    @Cached CallNode callNode,
+                    @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            assert hasKey(name, gil);
-            return data.get(name);
+            PDict dict = threadLocalDict.get();
+            if (dict == null) {
+                dict = factory.createDict();
+                threadLocalDict.set(dict);
+                Object initMethod = lib.lookupAttribute(this, null, SpecialMethodNames.__INIT__);
+                callNode.execute(initMethod, args, keywords);
+            }
+            return dict;
         } finally {
             gil.release(mustRelease);
         }
     }
 
-    @ExportMessage(name = "isMemberReadable")
-    @TruffleBoundary
-    boolean hasKey(String name, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return data.containsKey(name);
-        } finally {
-            gil.release(mustRelease);
-        }
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    void setDict(PDict value, @Shared("raise") @Cached PRaiseNode raise) {
+        throw raise.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_READONLY, "__dict__");
     }
 
-    @ExportMessage(name = "getMembers")
-    @TruffleBoundary
-    TruffleObject getKeys(@SuppressWarnings("unused") boolean includeInternal, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return new InteropArray(data.keySet().toArray());
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @TruffleBoundary
-    public static InteropMap fromPDict(PDict dict) {
-        Map<String, Object> map = new HashMap<>();
-        for (HashingStorage.DictEntry e : HashingStorageLibrary.getUncached().entries(dict.getDictStorage())) {
-            map.put(e.getKey().toString(), e.getValue());
-        }
-        return new InteropMap(map);
-    }
-
-    @TruffleBoundary
-    public static InteropMap fromPythonObject(PythonObject globals) {
-        Map<String, Object> map = new HashMap<>();
-        for (String name : globals.getAttributeNames()) {
-            map.put(name, globals.getAttribute(name));
-        }
-        return new InteropMap(map);
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    void deleteDict(@Shared("raise") @Cached PRaiseNode raise) {
+        throw raise.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_READONLY, "__dict__");
     }
 }

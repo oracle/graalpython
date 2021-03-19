@@ -42,6 +42,9 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.GraalHPyHandleReference;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -73,12 +76,17 @@ final class NativeSpaceArrayWrapper implements TruffleObject {
     }
 
     @ExportMessage
-    Object readArrayElement(long i) {
-        GraalHPyHandleReference ref = data[(int) i];
-        if (ref != null) {
-            return ref.getNativeSpace();
+    Object readArrayElement(long i, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            GraalHPyHandleReference ref = data[(int) i];
+            if (ref != null) {
+                return ref.getNativeSpace();
+            }
+            // return something that responds to 'isNull' with 'true'
+            return PNone.NO_VALUE;
+        } finally {
+            gil.release(mustRelease);
         }
-        // return something that responds to 'isNull' with 'true'
-        return PNone.NO_VALUE;
     }
 }

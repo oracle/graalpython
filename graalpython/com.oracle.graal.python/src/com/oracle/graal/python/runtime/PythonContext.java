@@ -41,12 +41,14 @@ import java.nio.file.LinkOption;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -82,6 +84,8 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.graal.python.util.ShutdownHook;
@@ -92,6 +96,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -110,13 +115,8 @@ public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
-    private static final class PythonThreadState {
-
-        /*
-         * A thread state may be owned by multiple threads if we know that these threads won't run
-         * concurrently.
-         */
-        final List<WeakReference<Thread>> owners;
+    public static final class PythonThreadState {
+        private boolean shuttingDown = false;
 
         /*
          * The reference to the last top frame on the Python stack during interop calls. Initially,
@@ -135,40 +135,16 @@ public final class PythonContext {
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
 
-        PythonThreadState() {
-            owners = new LinkedList<>();
+        @SuppressWarnings("unused")
+        public PythonThreadState(PythonContext context, Thread owner) {
         }
 
-        PythonThreadState(Thread owner) {
-            this();
-            addOwner(owner);
+        void shutdown() {
+            shuttingDown = true;
         }
 
-        void addOwner(Thread owner) {
-            owners.add(new WeakReference<>(owner));
-        }
-
-        void removeOwner(Thread thread) {
-            owners.removeIf(item -> item.get() == thread);
-        }
-
-        boolean isOwner(Thread thread) {
-            for (WeakReference<Thread> owner : owners) {
-                if (owner.get() == thread) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        boolean hasOwners() {
-            // first, remove all gone weak references
-            owners.removeIf(item -> item.get() == null);
-            return !owners.isEmpty();
-        }
-
-        List<WeakReference<Thread>> getOwners() {
-            return owners;
+        boolean isShuttingDown() {
+            return shuttingDown;
         }
 
         @TruffleBoundary
@@ -228,14 +204,17 @@ public final class PythonContext {
 
     @CompilationFinal private TruffleLanguage.Env env;
 
-    /* this will be the single thread state if running single-threaded */
-    private final PythonThreadState singleThreadState = new PythonThreadState();
-
     /* for fast access to the PythonThreadState object by the owning thread */
-    private ThreadLocal<PythonThreadState> threadState;
+    private final ContextThreadLocal<PythonThreadState> threadState;
+
+    /*
+     * Workaround for GR-30072 - we cannot use the threadState above during native image build time,
+     * so we use a temporary one just for the build
+     */
+    private final PythonThreadState buildThreadState;
 
     /* map of thread IDs to indices for array 'threadStates' */
-    private Map<Long, PythonThreadState> threadStateMapping;
+    private Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -248,12 +227,10 @@ public final class PythonContext {
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private GraalHPyContext hPyContext;
-    private final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
-    /* A lock for interop calls when this context is used by multiple threads. */
-    private ReentrantLock interopLock;
+    private ReentrantLock globalInterpreterLock = new ReentrantLock();
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
@@ -275,8 +252,14 @@ public final class PythonContext {
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core, ContextThreadLocal<PythonThreadState> threadState) {
         this.language = language;
+        if (ImageInfo.inImageBuildtimeCode()) {
+            this.buildThreadState = new PythonThreadState(this, Thread.currentThread());
+        } else {
+            this.buildThreadState = null;
+        }
+        this.threadState = threadState;
         this.core = core;
         this.env = env;
         this.handler = new AsyncHandler(this);
@@ -454,22 +437,32 @@ public final class PythonContext {
     }
 
     public void initialize() {
-        initializePosixSupport();
-        core.initialize(this);
-        setupRuntimeInformation(false);
-        core.postInitialize();
-        if (!ImageInfo.inImageBuildtimeCode()) {
-            importSiteIfForced();
-        } else if (posixSupport instanceof ImageBuildtimePosixSupport) {
-            ((ImageBuildtimePosixSupport) posixSupport).checkLeakingResources();
+        acquireGil();
+        try {
+            initializePosixSupport();
+            core.initialize(this);
+            setupRuntimeInformation(false);
+            core.postInitialize();
+            if (!ImageInfo.inImageBuildtimeCode()) {
+                importSiteIfForced();
+            } else if (posixSupport instanceof ImageBuildtimePosixSupport) {
+                ((ImageBuildtimePosixSupport) posixSupport).checkLeakingResources();
+            }
+        } finally {
+            releaseGil();
         }
     }
 
     public void patch(Env newEnv) {
-        setEnv(newEnv);
-        setupRuntimeInformation(true);
-        core.postInitialize();
-        importSiteIfForced();
+        acquireGil();
+        try {
+            setEnv(newEnv);
+            setupRuntimeInformation(true);
+            core.postInitialize();
+            importSiteIfForced();
+        } finally {
+            releaseGil();
+        }
     }
 
     private void importSiteIfForced() {
@@ -795,10 +788,13 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public void finalizeContext() {
         finalizing = true;
-        shutdownThreads();
-        runShutdownHooks();
+        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            shutdownThreads();
+            runShutdownHooks();
+        }
     }
 
     @TruffleBoundary
@@ -875,30 +871,31 @@ public final class PythonContext {
         }
         LOGGER.fine("successfully shut down all threads");
 
-        if (!singleThreaded.isValid()) {
-            // collect list of threads to join in synchronized block
-            LinkedList<WeakReference<Thread>> threadList = new LinkedList<>();
-            synchronized (this) {
-                for (PythonThreadState ts : threadStateMapping.values()) {
-                    // do not join the initial thread; this could cause a dead lock
-                    if (ts != singleThreadState) {
-                        threadList.addAll(ts.getOwners());
+        try {
+            // make a copy of the threads, because the threads will disappear one by one from the
+            // threadStateMapping as we're joining them, which gives undefined results for the
+            // iterator over keySet
+            LinkedList<Thread> threads = new LinkedList<>(threadStateMapping.keySet());
+            for (Thread thread : threads) {
+                if (thread != Thread.currentThread()) {
+                    // cannot interrupt ourselves, we're hilding the GIL
+                    LOGGER.finest("joining thread " + thread);
+                    // the threads remaining here are daemon threads, all others were shut down via
+                    // the threading module above. So we just interrupt them. Their exit is handled
+                    // in the acquireGil function, which will be interrupted for these threads
+                    disposeThread(thread);
+                    for (int i = 0; i < 100 && thread.isAlive(); i++) {
+                        thread.interrupt();
+                        thread.join(2);
+                    }
+                    if (thread.isAlive()) {
+                        LOGGER.warning("could not join thread " + thread.getName());
                     }
                 }
             }
-
-            // join threads outside the synchronized block otherwise we could run into a dead lock
-            try {
-                for (WeakReference<Thread> threadRef : threadList) {
-                    Thread thread = threadRef.get();
-                    if (thread != null) {
-                        LOGGER.finest("joining thread " + thread);
-                        thread.join();
-                    }
-                }
-            } catch (InterruptedException e) {
-                LOGGER.finest("got interrupt while joining threads");
-            }
+        } catch (InterruptedException e) {
+            LOGGER.finest("got interrupt while joining threads");
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -922,11 +919,7 @@ public final class PythonContext {
         return singleNativeContext;
     }
 
-    public Assumption getSingleThreadedAssumption() {
-        return singleThreaded;
-    }
-
-    public Assumption getNativeObjectsAllManagedAssumption() {
+    public final Assumption getNativeObjectsAllManagedAssumption() {
         return nativeObjectsAllManagedAssumption;
     }
 
@@ -977,16 +970,48 @@ public final class PythonContext {
         return null;
     }
 
-    @TruffleBoundary
-    public void acquireInteropLock() {
-        interopLock.lock();
+    boolean ownsGil() {
+        return globalInterpreterLock.isHeldByCurrentThread();
     }
 
+    /**
+     * Should not be called directly.
+     *
+     * @see GilNode
+     */
     @TruffleBoundary
-    public void releaseInteropLock() {
-        if (interopLock.isLocked()) {
-            interopLock.unlock();
+    void acquireGil() {
+        assert !ownsGil() : "trying to acquire the GIL more than once";
+        try {
+            globalInterpreterLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            if (!ImageInfo.inImageBuildtimeCode() && threadState.get().isShuttingDown()) {
+                // This is a thread being killed during normal context shutdown. This thread
+                // should exit now. This should usually only happen for daemon threads on
+                // context shutdown. This is the equivalent to the logic in pylifecycle.c and
+                // PyEval_RestoreThread which, on Python shutdown, will join non-daemon threads
+                // and then simply start destroying the thread states of remaining threads. If
+                // any remaining daemon thread then tries to acquire the GIL, it'll notice the
+                // shutdown is happening and exit.
+                throw new PythonThreadKillException();
+            } else {
+                // We are being interrupted through some non-internal means. If this happens to
+                // the main thread (which can only occur if we are embedded somewhere) we exit
+                // with the same exit code that SIGINT would produce. Other threads just die.
+                throw new PythonExitException(null, 130);
+            }
         }
+    }
+
+    /**
+     * Should not be called directly.
+     *
+     * @see GilNode
+     */
+    @TruffleBoundary
+    void releaseGil() {
+        assert globalInterpreterLock.getHoldCount() == 1 : "trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount();
+        globalInterpreterLock.unlock();
     }
 
     /**
@@ -1067,44 +1092,36 @@ public final class PythonContext {
 
     public Thread[] getThreads() {
         CompilerAsserts.neverPartOfCompilation();
-        if (singleThreaded.isValid()) {
-            return new Thread[]{Thread.currentThread()};
-        } else {
-            Set<Thread> threads = new HashSet<>();
-            for (PythonThreadState ts : threadStateMapping.values()) {
-                for (WeakReference<Thread> thRef : ts.getOwners()) {
-                    Thread th = thRef.get();
-                    if (th != null) {
-                        threads.add(th);
-                    }
-                }
-            }
-            return threads.toArray(new Thread[0]);
+        Set<Thread> threads = new HashSet<>();
+        for (Thread th : threadStateMapping.keySet()) {
+            threads.add(th);
         }
+        return threads.toArray(new Thread[0]);
     }
 
     private PythonThreadState getThreadState() {
-        if (singleThreaded.isValid()) {
-            return singleThreadState;
+        PythonThreadState curThreadState = getThreadStateInternal();
+        if (curThreadState.isShuttingDown()) {
+            // we're shutting down, just release and die
+            if (ownsGil()) {
+                releaseGil();
+            }
+            throw new PythonThreadKillException();
         }
-        return getThreadStateMultiThreaded();
-    }
-
-    @TruffleBoundary
-    private PythonThreadState getThreadStateMultiThreaded() {
-        PythonThreadState curThreadState = threadState.get();
-        if (curThreadState == null) {
-            // this should happen just the first time the current thread accesses the thread state
-            curThreadState = getThreadStateFullLookup();
-            threadState.set(curThreadState);
-        }
-        assert curThreadState.isOwner(Thread.currentThread());
         return curThreadState;
     }
 
+    private PythonThreadState getThreadStateInternal() {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            return buildThreadState;
+        } else {
+            return threadState.get();
+        }
+    }
+
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
-        if (singleThreaded.isValid()) {
-            action.accept(singleThreadState);
+        if (language.singleThreadedAssumption.isValid()) {
+            action.accept(getThreadStateInternal());
         } else {
             synchronized (this) {
                 for (PythonThreadState ts : threadStateMapping.values()) {
@@ -1114,66 +1131,31 @@ public final class PythonContext {
         }
     }
 
-    @TruffleBoundary
-    private synchronized PythonThreadState getThreadStateFullLookup() {
-        return threadStateMapping.get(Thread.currentThread().getId());
-    }
-
     public void setSentinelLockWeakref(WeakReference<PLock> sentinelLock) {
         getThreadState().sentinelLock = sentinelLock;
     }
 
     @TruffleBoundary
     public void initializeMultiThreading() {
-        interopLock = new ReentrantLock();
-        singleThreaded.invalidate();
-        threadState = new ThreadLocal<>();
-        synchronized (this) {
-            threadStateMapping = new HashMap<>();
-            for (WeakReference<Thread> ownerRef : singleThreadState.getOwners()) {
-                Thread owner = ownerRef.get();
-                if (owner != null) {
-                    threadStateMapping.put(owner.getId(), singleThreadState);
-                }
-            }
-        }
+        handler.activateGIL();
     }
 
     public synchronized void attachThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
-        if (singleThreaded.isValid()) {
-            assert threadStateMapping == null;
-
-            // n.b.: Several threads may be attached to the context but we may still be in the
-            // 'singleThreaded' mode because the threads won't run concurrently. For this case, we
-            // map each attached thread to index 0.
-            singleThreadState.addOwner(thread);
-        } else {
-            assert threadStateMapping != null;
-            threadStateMapping.put(thread.getId(), new PythonThreadState(thread));
-        }
+        threadStateMapping.put(thread, threadState.get(thread));
     }
 
     public synchronized void disposeThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
-        long threadId = thread.getId();
         // check if there is a live sentinel lock
-        if (singleThreaded.isValid()) {
-            assert threadStateMapping == null;
-            singleThreadState.removeOwner(thread);
-            // only release sentinel lock if all owners are gone
-            if (!singleThreadState.hasOwners()) {
-                releaseSentinelLock(singleThreadState.sentinelLock);
-            }
-        } else {
-            PythonThreadState ts = threadStateMapping.get(threadId);
-            assert ts != null : "thread was not attached to this context";
-            ts.removeOwner(thread);
-            threadStateMapping.remove(threadId);
-            if (!ts.hasOwners()) {
-                releaseSentinelLock(ts.sentinelLock);
-            }
+        PythonThreadState ts = threadStateMapping.get(thread);
+        if (ts == null) {
+            // ts already removed, that is valid during context shutdown for daemon threads
+            return;
         }
+        ts.shutdown();
+        threadStateMapping.remove(thread);
+        releaseSentinelLock(ts.sentinelLock);
     }
 
     private static void releaseSentinelLock(WeakReference<PLock> sentinelLockWeakref) {
@@ -1203,7 +1185,7 @@ public final class PythonContext {
         return hPyContext != null;
     }
 
-    public void createHPyContext(Object hpyLibrary) {
+    public synchronized void createHPyContext(Object hpyLibrary) {
         assert hPyContext == null : "tried to create new HPy context but it was already created";
         hPyContext = new GraalHPyContext(this, hpyLibrary);
     }

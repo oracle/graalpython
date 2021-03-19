@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNod
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
@@ -113,8 +114,13 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     @ExportMessage
     final long getArraySize(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode) {
-        return obSizeNode.execute(lib.getDelegate(this));
+                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return obSizeNode.execute(lib.getDelegate(this));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -127,28 +133,32 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     final Object readArrayElement(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws InvalidArrayIndexException {
-
-        Object delegate = lib.getDelegate(this);
-        long size = PInt.abs(obSizeNode.execute(delegate));
-        if (index >= 0 && index < size) {
-            int longShift = context.getCApiContext().getPyLongBitsInDigit();
-            int longMask = (1 << longShift) - 1;
-            if (delegate instanceof Integer || delegate instanceof Long) {
-                long val;
-                if (delegate instanceof Integer) {
-                    val = PInt.abs(((Integer) delegate).longValue());
+                    @CachedContext(PythonLanguage.class) PythonContext context, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object delegate = lib.getDelegate(this);
+            long size = PInt.abs(obSizeNode.execute(delegate));
+            if (index >= 0 && index < size) {
+                int longShift = context.getCApiContext().getPyLongBitsInDigit();
+                int longMask = (1 << longShift) - 1;
+                if (delegate instanceof Integer || delegate instanceof Long) {
+                    long val;
+                    if (delegate instanceof Integer) {
+                        val = PInt.abs(((Integer) delegate).longValue());
+                    } else {
+                        val = PInt.abs((Long) delegate);
+                    }
+                    return (val >> (longShift * index)) & longMask;
                 } else {
-                    val = PInt.abs((Long) delegate);
+                    byte[] bytes = PInt.toByteArray(((PInt) delegate).abs());
+                    // the cast to int is safe since the length check already succeeded
+                    return getUInt32(bytes, (int) index, longShift) & longMask;
                 }
-                return (val >> (longShift * index)) & longMask;
-            } else {
-                byte[] bytes = PInt.toByteArray(((PInt) delegate).abs());
-                // the cast to int is safe since the length check already succeeded
-                return getUInt32(bytes, (int) index, longShift) & longMask;
             }
+            throw InvalidArrayIndexException.create(index);
+        } finally {
+            gil.release(mustRelease);
         }
-        throw InvalidArrayIndexException.create(index);
     }
 
     private static long byteAsULong(byte b) {
@@ -179,9 +189,14 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode) {
-        // also include the implicit null-terminator
-        return 0 <= identifier && identifier <= getArraySize(lib, obSizeNode);
+                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            // also include the implicit null-terminator
+            return 0 <= identifier && identifier <= getArraySize(lib, obSizeNode, gil);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -189,11 +204,16 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                     @Cached PCallCapiFunction callToNativeNode,
-                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode) {
-        invalidateNode.execute();
-        if (!lib.isNative(this)) {
-            Object ptr = callToNativeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, this, getArraySize(lib, obSizeNode));
-            setNativePointer(ptr);
+                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode, @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            invalidateNode.execute();
+            if (!lib.isNative(this)) {
+                Object ptr = callToNativeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, this, getArraySize(lib, obSizeNode, gil));
+                setNativePointer(ptr);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 

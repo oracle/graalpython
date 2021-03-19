@@ -89,10 +89,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -143,8 +144,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class AcquireLock extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object run() {
-            getContext().getImportLock().lock();
+        public Object run(@Cached GilNode gil) {
+            gil.release(true);
+            try {
+                getContext().getImportLock().lock();
+            } finally {
+                gil.acquire();
+            }
             return PNone.NONE;
         }
     }
@@ -259,16 +265,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
-                        @Cached ForeignCallContext foreignCallContext,
                         @CachedLibrary(limit = "1") InteropLibrary interop) {
             PythonContext context = getContextRef().get();
-            Object state = foreignCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return run(moduleSpec, interop);
             } catch (ImportException ie) {
                 throw getConstructAndRaiseNode().raiseImportError(frame, ie.cause, ie.name, ie.path, ie.formatString, ie.formatArgs);
             } finally {
-                foreignCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 

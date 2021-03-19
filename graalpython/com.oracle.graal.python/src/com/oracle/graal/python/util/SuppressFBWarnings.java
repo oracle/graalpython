@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,49 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// skip GIL
-package com.oracle.graal.python.builtins.objects.cext.capi;
+package com.oracle.graal.python.util;
 
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+public @interface SuppressFBWarnings {
+    String[] value();
 
-@ExportLibrary(InteropLibrary.class)
-public final class PyCFunctionDecorator implements TruffleObject {
-
-    final Object nativeFunction;
-    final Object resultConverter;
-
-    public PyCFunctionDecorator(Object nativeFunction, Object resultConverter) {
-        this.nativeFunction = nativeFunction;
-        this.resultConverter = resultConverter;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isExecutable() {
-        return true;
-    }
-
-    @ExportMessage
-    Object execute(Object[] arguments,
-                    @CachedLibrary("this.nativeFunction") InteropLibrary nativeFunctionLib,
-                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib)
-                    throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
-        Object res = nativeFunctionLib.execute(nativeFunction, arguments);
-        return resultConverterLib.execute(resultConverter, res);
-    }
-
-    public Object getNativeFunction() {
-        return nativeFunction;
-    }
-
-    public Object getResultConverter() {
-        return resultConverter;
-    }
+    String justification();
 }

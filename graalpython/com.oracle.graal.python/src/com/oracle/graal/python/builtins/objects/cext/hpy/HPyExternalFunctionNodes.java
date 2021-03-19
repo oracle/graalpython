@@ -80,9 +80,9 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -295,7 +295,6 @@ public abstract class HPyExternalFunctionNodes {
         Object doIt(VirtualFrame frame, String name, Object callable, Object[] arguments,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached ForeignCallContext foreignCallContext,
                         @Cached PRaiseNode raiseNode) {
             Object[] convertedArguments = new Object[arguments.length + 1];
             GraalHPyContext hPyContext = ctx.getHPyContext();
@@ -306,7 +305,7 @@ public abstract class HPyExternalFunctionNodes {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = foreignCallContext.enter(frame, ctx, this);
+            Object state = IndirectCallContext.enter(frame, ctx, this);
 
             try {
                 return checkFunctionResultNode.execute(ctx, name, lib.execute(callable, convertedArguments));
@@ -318,7 +317,7 @@ public abstract class HPyExternalFunctionNodes {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                foreignCallContext.exit(frame, ctx, state);
+                IndirectCallContext.exit(frame, ctx, state);
 
                 // close all handles (if necessary)
                 if (handleCloseNode != null) {

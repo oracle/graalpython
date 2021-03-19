@@ -50,10 +50,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ReadNativeMemberDispatchNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -130,14 +132,19 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         static Object execute(TruffleObjectNativeWrapper object, String key,
                         @CachedLibrary("object") PythonNativeWrapperLibrary lib,
-                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object delegate = lib.getDelegate(object);
+                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object delegate = lib.getDelegate(object);
 
-            // special key for the debugger
-            if (GP_OBJECT.equals(key)) {
-                return delegate;
+                // special key for the debugger
+                if (GP_OBJECT.equals(key)) {
+                    return delegate;
+                }
+                return readNativeMemberNode.execute(delegate, object, key);
+            } finally {
+                gil.release(mustRelease);
             }
-            return readNativeMemberNode.execute(delegate, object, key);
         }
 
         protected static boolean isObBase(String key) {
@@ -148,16 +155,21 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     @ExportMessage
     void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteNativeMemberNode writeNativeMemberNode) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
-        if (OB_REFCNT.getMemberName().equals(member)) {
-            Object delegate = lib.getDelegate(this);
-            writeNativeMemberNode.execute(delegate, this, member, value);
-        } else {
-            CompilerDirectives.transferToInterpreter();
-            if (indexOf(member) == -1) {
-                throw UnknownIdentifierException.create(member);
+                    @Cached WriteNativeMemberNode writeNativeMemberNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (OB_REFCNT.getMemberName().equals(member)) {
+                Object delegate = lib.getDelegate(this);
+                writeNativeMemberNode.execute(delegate, this, member, value);
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                if (indexOf(member) == -1) {
+                    throw UnknownIdentifierException.create(member);
+                }
+                throw UnsupportedMessageException.create();
             }
-            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
     }
 

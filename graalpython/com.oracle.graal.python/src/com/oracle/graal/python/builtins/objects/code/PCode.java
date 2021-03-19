@@ -67,11 +67,14 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -526,12 +529,17 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public SourceSection getSourceLocation() throws UnsupportedMessageException {
-        SourceSection result = readSourceLocation();
-        if (result != null) {
-            return result;
-        } else {
-            throw UnsupportedMessageException.create();
+    public SourceSection getSourceLocation(@Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            SourceSection result = readSourceLocation();
+            if (result != null) {
+                return result;
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -541,8 +549,13 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public boolean hasSourceLocation() {
-        return readSourceLocation() != null;
+    public boolean hasSourceLocation(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readSourceLocation() != null;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @Override

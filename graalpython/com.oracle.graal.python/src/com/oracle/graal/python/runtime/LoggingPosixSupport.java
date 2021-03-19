@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.runtime;
 
 import java.util.ArrayList;
@@ -147,11 +148,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void close(int fd,
+    final int close(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("close", "%d", fd);
         try {
-            lib.close(delegate, fd);
+            return lib.close(delegate, fd);
         } catch (PosixException e) {
             throw logException("close", e);
         }

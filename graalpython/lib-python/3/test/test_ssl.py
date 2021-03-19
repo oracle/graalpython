@@ -2540,8 +2540,6 @@ class ThreadedEchoServer(threading.Thread):
         self.daemon = True
 
     def __enter__(self):
-        # TODO XXX GraalVM change
-        raise unittest.SkipTest("missing threading support")
         self.start(threading.Event())
         self.flag.wait()
         return self
@@ -2552,8 +2550,6 @@ class ThreadedEchoServer(threading.Thread):
 
     def start(self, flag=None):
         self.flag = flag
-        # TODO XXX GraalVM change
-        raise unittest.SkipTest("missing threading support")
         threading.Thread.start(self)
 
     def run(self):
@@ -2670,8 +2666,6 @@ class AsyncoreEchoServer(threading.Thread):
         return "<%s %s>" % (self.__class__.__name__, self.server)
 
     def __enter__(self):
-        # TODO XXX GraalVM change
-        raise unittest.SkipTest("missing threading support")
         self.start(threading.Event())
         self.flag.wait()
         return self
@@ -2690,8 +2684,6 @@ class AsyncoreEchoServer(threading.Thread):
 
     def start (self, flag=None):
         self.flag = flag
-        # TODO XXX GraalVM change
-        raise unittest.SkipTest("missing threading support")
         threading.Thread.start(self)
 
     def run(self):
@@ -3203,8 +3195,6 @@ class ThreadedTests(unittest.TestCase):
                     self.fail('connecting to closed SSL socket should have failed')
 
         t = threading.Thread(target=listener)
-        # TODO XXX GraalVM change
-        raise unittest.SkipTest("missing threading support")
         t.start()
         try:
             connector()
@@ -3431,8 +3421,6 @@ class ThreadedTests(unittest.TestCase):
 
     def test_socketserver(self):
         """Using socketserver to create and manage SSL connections."""
-        # TODO XXX GraalVM change
-        raise unittest.SkipTest("missing threading support")
         server = make_https_server(self, certfile=SIGNED_CERTFILE)
         # try to connect
         if support.verbose:
@@ -3695,8 +3683,6 @@ class ThreadedTests(unittest.TestCase):
                 sock.close()
 
         t = threading.Thread(target=serve)
-        # TODO XXX GraalVM change
-        raise unittest.SkipTest("missing threading support")
         t.start()
         started.wait()
 
@@ -3750,8 +3736,6 @@ class ThreadedTests(unittest.TestCase):
             remote.send(remote.recv(4))
 
         t = threading.Thread(target=serve)
-        # TODO XXX GraalVM change
-        raise unittest.SkipTest("missing threading support")
         t.start()
         # Client wait until server setup and perform a connect.
         evt.wait()

@@ -94,6 +94,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -365,8 +366,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ToArrayNode toArrayNode,
                         @Cached ObjectToOpaquePathNode toOpaquePathNode,
-                        @Cached SysModuleBuiltins.AuditNode auditNode) {
-            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode);
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode, gil);
             throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
@@ -375,8 +377,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ToArrayNode toArrayNode,
                         @Cached ObjectToOpaquePathNode toOpaquePathNode,
-                        @Cached AuditNode auditNode) {
-            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode);
+                        @Cached AuditNode auditNode,
+                        @Cached GilNode gil) {
+            execv(frame, path, argv, argv.getSequenceStorage(), posixLib, toArrayNode, toOpaquePathNode, auditNode, gil);
             throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
 
@@ -390,7 +393,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         PosixSupportLibrary posixLib,
                         SequenceStorageNodes.ToArrayNode toArrayNode,
                         ObjectToOpaquePathNode toOpaquePathNode,
-                        SysModuleBuiltins.AuditNode auditNode) {
+                        SysModuleBuiltins.AuditNode auditNode,
+                        GilNode gil) {
             Object[] args = toArrayNode.execute(argvStorage);
             if (args.length < 1) {
                 throw raise(ValueError, ErrorMessages.ARG_MUST_NOT_BE_EMPTY, "execv()", 2);
@@ -404,9 +408,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             auditNode.audit("os.exec", path.originalObject, argv, PNone.NONE);
 
             try {
+                gil.release(true);
                 posixLib.execv(getPosixSupport(), path.value, opaqueArgs);
             } catch (PosixException e) {
+                gil.acquire();
                 throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                gil.acquire();
             }
             throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
         }
@@ -476,20 +484,28 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         int open(VirtualFrame frame, PosixPath path, int flags, int mode, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached BranchProfile errorProfile) {
+                        @Cached BranchProfile errorProfile,
+                        @Cached GilNode gil) {
             int fixedFlags = flags | O_CLOEXEC.value;
             auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
-            while (true) {
-                try {
-                    return posixLib.openat(getPosixSupport(), dirFd, path.value, fixedFlags, mode);
-                } catch (PosixException e) {
-                    errorProfile.enter();
-                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
-                    } else {
-                        throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            gil.release(true);
+            try {
+                while (true) {
+                    try {
+                        return posixLib.openat(getPosixSupport(), dirFd, path.value, fixedFlags, mode);
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        gil.acquire();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            getContext().triggerAsyncActions(frame);
+                            gil.release(true);
+                        } else {
+                            throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
+                        }
                     }
                 }
+            } finally {
+                gil.acquire();
             }
         }
     }
@@ -530,9 +546,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PBytes doRead(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile errorProfile) {
+                        @Cached BranchProfile errorProfile,
+                        @Cached GilNode gil) {
             try {
-                return read(frame, fd, length, posixLib, errorProfile);
+                return read(frame, fd, length, posixLib, errorProfile, gil);
             } catch (PosixException e) {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -541,28 +558,35 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         public PBytes read(VirtualFrame frame, int fd, int length,
                         PosixSupportLibrary posixLib,
-                        BranchProfile errorProfile) throws PosixException {
+                        BranchProfile errorProfile, GilNode gil) throws PosixException {
             if (length < 0) {
                 int error = OSErrorEnum.EINVAL.getNumber();
                 throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
             }
-            while (true) {
-                try {
-                    Buffer result = posixLib.read(getPosixSupport(), fd, length);
-                    if (result.length > Integer.MAX_VALUE) {
-                        // sanity check that it is safe to cast result.length to int, to be removed
-                        // once we support large arrays
-                        throw CompilerDirectives.shouldNotReachHere("Posix read() returned more bytes than requested");
-                    }
-                    return factory().createBytes(result.data, 0, (int) result.length);
-                } catch (PosixException e) {
-                    errorProfile.enter();
-                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
-                    } else {
-                        throw e;
+            gil.release(true);
+            try {
+                while (true) {
+                    try {
+                        Buffer result = posixLib.read(getPosixSupport(), fd, length);
+                        if (result.length > Integer.MAX_VALUE) {
+                            // sanity check that it is safe to cast result.length to int, to be
+                            // removed once we support large arrays
+                            throw CompilerDirectives.shouldNotReachHere("Posix read() returned more bytes than requested");
+                        }
+                        return factory().createBytes(result.data, 0, (int) result.length);
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            gil.acquire(); // need gil to trigger actions or construct OSError
+                            getContext().triggerAsyncActions(frame);
+                            gil.release(true); // continue read loop without gil
+                        } else {
+                            throw e;
+                        }
                     }
                 }
+            } finally {
+                gil.acquire();
             }
         }
     }
@@ -581,9 +605,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         long doWrite(VirtualFrame frame, int fd, byte[] data,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile errorProfile) {
+                        @Cached BranchProfile errorProfile,
+                        @Cached GilNode gil) {
             try {
-                return write(frame, fd, data, posixLib, errorProfile);
+                return write(frame, fd, data, posixLib, errorProfile, gil);
             } catch (PosixException e) {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -592,18 +617,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         public long write(VirtualFrame frame, int fd, byte[] data,
                         PosixSupportLibrary posixLib,
-                        BranchProfile errorProfile) throws PosixException {
-            while (true) {
-                try {
-                    return posixLib.write(getPosixSupport(), fd, Buffer.wrap(data));
-                } catch (PosixException e) {
-                    errorProfile.enter();
-                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
-                    } else {
-                        throw e;
+                        BranchProfile errorProfile, GilNode gil) throws PosixException {
+            gil.release(true);
+            try {
+                while (true) {
+                    try {
+                        return posixLib.write(getPosixSupport(), fd, Buffer.wrap(data));
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            gil.acquire();
+                            getContext().triggerAsyncActions(frame);
+                            gil.release(true);
+                        } else {
+                            throw e;
+                        }
                     }
                 }
+            } finally {
+                gil.acquire();
             }
         }
     }
@@ -710,12 +742,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple pipe(VirtualFrame frame,
+                        @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             int[] pipe;
+            gil.release(true);
             try {
                 pipe = posixLib.pipe(getPosixSupport());
             } catch (PosixException e) {
+                gil.acquire(); // need to acquire the gil to construct the OSError object
                 throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                gil.acquire();
             }
             return factory().createTuple(new Object[]{pipe[0], pipe[1]});
         }
@@ -1233,8 +1270,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean isatty(int fd,
+                        @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.isatty(getPosixSupport(), fd);
+            gil.release(true);
+            try {
+                return posixLib.isatty(getPosixSupport(), fd);
+            } finally {
+                gil.acquire();
+            }
         }
     }
 
@@ -1742,16 +1785,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple waitpid(VirtualFrame frame, long pid, int options,
+                        @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
+            gil.release(true);
             while (true) {
                 try {
                     long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
+                    gil.acquire();
                     return factory().createTuple(new Object[]{result[0], result[1]});
                 } catch (PosixException e) {
                     errorProfile.enter();
+                    gil.acquire();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                         getContext().triggerAsyncActions(frame);
+                        gil.release(true);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1901,14 +1949,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         int system(PBytes command,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil) {
             // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
             // conversions for emulated backend because the bytes version after fsencode conversion
             // is subject to sys.audit.
             auditNode.audit("os.system", command);
-            byte[] bytes = toBytesNode.execute(command);
-            Object cmdOpaque = posixLib.createPathFromBytes(getPosixSupport(), bytes);
-            return posixLib.system(getPosixSupport(), cmdOpaque);
+            gil.release(true);
+            try {
+                byte[] bytes = toBytesNode.execute(command);
+                Object cmdOpaque = posixLib.createPathFromBytes(getPosixSupport(), bytes);
+                return posixLib.system(getPosixSupport(), cmdOpaque);
+            } finally {
+                gil.acquire();
+            }
         }
     }
 

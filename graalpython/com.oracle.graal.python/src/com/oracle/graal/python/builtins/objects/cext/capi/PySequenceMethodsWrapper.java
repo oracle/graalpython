@@ -51,8 +51,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExc
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -102,23 +104,28 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                     @Cached ToSulongNode toSulongNode,
                     @Cached BranchProfile errorProfile,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
-        Object result;
+                    @Cached GetNativeNullNode getNativeNullNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
         try {
-            if (SQ_REPEAT.getMemberName().equals(member)) {
-                result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
-            } else if (SQ_ITEM.getMemberName().equals(member)) {
-                return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__), true);
-            } else {
-                // TODO extend list
-                throw UnknownIdentifierException.create(member);
+            Object result;
+            try {
+                if (SQ_REPEAT.getMemberName().equals(member)) {
+                    result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
+                } else if (SQ_ITEM.getMemberName().equals(member)) {
+                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__), true);
+                } else {
+                    // TODO extend list
+                    throw UnknownIdentifierException.create(member);
+                }
+            } catch (PException e) {
+                errorProfile.enter();
+                transformExceptionToNativeNode.execute(null, e);
+                result = getNativeNullNode.execute(null);
             }
-        } catch (PException e) {
-            errorProfile.enter();
-            transformExceptionToNativeNode.execute(null, e);
-            result = getNativeNullNode.execute(null);
+            return result;
+        } finally {
+            gil.release(mustRelease);
         }
-        return result;
     }
 
     @ExportMessage

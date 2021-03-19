@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
@@ -97,15 +98,20 @@ final class DefaultPythonLongExports {
 
         @Specialization(replaces = "noOverflow")
         static int withOverflow(Long self, Object type, @SuppressWarnings("unused") ThreadState state,
-                        @Exclusive @Cached PRaiseNode raise) {
+                        @Exclusive @Cached PRaiseNode raise, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
             try {
-                return PInt.intValueExact(self);
-            } catch (OverflowException e) {
-                if (type != null) {
-                    throw raise.raiseNumberTooLarge(type, self);
-                } else {
-                    return self > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+                try {
+                    return PInt.intValueExact(self);
+                } catch (OverflowException e) {
+                    if (type != null) {
+                        throw raise.raiseNumberTooLarge(type, self);
+                    } else {
+                        return self > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+                    }
                 }
+            } finally {
+                gil.release(mustRelease);
             }
         }
     }
@@ -145,23 +151,33 @@ final class DefaultPythonLongExports {
 
         @Specialization(rewriteOn = OverflowException.class)
         static boolean lP(Long receiver, PInt other,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) throws OverflowException {
-            if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
-                return receiver == other.longValueExact();
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin, @Shared("gil") @Cached GilNode gil) throws OverflowException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                    return receiver == other.longValueExact();
+                }
+                return false;
+            } finally {
+                gil.release(mustRelease);
             }
-            return false;
         }
 
         @Specialization(replaces = "lP", limit = "1")
         static boolean lPOverflow(Long receiver, PInt other,
                         @CachedLibrary("other") InteropLibrary otherLib,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
-                if (otherLib.fitsInLong(other)) {
-                    return receiver == other.longValue();
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                    if (otherLib.fitsInLong(other)) {
+                        return receiver == other.longValue();
+                    }
                 }
+                return false;
+            } finally {
+                gil.release(mustRelease);
             }
-            return false;
         }
 
         @Fallback
@@ -201,12 +217,18 @@ final class DefaultPythonLongExports {
         @Specialization
         static int lF(Long receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltin.profileIsAnyBuiltinClass(lib.getLazyPythonClass(other))) {
-                return receiver == other.getValue() ? 1 : 0;
-            } else {
-                return -1;
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                // n.b.: long objects cannot compare here, but if its a builtin float we can
+                // shortcut
+                if (isBuiltin.profileIsAnyBuiltinClass(lib.getLazyPythonClass(other))) {
+                    return receiver == other.getValue() ? 1 : 0;
+                } else {
+                    return -1;
+                }
+            } finally {
+                gil.release(mustRelease);
             }
         }
 
@@ -248,12 +270,18 @@ final class DefaultPythonLongExports {
 
         @Specialization
         static boolean lF(Long receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltin.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
-                return receiver == other.getValue();
-            } else {
-                return oLib.equalsInternal(other, receiver, threadState) == 1;
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin, @Shared("gil") @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                // n.b.: long objects cannot compare here, but if its a builtin float we can
+                // shortcut
+                if (isBuiltin.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
+                    return receiver == other.getValue();
+                } else {
+                    return oLib.equalsInternal(other, receiver, threadState) == 1;
+                }
+            } finally {
+                gil.release(mustRelease);
             }
         }
 
@@ -329,41 +357,66 @@ final class DefaultPythonLongExports {
     @ExportMessage
     public static Object lookupAttributeInternal(Long receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return lookup.execute(frame, receiver, name, strict);
+        } finally {
+            gil.release(mustRelease);
         }
-        return lookup.execute(frame, receiver, name, strict);
     }
 
     @ExportMessage
     static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Long receiver, String name, boolean strict,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
-        return lookup.execute(PythonBuiltinClassType.PInt, name, strict);
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return lookup.execute(PythonBuiltinClassType.PInt, name, strict);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     static Object lookupAndCallSpecialMethodWithState(Long receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
-        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
+            return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     static Object lookupAndCallRegularMethodWithState(Long receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
-        return methodLib.callObjectWithState(method, state, arguments);
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
+            return methodLib.callObjectWithState(method, state, arguments);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     static boolean typeCheck(@SuppressWarnings("unused") Long receiver, Object type,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
-        Object instanceClass = PythonBuiltinClassType.PInt;
-        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
+                    @Cached IsSubtypeNode isSubtypeNode, @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object instanceClass = PythonBuiltinClassType.PInt;
+            return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 }
