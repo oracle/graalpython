@@ -232,7 +232,7 @@ public class PythonProvider implements LanguageProvider {
 
         addExpressionSnippet(context, snippets, "/", "lambda x, y: x / y", NUMBER, PDivByZeroVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        // addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY)));
+        addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY), hash(ANY, ANY)));
 
         addExpressionSnippet(context, snippets, "==", "lambda x, y: x == y", BOOLEAN, ANY, ANY);
         addExpressionSnippet(context, snippets, "!=", "lambda x, y: x != y", BOOLEAN, ANY, ANY);
@@ -271,10 +271,10 @@ public class PythonProvider implements LanguageProvider {
                                                      "      return False\n\n" +
                                                      "gen_if", BOOLEAN, ANY);
 
-        // addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
-        //                                               "    for x in l:\n" +
-        //                                               "        return x\n\n" +
-        //                                               "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY), STRING));
+        addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
+                                                      "    for x in l:\n" +
+                                                      "        return x\n\n" +
+                                                      "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY), STRING, hash(ANY, ANY)));
 
         // any exception honours the finally block, but non-exception cannot be raised
         addStatementSnippet(context, snippets, "try-finally", "def gen_tryfinally(exc):\n" +
