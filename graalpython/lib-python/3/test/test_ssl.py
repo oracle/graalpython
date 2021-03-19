@@ -1249,10 +1249,11 @@ class ContextTests(unittest.TestCase):
             ctx.maximum_version, ssl.TLSVersion.MAXIMUM_SUPPORTED
         )
 
+        # XXX GraalVM change - don't assume that TLSv1.1 is the lowest available version, for us it can be TLSv1.2
         ctx.maximum_version = ssl.TLSVersion.MINIMUM_SUPPORTED
         self.assertIn(
             ctx.maximum_version,
-            {ssl.TLSVersion.TLSv1, ssl.TLSVersion.SSLv3}
+            {ssl.TLSVersion.TLSv1, ssl.TLSVersion.TLSv1_2, ssl.TLSVersion.SSLv3}
         )
 
         ctx.minimum_version = ssl.TLSVersion.MAXIMUM_SUPPORTED

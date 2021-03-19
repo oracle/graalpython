@@ -39,6 +39,7 @@
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_default_certs_env_windows
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_verify_cadata
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_load_verify_locations
+*graalpython.lib-python.3.test.test_ssl.ContextTests.test_min_max_version
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_num_tickest
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_options
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_protocol
