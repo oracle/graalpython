@@ -45,7 +45,7 @@ import tempfile
 if PY3:
     import urllib.request as urllib_request
 else:
-    import urllib2 as urllib_request
+    raise "The build scripts are no longer compatible with Python 2"
 from argparse import ArgumentParser
 
 import mx
