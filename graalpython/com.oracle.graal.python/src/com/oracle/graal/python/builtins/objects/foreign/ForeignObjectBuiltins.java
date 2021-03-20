@@ -262,18 +262,17 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"lib.isString(left)", "lib.isString(right)"})
+        @Specialization(guards = {"lib.isString(left)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
                 if (!reverse) {
-                    return op.executeObject(frame, lib.asString(left), lib.asString(right));
+                    return op.executeObject(frame, lib.asString(left), right);
                 } else {
-                    return op.executeObject(frame, lib.asString(right), lib.asString(left));
+                    return op.executeObject(frame, right, lib.asString(left));
                 }
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to String as it claims to");
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
