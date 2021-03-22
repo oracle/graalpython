@@ -2095,16 +2095,26 @@ public class IntBuiltins extends PythonBuiltins {
             if (negativeByteCountProfile.profile(byteCount < 0)) {
                 throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
             }
-            byte signByte = 0;
             if (self < 0) {
                 if (negativeNumberProfile.profile(!signed)) {
                     throw raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
                 }
+            }
+            return factory().createBytes(fromLong(self, byteCount, isBigEndian(byteorder), signed,
+                            overflowProfile, getRaiseNode()));
+        }
+
+        public static byte[] fromLong(long self, int byteCount, boolean isBigEndian, boolean signed,
+                        ConditionProfile overflowProfile,
+                        PRaiseNode raise) {
+            byte signByte = 0;
+            if (self < 0) {
+                assert signed : MESSAGE_CONVERT_NEGATIVE;
                 signByte = -1;
             }
             int index;
             int delta;
-            if (isBigEndian(byteorder)) {
+            if (isBigEndian) {
                 index = byteCount - 1;
                 delta = -1;
             } else {
@@ -2125,7 +2135,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             if (overflowProfile.profile((number != 0 && bytes.length == 1 && bytes[0] != self) || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
 
-                throw raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
+                throw raise.raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
             }
             if (signed) {
                 while (0 <= index && index <= (byteCount - 1)) {
@@ -2133,7 +2143,7 @@ public class IntBuiltins extends PythonBuiltins {
                     index += delta;
                 }
             }
-            return factory().createBytes(bytes);
+            return bytes;
         }
 
         @Specialization
@@ -2164,10 +2174,11 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private byte getSingByte(BigInteger value, boolean signed) {
+        private static byte getSingByte(BigInteger value, boolean signed,
+                        PRaiseNode raise) {
             if (value.compareTo(BigInteger.ZERO) < 0) {
                 if (!signed) {
-                    throw raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
+                    throw raise.raise(PythonErrorType.OverflowError, MESSAGE_CONVERT_NEGATIVE);
                 }
                 return -1;
             }
@@ -2184,8 +2195,15 @@ public class IntBuiltins extends PythonBuiltins {
             if (negativeByteCountProfile.profile(byteCount < 0)) {
                 throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
             }
+            return factory().createBytes(fromBigInteger(self, byteCount, isBigEndian(byteorder), signed,
+                            overflowProfile, getRaiseNode()));
+        }
+
+        public static byte[] fromBigInteger(PInt self, int byteCount, boolean isBigEndian, boolean signed,
+                        ConditionProfile overflowProfile,
+                        PRaiseNode raise) {
             BigInteger value = self.getValue();
-            byte signByte = getSingByte(value, signed);
+            byte signByte = getSingByte(value, signed, raise);
             byte[] bytes = getBytes(value);
             if (bytes.length > byteCount) {
                 // Check, whether we need to cut unneeded sign bytes.
@@ -2201,18 +2219,16 @@ public class IntBuiltins extends PythonBuiltins {
                 }
                 if (overflowProfile.profile(len > byteCount)) {
                     // the corrected len is still bigger then we need.
-                    throw raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
+                    throw raise.raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
                 }
-                if (bytes.length > byteCount) {
-                    // the array starts with sign bytes and has to be truncated to the requested
-                    // size
-                    byte[] tmp = bytes;
-                    bytes = new byte[len];
-                    PythonUtils.arraycopy(tmp, startIndex, bytes, 0, len);
-                }
+                // the array starts with sign bytes and has to be truncated to the requested
+                // size
+                byte[] tmp = bytes;
+                bytes = new byte[len];
+                PythonUtils.arraycopy(tmp, startIndex, bytes, 0, len);
             }
 
-            if (isBigEndian(byteorder)) {
+            if (isBigEndian) {
                 if (byteCount > bytes.length) {
                     // requested array is bigger then we obtained from BigInteger
                     byte[] resultBytes = new byte[byteCount];
@@ -2223,9 +2239,9 @@ public class IntBuiltins extends PythonBuiltins {
                             resultBytes[i] = signByte;
                         }
                     }
-                    return factory().createBytes(resultBytes);
+                    return resultBytes;
                 } else {
-                    return factory().createBytes(bytes);
+                    return bytes;
                 }
             } else {
                 // little endian -> need to switch bytes
@@ -2239,7 +2255,7 @@ public class IntBuiltins extends PythonBuiltins {
                         resultBytes[i] = signByte;
                     }
                 }
-                return factory().createBytes(resultBytes);
+                return resultBytes;
             }
         }
 
@@ -2342,7 +2358,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static BigInteger createBigInteger(byte[] bytes, boolean isBigEndian, boolean signed) {
+        public static BigInteger createBigInteger(byte[] bytes, boolean isBigEndian, boolean signed) {
             if (bytes.length == 0) {
                 // in case of empty byte array
                 return BigInteger.ZERO;
