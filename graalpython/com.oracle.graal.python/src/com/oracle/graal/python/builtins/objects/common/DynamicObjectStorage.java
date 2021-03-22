@@ -137,7 +137,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         static int cachedLen(DynamicObjectStorage self,
                         @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Cached GilNode gil) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 int len = 0;
@@ -155,7 +156,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         static int cachedKeys(DynamicObjectStorage self,
                         @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Cached GilNode gil) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 int len = 0;
@@ -171,7 +173,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "cachedKeys")
         static int length(DynamicObjectStorage self,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return cachedKeys(self, self.store.getShape(), keyArray(self), readNode, gil);
@@ -201,7 +204,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization
         static Object string(DynamicObjectStorage self, String key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 Object result = readKey.execute(self.store, key);
@@ -216,7 +220,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return string(self, castStr.execute(key), state, readKey, noValueProfile, gil);
@@ -234,7 +239,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 long hash = getHashWithState(key, lib, state, gotState);
@@ -266,7 +272,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 long hash = getHashWithState(key, lib, state, gotState);
@@ -333,7 +340,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization(guards = "!shouldTransition(self)")
         static HashingStorage string(DynamicObjectStorage self, String key, Object value, ThreadState state,
                         @Shared("hasMroprofile") @Cached BranchProfile profile,
-                        @Shared("setitemWrite") @Cached WriteAttributeToDynamicObjectNode writeNode, @Shared("gil") @Cached GilNode gil) {
+                        @Shared("setitemWrite") @Cached WriteAttributeToDynamicObjectNode writeNode,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 writeNode.execute(self.store, key, value);
@@ -349,7 +357,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("hasMroprofile") @Cached BranchProfile hasMro,
                         @Shared("setitemWrite") @Cached WriteAttributeToDynamicObjectNode writeNode,
-                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile, @Shared("gil") @Cached GilNode gil) {
+                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return string(self, castStr.execute(key), value, state, hasMro, writeNode, gil);
@@ -366,7 +375,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @CachedLibrary("self") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary newLib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isBuiltinKey,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 HashingStorage newStore;
@@ -394,7 +404,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                     @CachedLibrary("this") HashingStorageLibrary lib,
                     @Shared("hasMroprofile") @Cached BranchProfile hasMro,
                     @Exclusive @Cached WriteAttributeToDynamicObjectNode writeNode,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // __hash__ call is done through hasKey, if necessary
@@ -423,7 +434,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object cachedLen(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Cached GilNode gil) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 Object result = firstValue;
@@ -441,7 +453,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object cachedKeys(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Cached GilNode gil) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 Object result = firstValue;
@@ -457,7 +470,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "cachedKeys")
         static Object addAll(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return cachedKeys(self, node, firstValue, self.store.getShape(), keyArray(self), readNode, gil);
@@ -479,7 +493,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorage clear(@CachedLanguage PythonLanguage lang,
-                    @CachedLibrary(limit = "3") DynamicObjectLibrary dylib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             dylib.resetShape(store, lang.getEmptyShape());
@@ -508,7 +523,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Cached("keys.length") int cachedLength,
                         @CachedLanguage PythonLanguage lang,
                         @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] readLib,
-                        @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] writeLib, @Shared("gil") @Cached GilNode gil) {
+                        @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] writeLib,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 DynamicObject copy = new Store(lang.getEmptyShape());
@@ -524,7 +540,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization(replaces = "copy")
         public static HashingStorage copyGeneric(DynamicObjectStorage receiver,
                         @CachedLanguage PythonLanguage lang,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib, @Shared("gil") @Cached GilNode gil) {
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 DynamicObject copy = new Store(lang.getEmptyShape());
@@ -541,7 +558,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorageIterable<Object> keys(
-                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return new HashingStorageIterable<>(new KeysIterator(store, readNode));
@@ -552,7 +570,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorageIterable<Object> reverseKeys(
-                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return new HashingStorageIterable<>(new ReverseKeysIterator(store, readNode));
@@ -649,7 +668,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorageIterable<DictEntry> entries(
-                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return new HashingStorageIterable<>(new EntriesIterator(store, readNode));

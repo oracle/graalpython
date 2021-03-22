@@ -187,7 +187,8 @@ public class HPyArrayWrappers {
 
         @ExportMessage
         boolean isArrayElementReadable(long idx,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (delegate != null) {
@@ -201,7 +202,8 @@ public class HPyArrayWrappers {
 
         @ExportMessage
         boolean isArrayElementModifiable(long idx,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             return isArrayElementReadable(idx, lib, gil);
         }
 
@@ -218,7 +220,8 @@ public class HPyArrayWrappers {
 
         @ExportMessage
         void writeArrayElement(long idx, Object value,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib, @Exclusive @Cached GilNode gil)
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Exclusive @Cached GilNode gil)
                         throws UnsupportedMessageException, InvalidArrayIndexException, UnsupportedTypeException {
             boolean mustRelease = gil.acquire();
             try {
@@ -263,7 +266,8 @@ public class HPyArrayWrappers {
             static Object doManaged(HPyArrayWrapper receiver, long index,
                             @Bind("receiver.getDelegate()") Object[] delegate,
                             @Shared("isHandleProfile") @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
-                            @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode, @Exclusive @Cached GilNode gil) throws OverflowException {
+                            @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
+                            @Exclusive @Cached GilNode gil) throws OverflowException {
                 boolean mustRelease = gil.acquire();
                 try {
                     assert receiver.getNativePointer() == null : "HPyObjectArrayWrapper is managed but there is a native pointer.";
@@ -283,7 +287,8 @@ public class HPyArrayWrappers {
             static Object doManagedOvf(HPyArrayWrapper receiver, long index,
                             @Bind("receiver.getDelegate()") Object[] delegate,
                             @Shared("isHandleProfile") @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
-                            @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                            @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
+                            @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
                 try {
                     return doManaged(receiver, index, delegate, isHandleProfile, asHandleNode, gil);
                 } catch (OverflowException e) {
@@ -297,7 +302,8 @@ public class HPyArrayWrappers {
                             @Bind("receiver.getNativePointer()") Object nativePointer,
                             @CachedLibrary("nativePointer") InteropLibrary lib,
                             @CachedContext(PythonLanguage.class) PythonContext context,
-                            @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+                            @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode,
+                            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
                 boolean mustRelease = gil.acquire();
                 try {
                     assert receiver.getDelegate() == null : "HPyObjectArrayWrapper is native but managed object wasn't free'd.";
@@ -317,7 +323,8 @@ public class HPyArrayWrappers {
             static Object doGeneric(HPyArrayWrapper receiver, long index,
                             @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
                             @CachedContext(PythonLanguage.class) PythonContext context,
-                            @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+                            @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode,
+                            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
                 boolean mustRelease = gil.acquire();
                 try {
                     Object[] delegate = receiver.getDelegate();
@@ -345,7 +352,8 @@ public class HPyArrayWrappers {
         void toNative(
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GraalHPyNodes.PCallHPyFunction callToArrayNode,
-                        @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode, @Exclusive @Cached GilNode gil) {
+                        @Cached.Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 invalidateNode.execute();
@@ -367,7 +375,8 @@ public class HPyArrayWrappers {
         @ExportMessage
         @SuppressWarnings("static-method")
         Object getNativeType(
-                        @CachedContext(PythonLanguage.class) PythonContext context, @Exclusive @Cached GilNode gil) {
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return context.getHPyContext().getHPyArrayNativeType();
@@ -454,7 +463,8 @@ public class HPyArrayWrappers {
 
         @ExportMessage
         Object readArrayElement(long idx,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
             boolean mustRelease = gil.acquire();
             try {
                 if (!isPointer()) {
@@ -487,7 +497,8 @@ public class HPyArrayWrappers {
         @ExportMessage
         void toNative(
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached PCallHPyFunction callHPyFunction, @Exclusive @Cached GilNode gil) {
+                        @Cached PCallHPyFunction callHPyFunction,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (!isPointer()) {

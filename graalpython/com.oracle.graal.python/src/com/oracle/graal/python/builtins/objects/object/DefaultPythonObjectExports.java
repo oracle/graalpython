@@ -91,7 +91,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static Object asIndexWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary("receiver") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary("receiver") InteropLibrary interopLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             if (interopLib.fitsInLong(receiver)) {
@@ -119,7 +120,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static int asSizeWithState(Object receiver, Object type, ThreadState state,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "2") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary(limit = "2") InteropLibrary interopLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object index = asIndexWithState(receiver, state, raise, interopLib, gil);
@@ -145,7 +147,8 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     @TruffleBoundary
-    static long hashWithState(Object receiver, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
+    static long hashWithState(Object receiver,
+                    @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return receiver.hashCode();
@@ -157,7 +160,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static int lengthWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary("receiver") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary("receiver") InteropLibrary interopLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             if (interopLib.hasArrayElements(receiver)) {
@@ -256,7 +260,8 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     static boolean isForeignObject(Object receiver,
-                    @CachedLibrary("receiver") InteropLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary("receiver") InteropLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             try {
@@ -288,7 +293,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static double asJavaDoubleWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             if (canBeJavaDouble(receiver, interopLib)) {
@@ -314,7 +320,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static long asJavaLongWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             if (canBeJavaDouble(receiver, interopLib)) {
@@ -340,7 +347,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static long asPIntWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("receiver") InteropLibrary lib,
-                    @Exclusive @Cached PRaiseNode raise, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             if (lib.fitsInLong(receiver)) {
@@ -360,7 +368,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             VirtualFrame frame = null;
@@ -376,7 +385,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
@@ -388,7 +398,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
@@ -401,7 +412,8 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
@@ -434,7 +446,8 @@ final class DefaultPythonObjectExports {
         static PForeignArrayIterator doForeignArray(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("receiver") InteropLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                        @CachedLibrary("receiver") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 try {
@@ -454,7 +467,8 @@ final class DefaultPythonObjectExports {
         @Specialization(guards = "lib.isString(receiver)")
         static PStringIterator doBoxedString(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
-                        @CachedLibrary("receiver") InteropLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                        @CachedLibrary("receiver") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 try {
@@ -471,7 +485,8 @@ final class DefaultPythonObjectExports {
         static Object doGeneric(Object receiver, ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("receiver") InteropLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                        @CachedLibrary("receiver") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (lib.isIterator(receiver)) {

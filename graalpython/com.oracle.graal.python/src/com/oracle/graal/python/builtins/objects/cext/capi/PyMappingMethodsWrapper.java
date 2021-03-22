@@ -114,7 +114,8 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadMethodNode readMethodNode,
-                    @Exclusive @Cached ToSulongNode toSulongNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                    @Exclusive @Cached ToSulongNode toSulongNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             // translate key to attribute name

@@ -246,7 +246,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Cached PInteropSetAttributeNode setAttributeNode,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             try {
@@ -291,7 +292,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             String attrKey = getAttributeKey.execute(key);
@@ -334,7 +336,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasArrayElements(
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary, @Exclusive @Cached GilNode gil) {
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return dataModelLibrary.isSequence(this) && !isAbstractMapping(dataModelLibrary);
@@ -347,7 +350,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object readArrayElement(long key,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+                    @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             if (dataModelLibrary.isSequence(this)) {
@@ -373,7 +377,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public void writeArrayElement(long key, Object value,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
-                    @Shared("setItemNode") @Cached PInteropSubscriptAssignNode setItemNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+                    @Shared("setItemNode") @Cached PInteropSubscriptAssignNode setItemNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             if (dataModelLibrary.isSequence(this)) {
@@ -395,7 +400,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public void removeArrayElement(long key,
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
-                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
+                    @Exclusive @Cached PInteropDeleteItemNode deleteItemNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             if (dataModelLibrary.isSequence(this)) {
@@ -429,7 +435,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return isInBounds(lib.length(this), getItemNode, idx);
@@ -441,7 +448,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
@@ -453,7 +461,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(lib.length(this), getItemNode, idx);
@@ -465,7 +474,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
@@ -494,7 +504,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberReadable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // TODO write specialized nodes for the appropriate property
@@ -506,7 +517,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberModifiable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // TODO write specialized nodes for the appropriate property
@@ -518,7 +530,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberInsertable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // TODO write specialized nodes for the appropriate property
@@ -530,7 +543,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberInvocable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // TODO write specialized nodes for the appropriate property
@@ -542,7 +556,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isMemberRemovable(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // TODO write specialized nodes for the appropriate property
@@ -554,7 +569,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // TODO write specialized nodes for the appropriate property
@@ -566,7 +582,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String member,
-                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("keyInfoNode") @Cached PKeyInfoNode keyInfoNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // TODO write specialized nodes for the appropriate property
@@ -583,7 +600,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached ConditionProfile profileGetattribute,
                     @Exclusive @Cached ConditionProfile profileMember,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attributeErrorProfile, @Exclusive @Cached GilNode gil)
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attributeErrorProfile,
+                    @Exclusive @Cached GilNode gil)
                     throws UnknownIdentifierException, UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
@@ -615,7 +633,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object execute(Object[] arguments,
-                    @Exclusive @Cached PExecuteNode executeNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Exclusive @Cached PExecuteNode executeNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             return executeNode.execute(this, arguments);
@@ -633,7 +652,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
-                    @Cached TypeNodes.GetMroNode getMroNode, @Exclusive @Cached GilNode gil) {
+                    @Cached TypeNodes.GetMroNode getMroNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashSet<String> keys = new HashSet<>();
@@ -677,7 +697,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
                     @Exclusive @Cached PInteropDeleteItemNode delItemNode,
-                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             try {
@@ -722,7 +743,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isInstantiable(
-                    @Cached TypeNodes.IsTypeNode isTypeNode, @Exclusive @Cached GilNode gil) {
+                    @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return isTypeNode.execute(this);
@@ -733,7 +755,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object instantiate(Object[] arguments,
-                    @Exclusive @Cached PExecuteNode executeNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Exclusive @Cached PExecuteNode executeNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             return executeNode.execute(this, arguments);
@@ -774,7 +797,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Exclusive @Cached CastToJavaLongLossyNode toLong,
                     @Exclusive @Cached ConditionProfile ignoreOverflow,
-                    @Exclusive @Cached BranchProfile overflow, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached BranchProfile overflow,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
@@ -812,7 +836,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasBool,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
-                    @Shared("raise") @Cached PRaiseNode raiseNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("raise") @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
@@ -853,7 +878,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
@@ -875,7 +901,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isSame(Object other,
-                    @Shared("isNode") @Cached IsNode isNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("isNode") @Cached IsNode isNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return isNode.execute(this, other);
@@ -890,7 +917,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @CachedLibrary(limit = "3") PythonObjectLibrary resultLib,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("isNode") @Cached IsNode isNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("isNode") @Cached IsNode isNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
@@ -926,7 +954,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile resultProfile,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("intProfile") @Cached IsBuiltinClassProfile isInt,
-                    @Cached WarnNode warnNode, @Exclusive @Cached GilNode gil) {
+                    @Cached WarnNode warnNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
@@ -961,7 +990,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Cached CastToJavaStringNode castToJavaStringNode, @Exclusive @Cached GilNode gil) {
+                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object func = lib.lookupAttributeOnType(this, __FSPATH__);
@@ -984,7 +1014,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return asPString(lib, this, state, isSubtypeNode, resultLib, raise);
@@ -1012,7 +1043,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
                     @Shared("intProfile") @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
-                    @Exclusive @Cached IsBuiltinClassProfile isAttrError, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached IsBuiltinClassProfile isAttrError,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object filenoFunc = lib.lookupAttributeWithState(this, state, FILENO);
@@ -1040,7 +1072,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAttributeInternal(ThreadState state, String name, boolean strict,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached LookupAttributeNode lookup, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached LookupAttributeNode lookup,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             VirtualFrame frame = null;
@@ -1094,7 +1127,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAttributeOnTypeInternal(String name, boolean strict,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Exclusive @Cached LookupAttributeOnTypeNode lookup, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached LookupAttributeOnTypeNode lookup,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return lookup.execute(lib.getLazyPythonClass(this), name, strict);
@@ -1122,7 +1156,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object callObjectWithState(ThreadState state, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CallNode callNode, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             VirtualFrame frame = null;
@@ -1137,7 +1172,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Exclusive @Cached CallUnboundMethodNode call, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached CallUnboundMethodNode call,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return call.execute(state, this, false, receiver, arguments);
@@ -1148,7 +1184,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Exclusive @Cached CallUnboundMethodNode call, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached CallUnboundMethodNode call,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return call.execute(state, this, true, receiver, arguments);
@@ -1191,7 +1228,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAndCallSpecialMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Exclusive @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeOnTypeStrict(this, methodName);
@@ -1204,7 +1242,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAndCallRegularMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Exclusive @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
@@ -1220,7 +1259,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raise,
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
-                    @Exclusive @Cached ConditionProfile hasIntFunc, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached ConditionProfile hasIntFunc,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object result = PNone.NO_VALUE;
@@ -1251,7 +1291,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached ConditionProfile ignoreOverflow,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongLossyNode castToLong, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached CastToJavaLongLossyNode castToLong,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object result = lib.asIndexWithState(this, state);
@@ -1293,7 +1334,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
                     @Exclusive @Cached ConditionProfile hasFloatFunc,
-                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
@@ -1325,7 +1367,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Exclusive @Cached CastToJavaLongExactNode castToLong,
-                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
@@ -1370,7 +1413,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) {
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object objType = plib.getLazyPythonClass(this);
@@ -1401,7 +1445,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             Object objType = plib.getLazyPythonClass(this);
@@ -1443,7 +1488,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) {
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object objType = plib.getLazyPythonClass(this);
@@ -1473,7 +1519,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary("this") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             Object objType = plib.getLazyPythonClass(this);
@@ -1517,7 +1564,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
                     @CachedLibrary(limit = "2") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) {
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object objType = plib.getLazyPythonClass(this);
@@ -1576,7 +1624,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Shared("dateTimeModuleProfile") @Cached ConditionProfile dateTimeModuleLoaded,
-                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Shared("timeModuleProfile") @Cached ConditionProfile timeModuleLoaded,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (!lib.isTimeZone(this)) {
@@ -2250,7 +2299,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization(guards = "allowSideEffects")
         public static String doSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects,
-                        @Cached ToDisplaySideEffectingNode toDisplayCallnode, @Exclusive @Cached GilNode gil) {
+                        @Cached ToDisplaySideEffectingNode toDisplayCallnode,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return toDisplayCallnode.execute(receiver);
@@ -2260,7 +2310,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         @Specialization(guards = "!allowSideEffects")
-        public static String doNonSideEffecting(PythonAbstractObject receiver, boolean allowSideEffects, @Exclusive @Cached GilNode gil) {
+        public static String doNonSideEffecting(PythonAbstractObject receiver,
+                        boolean allowSideEffects, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return receiver.toStringBoundary();
@@ -2283,7 +2334,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass, @Exclusive @Cached GilNode gil) {
+    public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return getClass.execute(this);
@@ -2293,7 +2345,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public int identityHashCode(@Cached ObjectNodes.GetIdentityHashNode getIdentityHashNode, @Exclusive @Cached GilNode gil) {
+    public int identityHashCode(@Cached ObjectNodes.GetIdentityHashNode getIdentityHashNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return getIdentityHashNode.execute(this);
@@ -2311,7 +2364,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public TriState isIdenticalOrUndefined(Object otherInterop,
                     @Cached PForeignToPTypeNode convert,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                    @CachedLibrary("this") PythonObjectLibrary objectLib, @Exclusive @Cached GilNode gil) {
+                    @CachedLibrary("this") PythonObjectLibrary objectLib,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object other = convert.executeConvert(otherInterop);
@@ -2350,7 +2404,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 Object v = plib.getDelegatedValue(self);

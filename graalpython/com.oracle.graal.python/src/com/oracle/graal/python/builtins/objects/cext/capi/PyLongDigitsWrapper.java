@@ -114,7 +114,8 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     @ExportMessage
     final long getArraySize(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return obSizeNode.execute(lib.getDelegate(this));
@@ -133,7 +134,8 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     final Object readArrayElement(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
-                    @CachedContext(PythonLanguage.class) PythonContext context, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             Object delegate = lib.getDelegate(this);
@@ -189,7 +191,8 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // also include the implicit null-terminator
@@ -204,7 +207,8 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                     @Cached PCallCapiFunction callToNativeNode,
-                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             invalidateNode.execute();

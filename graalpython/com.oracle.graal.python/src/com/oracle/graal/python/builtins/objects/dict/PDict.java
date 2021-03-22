@@ -132,7 +132,8 @@ public final class PDict extends PHashingCollection {
                         @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Exclusive @Cached CastToJavaLongLossyNode toLong,
                         @Exclusive @Cached ConditionProfile ignoreOverflow,
-                        @Exclusive @Cached BranchProfile overflow, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached BranchProfile overflow,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // call the generic implementation in the superclass

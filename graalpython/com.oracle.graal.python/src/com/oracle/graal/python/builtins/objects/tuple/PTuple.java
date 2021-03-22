@@ -95,7 +95,8 @@ public final class PTuple extends PSequence {
     }
 
     @ExportMessage.Ignore
-    public boolean equals(Object other, @Exclusive @Cached GilNode gil) {
+    public boolean equals(Object other,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             CompilerAsserts.neverPartOfCompilation();

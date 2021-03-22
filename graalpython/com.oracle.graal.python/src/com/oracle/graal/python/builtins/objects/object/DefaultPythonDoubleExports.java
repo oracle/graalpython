@@ -135,7 +135,8 @@ final class DefaultPythonDoubleExports {
 
         @Specialization
         static boolean dF(Double receiver, PFloat other,
-                        @Cached.Exclusive @Cached IsBuiltinClassProfile isFloat, @Shared("gil") @Cached GilNode gil) {
+                        @Cached.Exclusive @Cached IsBuiltinClassProfile isFloat,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (isFloat.profileObject(other, PythonBuiltinClassType.PFloat)) {
@@ -203,7 +204,8 @@ final class DefaultPythonDoubleExports {
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Exclusive @Cached PRaiseNode raise, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return PythonAbstractObject.asPString(lib, receiver, state, isSubtypeNode, resultLib, raise);
@@ -248,7 +250,8 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static Object lookupAttributeInternal(Double receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             VirtualFrame frame = null;
@@ -263,7 +266,8 @@ final class DefaultPythonDoubleExports {
 
     @ExportMessage
     static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Double receiver, String name, boolean strict,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return lookup.execute(PythonBuiltinClassType.PFloat, name, strict);
@@ -275,7 +279,8 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static Object lookupAndCallSpecialMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
@@ -288,7 +293,8 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static Object lookupAndCallRegularMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
@@ -301,7 +307,8 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static boolean typeCheck(@SuppressWarnings("unused") Double receiver, Object type,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object instanceClass = PythonBuiltinClassType.PFloat;

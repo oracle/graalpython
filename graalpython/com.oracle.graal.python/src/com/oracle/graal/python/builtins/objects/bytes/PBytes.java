@@ -100,7 +100,8 @@ public final class PBytes extends PBytesLike {
 
     @ExportMessage
     public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached SequenceStorageNodes.ToByteArrayNode toBytes, @Exclusive @Cached GilNode gil) {
+                    @Cached SequenceStorageNodes.ToByteArrayNode toBytes,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return BytesUtils.createASCIIString(toBytes.execute(getSequenceStorage()));

@@ -89,7 +89,8 @@ public final class NativeReferenceCache implements TruffleObject {
     @ExportMessage
     Object execute(Object[] arguments,
                     @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                    @Cached("createIdentityProfile()") IntValueProfile arityProfile, @Exclusive @Cached GilNode gil) throws ArityException {
+                    @Cached("createIdentityProfile()") IntValueProfile arityProfile,
+                    @Exclusive @Cached GilNode gil) throws ArityException {
         boolean mustRelease = gil.acquire();
         try {
             int profiledArity = arityProfile.profile(arguments.length);

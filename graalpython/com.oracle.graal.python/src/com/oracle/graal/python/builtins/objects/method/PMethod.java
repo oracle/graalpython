@@ -108,7 +108,8 @@ public final class PMethod extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    protected long hashWithState(@SuppressWarnings("unused") ThreadState state, @Cached GilNode gil) {
+    protected long hashWithState(@SuppressWarnings("unused") ThreadState state,
+                    @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return hash();

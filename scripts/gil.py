@@ -54,6 +54,10 @@ PTRN_PACKAGE = re.compile(
     r"package\s.*?;",
     re.DOTALL | re.MULTILINE | re.UNICODE)
 
+PTRN_GILNODE_ARG = re.compile(
+    r"(?P<start>,)(?P<arg>.*?@Cached GilNode gil)",
+    re.MULTILINE | re.UNICODE)
+
 RUNTIME_PACKAGE = "package com.oracle.graal.python.runtime;"
 GIL_NODE_IMPORT = "import com.oracle.graal.python.runtime.GilNode;"
 CACHED_IMPORT = "import com.oracle.truffle.api.dsl.Cached;"
@@ -134,7 +138,7 @@ class ExportedMessage(object):
             _uncached_gil = "GilNode gil = GilNode.getUncached();"
         else:
             _uncached_gil = ""
-            _args += ", " if self.args else ""
+            _args += ",\n " if self.args else ""
             if self._shared and ('limit = ' not in self.header or 'limit = "1"' in self.header):
                 _args += '@Shared("gil")'
             else:
@@ -206,8 +210,14 @@ def file_names_filter(f_name, names):
     return False
 
 
+def fix_gilnode_arg(source):
+    def repl(match):
+        return match.group("start") + "\n" + match.group("arg")
+    return re.sub(PTRN_GILNODE_ARG, repl, source)
+
+
 def main(sources, add=True, dry_run=True, check_style=True, single_source=False, source_filter=None,
-         ignore_filter=None, count=False, sharing=False):
+         ignore_filter=None, count=False, sharing=False, fix_style=False):
     files = glob.glob("{}**/*.java".format(sources), recursive=True)
     if ignore_filter:
         files = list(filter(lambda f: not file_names_filter(f, ignore_filter), files))
@@ -218,7 +228,15 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
     for java_file in files:
         with open(java_file, 'r+') as SRC:
             source = SRC.read()
-            if add:
+            if fix_style:
+                if "GilNode" in source:
+                    print("[process] {}".format(java_file))
+                    source = fix_gilnode_arg(source)
+                    SRC.seek(0)
+                    SRC.write(source)
+                continue
+
+            elif add:
                 messages, shared = get_messages(source, PTRN_MESSAGE, sharing=sharing)
                 if len(messages) > 0:
                     if 'GilNode gil' in source or SKIP_GIL in source:
@@ -276,9 +294,10 @@ if __name__ == '__main__':
     parser.add_argument("--single", help="stop after modifying the first source", action="store_true")
     parser.add_argument("--filter", type=str, help="filter for source name(s) (comma separated)")
     parser.add_argument("--ignore", type=str, help="ignore filter for source name(s) (comma separated)")
+    parser.add_argument("--fix_style", help="fix GilNode related style issue", action="store_true")
     parser.add_argument("sources", type=str, help="location of sources")
     args = parser.parse_args()
 
     main(args.sources, add=not args.remove, dry_run=args.dry_run, check_style=not args.no_style,
          single_source=args.single, source_filter=args.filter, ignore_filter=args.ignore, count=args.count,
-         sharing=args.sharing)
+         sharing=args.sharing, fix_style=args.fix_style)

@@ -685,7 +685,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     public Object lookupAttributeInternal(ThreadState state, String attribName, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup, @Cached.Exclusive @Cached GilNode gil) {
+                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,
+                    @Cached.Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             VirtualFrame frame = null;
@@ -756,7 +757,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     static boolean isMetaInstance(PythonBuiltinClassType self, Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached IsSubtypeNode isSubtype, @Cached.Exclusive @Cached GilNode gil) {
+                    @Cached IsSubtypeNode isSubtype,
+                    @Cached.Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return isSubtype.execute(lib.getLazyPythonClass(convert.executeConvert(instance)), self);

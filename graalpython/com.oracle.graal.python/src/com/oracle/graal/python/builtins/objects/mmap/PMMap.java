@@ -131,7 +131,8 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     int getBufferLength(
-                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode, @Exclusive @Cached GilNode gil) {
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return castToIntNode.execute(length);
@@ -146,7 +147,8 @@ public final class PMMap extends PythonObject {
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Cached BranchProfile gotException,
-                    @Cached PConstructAndRaiseNode raiseNode, @Exclusive @Cached GilNode gil) {
+                    @Cached PConstructAndRaiseNode raiseNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             try {

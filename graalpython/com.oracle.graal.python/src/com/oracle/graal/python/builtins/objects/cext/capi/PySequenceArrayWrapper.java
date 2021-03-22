@@ -154,7 +154,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     final Object readArrayElement(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ReadArrayItemNode readArrayItemNode, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached ReadArrayItemNode readArrayItemNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return readArrayItemNode.execute(lib.getDelegate(this), index);
@@ -288,7 +289,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     public void writeArrayElement(long index, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteArrayItemNode writeArrayItemNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Cached WriteArrayItemNode writeArrayItemNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             writeArrayItemNode.execute(lib.getDelegate(this), index, value);

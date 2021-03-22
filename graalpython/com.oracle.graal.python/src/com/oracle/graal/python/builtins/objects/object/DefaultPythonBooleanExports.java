@@ -119,7 +119,8 @@ final class DefaultPythonBooleanExports {
         @Specialization
         static boolean bI(Boolean receiver, PInt other,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin, @Shared("gil") @Cached GilNode gil) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (receiver) {
@@ -178,7 +179,8 @@ final class DefaultPythonBooleanExports {
         @Specialization
         static int bF(Boolean receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // n.b.: long objects cannot compare here, but if its a builtin float we can
@@ -232,7 +234,8 @@ final class DefaultPythonBooleanExports {
 
         @Specialization
         static boolean bF(Boolean receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin, @Shared("gil") @Cached GilNode gil) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (isBuiltin.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
@@ -307,7 +310,8 @@ final class DefaultPythonBooleanExports {
     @ExportMessage
     static Object lookupAttributeInternal(Boolean receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             VirtualFrame frame = null;
@@ -322,7 +326,8 @@ final class DefaultPythonBooleanExports {
 
     @ExportMessage
     static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Boolean receiver, String name, boolean strict,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return lookup.execute(PythonBuiltinClassType.Boolean, name, strict);
@@ -334,7 +339,8 @@ final class DefaultPythonBooleanExports {
     @ExportMessage
     static Object lookupAndCallSpecialMethodWithState(Boolean receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
@@ -347,7 +353,8 @@ final class DefaultPythonBooleanExports {
     @ExportMessage
     static Object lookupAndCallRegularMethodWithState(Boolean receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
@@ -360,7 +367,8 @@ final class DefaultPythonBooleanExports {
     @ExportMessage
     static boolean typeCheck(@SuppressWarnings("unused") Boolean receiver, Object type,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                    @Cached IsSubtypeNode isSubtypeNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object instanceClass = PythonBuiltinClassType.Boolean;

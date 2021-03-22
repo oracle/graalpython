@@ -249,7 +249,8 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    byte[] getBufferBytes(@Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode, @Exclusive @Cached GilNode gil) {
+    byte[] getBufferBytes(@Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return toJavaBytesNode.execute(this);

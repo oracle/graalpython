@@ -150,7 +150,8 @@ public class EconomicMapStorage extends HashingStorage {
         static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state,
                         @Shared("findProfile") @Cached ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Shared("gotState") @Cached ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 DictKey newKey = new DictKey(key, key.hashCode());
@@ -166,7 +167,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @Shared("findProfile") @Cached ConditionProfile findProfile,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isBuiltinClassProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 final String k = stringMaterializeNode.execute(key);
@@ -181,7 +183,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached ConditionProfile findProfile,
-                        @Exclusive @Cached ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached ConditionProfile gotState,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 final long h = getHashWithState(key, lib, state, gotState);
@@ -194,7 +197,8 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     @ExportMessage
-    protected static boolean hasSideEffect(EconomicMapStorage self, @Exclusive @Cached GilNode gil) {
+    protected static boolean hasSideEffect(EconomicMapStorage self,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return self.map.hasSideEffect();
@@ -228,7 +232,8 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 DictKey newKey = new DictKey(key, key.hashCode());
@@ -246,7 +251,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                         @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 final String k = stringMaterializeNode.execute(key);
@@ -263,7 +269,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 convertToSideEffectMap(self);
@@ -280,7 +287,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 convertToSideEffectMap(self);
@@ -297,7 +305,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 convertToSideEffectMap(self);
@@ -312,7 +321,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
@@ -344,7 +354,8 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     @ExportMessage
-    Object forEachUntyped(ForEachNode<Object> node, Object arg, @Exclusive @Cached GilNode gil) {
+    Object forEachUntyped(ForEachNode<Object> node,
+                    Object arg, @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object result = arg;
@@ -370,7 +381,8 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage toSameTypeSideEffect(EconomicMapStorage self, EconomicMapStorage other,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 convertToSideEffectMap(other);
@@ -384,7 +396,8 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 other.map.putAll(self.map, lib, findProfile, gotState);
@@ -397,7 +410,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 HashingStorage result = other;
@@ -423,7 +437,8 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage delItemWithState(EconomicMapStorage self, Object key, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
@@ -440,7 +455,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached CallUnaryMethodNode callNode,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
@@ -462,7 +478,8 @@ public class EconomicMapStorage extends HashingStorage {
     static class Clear {
 
         @Specialization(guards = "!hasSideEffect(self, gil)")
-        static HashingStorage clear(EconomicMapStorage self, @Cached GilNode gil) {
+        static HashingStorage clear(EconomicMapStorage self,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 self.map.clear();
@@ -475,7 +492,8 @@ public class EconomicMapStorage extends HashingStorage {
         @Specialization
         static HashingStorage clearWithSideEffect(EconomicMapStorage self,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached CallUnaryMethodNode callNode, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached CallUnaryMethodNode callNode,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (self.map.size() == 0) {
@@ -522,7 +540,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                         @CachedLibrary(limit = "2") PythonObjectLibrary compareLib1,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (self.map.size() != other.map.size()) {
@@ -547,7 +566,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") HashingStorageLibrary selflib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary otherlib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary compareLib1,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (self.map.size() != otherlib.length(other)) {
@@ -574,7 +594,8 @@ public class EconomicMapStorage extends HashingStorage {
         static int compareSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 int size = self.map.size();
@@ -601,7 +622,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization(limit = "4")
         static int compareGeneric(EconomicMapStorage self, HashingStorage other, ThreadState state,
-                        @CachedLibrary("other") HashingStorageLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary("other") HashingStorageLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 int size = self.map.size();
@@ -633,7 +655,8 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage intersectSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 EconomicMapStorage result = EconomicMapStorage.create();
@@ -652,7 +675,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization(limit = "4")
         static HashingStorage intersectGeneric(EconomicMapStorage self, HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                        @CachedLibrary("other") HashingStorageLibrary hlib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary("other") HashingStorageLibrary hlib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 EconomicMapStorage result = EconomicMapStorage.create();
@@ -676,7 +700,8 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 EconomicMapStorage result = EconomicMapStorage.create();
@@ -695,7 +720,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization(limit = "4")
         static HashingStorage diffGeneric(EconomicMapStorage self, HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                        @CachedLibrary("other") HashingStorageLibrary hlib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary("other") HashingStorageLibrary hlib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 EconomicMapStorage result = EconomicMapStorage.create();
@@ -715,7 +741,8 @@ public class EconomicMapStorage extends HashingStorage {
     @ExportMessage
     public HashingStorage xor(HashingStorage other,
                     @CachedLibrary("this") HashingStorageLibrary selfLib,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary otherLib, @Exclusive @Cached GilNode gil) {
+                    @CachedLibrary(limit = "2") HashingStorageLibrary otherLib,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage a = selfLib.diff(this, other);

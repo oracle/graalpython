@@ -121,7 +121,8 @@ public final class PString extends PSequence {
         static int string(PString self, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
-                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString, @Shared("gil") @Cached GilNode gil) {
+                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return CompilerDirectives.castExact(self.value, String.class).length();
@@ -137,7 +138,8 @@ public final class PString extends PSequence {
         static int lazyString(PString self, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
-                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString, @Shared("gil") @Cached GilNode gil) {
+                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return CompilerDirectives.castExact(self.value, LazyString.class).length();
@@ -153,7 +155,8 @@ public final class PString extends PSequence {
         static int nativeString(PString self, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
-                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString, @Shared("gil") @Cached GilNode gil) {
+                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return CompilerDirectives.castExact(self.value, NativeCharSequence.class).getMaterialized().length();
@@ -172,7 +175,8 @@ public final class PString extends PSequence {
                         @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
-                        @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode, @Shared("gil") @Cached GilNode gil) {
+                        @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // this cast is guaranteed by cast 'isNativeString(self.getCharSequence())'
@@ -197,7 +201,8 @@ public final class PString extends PSequence {
                         @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Exclusive @Cached CastToJavaLongLossyNode toLong,
                         @Exclusive @Cached ConditionProfile ignoreOverflow,
-                        @Exclusive @Cached BranchProfile overflow, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached BranchProfile overflow,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // call the generic implementation in the superclass
@@ -210,7 +215,8 @@ public final class PString extends PSequence {
 
     @ExportMessage
     String asPathWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached CastToJavaStringNode castToJavaStringNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             try {
@@ -262,7 +268,8 @@ public final class PString extends PSequence {
 
     @ExportMessage
     String asString(
-                    @Cached StringMaterializeNode stringMaterializeNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached StringMaterializeNode stringMaterializeNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return stringMaterializeNode.execute(this);
@@ -279,7 +286,8 @@ public final class PString extends PSequence {
 
     @ExportMessage
     Object readArrayElement(long index,
-                    @Cached CastToJavaStringNode cast, @Shared("gil") @Cached GilNode gil) {
+                    @Cached CastToJavaStringNode cast,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             try {
@@ -424,7 +432,8 @@ public final class PString extends PSequence {
         @Specialization
         static boolean ss(PString receiver, PString other,
                         @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode,
-                        @Cached StringNodes.IsInternedStringNode isInternedStringNode, @Shared("gil") @Cached GilNode gil) {
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (isInternedStringNode.execute(receiver) && isInternedStringNode.execute(other)) {

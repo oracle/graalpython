@@ -174,7 +174,8 @@ public class HashMapStorage extends HashingStorage {
     @ExportMessage
     static class GetItemWithState {
         @Specialization
-        static Object getItemString(HashMapStorage self, String key, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
+        static Object getItemString(HashMapStorage self,
+                        String key, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return get(self.values, key);
@@ -186,7 +187,8 @@ public class HashMapStorage extends HashingStorage {
         @Specialization(replaces = "getItemString", guards = "isSupportedKey(key, profile)")
         static Object getItem(HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
                         @Cached CastToJavaStringNode castNode,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile, @Cached GilNode gil) {
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return get(self.values, castNode.execute(key));
@@ -204,7 +206,8 @@ public class HashMapStorage extends HashingStorage {
         static Object getItemNotSupportedKey(@SuppressWarnings("unused") HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("key") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // we must still search the map for items that may have the same hash and that may
@@ -226,7 +229,8 @@ public class HashMapStorage extends HashingStorage {
     @ExportMessage
     static class SetItemWithState {
         @Specialization
-        static HashingStorage setItemString(HashMapStorage self, String key, Object value, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
+        static HashingStorage setItemString(HashMapStorage self,
+                        String key, Object value, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 put(self.values, key, value);
@@ -239,7 +243,8 @@ public class HashMapStorage extends HashingStorage {
         @Specialization(replaces = "setItemString", guards = "isSupportedKey(key, profile)")
         static HashingStorage setItem(HashMapStorage self, Object key, Object value, @SuppressWarnings("unused") ThreadState state,
                         @Cached CastToJavaStringNode castNode,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile, @Cached GilNode gil) {
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 put(self.values, castNode.execute(key), value);
@@ -258,7 +263,8 @@ public class HashMapStorage extends HashingStorage {
         static HashingStorage setItemNotSupportedKey(HashMapStorage self, Object key, Object value, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("self") HashingStorageLibrary thisLib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary newLib, @Cached GilNode gil) {
+                        @CachedLibrary(limit = "1") HashingStorageLibrary newLib,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 HashingStorage newStore = EconomicMapStorage.create(self.length(gil));
@@ -274,7 +280,8 @@ public class HashMapStorage extends HashingStorage {
     @ExportMessage
     static class DelItemWithState {
         @Specialization
-        static HashingStorage delItemString(HashMapStorage self, String key, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
+        static HashingStorage delItemString(HashMapStorage self,
+                        String key, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 remove(self.values, key);
@@ -287,7 +294,8 @@ public class HashMapStorage extends HashingStorage {
         @Specialization(replaces = "delItemString", guards = "isSupportedKey(key, profile)")
         static HashingStorage delItem(HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
                         @Cached CastToJavaStringNode castNode,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile, @Cached GilNode gil) {
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 remove(self.values, castNode.execute(key));
@@ -306,7 +314,8 @@ public class HashMapStorage extends HashingStorage {
         static HashingStorage delItemNonSupportedKey(HashMapStorage self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("key") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // we must still search the map for items that may have the same hash and that may
@@ -326,7 +335,8 @@ public class HashMapStorage extends HashingStorage {
     }
 
     @ExportMessage
-    Object forEachUntyped(ForEachNode<Object> node, Object argIn, @Shared("gil") @Cached GilNode gil) {
+    Object forEachUntyped(ForEachNode<Object> node,
+                    Object argIn, @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object arg = argIn;

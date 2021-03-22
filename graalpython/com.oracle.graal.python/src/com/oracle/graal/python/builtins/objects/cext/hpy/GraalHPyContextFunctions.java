@@ -284,7 +284,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAddLegacyMethodNode addLegacyMethodNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
@@ -449,7 +450,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
@@ -481,7 +483,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached GenericInvokeNode invokeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 // We need to do argument checking at this position because our helper root node
@@ -631,7 +634,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached("createCountingProfile()") ConditionProfile updateStorageProfile,
                         @Cached HPyRaiseNode raiseNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 4);
@@ -671,7 +675,8 @@ public abstract class GraalHPyContextFunctions {
                         @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary,
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached HPyRaiseNode raiseNode,
-                        @Cached HPyAsHandleNode asHandleNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
@@ -731,7 +736,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached LookupInheritedAttributeNode.Dynamic lookupAppendNode,
                         @Cached CallBinaryMethodNode callAppendNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached HPyRaiseNode raiseNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyRaiseNode raiseNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
@@ -802,7 +808,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached IsSubtypeNode isSubtypeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
@@ -976,7 +983,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode resultAsHandleNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
@@ -1027,7 +1035,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached PCallHPyFunction callFromWcharArrayNode,
                         @Cached UnicodeFromWcharNode unicodeFromWcharNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
@@ -1057,7 +1066,8 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode handleAsPythonObjectNode,
-                        @Cached ToNewRefNode toPyObjectPointerNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached ToNewRefNode toPyObjectPointerNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
@@ -1096,7 +1106,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached SequenceNodes.LenNode lenNode,
-                        @Cached HPyRaiseNode raiseNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyRaiseNode raiseNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
@@ -1199,7 +1210,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PInteropGetAttributeNode getAttributeNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
@@ -1238,7 +1250,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached HPyCreateTypeFromSpecNode createTypeFromSpecNode,
                         @Cached HPyAsHandleNode asHandleNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
@@ -1278,7 +1291,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached PInteropGetAttributeNode getAttributeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached PInteropGetAttributeNode getAttributeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
@@ -1331,7 +1345,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CallTernaryMethodNode callSetAttrNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @Cached HPyRaiseNode raiseNativeNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 4);
@@ -1391,7 +1406,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PInteropSubscriptNode getItemNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
@@ -1444,7 +1460,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PInteropSubscriptAssignNode setItemNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached HPyRaiseNode raiseNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyRaiseNode raiseNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 4);
@@ -1491,7 +1508,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached ResolveHandleNode resolveHandleNode,
                         @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
-                        @Cached HPyAsHandleNode asHandleNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 2);
@@ -1522,7 +1540,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached PCallHPyFunction callWriteDataNode,
-                        @Cached HPyAsHandleNode asHandleNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);
@@ -1593,7 +1612,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToObjectNode writeNativeSpaceNode,
                         @Cached PCallHPyFunction callMallocNode,
-                        @Cached HPyAsHandleNode asHandleNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 5);
@@ -1654,7 +1674,8 @@ public abstract class GraalHPyContextFunctions {
                             @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                             @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                             @Cached(value = "createToNativeNode(receiver)", uncached = "getUncachedToNativeNode(receiver)") CExtToNativeNode toNativeNode,
-                            @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                            @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                            @Exclusive @Cached GilNode gil) throws ArityException {
                 boolean mustRelease = gil.acquire();
                 try {
                     if (arguments.length != receiver.nPythonArguments + 1) {
@@ -1714,7 +1735,8 @@ public abstract class GraalHPyContextFunctions {
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
                         @Cached HPyAsHandleNode asHandleNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedTypeException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedTypeException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 4);
@@ -1797,7 +1819,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory,
                         @Cached HPyAsHandleNode asHandleNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedTypeException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedTypeException {
             boolean mustRelease = gil.acquire();
             try {
                 checkArity(arguments, 3);

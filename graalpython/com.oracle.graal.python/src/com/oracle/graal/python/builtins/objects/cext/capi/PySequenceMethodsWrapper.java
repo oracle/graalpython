@@ -104,7 +104,8 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                     @Cached ToSulongNode toSulongNode,
                     @Cached BranchProfile errorProfile,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                    @Cached GetNativeNullNode getNativeNullNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             Object result;

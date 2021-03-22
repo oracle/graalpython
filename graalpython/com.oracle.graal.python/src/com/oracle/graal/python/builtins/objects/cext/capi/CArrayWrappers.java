@@ -197,7 +197,8 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         Object readArrayElement(long index,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
             boolean mustRelease = gil.acquire();
             try {
                 try {
