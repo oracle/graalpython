@@ -50,26 +50,13 @@ import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FileDescriptorConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
-public class FileDescriptorConversionNodeTests {
-    @Rule public ExpectedException expectedException = ExpectedException.none();
+public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
     @Before
     public void setUp() {
@@ -83,16 +70,14 @@ public class FileDescriptorConversionNodeTests {
 
     @Test
     public void none() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("TypeError: argument must be an int, or have a fileno() method.");
+        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.");
         call(PNone.NONE);
         Assert.assertEquals(AT_FDCWD.value, call(PNone.NO_VALUE));
     }
 
     @Test
     public void noValue() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("TypeError: argument must be an int, or have a fileno() method.");
+        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.");
         call(PNone.NO_VALUE);
     }
 
@@ -114,15 +99,13 @@ public class FileDescriptorConversionNodeTests {
 
     @Test
     public void longTooBig() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to int");
         call(1L << 40);
     }
 
     @Test
     public void longTooSmall() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to int");
         call(-1L << 40);
     }
 
@@ -133,22 +116,19 @@ public class FileDescriptorConversionNodeTests {
 
     @Test
     public void pintTooBig() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to int");
         call(factory().createInt(BigInteger.ONE.shiftLeft(100)));
     }
 
     @Test
     public void pintTooSmall() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to int");
         call(factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
     }
 
     @Test
     public void indexNotUsed() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("TypeError: argument must be an int, or have a fileno() method.");
+        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.");
         call(evalValue("class C:\n  def __index__(self):\n    return 42\nC()"));
     }
 
@@ -159,44 +139,24 @@ public class FileDescriptorConversionNodeTests {
 
     @Test
     public void filenoWrongType() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("TypeError: fileno() returned a non-integer");
+        expectPythonMessage("TypeError: fileno() returned a non-integer");
         call(evalValue("class C:\n  def fileno(self):\n    return 3.14\nC()"));
     }
 
     @Test
     public void filenoTooBig() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to int");
         call(evalValue("class C:\n  def fileno(self):\n    return 1 << 40\nC()"));
     }
 
     @Test
     public void unsupportedType1() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("TypeError: argument must be an int, or have a fileno() method.");
+        expectPythonMessage("TypeError: argument must be an int, or have a fileno() method.");
         call(3.14);
     }
 
-    private static int call(Object arg) {
-        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new RootNode(null) {
-            @Child private FileDescriptorConversionNode node = PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create();
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                Object[] arguments = PArguments.create(0);
-                PythonContext pythonContext = getContext();
-                PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
-                PFrame.Reference frameInfo = ExecutionContext.IndirectCalleeContext.enterIndirect(pythonContext, arguments);
-                PArguments.setCurrentFrameInfo(arguments, frameInfo);
-                try {
-                    return node.execute(Truffle.getRuntime().createMaterializedFrame(arguments), arg);
-                } finally {
-                    ExecutionContext.IndirectCalleeContext.exit(pythonContext, frameInfo);
-                }
-            }
-        });
-        Object result = callTarget.call();
+    protected static int call(Object arg) {
+        Object result = call(arg, PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create());
         Assert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
         return (int) result;
     }

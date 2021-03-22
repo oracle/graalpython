@@ -44,6 +44,7 @@ package com.oracle.graal.python.parser.sst;
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
@@ -197,7 +198,7 @@ public class StringUtils {
             return unescapeJavaString(errors, text);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.UnicodeDecodeError, IsBuiltinClassProfile.getUncached());
-            String message = e.getMessage();
+            String message = e.getUnreifiedException().getFormattedMessage(PythonObjectLibrary.getUncached(), PythonObjectLibrary.getUncached());
             message = "(unicode error)" + message.substring(PythonBuiltinClassType.UnicodeDecodeError.getName().length() + 1);
             throw errors.raiseInvalidSyntax(source, source.createSection(startOffset, endOffset - startOffset), message);
         }

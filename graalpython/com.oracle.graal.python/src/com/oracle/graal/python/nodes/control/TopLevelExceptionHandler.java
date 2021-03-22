@@ -171,7 +171,11 @@ public class TopLevelExceptionHandler extends RootNode {
                 throw new PythonExitException(this, 1);
             }
         }
-        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+        // Before we leave Python, format the message since outside the context
+        PException exceptionForReraise = pythonException.getExceptionForReraise(pythonException.getTraceback());
+        PythonObjectLibrary pythonObjectLibrary = PythonObjectLibrary.getUncached();
+        exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage(pythonObjectLibrary, pythonObjectLibrary));
+        throw exceptionForReraise;
     }
 
     @TruffleBoundary
