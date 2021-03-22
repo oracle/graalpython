@@ -110,32 +110,19 @@ if sys.implementation.name == "graalpython":
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field
         assert polyglot.__read__(o, 10) == o[10]
-        assert polyglot.__read__(o, "@field") == o.field
-        assert polyglot.__read__(o, "[field") == o["field"]
 
     def test_write():
         o = CustomMutable()
         o2 = CustomObject()
 
         polyglot.__write__(o, "field", 32)
-        assert o.field == 42
-        assert o["field"] == 32
-        polyglot.__write__(o, "[field", 42)
-        assert o.field == 42
-        assert o["field"] == 42
-        polyglot.__write__(o, "@field", 32)
         assert o.field == 32
-        assert o["field"] == 42
 
         polyglot.__write__(o, "__getattribute__", 321)
-        assert o["__getattribute__"] == 321
-        assert o.__getattribute__ != 321
+        assert o.__getattribute__ == 321
 
         polyglot.__write__(o, "grrrr", 42)
-        assert not hasattr(o, "grrrr")
-        assert o["grrrr"] == 42
-        polyglot.__write__(o, "@grrrr", 42)
-        assert o.grrrr == 42
+        assert hasattr(o, "grrrr")
         polyglot.__write__(o2, "grrrr", 42)
         assert o2.grrrr == 42
 
@@ -157,11 +144,6 @@ if sys.implementation.name == "graalpython":
         o.direct_field = 12
         o["direct_field"] = 32
         assert "direct_field" in list(o.keys())
-        polyglot.__remove__(o, "[direct_field")
-        assert hasattr(o, "direct_field")
-        assert "direct_field" not in list(o.keys())
-        polyglot.__remove__(o, "@direct_field")
-        assert not hasattr(o, "direct_field")
 
 
     def test_execute():
@@ -305,7 +287,7 @@ if sys.implementation.name == "graalpython":
         import java
         try:
             al = java.type("java.util.ArrayList")()
-            assert al.size() == al["size"]()
+            assert al.size() == len(al) == 0
         except IndexError:
             assert False, "using __getitem__ to access keys of an array-like foreign object should work"
         except NotImplementedError as e:
@@ -529,12 +511,12 @@ if sys.implementation.name == "graalpython":
         from java.util import Set
         from java.util.logging import LogRecord
         from java.util.logging import Level
-        
+
         assert java.is_type(Handler)
         assert java.is_type(LogRecord)
         assert java.is_type(Set)
         assert java.is_type(Level)
-        
+
         lr = LogRecord(Level.ALL, "message")
         assert not java.is_type(lr)
         assert not java.is_type(Level.ALL)
@@ -556,30 +538,30 @@ if sys.implementation.name == "graalpython":
                 self.counter = self.counter + 1
                 return self.__super__.isLoggable(logrecord)
             def sayHello(self):
-                return 'Hello'  
+                return 'Hello'
 
         h = MyHandler()
-        
+
         # accessing extender object via this property
         assert hasattr(h, 'this')
         assert hasattr(h.this, 'sayHello')
         assert hasattr(h.this, 'counter')
         assert hasattr(h.this, 'isLoggable')
-        
+
         #accessing java methods or methods from extender object directly
         assert hasattr(h, 'close')
         assert hasattr(h, 'flush')
         assert hasattr(h, 'getEncoding')
         assert hasattr(h, 'setEncoding')
-        
-        
+
+
         assert h.this.counter == 0
         assert h.isLoggable(lr)
         assert h.this.counter == 1
         assert h.isLoggable(lr)
         assert h.isLoggable(lr)
         assert h.this.counter == 3
-        
+
         assert 'Hello' == h.this.sayHello()
 
         h2 = MyHandler()
@@ -604,21 +586,21 @@ if sys.implementation.name == "graalpython":
         #test of java constructor
         from java.util.logging import LogRecord
         from java.util.logging import Level
-        
+
         class MyLogRecord(LogRecord):
             def getLevel(self):
                 if self.__super__.getLevel() == Level.FINEST:
                     self.__super__.setLevel(Level.WARNING)
                 return self.__super__.getLevel()
-        
+
         message = "log message"
         my_lr1 = MyLogRecord(Level.WARNING, message)
         assert my_lr1.getLevel() == Level.WARNING
         assert my_lr1.getMessage() == message
-        
+
         my_lr2 = MyLogRecord(Level.FINEST, message)
         assert my_lr2.getLevel() == Level.WARNING
-        
+
     def test_foreign_slice_setting():
         import java
         il = java.type("int[]")(20)
