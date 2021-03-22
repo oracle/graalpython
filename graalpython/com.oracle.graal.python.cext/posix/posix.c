@@ -48,9 +48,11 @@
 #define _GNU_SOURCE
 #endif
 
+#include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -59,6 +61,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/select.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -547,6 +550,42 @@ void call_msync(int64_t address, int64_t offset, int64_t length) {
     // TODO: can be generalized to also accept different flags,
     // but MS_SYNC and such seem to be defined to different values across systems
     msync(((int8_t *) address) + offset, length, MS_SYNC);
+}
+
+int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
+    return socket(family, type, protocol);
+}
+
+int32_t call_bind(int32_t sockfd, struct sockaddr *addr, int32_t addr_len) {
+    assert(addr_len >= 0 && addr_len <= sizeof(sockaddr_storage));
+    return bind(sockfd, addr, addr_len);
+}
+
+int32_t call_getsockname(int32_t sockfd, struct sockaddr *addr, int32_t *addr_len) {
+    assert(addr_len != NULL && *addr_len >= 0 && *addr_len <= sizeof(sockaddr_storage));
+    socklen_t l = *addr_len;
+    int res = getsockname(sockfd, addr, &l);
+    assert(l <= sizeof(sockaddr_storage));  // the conversion to signed below is well-defined
+    *addr_len = l;
+    return res;
+}
+
+//TODO len should be size_t, retval should be ssize_t
+int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, struct sockaddr *dest_addr, int32_t addr_len) {
+    assert(addr_len >= 0 && addr_len <= sizeof(sockaddr_storage));
+    return sendto(sockfd, buf, len, flags, dest_addr, addr_len);
+}
+
+int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, struct sockaddr *src_addr, int32_t *addr_len) {
+    if (src_addr == NULL || addr_len == NULL) {
+        return recvfrom(sockfd, buf, len, flags, NULL, NULL);
+    }
+    assert(*addr_len >= 0 && *addr_len <= sizeof(sockaddr_storage));
+    socklen_t l = *addr_len;
+    int res = recvfrom(sockfd, buf, len, flags, src_addr, &l);
+    assert(l <= sizeof(sockaddr_storage));  // the conversion to signed below is well-defined
+    *addr_len = l;
+    return res;
 }
 
 int32_t get_errno() {

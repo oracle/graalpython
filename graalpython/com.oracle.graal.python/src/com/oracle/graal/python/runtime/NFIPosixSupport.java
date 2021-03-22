@@ -41,12 +41,19 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY;
+import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
+import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 
 import java.lang.reflect.Field;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
@@ -79,6 +86,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
@@ -91,6 +99,7 @@ import sun.misc.Unsafe;
  * that the native access is allowed or to configure managed LLVM backend for NFI.
  */
 @ExportLibrary(PosixSupportLibrary.class)
+@ExportLibrary(SocketLibrary.class)
 public final class NFIPosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
@@ -184,7 +193,14 @@ public final class NFIPosixSupport extends PosixSupport {
         call_setenv("([sint8], [sint8], sint32):sint32"),
         fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32"),
         call_execv("([sint8], [sint64], sint32):void"),
-        call_system("([sint8]):sint32");
+        call_system("([sint8]):sint32"),
+
+        call_socket("(sint32, sint32, sint32):sint32"),
+        call_bind("(sint32, [sint8], sint32):sint32"),
+        call_getsockname("(sint32, [sint8], [sint32]):sint32"),
+        call_sendto("(sint32, [sint8], sint32, sint32, [sint8], sint32):sint32"),
+        call_recvfrom("(sint32, [sint8], sint32, sint32, [sint8], [sint32]):sint32"),
+        ;
 
         private final String signature;
 
@@ -274,6 +290,7 @@ public final class NFIPosixSupport extends PosixSupport {
             String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
             TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
             TruffleFile file = homePath.resolve(libPythonName);
+            System.out.println("LOADING " + file.getPath());
             return file.getPath();
         }
 
@@ -1287,6 +1304,131 @@ public final class NFIPosixSupport extends PosixSupport {
         if (index < 0 || index + length > handle.length) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IndexOutOfBoundsException();
+        }
+    }
+
+    private static ByteArraySupport nativeByteArraySupport() {
+        if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
+            return ByteArraySupport.bigEndian();
+        } else {
+            return ByteArraySupport.littleEndian();
+        }
+    }
+
+    @ExportMessage
+    public int socket(int domain, int type, int protocol,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_socket, domain, type, protocol);
+        if (result == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return result;
+    }
+
+    @ExportMessage
+    public void bind(int sockfd, Object addrObj,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        Sockaddr addr = (Sockaddr) addrObj;
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_bind, sockfd, wrap(addr.data), addr.len);
+        if (result == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public void getsockname(int sockfd, Object addrObj,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        Sockaddr addr = (Sockaddr) addrObj;
+        int[] addrLen = new int[]{addr.len};
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_getsockname, sockfd, wrap(addr.data), wrap(addrLen));
+        if (result == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        if (addrLen[0] > addr.len) {
+            // TODO the address has been truncated
+        }
+        addr.len = addrLen[0];
+    }
+
+    @ExportMessage
+    public int sendto(int sockfd, byte[] buf, int len, int flags, Object destAddrObj,
+                      @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result;
+        if (destAddrObj == null) {
+            result = invokeNode.callInt(this, PosixNativeFunction.call_sendto, sockfd, wrap(buf), len, flags, null, 0);
+        } else {
+            Sockaddr destAddr = (Sockaddr) destAddrObj;
+            result = invokeNode.callInt(this, PosixNativeFunction.call_sendto, sockfd, wrap(buf), len, flags, wrap(destAddr.data), destAddr.len);
+        }
+        if (result == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return result;
+    }
+
+    @ExportMessage
+    public int recvfrom(int sockfd, byte[] buf, int len, int flags, Object srcAddrObj,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result;
+        if (srcAddrObj == null) {
+            result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), len, flags, null, 0);
+        } else {
+            Sockaddr srcAddr = (Sockaddr) srcAddrObj;
+            int[] addrLen = new int[]{srcAddr.len};
+            result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), len, flags, wrap(srcAddr.data), wrap(addrLen));
+            if (addrLen[0] > srcAddr.len) {
+                // TODO the address has been truncated, but data have been received
+            }
+            srcAddr.len = addrLen[0];
+        }
+        if (result == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return result;
+    }
+
+    @ExportMessage
+    public Object createSockaddrIn() {
+        Sockaddr sockaddrIn = new Sockaddr(SIZEOF_STRUCT_SOCKADDR_IN.value);
+        // TODO assumes sin_family is u16
+        nativeByteArraySupport().putShort(sockaddrIn.data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY.value, (short) AF_INET.value);
+        return sockaddrIn;
+    }
+
+    @ExportMessage
+    public short sockaddrInGetPort(Object sockaddrIn) {
+        // TODO check that it is AF_INET?
+        // TODO assumes sin_port is u16
+        // TODO should we use positive ints for ports instead of signed shorts? Would not work well with htons
+        return nativeByteArraySupport().getShort(((Sockaddr) sockaddrIn).data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT.value);
+    }
+
+    @ExportMessage
+    public int sockaddrInGetAddr(Object sockaddrIn) {
+        // TODO check that it is AF_INET?
+        // TODO assumes sin_addr is u32
+        return nativeByteArraySupport().getInt(((Sockaddr) sockaddrIn).data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR.value + OFFSETOF_STRUCT_IN_ADDR_S_ADDR.value);
+    }
+
+    @ExportMessage
+    public void sockaddrInSetPort(Object sockaddrIn, short port) {
+        // TODO check that it is AF_INET?
+        nativeByteArraySupport().putShort(((Sockaddr) sockaddrIn).data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT.value, port);
+    }
+
+    @ExportMessage
+    public void sockaddrInSetAddr(Object sockaddrIn, int addr) {
+        // TODO check that it is AF_INET?
+        nativeByteArraySupport().putInt(((Sockaddr) sockaddrIn).data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR.value + OFFSETOF_STRUCT_IN_ADDR_S_ADDR.value, addr);
+    }
+
+    protected static class Sockaddr {
+        final byte[] data;
+        int len;
+
+        Sockaddr(int len) {
+            this.data = new byte[len];      // TODO may not be aligned correctly
+            this.len = len;
         }
     }
 

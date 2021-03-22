@@ -67,9 +67,12 @@ includes = '''
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <netinet/in.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/select.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/unistd.h>
 #include <sys/utsname.h>
@@ -177,8 +180,36 @@ constant_defs = '''
   x RTLD_NOW
   x RTLD_GLOBAL
   x RTLD_LOCAL
+
+[socketFamily]
+  i AF_UNSPEC
+  i AF_INET
+
+[socketType]
+  i SOCK_DGRAM
+  i SOCK_STREAM
+  
+[ip4Address]
+  x INADDR_ANY
+  x INADDR_BROADCAST
+  x INADDR_NONE
+  x INADDR_LOOPBACK
+  x INADDR_ALLHOSTS_GROUP
+  x INADDR_MAX_LOCAL_GROUP
+  x INADDR_UNSPEC_GROUP
 '''
 
+layout_defs = '''
+[struct sockaddr_storage]
+
+[struct sockaddr_in]
+  sin_family
+  sin_port
+  sin_addr
+
+[struct in_addr]
+  s_addr
+'''
 
 java_copyright = '''/*
  * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
@@ -263,7 +294,24 @@ def parse_defs():
             c = Constant(m.group(4), m.group(2) == '*', *d)
             current_group.append(c)
             constants.append(c)
-    return constants, groups
+
+    regex = re.compile(r'\[(.*?)\]|(.*)')
+    layouts = {}
+    current_struct = None
+    for line in layout_defs.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        m = regex.fullmatch(line)
+        if not m:
+            raise ValueError(f'Invalid layout definition {line!r}')
+        if m.group(1):
+            current_struct = []
+            layouts[m.group(1)] = current_struct
+        else:
+            current_struct.append(m.group(2))
+
+    return constants, groups, layouts
 
 
 def delete_if_exists(filename):
@@ -273,8 +321,20 @@ def delete_if_exists(filename):
         pass
 
 
+def to_id(name):
+    return name.upper().replace(' ', '_')
+
+
+def sizeof_name(struct_name):
+    return f'SIZEOF_{to_id(struct_name)}'
+
+
+def offsetof_name(struct_name, member_name):
+    return f'OFFSETOF_{to_id(struct_name)}_{to_id(member_name)}'
+
+
 def generate_platform():
-    constants, _ = parse_defs()
+    constants, _, layouts = parse_defs()
     platform = sys.platform.capitalize()
     if platform not in ('Linux', 'Darwin'):
         raise ValueError(f'Unsupported platform: {platform}')
@@ -295,6 +355,12 @@ def generate_platform():
             f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.format});\\n", {c.name});\n')
             if c.optional:
                 f.write(f'#endif\n')
+
+        for struct_name, members in layouts.items():
+            f.write(f'    printf("        constants.put(\\"{sizeof_name(struct_name)}\\", %zu);\\n", sizeof({struct_name}));\n')
+            for member in members:
+                f.write(f'    printf("        constants.put(\\"{offsetof_name(struct_name, member)}\\", %zu);\\n", offsetof({struct_name}, {member}));\n')
+
         f.write('    return 0;\n}\n')
 
     flags = '-D_GNU_SOURCE' if platform == 'Linux' else ''
@@ -308,25 +374,35 @@ def generate_platform():
 
 
 def generate_common(filename):
-    constants, groups = parse_defs()
+    constants, groups, layouts = parse_defs()
 
     decls = []
     defs = []
+
+    def add_constant(opt, typ, name):
+        prefix = 'Optional' if opt else 'Mandatory'
+        decls.append(f'    public static final {prefix}{typ}Constant {name};\n')
+        defs.append(f'        {name} = reg.create{prefix}{typ}("{name}");\n')
+
     for c in constants:
-        prefix = 'Optional' if c.optional else 'Mandatory'
-        decls.append(f'    public static final {prefix}{c.type}Constant {c.name};\n')
-        defs.append(f'        {c.name} = reg.create{prefix}{c.type}("{c.name}");\n')
+        add_constant(c.optional, c.type, c.name)
+
+    for struct_name, members in layouts.items():
+        struct_name_id = struct_name.upper().replace(' ', '_')
+        add_constant(False, 'Int', sizeof_name(struct_name))
+        for member in members:
+            add_constant(False, 'Int', offsetof_name(struct_name, member))
 
     decls.append('\n')
     defs.append('\n')
-    for name, items in groups.items():
+    for group_name, items in groups.items():
         types = {i.type for i in items}
         if len(types) != 1:
-            raise ValueError(f'Inconsistent constant types in group {name}')
+            raise ValueError(f'Inconsistent constant types in group {group_name}')
         t = types.pop()
-        decls.append(f'    public static final {t}Constant[] {name};\n')
+        decls.append(f'    public static final {t}Constant[] {group_name};\n')
         elements = ', '.join(i.name for i in items)
-        defs.append(f'        {name} = new {t}Constant[]{{{elements}}};\n')
+        defs.append(f'        {group_name} = new {t}Constant[]{{{elements}}};\n')
 
     with open(filename, 'r') as f:
         header = []
