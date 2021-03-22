@@ -47,7 +47,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -63,6 +62,8 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -115,6 +116,9 @@ public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
+    /**
+     * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
+     */
     public static final class PythonThreadState {
         private boolean shuttingDown = false;
 
@@ -135,6 +139,21 @@ public final class PythonContext {
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
 
+        /* corresponds to 'PyThreadState.dict' */
+        PDict dict;
+
+        /*
+         * This is the native wrapper object if we need to expose the thread state as PyThreadState
+         * object. We need to store it here because the wrapper may receive 'toNative' in which case
+         * a handle is allocated. In order to avoid leaks, the handle needs to be free'd when the
+         * owning thread (or the whole context) is disposed.
+         */
+        PThreadState nativeWrapper;
+
+        /*
+         * The constructor needs to have this particular signature such that we can use it for
+         * ContextThreadLocal.
+         */
         @SuppressWarnings("unused")
         public PythonThreadState(PythonContext context, Thread owner) {
         }
@@ -158,6 +177,51 @@ public final class PythonContext {
         @TruffleBoundary
         void reprLeave(Object item) {
             reprObjectSet.remove(item);
+        }
+
+        public PException getCurrentException() {
+            return currentException;
+        }
+
+        public void setCurrentException(PException currentException) {
+            this.currentException = currentException;
+        }
+
+        public PException getCaughtException() {
+            return caughtException;
+        }
+
+        public void setCaughtException(PException caughtException) {
+            this.caughtException = caughtException;
+        }
+
+        public PDict getDict() {
+            return dict;
+        }
+
+        public void setDict(PDict dict) {
+            this.dict = dict;
+        }
+
+        public PThreadState getNativeWrapper() {
+            return nativeWrapper;
+        }
+
+        public void setNativeWrapper(PThreadState nativeWrapper) {
+            this.nativeWrapper = nativeWrapper;
+        }
+
+        public void dispose() {
+            // This method may be called twice on the same object.
+            ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
+            if (dict != null && dict.getNativeWrapper() != null) {
+                releaseHandleNode.execute(dict.getNativeWrapper());
+            }
+            dict = null;
+            if (nativeWrapper != null) {
+                releaseHandleNode.execute(nativeWrapper);
+                nativeWrapper = null;
+            }
         }
     }
 
@@ -213,8 +277,8 @@ public final class PythonContext {
      */
     private final PythonThreadState buildThreadState;
 
-    /* map of thread IDs to indices for array 'threadStates' */
-    private Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
+    /* map of thread IDs to the corresponding 'threadStates' */
+    private final Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -230,10 +294,7 @@ public final class PythonContext {
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
-    private ReentrantLock globalInterpreterLock = new ReentrantLock();
-
-    /** The thread-local state object. */
-    private ThreadLocal<PThreadState> customThreadState;
+    private final ReentrantLock globalInterpreterLock = new ReentrantLock();
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
@@ -794,6 +855,8 @@ public final class PythonContext {
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             shutdownThreads();
             runShutdownHooks();
+            disposeThreadStates();
+            cleanupCApiResources();
         }
     }
 
@@ -831,9 +894,31 @@ public final class PythonContext {
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
         }
-        // destroy thread state
-        if (customThreadState != null) {
-            customThreadState.set(null);
+    }
+
+    /**
+     * Release all resources held by the thread states. This function needs to run as long as the
+     * context is still valid because it may call into LLVM to release handles.
+     */
+    @TruffleBoundary
+    private void disposeThreadStates() {
+        for (PythonThreadState ts : threadStateMapping.values()) {
+            ts.dispose();
+        }
+        threadStateMapping.clear();
+    }
+
+    /**
+     * Release all native wrappers of singletons. This function needs to run as long as the context
+     * is still valid because it may call into LLVM to release handles.
+     */
+    @TruffleBoundary
+    private void cleanupCApiResources() {
+        ReleaseHandleNode releaseHandleNode = ReleaseHandleNodeGen.getUncached();
+        for (PythonNativeWrapper singletonNativeWrapper : singletonNativePtrs) {
+            if (singletonNativeWrapper != null) {
+                releaseHandleNode.execute(singletonNativeWrapper);
+            }
         }
     }
 
@@ -897,16 +982,6 @@ public final class PythonContext {
             LOGGER.finest("got interrupt while joining threads");
             Thread.currentThread().interrupt();
         }
-    }
-
-    @TruffleBoundary
-    public PThreadState getCustomThreadState() {
-        if (customThreadState == null) {
-            ThreadLocal<PThreadState> threadLocal = new ThreadLocal<>();
-            threadLocal.set(new PThreadState());
-            customThreadState = threadLocal;
-        }
-        return customThreadState.get();
     }
 
     public void initializeMainModule(String path) {
@@ -1092,14 +1167,10 @@ public final class PythonContext {
 
     public Thread[] getThreads() {
         CompilerAsserts.neverPartOfCompilation();
-        Set<Thread> threads = new HashSet<>();
-        for (Thread th : threadStateMapping.keySet()) {
-            threads.add(th);
-        }
-        return threads.toArray(new Thread[0]);
+        return threadStateMapping.keySet().toArray(new Thread[0]);
     }
 
-    private PythonThreadState getThreadState() {
+    public PythonThreadState getThreadState() {
         PythonThreadState curThreadState = getThreadStateInternal();
         if (curThreadState.isShuttingDown()) {
             // we're shutting down, just release and die
@@ -1155,6 +1226,7 @@ public final class PythonContext {
         }
         ts.shutdown();
         threadStateMapping.remove(thread);
+        ts.dispose();
         releaseSentinelLock(ts.sentinelLock);
     }
 
