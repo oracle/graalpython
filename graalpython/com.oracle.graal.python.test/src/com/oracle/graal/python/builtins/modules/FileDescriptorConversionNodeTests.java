@@ -52,18 +52,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FileDescriptorConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
@@ -164,25 +155,8 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
         call(3.14);
     }
 
-    private static int call(Object arg) {
-        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new RootNode(null) {
-            @Child private FileDescriptorConversionNode node = PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create();
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                Object[] arguments = PArguments.create(0);
-                PythonContext pythonContext = getContext();
-                PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
-                PFrame.Reference frameInfo = ExecutionContext.IndirectCalleeContext.enterIndirect(pythonContext, arguments);
-                PArguments.setCurrentFrameInfo(arguments, frameInfo);
-                try {
-                    return node.execute(Truffle.getRuntime().createMaterializedFrame(arguments), arg);
-                } finally {
-                    ExecutionContext.IndirectCalleeContext.exit(pythonContext, frameInfo);
-                }
-            }
-        });
-        Object result = callTarget.call();
+    protected static int call(Object arg) {
+        Object result = call(arg, PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create());
         Assert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
         return (int) result;
     }

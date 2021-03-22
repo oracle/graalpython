@@ -56,23 +56,14 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFd;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.Function;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 @RunWith(Parameterized.class)
 public class PathConversionNodeTests extends ConversionNodeTests {
@@ -327,27 +318,6 @@ public class PathConversionNodeTests extends ConversionNodeTests {
         call(false, false, 3.14);
     }
 
-    private static Object call(boolean nullable, boolean allowFd, Object arg) {
-        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new RootNode(null) {
-            @Child private PathConversionNode node = PosixModuleBuiltinsFactory.PathConversionNodeGen.create("fun", "arg", nullable, allowFd);
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                Object[] arguments = PArguments.create(0);
-                PythonContext pythonContext = getContext();
-                PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
-                PFrame.Reference frameInfo = ExecutionContext.IndirectCalleeContext.enterIndirect(pythonContext, arguments);
-                PArguments.setCurrentFrameInfo(arguments, frameInfo);
-                try {
-                    return node.execute(Truffle.getRuntime().createMaterializedFrame(arguments), arg);
-                } finally {
-                    ExecutionContext.IndirectCalleeContext.exit(pythonContext, frameInfo);
-                }
-            }
-        });
-        return callTarget.call();
-    }
-
     private String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig, boolean wasBufferLike) {
         Object result = call(nullable, allowFd, arg);
         Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.class));
@@ -374,6 +344,10 @@ public class PathConversionNodeTests extends ConversionNodeTests {
         PosixFd fd = (PosixFd) result;
         Assert.assertSame(arg, fd.originalObject);
         return fd.fd;
+    }
+
+    protected static Object call(boolean nullable, boolean allowFd, Object arg) {
+        return call(arg, PosixModuleBuiltinsFactory.PathConversionNodeGen.create("fun", "arg", nullable, allowFd));
     }
 
     private static PythonObjectFactory factory() {

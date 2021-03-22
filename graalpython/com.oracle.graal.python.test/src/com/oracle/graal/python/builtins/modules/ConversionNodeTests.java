@@ -40,47 +40,78 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.test.PythonTests;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class ConversionNodeTests {
+    static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"arg"}, null);
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
-    static class PExceptionMessageMatcher extends
-                    TypeSafeMatcher<PException> {
+    protected static Object call(Object arg, ArgumentCastNodeWithRaise castNode) {
+        final PythonContext pythonContext = PythonLanguage.getContext();
+        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(null) {
+            @Child private CalleeContext calleeContext = CalleeContext.create();
+            @Child private ArgumentCastNodeWithRaise node = castNode;
 
-        private final Matcher<String> matcher;
+            @Override
+            public Object execute(VirtualFrame frame) {
+                calleeContext.enter(frame);
+                try {
+                    return node.execute(frame, PArguments.getArgument(frame, 0));
+                } finally {
+                    calleeContext.exit(frame, this);
+                }
+            }
 
-        public PExceptionMessageMatcher(Matcher<String> matcher) {
-            this.matcher = matcher;
-        }
+            @Override
+            public Signature getSignature() {
+                return SIGNATURE;
+            }
 
-        public void describeTo(Description description) {
-            description.appendText("exception with message ");
-            description.appendDescriptionOf(matcher);
-        }
-
-        @Override
-        protected boolean matchesSafely(PException item) {
-            return matcher.matches(PythonTests.getExceptionMessage(item));
-        }
-
-        @Override
-        protected void describeMismatchSafely(PException item, Description description) {
-            description.appendText("message ");
-            matcher.describeMismatch(PythonTests.getExceptionMessage(item), description);
+            @Override
+            public boolean isPythonInternal() {
+                return true;
+            }
+        });
+        try {
+            Object[] arguments = PArguments.create(1);
+            PArguments.setGlobals(arguments, PythonObjectFactory.getUncached().createDict());
+            PArguments.setException(arguments, PException.NO_EXCEPTION);
+            PArguments.setArgument(arguments, 0, arg);
+            PFrame.Reference frameInfo = IndirectCalleeContext.enter(pythonContext, arguments, callTarget);
+            try {
+                return CallTargetInvokeNode.invokeUncached(callTarget, arguments);
+            } finally {
+                IndirectCalleeContext.exit(pythonContext, frameInfo);
+            }
+        } catch (PException e) {
+            // materialize PException's error message since we are leaving Python
+            PException exceptionForReraise = e.getExceptionForReraise();
+            PythonObjectLibrary pythonObjectLibrary = PythonObjectLibrary.getUncached();
+            exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage(pythonObjectLibrary, pythonObjectLibrary));
+            throw exceptionForReraise;
         }
     }
 
     protected void expectPythonMessage(String expectedMessage) {
         expectedException.expect(PException.class);
-        expectedException.expect(new PExceptionMessageMatcher(CoreMatchers.containsString(expectedMessage)));
+        expectedException.expectMessage(expectedMessage);
     }
 }
