@@ -39,8 +39,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
-import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
+import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -223,7 +223,7 @@ public abstract class PythonObjectFactory extends Node {
         return executeGetShape(cls, true);
     }
 
-    public final synchronized <T> T trace(T allocatedObject) {
+    public final <T> T trace(T allocatedObject) {
         executeTrace(allocatedObject, AllocationReporter.SIZE_UNKNOWN);
         return allocatedObject;
     }
