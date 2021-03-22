@@ -42,7 +42,7 @@ from array import array
 
 _mappingproxy = type(type.__dict__)
 
-from sys import maxsize as _sys_maxsize 
+from sys import maxsize as _sys_maxsize
 
 def default(value, default):
     return default if not value else value
@@ -301,7 +301,12 @@ class Pattern():
             self.groupindex = {}
         else:
             group_names = dir(groups)
-            self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
+            if isinstance(groups, __graalpython__.ForeignType):
+                # tregex groups object
+                self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
+            else:
+                # _sre._NamedCaptureGroups
+                self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
 
     @property
     def flags(self):
