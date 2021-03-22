@@ -310,9 +310,9 @@ class Pattern():
         regex_flags = self.__tregex_compile(self.pattern).flags
         for flag, name in FLAG_NAMES:
             try:
-                if regex_flags[name]:
+                if getattr(regex_flags, name):
                     flags |= flag
-            except KeyError:
+            except AttributeError:
                 pass
         return flags
 
