@@ -675,6 +675,7 @@ def _test_gen():
 
 class TestOneTrickPonyABCs(ABCTestCase):
 
+    @support.impl_detail("async support", graalvm=False)
     def test_Awaitable(self):
         def gen():
             yield
@@ -725,6 +726,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
         CoroLike = None
         support.gc_collect() # Kill CoroLike to clean-up ABCMeta cache
 
+    @support.impl_detail("async support", graalvm=False)
     def test_Coroutine(self):
         def gen():
             yield
