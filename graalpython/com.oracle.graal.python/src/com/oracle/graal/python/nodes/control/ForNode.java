@@ -109,7 +109,7 @@ abstract class ForNextElementNode extends PNodeWithContext {
             profiledIterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).writeInt(frame, profiledIterator.next());
+        ((WriteNode) target).executeInt(frame, profiledIterator.next());
         return true;
     }
 
@@ -120,7 +120,7 @@ abstract class ForNextElementNode extends PNodeWithContext {
             iterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).writeLong(frame, iterator.next());
+        ((WriteNode) target).executeLong(frame, iterator.next());
         return true;
     }
 
@@ -131,7 +131,7 @@ abstract class ForNextElementNode extends PNodeWithContext {
             iterator.setExhausted();
             return false;
         }
-        ((WriteNode) target).writeDouble(frame, iterator.next());
+        ((WriteNode) target).executeDouble(frame, iterator.next());
         return true;
     }
 
@@ -141,7 +141,7 @@ abstract class ForNextElementNode extends PNodeWithContext {
                     @Cached("create()") IsBuiltinClassProfile errorProfile,
                     @Cached PRaiseNode raise) {
         try {
-            ((WriteNode) target).writeObject(frame, next.execute(frame, object));
+            ((WriteNode) target).executeObject(frame, next.execute(frame, object));
             return true;
         } catch (PException e) {
             e.expectStopIteration(errorProfile, raise, object);
