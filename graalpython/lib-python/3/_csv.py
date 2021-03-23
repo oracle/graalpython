@@ -127,7 +127,7 @@ class Dialect(object):
                     raise TypeError('"%s" must be a 1-character string' % (name,))
                 if n > 0:
                     return x
-            return None
+            return ""
         def set_str(x):
             if isinstance(x, str):
                 return x
@@ -170,7 +170,7 @@ class Dialect(object):
             setattr(self, '_' + name, value)
 
         if not self.delimiter:
-            raise TypeError("delimiter must be set")
+            raise TypeError('"delimiter" must be a 1-character string')
 
         if self.quoting != QUOTE_NONE and not self.quotechar:
             raise TypeError("quotechar must be set if quoting enabled")
