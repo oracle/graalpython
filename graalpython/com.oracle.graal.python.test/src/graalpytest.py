@@ -580,7 +580,8 @@ class TestCase(object):
                 testfn = getattr(instance, k, v)
                 if patterns:
                     import fnmatch
-                    if not any(fnmatch.fnmatch(testfn.__qualname__, p) for p in patterns):
+                    name = getattr(testfn, '__qualname__', k)
+                    if not any(fnmatch.fnmatch(name, p) for p in patterns):
                         continue
                 instance.run_test(testfn)
         if hasattr(instance, "tearDownClass"):
