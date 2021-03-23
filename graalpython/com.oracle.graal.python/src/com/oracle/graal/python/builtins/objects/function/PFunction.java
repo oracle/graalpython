@@ -269,25 +269,18 @@ public class PFunction extends PythonObject {
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallNode call,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            VirtualFrame frame = null;
-            if (gotState.profile(state != null)) {
-                frame = PArguments.frameForCall(state);
-            }
-            return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
-        } finally {
-            gil.release(mustRelease);
+                    @Shared("callMethod") @Cached CallNode call) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
         }
+        return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
     }
 
     @ExportMessage
     public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallNode call,
-                    @Shared("gil") @Cached GilNode gil) {
-        return callUnboundMethodWithState(state, receiver, arguments, gotState, call, gil);
+                    @Shared("callMethod") @Cached CallNode call) {
+        return callUnboundMethodWithState(state, receiver, arguments, gotState, call);
     }
 }

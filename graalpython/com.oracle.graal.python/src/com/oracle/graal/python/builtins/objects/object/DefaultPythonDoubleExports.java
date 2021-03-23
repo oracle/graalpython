@@ -55,7 +55,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -135,17 +134,11 @@ final class DefaultPythonDoubleExports {
 
         @Specialization
         static boolean dF(Double receiver, PFloat other,
-                        @Cached.Exclusive @Cached IsBuiltinClassProfile isFloat,
-                        @Shared("gil") @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (isFloat.profileObject(other, PythonBuiltinClassType.PFloat)) {
-                    return dd(receiver, other.getValue());
-                } else {
-                    return false;
-                }
-            } finally {
-                gil.release(mustRelease);
+                        @Cached.Exclusive @Cached IsBuiltinClassProfile isFloat) {
+            if (isFloat.profileObject(other, PythonBuiltinClassType.PFloat)) {
+                return dd(receiver, other.getValue());
+            } else {
+                return false;
             }
         }
 
@@ -204,14 +197,8 @@ final class DefaultPythonDoubleExports {
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Exclusive @Cached PRaiseNode raise,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return PythonAbstractObject.asPString(lib, receiver, state, isSubtypeNode, resultLib, raise);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached PRaiseNode raise) {
+        return PythonAbstractObject.asPString(lib, receiver, state, isSubtypeNode, resultLib, raise);
     }
 
     @SuppressWarnings("static-method")
@@ -250,71 +237,41 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static Object lookupAttributeInternal(Double receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            VirtualFrame frame = null;
-            if (gotState.profile(state != null)) {
-                frame = PArguments.frameForCall(state);
-            }
-            return lookup.execute(frame, receiver, name, strict);
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
         }
+        return lookup.execute(frame, receiver, name, strict);
     }
 
     @ExportMessage
     static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Double receiver, String name, boolean strict,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return lookup.execute(PythonBuiltinClassType.PFloat, name, strict);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
+        return lookup.execute(PythonBuiltinClassType.PFloat, name, strict);
     }
 
     @ExportMessage
     static Object lookupAndCallSpecialMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
-            return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
     }
 
     @ExportMessage
     static Object lookupAndCallRegularMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
-            return methodLib.callObjectWithState(method, state, arguments);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
+        return methodLib.callObjectWithState(method, state, arguments);
     }
 
     @ExportMessage
     static boolean typeCheck(@SuppressWarnings("unused") Double receiver, Object type,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object instanceClass = PythonBuiltinClassType.PFloat;
-            return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode) {
+        Object instanceClass = PythonBuiltinClassType.PFloat;
+        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
     }
 }

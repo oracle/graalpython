@@ -44,7 +44,6 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -132,15 +131,9 @@ public final class PDict extends PHashingCollection {
                         @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Exclusive @Cached CastToJavaLongLossyNode toLong,
                         @Exclusive @Cached ConditionProfile ignoreOverflow,
-                        @Exclusive @Cached BranchProfile overflow,
-                        @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                // call the generic implementation in the superclass
-                return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow, gil);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Exclusive @Cached BranchProfile overflow) {
+            // call the generic implementation in the superclass
+            return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow);
         }
     }
 
