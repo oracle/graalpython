@@ -138,7 +138,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Exclusive @Cached IsBuiltinClassProfile errProfile,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached AddRefCntNode incRefNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 if (arguments.length != 2) {
@@ -172,7 +173,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToJavaNode toJavaNode,
                         @Cached("createBinaryProfile()") ConditionProfile arityProfile,
                         @Cached BranchProfile errorProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 if (arityProfile.profile(arguments.length != 3)) {
@@ -213,7 +215,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToJavaNode toJavaNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached ToSulongNode nullToSulongNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Cached ToSulongNode nullToSulongNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 if (arguments.length != 2) {

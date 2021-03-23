@@ -130,7 +130,8 @@ public final class PCell extends PythonAbstractObject {
 
     @ExportMessage
     Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached PRaiseNode raiseNode, @Exclusive @Cached GilNode gil) {
+                    @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);

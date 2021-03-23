@@ -76,7 +76,8 @@ public final class InteropMap implements TruffleObject {
 
     @ExportMessage(name = "readMember")
     @TruffleBoundary
-    Object getKey(String name, @Exclusive @Cached GilNode gil) {
+    Object getKey(String name,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             assert hasKey(name, gil);
@@ -88,7 +89,8 @@ public final class InteropMap implements TruffleObject {
 
     @ExportMessage(name = "isMemberReadable")
     @TruffleBoundary
-    boolean hasKey(String name, @Exclusive @Cached GilNode gil) {
+    boolean hasKey(String name,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return data.containsKey(name);
@@ -99,7 +101,8 @@ public final class InteropMap implements TruffleObject {
 
     @ExportMessage(name = "getMembers")
     @TruffleBoundary
-    TruffleObject getKeys(@SuppressWarnings("unused") boolean includeInternal, @Exclusive @Cached GilNode gil) {
+    TruffleObject getKeys(@SuppressWarnings("unused") boolean includeInternal,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return new InteropArray(data.keySet().toArray());

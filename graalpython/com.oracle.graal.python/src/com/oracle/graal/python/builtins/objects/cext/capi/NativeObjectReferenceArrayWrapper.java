@@ -69,7 +69,8 @@ public abstract class NativeObjectReferenceArrayWrapper implements TruffleObject
     }
 
     @ExportMessage
-    boolean isArrayElementReadable(long i, @Exclusive @Cached GilNode gil) {
+    boolean isArrayElementReadable(long i,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return i < data.length;
@@ -79,7 +80,8 @@ public abstract class NativeObjectReferenceArrayWrapper implements TruffleObject
     }
 
     @ExportMessage
-    Object readArrayElement(long i, @Exclusive @Cached GilNode gil) {
+    Object readArrayElement(long i,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return get(i);

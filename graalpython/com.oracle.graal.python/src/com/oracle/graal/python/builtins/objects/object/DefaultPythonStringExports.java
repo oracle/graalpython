@@ -124,7 +124,8 @@ final class DefaultPythonStringExports {
 
         @Specialization
         static int sP(String receiver, PString other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Cached CastToJavaStringNode castNode, @Shared("gil") @Cached GilNode gil) {
+                        @Cached CastToJavaStringNode castNode,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // n.b.: subclassing is ignored in this direction in CPython
@@ -194,7 +195,8 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static Object lookupAttributeInternal(String receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             VirtualFrame frame = null;
@@ -216,7 +218,8 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static Object lookupAndCallSpecialMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
@@ -229,7 +232,8 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static Object lookupAndCallRegularMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
@@ -242,7 +246,8 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static boolean typeCheck(@SuppressWarnings("unused") String receiver, Object type,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                    @Cached IsSubtypeNode isSubtypeNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object instanceClass = PythonBuiltinClassType.PString;

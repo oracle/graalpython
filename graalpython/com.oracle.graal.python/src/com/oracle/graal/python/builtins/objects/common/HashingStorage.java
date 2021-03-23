@@ -326,7 +326,8 @@ public abstract class HashingStorage {
     @ExportMessage
     public HashingStorage addAllToOther(HashingStorage other,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Cached AddToOtherInjectNode injectNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached AddToOtherInjectNode injectNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return libSelf.injectInto(this, new HashingStorage[]{this, other}, injectNode)[1];
@@ -337,7 +338,8 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public boolean equalsWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             if (this == other) {
@@ -372,7 +374,8 @@ public abstract class HashingStorage {
     @ExportMessage
     public int compareKeys(HashingStorage other,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached HasKeyNodeForSubsetKeys hasKeyNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached HasKeyNodeForSubsetKeys hasKeyNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             if (this == other) {
@@ -426,7 +429,8 @@ public abstract class HashingStorage {
     @ExportMessage
     public int compareEntriesWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached TestKeyValueEqual testNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached TestKeyValueEqual testNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             if (this == other) {
@@ -475,7 +479,8 @@ public abstract class HashingStorage {
     @ExportMessage
     public HashingStorage intersect(HashingStorage other,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Cached IntersectInjectionNode injectNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached IntersectInjectionNode injectNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage newStore = EconomicMapStorage.create();
@@ -516,7 +521,8 @@ public abstract class HashingStorage {
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile selfIsShorterProfile,
-                    @Cached IsDisjointForEachNode isDisjointForEachNode, @Shared("gil") @Cached GilNode gil) {
+                    @Cached IsDisjointForEachNode isDisjointForEachNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             try {
@@ -560,7 +566,8 @@ public abstract class HashingStorage {
     @ExportMessage
     public HashingStorage xor(HashingStorage other,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached DiffInjectNode injectNode, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached DiffInjectNode injectNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // could also be done with lib.union(lib.diff(self, other),
@@ -577,7 +584,8 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage union(HashingStorage other,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage newStore = lib.copy(this);
@@ -590,7 +598,8 @@ public abstract class HashingStorage {
     @ExportMessage
     public HashingStorage diffWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Exclusive @Cached DiffInjectNode diffNode, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached DiffInjectNode diffNode,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage newStore = EconomicMapStorage.create();
@@ -601,7 +610,8 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+    public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return new HashingStorageIterable<>(new ValuesIterator(this, lib.keys(this).iterator(), lib));
@@ -611,7 +621,8 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorageIterable<Object> reverseValues(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+    public HashingStorageIterable<Object> reverseValues(@CachedLibrary("this") HashingStorageLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return new HashingStorageIterable<>(new ValuesIterator(this, lib.reverseKeys(this).iterator(), lib));
@@ -643,7 +654,8 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public final HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+    public final HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return new HashingStorageIterable<>(new EntriesIterator(this, lib.keys(this).iterator(), lib));
@@ -653,7 +665,8 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public final HashingStorageIterable<DictEntry> reverseEntries(@CachedLibrary("this") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+    public final HashingStorageIterable<DictEntry> reverseEntries(@CachedLibrary("this") HashingStorageLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return new HashingStorageIterable<>(new EntriesIterator(this, lib.reverseKeys(this).iterator(), lib));

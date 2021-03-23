@@ -124,7 +124,8 @@ public abstract class PDictView extends PythonBuiltinObject {
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
-                        @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
+                        @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return factory.createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
@@ -158,7 +159,8 @@ public abstract class PDictView extends PythonBuiltinObject {
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
-                        @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
+                        @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return factory.createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
@@ -203,7 +205,8 @@ public abstract class PDictView extends PythonBuiltinObject {
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Bind("this.getWrappedDict().getDictStorage()") HashingStorage storage,
                         @CachedLibrary("storage") HashingStorageLibrary lib,
-                        @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
+                        @Cached PythonObjectFactory factory,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return factory.createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));

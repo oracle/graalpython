@@ -130,7 +130,8 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached ToSulongNode toSulongNode,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
-                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                        @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 if (arguments.length != 3) {
@@ -172,7 +173,8 @@ public abstract class ManagedMethodWrappers {
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached ToSulongNode toSulongNode,
-                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode, @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedMessageException {
+                        @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedMessageException {
             boolean mustRelease = gil.acquire();
             try {
                 if (arguments.length != 1) {

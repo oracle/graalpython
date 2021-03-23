@@ -91,7 +91,8 @@ public final class HandleCache implements TruffleObject {
 
     @ExportMessage
     public Object execute(Object[] arguments,
-                    @Cached GetOrInsertNode getOrInsertNode, @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+                    @Cached GetOrInsertNode getOrInsertNode,
+                    @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (arguments.length != 1) {

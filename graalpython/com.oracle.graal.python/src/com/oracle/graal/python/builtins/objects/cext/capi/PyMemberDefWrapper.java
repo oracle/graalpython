@@ -103,7 +103,8 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ReadFieldNode readFieldNode, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached ReadFieldNode readFieldNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return readFieldNode.execute(lib.getDelegate(this), member);
@@ -167,7 +168,8 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
-                    @Exclusive @Cached FromCharPointerNode fromCharPointerNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Exclusive @Cached FromCharPointerNode fromCharPointerNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             if (!DOC.equals(member)) {

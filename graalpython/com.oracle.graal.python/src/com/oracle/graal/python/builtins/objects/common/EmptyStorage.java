@@ -70,7 +70,8 @@ public class EmptyStorage extends HashingStorage {
     @ExportMessage(limit = "1")
     public Object getItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // must call __hash__ for potential side-effect
@@ -85,7 +86,8 @@ public class EmptyStorage extends HashingStorage {
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLanguage PythonLanguage lang,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage newStore;
@@ -108,7 +110,8 @@ public class EmptyStorage extends HashingStorage {
     @ExportMessage(limit = "1")
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             // must call __hash__ for potential side-effect

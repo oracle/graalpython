@@ -74,7 +74,8 @@ public final class NodeObjectDescriptor implements TruffleObject {
 
     @ExportMessage
     @CompilerDirectives.TruffleBoundary
-    Object readMember(String key, @Exclusive @Cached GilNode gil) {
+    Object readMember(String key,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             assert data.containsKey(key);
@@ -92,7 +93,8 @@ public final class NodeObjectDescriptor implements TruffleObject {
 
     @ExportMessage
     @CompilerDirectives.TruffleBoundary
-    boolean isMemberReadable(String key, @Exclusive @Cached GilNode gil) {
+    boolean isMemberReadable(String key,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return data.containsKey(key);

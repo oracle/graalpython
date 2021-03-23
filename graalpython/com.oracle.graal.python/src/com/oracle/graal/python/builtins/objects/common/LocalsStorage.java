@@ -138,7 +138,8 @@ public final class LocalsStorage extends HashingStorage {
         static Object getItemCached(LocalsStorage self, String key, ThreadState state,
                         @Cached("key") String cachedKey,
                         @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
-                        @Cached("desc.findFrameSlot(key)") FrameSlot slot, @Exclusive @Cached GilNode gil) {
+                        @Cached("desc.findFrameSlot(key)") FrameSlot slot,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return self.getValue(slot);
@@ -148,7 +149,8 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "getItemCached")
-        static Object string(LocalsStorage self, String key, ThreadState state, @Exclusive @Cached GilNode gil) {
+        static Object string(LocalsStorage self,
+                        String key, ThreadState state, @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 if (!isUserFrameSlot(key)) {
@@ -163,7 +165,8 @@ public final class LocalsStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)")
         static Object pstring(LocalsStorage self, PString key, ThreadState state,
-                        @Cached IsBuiltinClassProfile profile, @Exclusive @Cached GilNode gil) {
+                        @Cached IsBuiltinClassProfile profile,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return string(self, key.getValue(), state, gil);
@@ -176,7 +179,8 @@ public final class LocalsStorage extends HashingStorage {
         static Object notString(LocalsStorage self, Object key, ThreadState state,
                         @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
@@ -213,7 +217,8 @@ public final class LocalsStorage extends HashingStorage {
     @ExportMessage
     HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage result = generalize(lib, gil);
@@ -230,7 +235,8 @@ public final class LocalsStorage extends HashingStorage {
     @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage result = generalize(lib, gil);
@@ -251,7 +257,8 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public Object forEachUntyped(ForEachNode<Object> node, Object arg, @Exclusive @Cached GilNode gil) {
+    public Object forEachUntyped(ForEachNode<Object> node,
+                    Object arg, @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             bailout();
@@ -307,7 +314,8 @@ public final class LocalsStorage extends HashingStorage {
 
         @Specialization(replaces = "cached")
         static HashingStorage generic(LocalsStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib, @Exclusive @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 bailout();
@@ -328,7 +336,8 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public static HashingStorage clear(@SuppressWarnings("unused") LocalsStorage self, @Exclusive @Cached GilNode gil) {
+    public static HashingStorage clear(@SuppressWarnings("unused") LocalsStorage self,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return EconomicMapStorage.create();

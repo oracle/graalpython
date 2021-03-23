@@ -214,7 +214,8 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @ExportMessage
-    CatchesFunction readMember(String name, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+    CatchesFunction readMember(String name,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
@@ -251,7 +252,8 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @ExportMessage
-    Object invokeMember(String name, Object[] arguments, @Exclusive @Cached GilNode gil) throws ArityException, UnknownIdentifierException {
+    Object invokeMember(String name,
+                    Object[] arguments, @Exclusive @Cached GilNode gil) throws ArityException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             if (arguments.length != 1) {
@@ -278,7 +280,8 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         }
 
         @ExportMessage(name = "execute")
-        boolean catches(Object[] arguments, @Exclusive @Cached GilNode gil) throws ArityException {
+        boolean catches(Object[] arguments,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
                 if (arguments.length != 1) {

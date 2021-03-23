@@ -216,7 +216,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     // type(None).__eq__.__get__(None, type(None)) wouldn't bind the method correctly
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallUnboundMethodNode call, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("callMethod") @Cached CallUnboundMethodNode call,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             VirtualFrame frame = null;
@@ -232,7 +233,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @ExportMessage
     public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallUnboundMethodNode call, @Shared("gil") @Cached GilNode gil) {
+                    @Shared("callMethod") @Cached CallUnboundMethodNode call,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return callUnboundMethodWithState(state, receiver, arguments, gotState, call, gil);

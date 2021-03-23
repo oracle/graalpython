@@ -72,7 +72,8 @@ public class PyTruffleObjectFree implements TruffleObject {
 
     @ExportMessage
     Object execute(Object[] arguments,
-                    @Cached FreeNode freeNode, @Exclusive @Cached GilNode gil) throws ArityException {
+                    @Cached FreeNode freeNode,
+                    @Exclusive @Cached GilNode gil) throws ArityException {
         boolean mustRelease = gil.acquire();
         try {
             if (arguments.length != 1) {

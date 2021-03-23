@@ -109,7 +109,8 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
         static boolean cached(KeywordsStorage self, String key, ThreadState state,
-                        @Exclusive @Cached("self.length()") int cachedLen, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached("self.length()") int cachedLen,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return self.findCachedStringKey(key, cachedLen) != -1;
@@ -119,7 +120,8 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "cached")
-        static boolean string(KeywordsStorage self, String key, ThreadState state, @Shared("gil") @Cached GilNode gil) {
+        static boolean string(KeywordsStorage self,
+                        String key, ThreadState state, @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return self.findStringKey(key) != -1;
@@ -130,7 +132,8 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static boolean pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Exclusive @Cached IsBuiltinClassProfile profile, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached IsBuiltinClassProfile profile,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return string(self, key.getValue(), state, gil);
@@ -152,7 +155,8 @@ public class KeywordsStorage extends HashingStorage {
     public static class GetItemWithState {
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
         static Object cached(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen, @Shared("gil") @Cached GilNode gil) {
+                        @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 final int idx = self.findCachedStringKey(key, cachedLen);
@@ -163,7 +167,8 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "cached")
-        static Object string(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
+        static Object string(KeywordsStorage self,
+                        String key, @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 final int idx = self.findStringKey(key);
@@ -175,7 +180,8 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassProfile profile, @Shared("gil") @Cached GilNode gil) {
+                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassProfile profile,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return string(self, key.getValue(), state, gil);
@@ -188,7 +194,8 @@ public class KeywordsStorage extends HashingStorage {
         static Object notString(KeywordsStorage self, Object key, ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Cached GilNode gil) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 long hash = getHashWithState(key, lib, state, gotState);
@@ -217,7 +224,8 @@ public class KeywordsStorage extends HashingStorage {
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage newStore = generalize(lib);
@@ -234,7 +242,8 @@ public class KeywordsStorage extends HashingStorage {
     @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Shared("gil") @Cached GilNode gil) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             HashingStorage newStore = generalize(lib);
@@ -259,7 +268,8 @@ public class KeywordsStorage extends HashingStorage {
         @Specialization(guards = "self.length() == cachedLen", limit = "1")
         @ExplodeLoop
         static Object cached(KeywordsStorage self, ForEachNode<Object> node, Object arg,
-                        @Exclusive @Cached("self.length()") int cachedLen, @Shared("gil") @Cached GilNode gil) {
+                        @Exclusive @Cached("self.length()") int cachedLen,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 Object result = arg;
@@ -274,7 +284,8 @@ public class KeywordsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "cached")
-        static Object generic(KeywordsStorage self, ForEachNode<Object> node, Object arg, @Shared("gil") @Cached GilNode gil) {
+        static Object generic(KeywordsStorage self,
+                        ForEachNode<Object> node, Object arg, @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 Object result = arg;
@@ -295,7 +306,8 @@ public class KeywordsStorage extends HashingStorage {
         @ExplodeLoop
         static HashingStorage cached(KeywordsStorage self, HashingStorage other,
                         @Exclusive @Cached("self.length()") int cachedLen,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 HashingStorage result = other;
@@ -311,7 +323,8 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(replaces = "cached")
         static HashingStorage generic(KeywordsStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib, @Shared("gil") @Cached GilNode gil) {
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 HashingStorage result = other;

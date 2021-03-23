@@ -90,7 +90,8 @@ public abstract class PBytesLike extends PSequence {
 
     @ExportMessage
     int getBufferLength(
-                    @Cached SequenceStorageNodes.LenNode lenNode, @Exclusive @Cached GilNode gil) {
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return lenNode.execute(store);
@@ -101,7 +102,8 @@ public abstract class PBytesLike extends PSequence {
 
     @ExportMessage
     byte[] getBufferBytes(
-                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode, @Exclusive @Cached GilNode gil) {
+                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return toByteArrayNode.execute(store);

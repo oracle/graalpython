@@ -178,7 +178,8 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public long getArraySize(@Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Exclusive @Cached SequenceStorageNodes.LenNode lenNode, @Exclusive @Cached GilNode gil) {
+                    @Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return lenNode.execute(getSequenceStorageNode.execute(this));
@@ -190,7 +191,8 @@ public abstract class PSequence extends PythonBuiltinObject {
     @ExportMessage
     public Object readArrayElement(long index,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Cached SequenceStorageNodes.GetItemScalarNode getItem, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                    @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {

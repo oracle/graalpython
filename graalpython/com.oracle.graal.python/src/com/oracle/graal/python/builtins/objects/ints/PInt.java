@@ -333,7 +333,8 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public double asJavaDoubleWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaDoubleNode castToDouble, @Exclusive @Cached GilNode gil) {
+                    @Cached CastToJavaDoubleNode castToDouble,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return castToDouble.execute(this);
@@ -350,7 +351,8 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaLongExactNode castToLong, @Exclusive @Cached GilNode gil) {
+                    @Cached CastToJavaLongExactNode castToLong,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return castToLong.execute(this);

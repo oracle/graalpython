@@ -242,7 +242,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"key == cachedObBase", "isObBase(cachedObBase)"}, limit = "1")
         static Object doObBaseCached(DynamicObjectNativeWrapper object, @SuppressWarnings("unused") String key,
-                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObBase, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObBase,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return object;
@@ -253,7 +254,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"key == cachedObRefcnt", "isObRefcnt(cachedObRefcnt)"}, limit = "1")
         static Object doObRefcnt(DynamicObjectNativeWrapper object, @SuppressWarnings("unused") String key,
-                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt, @Exclusive @Cached GilNode gil) {
+                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt,
+                        @Exclusive @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 return object.getRefCount();
@@ -265,7 +267,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         static Object execute(DynamicObjectNativeWrapper object, String key,
                         @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                        @Exclusive @Cached AsPythonObjectNode getDelegate, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                        @Exclusive @Cached AsPythonObjectNode getDelegate,
+                        @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
             boolean mustRelease = gil.acquire();
             try {
                 Object delegate = getDelegate.execute(object);
@@ -1372,7 +1375,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteNativeMemberNode writeNativeMemberNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
+                    @Cached WriteNativeMemberNode writeNativeMemberNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
         boolean mustRelease = gil.acquire();
         try {
             writeNativeMemberNode.execute(lib.getDelegate(this), this, member, value);
@@ -1403,7 +1407,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     @Cached AllToJavaNode allToJavaNode,
                     @Cached ToNewRefNode toNewRefNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Cached GetNativeNullNode getNativeNullNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             Object[] converted = allToJavaNode.execute(arguments);
@@ -1784,7 +1789,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = {"key == cachedObRefcnt", "isObRefcnt(cachedObRefcnt)"}, limit = "1")
             static Object doObRefcnt(PrimitiveNativeWrapper object, @SuppressWarnings("unused") String key,
-                            @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt, @Exclusive @Cached GilNode gil) {
+                            @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt,
+                            @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
                 try {
                     return object.getRefCount();
@@ -1797,7 +1803,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             static Object doObType(PrimitiveNativeWrapper object, @SuppressWarnings("unused") String key,
                             @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObType,
                             @Exclusive @Cached ToSulongNode toSulongNode,
-                            @Cached GetClassNode getClassNode, @Exclusive @Cached GilNode gil) {
+                            @Cached GetClassNode getClassNode,
+                            @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
                 try {
                     Object clazz;
@@ -1822,7 +1829,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             static Object execute(PrimitiveNativeWrapper object, String key,
                             @Exclusive @Cached BranchProfile isNotObRefcntProfile,
                             @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                            @Exclusive @Cached AsPythonObjectNode getDelegate, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                            @Exclusive @Cached AsPythonObjectNode getDelegate,
+                            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
                 boolean mustRelease = gil.acquire();
                 try {
                     // avoid materialization of primitive native wrappers if we only ask for the

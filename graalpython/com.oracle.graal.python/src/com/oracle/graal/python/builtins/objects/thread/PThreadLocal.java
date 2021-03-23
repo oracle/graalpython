@@ -83,7 +83,8 @@ public final class PThreadLocal extends PythonBuiltinObject {
     @TruffleBoundary
     PDict getDict(@CachedLibrary("this") PythonObjectLibrary lib,
                     @Cached CallNode callNode,
-                    @Cached PythonObjectFactory factory, @Exclusive @Cached GilNode gil) {
+                    @Cached PythonObjectFactory factory,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             PDict dict = threadLocalDict.get();
