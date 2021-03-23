@@ -2297,7 +2297,7 @@ def reap_threads(func):
 
 
 @contextlib.contextmanager
-def wait_threads_exit(timeout=6.0):
+def wait_threads_exit(timeout=30.0):
     """
     bpo-31234: Context manager to wait until all threads created in the with
     statement exit.
