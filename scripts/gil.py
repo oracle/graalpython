@@ -58,6 +58,26 @@ PTRN_GILNODE_ARG = re.compile(
     r"(?P<start>,)(?P<arg>.*?@Cached GilNode gil)",
     re.MULTILINE | re.UNICODE)
 
+PTRN_REM_GIL_TRY_CATCH = re.compile(
+    r"(boolean mustRelease = gil\.acquire\(\);\s+)?try\s\{\s(?P<body>.+?)\s+\} finally \{\s+gil\.release\(mustRelease\);\s+\}",
+    re.DOTALL | re.MULTILINE | re.UNICODE)
+
+PTRN_REM_GIL_ARGS = re.compile(
+    r'(,\s+)?@((Cached\.)?Exclusive|Shared\("gil"\))\s@Cached GilNode gil',
+    re.DOTALL | re.MULTILINE | re.UNICODE)
+
+PTRN_REM_GIL_BIND = re.compile(
+    r'(,\s+)?@Bind.*?\sboolean mustRelease',
+    re.DOTALL | re.MULTILINE | re.UNICODE)
+
+PTRN_LIB_MSG = re.compile(
+    r'^    \w(?P<header>.*?)\s(?P<method>[a-zA-Z][a-zA-Z0-9]*)\((?P<args>.*?)\)(?P<throws>\sthrows .*?)?\s\{',
+    re.MULTILINE | re.UNICODE)
+
+PTRN_LIB_MSG_ABS = re.compile(
+    r'^    \w(?P<header>.*?)\s(?P<method>[a-zA-Z][a-zA-Z0-9]*)\((?P<args>.*?)\)(?P<throws>\sthrows .*?)?;',
+    re.MULTILINE | re.UNICODE)
+
 RUNTIME_PACKAGE = "package com.oracle.graal.python.runtime;"
 GIL_NODE_IMPORT = "import com.oracle.graal.python.runtime.GilNode;"
 CACHED_IMPORT = "import com.oracle.truffle.api.dsl.Cached;"
@@ -131,6 +151,19 @@ class ExportedMessage(object):
         return "GilNode gil" in self.source
 
     @property
+    def is_class(self):
+        return ' class ' in self.match.group('header')
+
+    @property
+    def name(self):
+        rv = self.match.group('method')
+        if self.is_class:
+            hdr = self.match.group('header').split()
+            name = hdr[hdr.index('class') + 1]
+            rv = name[:1].lower() + name[1:]
+        return rv.strip()
+
+    @property
     def source_with_gil(self):
         # handle varargs ...
         _args = self.args
@@ -156,12 +189,20 @@ class ExportedMessage(object):
     }
 }""" % (self.header, _args, self.throws, _uncached_gil, self.body.strip())
 
-    def apply_gil(self):
-        return
+    @property
+    def source_without_gil(self):
+        source = self.source
+        source = re.sub(PTRN_REM_GIL_TRY_CATCH, lambda match: match.group('body'), source, 1)
+        source = re.sub(PTRN_REM_GIL_ARGS, "", source, 1)
+        source = re.sub(PTRN_REM_GIL_BIND, "", source, 1)
+        return source
 
     def __str__(self):
         return "START: {}, ARGS {}:{}, BODY_START: {}, STOP: {}, CONTENT:\n {}".format(
             self._start, self._args_start, self._args_end, self._body_start, self._end, self.source)
+
+    def __repr__(self):
+        return 'Message({})'.format(self.name)
 
 
 def message_is_class(match):
@@ -216,14 +257,36 @@ def fix_gilnode_arg(source):
     return re.sub(PTRN_GILNODE_ARG, repl, source)
 
 
-def main(sources, add=True, dry_run=True, check_style=True, single_source=False, source_filter=None,
+def get_lib_messages(lib, files):
+    if lib is None:
+        return None
+    lib_file = next(f for f in files if lib in f)
+    print("got lib source: {}".format(lib_file))
+    with open(lib_file, 'r') as SRC:
+        src = SRC.read()
+        messages = set()
+        for m in re.finditer(PTRN_LIB_MSG, src):
+            messages.add(m.group('method'))
+        for m in re.finditer(PTRN_LIB_MSG_ABS, src):
+            messages.add(m.group('method'))
+        return messages
+
+
+def main(sources, add=True, lib=None, dry_run=True, check_style=True, single_source=False, source_filter=None,
          ignore_filter=None, count=False, sharing=False, fix_style=False):
     files = glob.glob("{}**/*.java".format(sources), recursive=True)
+    lib_messages = get_lib_messages(lib, files)
+    if lib:
+        from pprint import pprint
+        print("[{}] messages: ".format(lib))
+        pprint(lib_messages)
+
     if ignore_filter:
         files = list(filter(lambda f: not file_names_filter(f, ignore_filter), files))
     if source_filter and not count:
         files = list(filter(lambda f: file_names_filter(f, source_filter), files))
 
+    remove = not add
     cnt = 0
     for java_file in files:
         with open(java_file, 'r+') as SRC:
@@ -235,51 +298,66 @@ def main(sources, add=True, dry_run=True, check_style=True, single_source=False,
                     SRC.seek(0)
                     SRC.write(source)
                 continue
-
-            elif add:
+            else:
                 messages, shared = get_messages(source, PTRN_MESSAGE, sharing=sharing)
                 if len(messages) > 0:
-                    if 'GilNode gil' in source or SKIP_GIL in source:
-                        print("[skipping] {}".format(java_file))
-                        continue
-
                     if count:
                         cnt += 1
                         continue
 
                     print("[process] dry run: {}, add: {}. messages: {}, {}".format(
                         dry_run, add, len(messages), java_file))
-                    source_with_gil = []
+
+                    def get_mod_source(msg):
+                        return msg.source_with_gil if add else msg.source_without_gil
+
+                    if (add and 'GilNode gil' in source) or \
+                            (remove and 'GilNode gil' not in source) or \
+                            SKIP_GIL in source:
+                        print("[skipping] {}".format(java_file))
+                        continue
+
+                    if remove and '@ExportLibrary({}.class)'.format(lib) not in source:
+                        print("[skipping] {}".format(java_file))
+                        continue
+
+                    if lib:
+                        messages = list(filter(lambda m: m.name in lib_messages and m.is_with_gil, messages))
+                        print("process messages: ", messages)
+
+                    if len(messages) == 0:
+                        continue
+
+                    _src_parts = []
                     m = messages[0]
                     if len(messages) == 1:
-                        source_with_gil = [source[:m.start], m.source_with_gil, source[m.end:]]
+                        _src_parts = [source[:m.start], get_mod_source(m), source[m.end:]]
                     else:
-                        source_with_gil.append(source[:m.start])
+                        _src_parts.append(source[:m.start])
                         for m1, m2 in zip(messages[:-1], messages[1:]):
-                            source_with_gil.append(m1.source_with_gil)
-                            source_with_gil.append(source[m1.end: m2.start])
-                        source_with_gil.append(m2.source_with_gil)
-                        source_with_gil.append(source[m2.end:])
+                            _src_parts.append(get_mod_source(m1))
+                            _src_parts.append(source[m1.end: m2.start])
+                        _src_parts.append(get_mod_source(m2))
+                        _src_parts.append(source[m2.end:])
 
-                    source_with_gil = ''.join(source_with_gil)
-                    source_with_gil = add_import(source_with_gil, shared=shared)
+                    modified_source = ''.join(_src_parts)
+                    if add:
+                        modified_source = add_import(modified_source, shared=shared)
+
                     if dry_run:
-                        print(source_with_gil)
+                        print(modified_source)
                         return
                     else:
+                        SRC.truncate(0)
                         SRC.seek(0)
-                        SRC.write(source_with_gil)
+                        if modified_source:
+                            SRC.write(modified_source)
                         if single_source:
                             break
-            else:
-                print("removal of the GIL not yet supported")
-                return
 
     if count:
         print("TO PROCESS: {} files".format(cnt))
     if check_style and not count:
-        # running the checkstyle gate (twice)
-        # for i in range(2):
         os.system("mx python-gate --tags style,python-license")
 
 
@@ -289,6 +367,7 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument("--count", help="count how many files may need the GIL", action="store_true")
     parser.add_argument("--remove", help="remove the GIL", action="store_true")
+    parser.add_argument("--lib", type=str, help="the internal library for which messages to remove the GIL")
     parser.add_argument("--no_style", help="do not run the style checker", action="store_true")
     parser.add_argument("--sharing", help="use @Shared", action="store_true")
     parser.add_argument("--single", help="stop after modifying the first source", action="store_true")
@@ -298,6 +377,6 @@ if __name__ == '__main__':
     parser.add_argument("sources", type=str, help="location of sources")
     args = parser.parse_args()
 
-    main(args.sources, add=not args.remove, dry_run=args.dry_run, check_style=not args.no_style,
+    main(args.sources, add=not args.remove, lib=args.lib, dry_run=args.dry_run, check_style=not args.no_style,
          single_source=args.single, source_filter=args.filter, ignore_filter=args.ignore, count=args.count,
          sharing=args.sharing, fix_style=args.fix_style)
