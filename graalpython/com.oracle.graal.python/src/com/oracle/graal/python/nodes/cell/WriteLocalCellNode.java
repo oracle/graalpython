@@ -61,12 +61,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
         return WriteLocalCellNodeGen.create(frameSlot, readLocal, right);
     }
 
-    @Override
-    public void writeObject(VirtualFrame frame, Object value) {
-        executeWithValue(frame, value);
-    }
-
-    public abstract void executeWithValue(VirtualFrame frame, Object value);
+    public abstract void executeObject(VirtualFrame frame, Object value);
 
     @Specialization
     void writeObject(VirtualFrame frame, Object value,
