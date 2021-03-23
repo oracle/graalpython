@@ -56,27 +56,22 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
-import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "faulthandler")
 public class FaulthandlerModuleBuiltins extends PythonBuiltins {
-    private static final HiddenKey STACK_DUMP_REQUESTED = new HiddenKey("stackDumpRequested");
-    private WeakHashMap<Thread, Object> dumpRequestedForThreads = new WeakHashMap<>();
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FaulthandlerModuleBuiltinsFactory.getFactories();
@@ -94,41 +89,6 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
                 ExceptionUtils.printPythonLikeStackTrace(e);
             }
         }
-    }
-
-    private static final class StackDumpAction implements AsyncHandler.AsyncAction {
-        @Override
-        public void execute(PythonContext context) {
-            CompilerDirectives.bailout("This should never be compiled");
-            PythonModule mod = context.getCore().lookupBuiltinModule("faulthandler");
-            Object dumpQueue = DynamicObjectLibrary.getUncached().getOrDefault(mod, STACK_DUMP_REQUESTED, null);
-            if (dumpQueue instanceof WeakHashMap) {
-                WeakHashMap<?, ?> weakDumpQueue = (WeakHashMap<?, ?>) dumpQueue;
-                Object callableAndFile = weakDumpQueue.remove(Thread.currentThread());
-                if (callableAndFile instanceof Object[]) {
-                    Object callable = ((Object[]) callableAndFile)[0];
-                    Object file = ((Object[]) callableAndFile)[1];
-                    dumpTraceback(callable, file);
-                }
-            }
-        }
-
-        private static final StackDumpAction INSTANCE = new StackDumpAction();
-    }
-
-    @Override
-    public void postInitialize(PythonCore core) {
-        super.postInitialize(core);
-        final PythonContext ctx = core.getContext();
-        PythonModule mod = core.lookupBuiltinModule("faulthandler");
-        mod.setAttribute(STACK_DUMP_REQUESTED, dumpRequestedForThreads);
-        ctx.registerAsyncAction(() -> {
-            if (!dumpRequestedForThreads.isEmpty()) {
-                return StackDumpAction.INSTANCE;
-            } else {
-                return null;
-            }
-        });
     }
 
     @Builtin(name = "dump_traceback", minNumOfPositionalArgs = 1, parameterNames = {"$mod", "file", "all_threads"}, declaresExplicitSelf = true)
@@ -182,15 +142,12 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
                     }
                 }
 
-                Object dumpQueue = DynamicObjectLibrary.getUncached().getOrDefault(mod, STACK_DUMP_REQUESTED, null);
-                if (dumpQueue instanceof WeakHashMap) {
-                    WeakHashMap<Thread, Object[]> weakDumpQueue = (WeakHashMap<Thread, Object[]>) dumpQueue;
-                    if (weakDumpQueue.isEmpty()) {
-                        for (Thread th : context.getThreads()) {
-                            weakDumpQueue.put(th, new Object[]{printStackFunc, file});
-                        }
+                context.getEnv().submitThreadLocal(null, new ThreadLocalAction(true, false) {
+                    @Override
+                    protected void perform(ThreadLocalAction.Access access) {
+                        dumpTraceback(printStackFunc, file);
                     }
-                }
+                });
             } else {
                 if (PythonOptions.isWithJavaStacktrace(context.getLanguage())) {
                     PrintWriter err = new PrintWriter(context.getStandardErr());

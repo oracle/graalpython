@@ -500,7 +500,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         errorProfile.enter();
                         gil.acquire();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                            getContext().triggerAsyncActions();
+                            PythonContext.triggerAsyncActions(this);
                             gil.release(true);
                         } else {
                             throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -581,7 +581,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             gil.acquire(); // need gil to trigger actions or construct OSError
-                            getContext().triggerAsyncActions();
+                            PythonContext.triggerAsyncActions(this);
                             gil.release(true); // continue read loop without gil
                         } else {
                             throw e;
@@ -630,7 +630,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             gil.acquire();
-                            getContext().triggerAsyncActions();
+                            PythonContext.triggerAsyncActions(this);
                             gil.release(true);
                         } else {
                             throw e;
@@ -824,7 +824,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -854,7 +854,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1030,7 +1030,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1252,7 +1252,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1801,7 +1801,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     errorProfile.enter();
                     gil.acquire();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                         gil.release(true);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);

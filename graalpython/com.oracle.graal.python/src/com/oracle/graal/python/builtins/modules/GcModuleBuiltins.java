@@ -77,7 +77,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                 gil.acquire();
             }
             // collect some weak references now
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return 0;
         }
     }

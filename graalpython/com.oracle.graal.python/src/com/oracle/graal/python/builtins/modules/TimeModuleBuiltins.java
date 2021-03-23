@@ -39,9 +39,11 @@ import java.time.Month;
 import java.time.Year;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.TextStyle;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -75,6 +77,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -488,7 +491,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
                 gil.acquire();
             }
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
         }
 
@@ -511,7 +514,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 gil.acquire();
                 dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
             }
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
         }
 

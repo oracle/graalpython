@@ -46,12 +46,12 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -65,10 +65,11 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -139,25 +140,7 @@ public class AsyncHandler {
         }
     });
 
-    private static final byte HAS_SCHEDULED_ACTION = 1;
-    private static final byte SHOULD_RELEASE_GIL = 2;
-
-    private volatile byte scheduledActionsFlags = 0;
-
-    /**
-     * We separate checking and running async actions in the compilation root from running the at
-     * backedges of loops. At a compilation root it is quite cheap to do the check and branch into a
-     * call, but at the backedges of loops this is expensive. So instead, we use the scheduled
-     * actions to set this flag if we didn't enter an async action trigger in a reasonable time, and
-     * the backedge triggers use a profile so that it is quite unlikely that short running loops or
-     * loops with proper non-inlined calls in them would ever trigger async actions, since the
-     * compilation roots are entered often enough.
-     */
-    private volatile boolean needsAdditionalSafepointExecution = false;
-
     private final WeakReference<PythonContext> context;
-    private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
-    private ThreadLocal<Boolean> recursionGuard = new ThreadLocal<>();
     private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
     private static final int GIL_RELEASE_DELAY = 10;
 
@@ -170,10 +153,23 @@ public class AsyncHandler {
 
         @Override
         public void run() {
-            AsyncAction asyncAction = actionSupplier.get();
+            final AsyncAction asyncAction = actionSupplier.get();
             if (asyncAction != null) {
-                scheduledActions.add(asyncAction);
-                scheduledActionsFlags |= HAS_SCHEDULED_ACTION;
+                final AtomicBoolean tas = new AtomicBoolean(false);
+                final PythonContext ctx = context.get();
+                if (ctx != null) {
+                    ctx.getEnv().submitThreadLocal(null, new ThreadLocalAction(true, false) {
+                        @Override
+                        @SuppressWarnings("try")
+                        protected void perform(ThreadLocalAction.Access access) {
+                            if (tas.compareAndSet(false, true)) {
+                                try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+                                    asyncAction.execute(ctx);
+                                }
+                            }
+                        }
+                    });
+                }
             }
         }
     }
@@ -242,89 +238,21 @@ public class AsyncHandler {
 
     void activateGIL() {
         CompilerAsserts.neverPartOfCompilation();
+        PythonContext ctx = context.get();
+        Env env = ctx.getEnv();
         executorService.scheduleWithFixedDelay(() -> {
-            if ((scheduledActionsFlags & SHOULD_RELEASE_GIL) != 0) {
-                // didn't release the gil at all in the last GIL_RELEASE_DELAY timeframe. Panic.
-                needsAdditionalSafepointExecution = true;
-            }
-            scheduledActionsFlags |= SHOULD_RELEASE_GIL;
+            env.submitThreadLocal(null, new ThreadLocalAction(false, false) {
+                @Override
+                @SuppressWarnings("try")
+                protected void perform(ThreadLocalAction.Access access) {
+                    if (ctx.ownsGil()) {
+                        try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
+                            Thread.yield();
+                        }
+                    }
+                }
+            });
         }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
-    }
-
-    void triggerAsyncActions() {
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, scheduledActionsFlags != 0)) {
-            triggerAsyncActionsBoundary();
-        }
-    }
-
-    void triggerAsyncActionsProfiled(ConditionProfile profile) {
-        if (profile.profile(needsAdditionalSafepointExecution)) {
-            needsAdditionalSafepointExecution = false;
-            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, scheduledActionsFlags != 0)) {
-                triggerAsyncActionsBoundary();
-            }
-        }
-    }
-
-    @TruffleBoundary
-    private void triggerAsyncActionsBoundary() {
-        if ((scheduledActionsFlags & SHOULD_RELEASE_GIL) != 0) {
-            scheduledActionsFlags &= ~SHOULD_RELEASE_GIL;
-            doReleaseGIL();
-        }
-        if ((scheduledActionsFlags & HAS_SCHEDULED_ACTION) != 0) {
-            scheduledActionsFlags &= ~HAS_SCHEDULED_ACTION;
-            processAsyncActions();
-        }
-    }
-
-    @TruffleBoundary
-    @SuppressWarnings("try")
-    private final void doReleaseGIL() {
-        PythonContext ctx = context.get();
-        if (ctx == null) {
-            return;
-        }
-        try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-            Thread.yield();
-        }
-    }
-
-    /**
-     * We have a GIL, so when we enter this method, we own the GIL. Some async actions may cause us
-     * to relinquish the GIL, and then other threads may come and start processing async actions.
-     * That is fine, this processing can go on in parallel. E.g., Thread-1 may processes a few
-     * weakref callbacks, then process a GIL release action. Thread-2 will still see the
-     * hasScheduledAction flag be true when it next enters this method (in fact, Thread-2 may be
-     * sitting in this method because it was processing an earlier GIL release action, but it
-     * doesn't matter). Thread-2 will continue to process actions. If it's done, it will acquire the
-     * action lock and reset the flag if the async action queue is empty (this way we don't race
-     * between setting the flag and checking that the queue was empty). Thread-2 returns and
-     * continues running until it once again relinquishes the GIL. Thread-1 may now wake up in this
-     * method after getting the GIL back, but may not get any more actions from the queue, so it
-     * leaves and continues running.
-     *
-     * We use a recursion guard to ensure that we don't recursively process during processing.
-     */
-    @TruffleBoundary
-    private void processAsyncActions() {
-        PythonContext ctx = context.get();
-        if (ctx == null) {
-            return;
-        }
-        if (recursionGuard.get() == Boolean.TRUE) {
-            return;
-        }
-        recursionGuard.set(true);
-        try {
-            ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
-            AsyncAction action;
-            while ((action = actions.poll()) != null) {
-                action.execute(ctx);
-            }
-        } finally {
-            recursionGuard.set(false);
-        }
     }
 
     public void shutdown() {

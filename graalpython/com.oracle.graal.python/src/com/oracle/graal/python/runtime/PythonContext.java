@@ -108,11 +108,12 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.LanguageInfo;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
@@ -1050,15 +1051,8 @@ public final class PythonContext {
     /**
      * Trigger any pending asynchronous actions
      */
-    public void triggerAsyncActions() {
-        handler.triggerAsyncActions();
-    }
-
-    /**
-     * Trigger any pending asynchronous actions if the normal trigger did not run for a while.
-     */
-    public void triggerAsyncActionsProfiled(ConditionProfile profile) {
-        handler.triggerAsyncActionsProfiled(profile);
+    public static final void triggerAsyncActions(Node node) {
+        TruffleSafepoint.poll(node);
     }
 
     public AsyncHandler getAsyncHandler() {

@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
@@ -36,13 +35,11 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -56,8 +53,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
     @CompilationFinal FrameSlot iteratorSlot;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-    @CompilationFinal private ConditionProfile asyncActionProfile;
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
     @Child PRaiseNode raise;
@@ -77,15 +72,6 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
             throw new IllegalStateException(e);
         }
         body.executeVoid(frame);
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        if (asyncActionProfile == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            asyncActionProfile = ConditionProfile.createBinaryProfile();
-        }
-        contextRef.get().triggerAsyncActionsProfiled(asyncActionProfile);
         return true;
     }
 }
