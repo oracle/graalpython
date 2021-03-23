@@ -774,33 +774,28 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Exclusive @Cached CastToJavaLongLossyNode toLong,
                     @Exclusive @Cached ConditionProfile ignoreOverflow,
-                    @Exclusive @Cached BranchProfile overflow, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
-            if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
-                Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
-                // the following mimics typeobject.c#slot_sq_length()
-                // - PyNumber_Index is called first
-                // - checked if negative
-                // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
-                lenResult = lib.asIndexWithState(lenResult, state);
-                long longResult;
-                try {
-                    longResult = toLong.execute(lenResult); // this is a lossy cast
-                    if (ltZero.profile(longResult < 0)) {
-                        throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
-                    }
-                } catch (CannotCastException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
+                    @Exclusive @Cached BranchProfile overflow) {
+        Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
+        if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
+            Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
+            // the following mimics typeobject.c#slot_sq_length()
+            // - PyNumber_Index is called first
+            // - checked if negative
+            // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
+            lenResult = lib.asIndexWithState(lenResult, state);
+            long longResult;
+            try {
+                longResult = toLong.execute(lenResult); // this is a lossy cast
+                if (ltZero.profile(longResult < 0)) {
+                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
                 }
-                return longToInt(longResult, overflow, ignoreOverflow, OverflowError, raiseNode, lenResult);
-            } else {
-                throw raiseNode.raiseHasNoLength(this);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
             }
-        } finally {
-            gil.release(mustRelease);
+            return longToInt(longResult, overflow, ignoreOverflow, OverflowError, raiseNode, lenResult);
+        } else {
+            throw raiseNode.raiseHasNoLength(this);
         }
     }
 
@@ -812,38 +807,33 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasBool,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
-                    @Shared("raise") @Cached PRaiseNode raiseNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
-            // in the message impls in PNone and PInt
-            Object boolMethod = lib.lookupAttributeOnType(this, __BOOL__);
-            if (hasBool.profile(boolMethod != PNone.NO_VALUE)) {
-                // this inlines the work done in sq_nb_bool when __bool__ is used.
-                // when __len__ would be used, this is the same as the branch below
-                // calling __len__
-                Object result = methodLib.callUnboundMethodWithState(boolMethod, state, this);
-                try {
-                    return castToBoolean.execute(result);
-                } catch (CannotCastException e) {
-                    // cast node will act as a branch profile already for the compiler
-                    throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
+        // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
+        // in the message impls in PNone and PInt
+        Object boolMethod = lib.lookupAttributeOnType(this, __BOOL__);
+        if (hasBool.profile(boolMethod != PNone.NO_VALUE)) {
+            // this inlines the work done in sq_nb_bool when __bool__ is used.
+            // when __len__ would be used, this is the same as the branch below
+            // calling __len__
+            Object result = methodLib.callUnboundMethodWithState(boolMethod, state, this);
+            try {
+                return castToBoolean.execute(result);
+            } catch (CannotCastException e) {
+                // cast node will act as a branch profile already for the compiler
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
+            }
+        } else {
+            Object lenAttr = lib.lookupAttributeOnType(this, __LEN__);
+            if (hasLen.profile(lenAttr != PNone.NO_VALUE)) {
+                if (gotState.profile(state == null)) {
+                    return lib.length(this) > 0;
+                } else {
+                    return lib.lengthWithState(this, state) > 0;
                 }
             } else {
-                Object lenAttr = lib.lookupAttributeOnType(this, __LEN__);
-                if (hasLen.profile(lenAttr != PNone.NO_VALUE)) {
-                    if (gotState.profile(state == null)) {
-                        return lib.length(this) > 0;
-                    } else {
-                        return lib.lengthWithState(this, state) > 0;
-                    }
-                } else {
-                    // like CPython, anything else is true-ish
-                    return true;
-                }
+                // like CPython, anything else is true-ish
+                return true;
             }
-        } finally {
-            gil.release(mustRelease);
         }
     }
 
@@ -853,35 +843,25 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
+                    @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode) {
+        Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
+        if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
+        }
+        Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(hashMethod, state, this);
+        // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
+        // hash call is always a plain long, forcibly and lossy read from memory.
         try {
-            Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
-            if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
-            }
-            Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(hashMethod, state, this);
-            // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
-            // hash call is always a plain long, forcibly and lossy read from memory.
-            try {
-                return castUnsignedToJavaLongHashNode.execute(result);
-            } catch (CannotCastException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
-            }
-        } finally {
-            gil.release(mustRelease);
+            return castUnsignedToJavaLongHashNode.execute(result);
+        } catch (CannotCastException e) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
         }
     }
 
     @ExportMessage
     public boolean isSame(Object other,
-                    @Shared("isNode") @Cached IsNode isNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return isNode.execute(this, other);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("isNode") @Cached IsNode isNode) {
+        return isNode.execute(this, other);
     }
 
     @ExportMessage
@@ -890,28 +870,23 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @CachedLibrary(limit = "3") PythonObjectLibrary resultLib,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("isNode") @Cached IsNode isNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
-            if (eqMethod == PNone.NO_VALUE) {
-                // isNode specialization represents the branch profile
-                // c.f.: Python always falls back to identity comparison in this case
-                return isNode.execute(this, other) ? 1 : -1;
+                    @Shared("isNode") @Cached IsNode isNode) {
+        Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
+        if (eqMethod == PNone.NO_VALUE) {
+            // isNode specialization represents the branch profile
+            // c.f.: Python always falls back to identity comparison in this case
+            return isNode.execute(this, other) ? 1 : -1;
+        } else {
+            Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(eqMethod, state, this, other);
+            if (result == PNotImplemented.NOT_IMPLEMENTED || result == PNone.NO_VALUE) {
+                return -1;
             } else {
-                Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(eqMethod, state, this, other);
-                if (result == PNotImplemented.NOT_IMPLEMENTED || result == PNone.NO_VALUE) {
-                    return -1;
+                if (gotState.profile(state == null)) {
+                    return resultLib.isTrue(result) ? 1 : 0;
                 } else {
-                    if (gotState.profile(state == null)) {
-                        return resultLib.isTrue(result) ? 1 : 0;
-                    } else {
-                        return resultLib.isTrueWithState(result, state) ? 1 : 0;
-                    }
+                    return resultLib.isTrueWithState(result, state) ? 1 : 0;
                 }
             }
-        } finally {
-            gil.release(mustRelease);
         }
     }
 
@@ -926,34 +901,29 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile resultProfile,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("intProfile") @Cached IsBuiltinClassProfile isInt,
-                    @Cached WarnNode warnNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
-            // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
-            // and PythonAbstractNativeObject and dispatched polymorphically
-            Object indexMethod = lib.lookupAttributeOnType(this, __INDEX__);
-            if (noIndex.profile(indexMethod == PNone.NO_VALUE)) {
-                throw raise.raiseIntegerInterpretationError(this);
-            }
-
-            Object result = methodLib.callUnboundMethodWithState(indexMethod, state, this);
-            if (resultProfile.profile(!isSubtype.execute(resultLib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
-            }
-            if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
-                VirtualFrame frame = null;
-                if (gotState.profile(state != null)) {
-                    frame = PArguments.frameForCall(state);
-                }
-                warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                ErrorMessages.P_RETURNED_NON_P,
-                                this, "__index__", "int", result, "int");
-            }
-            return result;
-        } finally {
-            gil.release(mustRelease);
+                    @Cached WarnNode warnNode) {
+        // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
+        // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
+        // and PythonAbstractNativeObject and dispatched polymorphically
+        Object indexMethod = lib.lookupAttributeOnType(this, __INDEX__);
+        if (noIndex.profile(indexMethod == PNone.NO_VALUE)) {
+            throw raise.raiseIntegerInterpretationError(this);
         }
+
+        Object result = methodLib.callUnboundMethodWithState(indexMethod, state, this);
+        if (resultProfile.profile(!isSubtype.execute(resultLib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+        }
+        if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                            ErrorMessages.P_RETURNED_NON_P,
+                            this, "__index__", "int", result, "int");
+        }
+        return result;
     }
 
     @ExportMessage
@@ -961,21 +931,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Cached CastToJavaStringNode castToJavaStringNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
+                    @Cached CastToJavaStringNode castToJavaStringNode) {
+        Object func = lib.lookupAttributeOnType(this, __FSPATH__);
+        if (func == PNone.NO_VALUE) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, this);
+        }
+        Object pathObject = methodLib.callUnboundMethodWithState(func, state, this);
         try {
-            Object func = lib.lookupAttributeOnType(this, __FSPATH__);
-            if (func == PNone.NO_VALUE) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, this);
-            }
-            Object pathObject = methodLib.callUnboundMethodWithState(func, state, this);
-            try {
-                return castToJavaStringNode.execute(pathObject);
-            } catch (CannotCastException e) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, this, pathObject);
-            }
-        } finally {
-            gil.release(mustRelease);
+            return castToJavaStringNode.execute(pathObject);
+        } catch (CannotCastException e) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, this, pathObject);
         }
     }
 
@@ -984,13 +949,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return asPString(lib, this, state, isSubtypeNode, resultLib, raise);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("raise") @Cached PRaiseNode raise) {
+        return asPString(lib, this, state, isSubtypeNode, resultLib, raise);
     }
 
     @Ignore
@@ -1012,45 +972,35 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
                     @Shared("intProfile") @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
-                    @Exclusive @Cached IsBuiltinClassProfile isAttrError, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object filenoFunc = lib.lookupAttributeWithState(this, state, FILENO);
-            if (filenoFunc == PNone.NO_VALUE) {
-                noFilenoMethodProfile.enter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
-            }
+                    @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
+        Object filenoFunc = lib.lookupAttributeWithState(this, state, FILENO);
+        if (filenoFunc == PNone.NO_VALUE) {
+            noFilenoMethodProfile.enter();
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
+        }
 
-            Object result = methodLib.callObjectWithState(filenoFunc, state);
-            if (isIntProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
-                try {
-                    return PInt.asFileDescriptor(castToJavaIntNode.execute(result), raiseNode);
-                } catch (PException e) {
-                    e.expect(PythonBuiltinClassType.TypeError, isAttrError);
-                    throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
-                }
-            } else {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
+        Object result = methodLib.callObjectWithState(filenoFunc, state);
+        if (isIntProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
+            try {
+                return PInt.asFileDescriptor(castToJavaIntNode.execute(result), raiseNode);
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.TypeError, isAttrError);
+                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
             }
-        } finally {
-            gil.release(mustRelease);
+        } else {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
         }
     }
 
     @ExportMessage
     public Object lookupAttributeInternal(ThreadState state, String name, boolean strict,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached LookupAttributeNode lookup, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            VirtualFrame frame = null;
-            if (gotState.profile(state != null)) {
-                frame = PArguments.frameForCall(state);
-            }
-            return lookup.execute(frame, this, name, strict);
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
         }
+        return lookup.execute(frame, this, name, strict);
     }
 
     @GenerateUncached
@@ -1094,13 +1044,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAttributeOnTypeInternal(String name, boolean strict,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Exclusive @Cached LookupAttributeOnTypeNode lookup, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return lookup.execute(lib.getLazyPythonClass(this), name, strict);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached LookupAttributeOnTypeNode lookup) {
+        return lookup.execute(lib.getLazyPythonClass(this), name, strict);
     }
 
     @GenerateUncached
@@ -1122,39 +1067,24 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object callObjectWithState(ThreadState state, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CallNode callNode, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            VirtualFrame frame = null;
-            if (gotState.profile(state != null)) {
-                frame = PArguments.frameForCall(state);
-            }
-            return callNode.execute(frame, this, arguments);
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached CallNode callNode) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
         }
+        return callNode.execute(frame, this, arguments);
     }
 
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Exclusive @Cached CallUnboundMethodNode call, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return call.execute(state, this, false, receiver, arguments);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached CallUnboundMethodNode call) {
+        return call.execute(state, this, false, receiver, arguments);
     }
 
     @ExportMessage
     public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
-                    @Exclusive @Cached CallUnboundMethodNode call, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return call.execute(state, this, true, receiver, arguments);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Exclusive @Cached CallUnboundMethodNode call) {
+        return call.execute(state, this, true, receiver, arguments);
     }
 
     @GenerateUncached
@@ -1191,27 +1121,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object lookupAndCallSpecialMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object method = plib.lookupAttributeOnTypeStrict(this, methodName);
-            return methodLib.callUnboundMethodWithState(method, state, this, arguments);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeOnTypeStrict(this, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, this, arguments);
     }
 
     @ExportMessage
     public Object lookupAndCallRegularMethodWithState(ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
-            return methodLib.callObjectWithState(method, state, arguments);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
+        return methodLib.callObjectWithState(method, state, arguments);
     }
 
     @ExportMessage
@@ -1220,29 +1140,24 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raise,
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
-                    @Exclusive @Cached ConditionProfile hasIntFunc, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object result = PNone.NO_VALUE;
-            if (hasIndexFunc.profile(lib.canBeIndex(this))) {
-                result = lib.asIndex(this);
+                    @Exclusive @Cached ConditionProfile hasIntFunc) {
+        Object result = PNone.NO_VALUE;
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            result = lib.asIndex(this);
+        }
+        if (result == PNone.NO_VALUE) {
+            Object func = lib.lookupAttributeOnType(this, __INT__);
+            if (hasIntFunc.profile(func != PNone.NO_VALUE)) {
+                result = methodLib.callUnboundMethodWithState(func, state, this);
             }
             if (result == PNone.NO_VALUE) {
-                Object func = lib.lookupAttributeOnType(this, __INT__);
-                if (hasIntFunc.profile(func != PNone.NO_VALUE)) {
-                    result = methodLib.callUnboundMethodWithState(func, state, this);
-                }
-                if (result == PNone.NO_VALUE) {
-                    throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, this);
-                }
+                throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, this);
             }
-            if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-                throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
-            }
-            return result;
-        } finally {
-            gil.release(mustRelease);
         }
+        if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
+            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
+        }
+        return result;
     }
 
     @ExportMessage
@@ -1251,21 +1166,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached ConditionProfile ignoreOverflow,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongLossyNode castToLong, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
+                    @Exclusive @Cached CastToJavaLongLossyNode castToLong) {
+        Object result = lib.asIndexWithState(this, state);
+        long longResult;
         try {
-            Object result = lib.asIndexWithState(this, state);
-            long longResult;
-            try {
-                longResult = castToLong.execute(result); // this is a lossy cast
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
-            }
-            return longToInt(longResult, overflow, ignoreOverflow, type, raise, result);
-        } finally {
-            gil.release(mustRelease);
+            longResult = castToLong.execute(result); // this is a lossy cast
+        } catch (CannotCastException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
         }
+        return longToInt(longResult, overflow, ignoreOverflow, type, raise, result);
     }
 
     private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, Object type, PRaiseNode raise, Object result) throws PException {
@@ -1293,31 +1203,26 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasIndexFunc,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
                     @Exclusive @Cached ConditionProfile hasFloatFunc,
-                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
+                    @Shared("raise") @Cached PRaiseNode raise) {
+        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
 
-            Object func = lib.lookupAttributeOnType(this, __FLOAT__);
-            if (hasFloatFunc.profile(func != PNone.NO_VALUE)) {
-                Object result = methodLib.callUnboundMethodWithState(func, state, this);
-                if (result != PNone.NO_VALUE) {
-                    try {
-                        return castToDouble.execute(result);
-                    } catch (CannotCastException e) {
-                        throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, this, "__float__", result);
-                    }
+        Object func = lib.lookupAttributeOnType(this, __FLOAT__);
+        if (hasFloatFunc.profile(func != PNone.NO_VALUE)) {
+            Object result = methodLib.callUnboundMethodWithState(func, state, this);
+            if (result != PNone.NO_VALUE) {
+                try {
+                    return castToDouble.execute(result);
+                } catch (CannotCastException e) {
+                    throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, this, "__float__", result);
                 }
             }
-
-            if (hasIndexFunc.profile(lib.canBeIndex(this))) {
-                return castToDouble.execute(lib.asIndex(this));
-            }
-
-            throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
-        } finally {
-            gil.release(mustRelease);
         }
+
+        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
+            return castToDouble.execute(lib.asIndex(this));
+        }
+
+        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
     }
 
     @ExportMessage
@@ -1325,26 +1230,21 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Exclusive @Cached CastToJavaLongExactNode castToLong,
-                    @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
+                    @Shared("raise") @Cached PRaiseNode raise) {
+        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
 
-            Object func = lib.lookupAttributeOnType(this, __INDEX__);
+        Object func = lib.lookupAttributeOnType(this, __INDEX__);
+        if (func == PNone.NO_VALUE) {
+            func = lib.lookupAttributeOnType(this, __INT__);
             if (func == PNone.NO_VALUE) {
-                func = lib.lookupAttributeOnType(this, __INT__);
-                if (func == PNone.NO_VALUE) {
-                    throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, this);
-                }
+                throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, this);
             }
-            Object result = methodLib.callUnboundMethodWithState(func, state, this);
-            try {
-                return castToLong.execute(result);
-            } catch (CannotCastException e) {
-                throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, this, "__int__", result);
-            }
-        } finally {
-            gil.release(mustRelease);
+        }
+        Object result = methodLib.callUnboundMethodWithState(func, state, this);
+        try {
+            return castToLong.execute(result);
+        } catch (CannotCastException e) {
+            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, this, "__int__", result);
         }
     }
 
@@ -2350,28 +2250,23 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                Object v = plib.getDelegatedValue(self);
-                Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(self, __ITER__));
-                if (iterMethod != PNone.NONE) {
-                    if (iterMethod != PNone.NO_VALUE) {
-                        Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
-                        if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
-                            return iterObj;
-                        }
-                    } else {
-                        Object getItemAttrObj = plib.lookupAttributeOnType(self, __GETITEM__);
-                        if (getItemAttrObj != PNone.NO_VALUE) {
-                            return factory.createSequenceIterator(v);
-                        }
+                        @Shared("raise") @Cached PRaiseNode raise) {
+            Object v = plib.getDelegatedValue(self);
+            Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(self, __ITER__));
+            if (iterMethod != PNone.NONE) {
+                if (iterMethod != PNone.NO_VALUE) {
+                    Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
+                    if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
+                        return iterObj;
+                    }
+                } else {
+                    Object getItemAttrObj = plib.lookupAttributeOnType(self, __GETITEM__);
+                    if (getItemAttrObj != PNone.NO_VALUE) {
+                        return factory.createSequenceIterator(v);
                     }
                 }
-                throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, self);
-            } finally {
-                gil.release(mustRelease);
             }
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, self);
         }
     }
 
