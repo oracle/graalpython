@@ -230,7 +230,7 @@ public final class PythonContext {
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
-    private ReentrantLock globalInterpreterLock = new ReentrantLock();
+    private final ReentrantLock globalInterpreterLock = new ReentrantLock();
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
