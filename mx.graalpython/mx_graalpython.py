@@ -591,7 +591,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
     return testfiles
 
 
-def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None):
+def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=False, exclude=None, env=None, use_pytest=False):
     # ensure that the test distribution is up-to-date
     mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
@@ -616,8 +616,10 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = _list_graalpython_unittests(paths, exclude)
-
-    args += [_graalpytest_driver(), "-v"]
+    if use_pytest:
+        args += ["-m", "pytest", "-v"]
+    else:
+        args += [_graalpytest_driver(), "-v"]
 
     agent_args = ' '.join(shlex.quote(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
     if agent_args:
@@ -657,9 +659,9 @@ def run_hpy_unittests(python_binary, args=None):
         prefix = str(d)
         env.update(PYTHONUSERBASE=prefix)
         mx.log("Ensure 'setuptools' is installed")
-        mx.run([python_binary] + args + ["-m", "ginstall", "install", "--prefix=" + prefix, "setuptools"], nonZeroIsFatal=True, env=env)
+        mx.run([python_binary] + args + ["-m", "ginstall", "install", "--prefix=" + prefix, "pytest"], nonZeroIsFatal=True, env=env)
 
-        return run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()], env=env)
+        return run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()], env=env, use_pytest=True)
 
 
 def run_tagged_unittests(python_binary, env=None):

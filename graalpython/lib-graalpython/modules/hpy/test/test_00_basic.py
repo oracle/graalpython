@@ -190,7 +190,7 @@ class TestBasic(HPyTest):
             mod.f(20)
         assert str(exc.value) == 'hello world'
 
-    @pytest.mark.xfail
+    @pytest.mark.skip
     def test_builtin_handles(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
