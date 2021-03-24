@@ -584,12 +584,15 @@ int32_t call_getsockname_inet(int32_t sockfd, int32_t *members) {
     struct sockaddr_in sa;
     socklen_t l = sizeof(sa);
     int res = getsockname(sockfd, (struct sockaddr *) &sa, &l);
-    if (res != -1) {
-        assert(l == sizeof(sa) && sa.sin_family != AF_INET);
-        members[0] = ntohs(sa.sin_port);
-        members[1] = ntohl(sa.sin_addr.s_addr);
+    if (res != 0) {
+        return -1;
     }
-    return res;
+    if (l != sizeof(sa) || sa.sin_family != AF_INET) {
+        return -2;
+    }
+    members[0] = ntohs(sa.sin_port);
+    members[1] = ntohl(sa.sin_addr.s_addr);
+    return 0;
 }
 
 //TODO len should be size_t, retval should be ssize_t
@@ -621,11 +624,14 @@ int32_t call_recvfrom_inet(int32_t sockfd, void *buf, int32_t len, int32_t flags
     struct sockaddr_in sa;
     socklen_t l = sizeof(sa);
     int res = recvfrom(sockfd, buf, len, flags, (struct sockaddr *) &sa, &l);
-    if (res != -1) {
-        assert(l == sizeof(sa) && sa.sin_family != AF_INET);
-        members[0] = ntohs(sa.sin_port);
-        members[1] = ntohl(sa.sin_addr.s_addr);
+    if (res < 0) {
+        return -1;
     }
+    if (l != sizeof(sa) || sa.sin_family != AF_INET) {
+        return -2;
+    }
+    members[0] = ntohs(sa.sin_port);
+    members[1] = ntohl(sa.sin_addr.s_addr);
     return res;
 }
 

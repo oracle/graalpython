@@ -1,5 +1,7 @@
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
+
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.library.GenerateLibrary;
@@ -10,32 +12,76 @@ import com.oracle.truffle.api.library.LibraryFactory;
 public abstract class SocketLibrary extends Library {
 
     /**
-     * There are two kinds of socket addresses - all subclasses except {@link SockAddrStorage} are
-     * represented by POJOs (shared by all backends) and each corresponds to a particular socket
-     * family. {@link SockAddrStorage} can represent an address of any socket family. It is also
-     * already encoded for immediate use by the given backend, making it suitable for repeated use
-     * or when the socket family is not known. For example, a UDP server that responds to an
-     * incoming packet by sending multiple packets might want to use it and does not even need to
-     * know whether it is using IPv4 or IPv6. The disadvantage of {@link SockAddrStorage} is that it
-     * needs to be explicitly deallocated since it is stored in the native heap (in the NFI
-     * backend). Using the concrete addresses is preferred when the socket family is known and the
-     * address is used just once, since the native allocation can be avoided.
+     * Represents an address of a socket.
+     *
+     * Addresses are either specific to a particular socket family (subclasses of
+     * {@link FamilySpecificSockAddr}) or universal ({@link UniversalSockAddr}). It is possible to
+     * convert any family-specific address to a universal address. The conversion in opposite
+     * direction is possible only if the target family-specific type matches the socket family of
+     * the address stored in the source {@link UniversalSockAddr} instance.
      */
     public interface SockAddr {
     }
 
+    /**
+     * Base class for addresses specific to a particular socket family.
+     *
+     * The subclasses are simple POJOs whose definitions are common to all backends. A
+     * family-specific address is convenient to use (compared to {@link UniversalSockAddr}), but the
+     * backend needs to convert it to its internal representation every time it is used. The use of
+     * family-specific addresses is appropriate when the socket family is known and when the address
+     * is used just a couple of times. This class corresponds to POSIX {@code struct sockaddr}.
+     */
+    public static abstract class FamilySpecificSockAddr implements SockAddr {
+        private final int family;
+
+        protected FamilySpecificSockAddr(int family) {
+            this.family = family;
+        }
+
+        public int getFamily() {
+            return family;
+        }
+    }
+
+    /**
+     * A tagged union of all address types which is capable of holding an address of any socket
+     * family.
+     *
+     * An universal socket address keeps the value in a representation used internally by the given
+     * backend, therefore implementations of this interface are backend-specific (unlike
+     * {@link FamilySpecificSockAddr} subclasses). This makes them suitable in situations where the
+     * address needs to be used more than once or when the socket family is not known. For example,
+     * a UDP server that responds to an incoming packet by sending multiple packets might want to
+     * use universal address (and does not even need to know whether it is using IPv4 or IPv6). The
+     * disadvantage of {@link UniversalSockAddr} is that it needs to be explicitly deallocated since
+     * it is stored in the native heap (in the NFI backend). This interface corresponds to POSIX
+     * {@code struct sockaddr_storage}.
+     */
+    public interface UniversalSockAddr extends SockAddr {
+    }
+
+    /**
+     * Represents an address for IPv4 sockets (the {@link PosixConstants#AF_INET} socket family).
+     *
+     * This is a higher level equivalent of POSIX {@code struct sockaddr_in} - the values are kept
+     * in host byte order, conversion to network order ({@code htons/htonl}) is done automatically
+     * by the backend.
+     */
     @ValueType
-    public static final class SockAddrIn implements SockAddr {
+    public static final class Inet4SockAddr extends FamilySpecificSockAddr {
         private int port;           // host order, 0 - 65535
         private int address;        // host order, e.g. INADDR_LOOPBACK
 
-        public SockAddrIn(int port, int address) {
+        public Inet4SockAddr(int port, int address) {
+            super(AF_INET.value);
             assert port >= 0 && port <= 65535;
             this.port = port;
             this.address = address;
         }
 
-        public SockAddrIn() {
+        public Inet4SockAddr() {
+            super(AF_INET.value);
         }
 
         public int getPort() {
@@ -56,9 +102,6 @@ public abstract class SocketLibrary extends Library {
         }
     }
 
-    public interface SockAddrStorage extends SockAddr {
-    }
-
     public abstract int socket(Object receiver, int domain, int type, int protocol) throws PosixException;
 
     // addr is an input parameter
@@ -71,44 +114,44 @@ public abstract class SocketLibrary extends Library {
     // destAddr is an input parameter
     public abstract int sendto(Object receiver, int sockfd, byte[] buf, int len, int flags, SockAddr destAddr) throws PosixException;
 
-    // Unlike POSIX recvfrom(), we don't support srcAddrStorage == null. Use plain recv instead.
-    // srcAddr is an input parameter
+    // Unlike POSIX recvfrom(), we don't support srcAddr == null. Use plain recv instead.
+    // srcAddr is an output parameter
+    // throws IllegalArgumentException if the type of srcAddr does not match the actual socket family of the packet's source address, in which case the state of the socket and buf is unspecified.
     public abstract int recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags, SockAddr srcAddr) throws PosixException;
 
     /**
-     * Allocates a new {@link SockAddrStorage} and sets its family to
+     * Allocates a new {@link UniversalSockAddr} and sets its family to
      * {@link PosixConstants#AF_UNSPEC}. It can be either filled by
-     * {@link #fillSockAddrStorage(Object, SockAddrStorage, SockAddr)} or used in a call that
+     * {@link #fillUniversalSockAddr(Object, UniversalSockAddr, SockAddr)} or used in a call that
      * returns an address, such as {@link #getsockname(Object, int, SockAddr)} or
      * {@link #recvfrom(Object, int, byte[], int, int, SockAddr)}. The returned object must be
      * explicitly deallocated exactly once by using
-     * {@link #freeSockAddrStorage(Object, SockAddrStorage)}.
+     * {@link #freeUniversalSockAddr(Object, UniversalSockAddr)}.
      */
-    public abstract SockAddrStorage allocSockAddrStorage(Object receiver);
+    public abstract UniversalSockAddr allocUniversalSockAddr(Object receiver);
 
-    // TODO move the following messages to a TruffleLibrary dedicated to SockAddrStorage
+    // TODO move the following messages to a TruffleLibrary dedicated to UniversalSockAddr
 
-    public abstract void freeSockAddrStorage(Object receiver, SockAddrStorage sockAddrStorage);
+    public abstract void freeUniversalSockAddr(Object receiver, UniversalSockAddr universalSockAddr);
 
     /**
      * Returns the socket family of the address.
      */
-    public abstract int getSockAddrStorageFamily(Object receiver, SockAddrStorage sockAddrStorage);
+    public abstract int getUniversalSockAddrFamily(Object receiver, UniversalSockAddr universalSockAddr);
 
     /**
-     * Fills {@code sockAddrStorage} by the address represented by {@code src}. Note that
-     * {@code src} can itself be an instance of {@link SockAddrStorage}, in which case a direct copy
-     * is made.
+     * Fills {@code universalSockAddr} by the address represented by {@code src}. Note that
+     * {@code src} can itself be an instance of {@link UniversalSockAddr}, in which case a direct
+     * copy is made.
      */
-    public abstract void fillSockAddrStorage(Object receiver, SockAddrStorage sockAddrStorage, SockAddr src);
+    public abstract void fillUniversalSockAddr(Object receiver, UniversalSockAddr universalSockAddr, SockAddr src);
 
     /**
-     * Converts a {@link SockAddrStorage} into a {@link SockAddrIn} instance. This is only possible
-     * if the socket family of the address is {@link PosixConstants#AF_INET} (otherwise an assertion
-     * is raised and garbage returned).
-     * TODO are assertions the right way to report contract breaches?
+     * Converts a {@link UniversalSockAddr} into a {@link Inet4SockAddr} instance.
+     *
+     * @throws IllegalArgumentException if the socket family of the address is not {@link PosixConstants#AF_INET}
      */
-    public abstract SockAddrIn sockAddrStorageAsSockAddrIn(Object receiver, SockAddrStorage sockAddrStorage);
+    public abstract Inet4SockAddr universalSockAddrAsInet4SockAddr(Object receiver, UniversalSockAddr universalSockAddr);
 
     static final LibraryFactory<SocketLibrary> FACTORY = LibraryFactory.resolve(SocketLibrary.class);
 

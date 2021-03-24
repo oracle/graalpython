@@ -52,7 +52,6 @@ import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.reflect.Field;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
@@ -67,8 +66,8 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.SocketLibrary.SockAddrIn;
-import com.oracle.graal.python.runtime.SocketLibrary.SockAddrStorage;
+import com.oracle.graal.python.runtime.SocketLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddr;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -87,7 +86,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
@@ -1314,14 +1312,6 @@ public final class NFIPosixSupport extends PosixSupport {
         }
     }
 
-    private static ByteArraySupport nativeByteArraySupport() {
-        if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
-            return ByteArraySupport.bigEndian();
-        } else {
-            return ByteArraySupport.littleEndian();
-        }
-    }
-
     @ExportMessage
     public int socket(int domain, int type, int protocol,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
@@ -1335,7 +1325,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public static class Bind {
         @Specialization
-        static void inet(NFIPosixSupport receiver, int sockfd, SockAddrIn addr,
+        static void inet4(NFIPosixSupport receiver, int sockfd, Inet4SockAddr addr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
             int result = invokeNode.callInt(receiver, PosixNativeFunction.call_bind_inet, sockfd, addr.getPort(), addr.getAddress());
             if (result == -1) {
@@ -1344,7 +1334,7 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @Specialization
-        static void generic(NFIPosixSupport receiver, int sockfd, SockAddrStorageImpl addr,
+        static void generic(NFIPosixSupport receiver, int sockfd, UniversalSockAddrImpl addr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
             int result = invokeNode.callInt(receiver, PosixNativeFunction.call_bind, sockfd, addr.getPtr(), addr.getLen());
             if (result == -1) {
@@ -1357,10 +1347,13 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public static class Getsockname {
         @Specialization
-        static void inet(NFIPosixSupport receiver, int sockfd, SockAddrIn addr,
+        static void inet4(NFIPosixSupport receiver, int sockfd, Inet4SockAddr addr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
             int[] members = new int[2];
             int result = invokeNode.callInt(receiver, PosixNativeFunction.call_getsockname_inet, sockfd, receiver.wrap(members));
+            if (result == -2) {
+                throw new IllegalArgumentException("AF_INET address expected");
+            }
             if (result == -1) {
                 throw receiver.getErrnoAndThrowPosixException(invokeNode);
             }
@@ -1369,20 +1362,20 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @Specialization
-        static void generic(NFIPosixSupport receiver, int sockfd, SockAddrStorageImpl addr,
+        static void generic(NFIPosixSupport receiver, int sockfd, UniversalSockAddrImpl addr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
             int result = invokeNode.callInt(receiver, PosixNativeFunction.call_getsockname, sockfd, addr.getPtr(), receiver.wrap(addr.lenAndFamily));
             if (result == -1) {
                 throw receiver.getErrnoAndThrowPosixException(invokeNode);
             }
-            assert addr.getLen() <= SIZEOF_STRUCT_SOCKADDR_STORAGE.value;
+            assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
         }
     }
 
     @ExportMessage
     public static class Sendto {
         @Specialization
-        static int inet(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, SockAddrIn destAddr,
+        static int inet4(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, Inet4SockAddr destAddr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
             int result = invokeNode.callInt(receiver, PosixNativeFunction.call_sendto_inet, sockfd, receiver.wrap(buf), len, flags, destAddr.getPort(), destAddr.getAddress());
             if (result == -1) {
@@ -1392,7 +1385,7 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @Specialization
-        static int generic(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, SockAddrStorageImpl destAddr,
+        static int generic(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddrImpl destAddr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
             int result = invokeNode.callInt(receiver, PosixNativeFunction.call_sendto, sockfd, receiver.wrap(buf), len, flags, destAddr.getPtr(), destAddr.getLen());
             if (result == -1) {
@@ -1405,10 +1398,13 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public static class Recvfrom {
         @Specialization
-        static int inet(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, SockAddrIn srcAddr,
+        static int inet4(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, Inet4SockAddr srcAddr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
             int[] members = new int[2];
             int result = invokeNode.callInt(receiver, PosixNativeFunction.call_recvfrom_inet, sockfd, receiver.wrap(buf), len, flags, receiver.wrap(members));
+            if (result == -2) {
+                throw new IllegalArgumentException("AF_INET address expected");
+            }
             if (result == -1) {
                 throw receiver.getErrnoAndThrowPosixException(invokeNode);
             }
@@ -1418,69 +1414,74 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @Specialization
-        static int generic(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, SockAddrStorageImpl srcAddr,
+        static int generic(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddrImpl srcAddr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
             int result = invokeNode.callInt(receiver, PosixNativeFunction.call_recvfrom, sockfd, receiver.wrap(buf), len, flags, srcAddr.getPtr(), receiver.wrap(srcAddr.lenAndFamily));
             if (result == -1) {
                 throw receiver.getErrnoAndThrowPosixException(invokeNode);
             }
-            assert srcAddr.getLen() <= SIZEOF_STRUCT_SOCKADDR_STORAGE.value;
+            assert srcAddr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
             return result;
         }
     }
 
     @ExportMessage
-    public SockAddrStorage allocSockAddrStorage() {
-        return new SockAddrStorageImpl();
+    public UniversalSockAddr allocUniversalSockAddr() {
+        return new UniversalSockAddrImpl();
     }
 
     @ExportMessage
-    public void freeSockAddrStorage(SockAddrStorage sockAddrStorage) {
-        ((SockAddrStorageImpl) sockAddrStorage).release();
+    public void freeUniversalSockAddr(UniversalSockAddr universalSockAddr) {
+        ((UniversalSockAddrImpl) universalSockAddr).release();
     }
 
     @ExportMessage
-    public int getSockAddrStorageFamily(SockAddrStorage sockAddrStorage) {
-        SockAddrStorageImpl addr = (SockAddrStorageImpl) sockAddrStorage;
+    public int getUniversalSockAddrFamily(UniversalSockAddr universalSockAddr) {
+        UniversalSockAddrImpl addr = (UniversalSockAddrImpl) universalSockAddr;
         return addr.getFamily();
     }
 
     @ExportMessage
-    public static class FillSockAddrStorage {
+    public static class FillUniversalSockAddr {
         @Specialization
-        static void inet(NFIPosixSupport receiver, SockAddrStorage sockAddrStorage, SockAddrIn src,
+        static void inet4(NFIPosixSupport receiver, UniversalSockAddr universalSockAddr, Inet4SockAddr src,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-            SockAddrStorageImpl dest = (SockAddrStorageImpl) sockAddrStorage;
+            UniversalSockAddrImpl dest = (UniversalSockAddrImpl) universalSockAddr;
             invokeNode.call(receiver, PosixNativeFunction.set_sockaddr_in_members, dest.getPtr(), src.getPort(), src.getAddress());
             dest.setLenAndFamily(SIZEOF_STRUCT_SOCKADDR_IN.value, AF_INET.value);
         }
 
         @Specialization
-        static void copy(NFIPosixSupport receiver, SockAddrStorage sockAddrStorage, SockAddrStorageImpl src) {
-            SockAddrStorageImpl dest = (SockAddrStorageImpl) sockAddrStorage;
-            UNSAFE.copyMemory(src.ptr, dest.ptr, SIZEOF_STRUCT_SOCKADDR_STORAGE.value);
+        static void copy(@SuppressWarnings("unused") NFIPosixSupport receiver, UniversalSockAddr universalSockAddr, UniversalSockAddrImpl src) {
+            UniversalSockAddrImpl dest = (UniversalSockAddrImpl) universalSockAddr;
+            UNSAFE.copyMemory(src.ptr, dest.ptr, UniversalSockAddrImpl.MAX_SIZE);
             dest.lenAndFamily[0] = src.lenAndFamily[0];
             dest.lenAndFamily[1] = src.lenAndFamily[1];
         }
     }
 
     @ExportMessage
-    public SockAddrIn sockAddrStorageAsSockAddrIn(SockAddrStorage sockAddrStorage,
+    public Inet4SockAddr universalSockAddrAsInet4SockAddr(UniversalSockAddr universalSockAddr,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        SockAddrStorageImpl addr = (SockAddrStorageImpl) sockAddrStorage;
-        assert addr.getFamily() == AF_INET.value;
+        UniversalSockAddrImpl addr = (UniversalSockAddrImpl) universalSockAddr;
+        if (addr.getFamily() != AF_INET.value) {
+            throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
+        }
         assert addr.getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
         int[] members = new int[2];
         invokeNode.call(this, PosixNativeFunction.get_sockaddr_in_members, addr.getPtr(), wrap(members));
-        return new SockAddrIn(members[0], members[1]);
+        return new Inet4SockAddr(members[0], members[1]);
     }
 
-    protected static class SockAddrStorageImpl implements SockAddrStorage {
+    protected static class UniversalSockAddrImpl implements UniversalSockAddr {
+
+        static final int MAX_SIZE = SIZEOF_STRUCT_SOCKADDR_STORAGE.value;
+
         private long ptr;
         private final int[] lenAndFamily = new int[]{0, AF_UNSPEC.value};
 
-        SockAddrStorageImpl() {
-            ptr = UNSAFE.allocateMemory(SIZEOF_STRUCT_SOCKADDR_STORAGE.value);
+        UniversalSockAddrImpl() {
+            ptr = UNSAFE.allocateMemory(MAX_SIZE);
         }
 
         void release() {
@@ -1512,7 +1513,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         private void checkReleased() {
             if (ptr == 0) {
-                throw shouldNotReachHere("SockAddrStorage has already been released");
+                throw shouldNotReachHere("UniversalSockAddr has already been released");
             }
         }
     }
