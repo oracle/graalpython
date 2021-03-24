@@ -43,9 +43,7 @@ ModuleRootNode Name: <module 'while06'> SourceSection: [0,110]`def gen(x):↵   
                         GeneratorBlockNode SourceSection: None
                           IfNode SourceSection: [29,58]`if x == 1:↵       br...`
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [32,38]`x == 1`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [32,38]`x == 1`
                                 ReadGeneratorFrameVariableNodeGen SourceSection: [32,33]`x`
                                   Frame: [0,x,Illegal]
                                 IntegerLiteralNode SourceSection: [37,38]`1`
@@ -54,9 +52,7 @@ ModuleRootNode Name: <module 'while06'> SourceSection: [0,110]`def gen(x):↵   
                             BlockNode SourceSection: None
                           IfNode SourceSection: [58,90]`if x == 2:↵       co...`
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [61,67]`x == 2`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [61,67]`x == 2`
                                 ReadGeneratorFrameVariableNodeGen SourceSection: [61,62]`x`
                                   Frame: [0,x,Illegal]
                                 IntegerLiteralNode SourceSection: [66,67]`2`

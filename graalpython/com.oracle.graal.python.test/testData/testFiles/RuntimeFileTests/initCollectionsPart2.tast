@@ -1532,9 +1532,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           Frame: [6,<>temp6,Illegal]
                                     IfNode SourceSection: [4263,4369]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [4266,4279]`len(args) > 1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [4266,4279]`len(args) > 1`
                                           PythonCallUnary SourceSection: [4266,4275]`len(args)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4266,4269]`len`
@@ -2463,9 +2461,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ObjectLiteralNode SourceSection: [6361,6365]`None`
                                       IfNode SourceSection: [6439,6679]`if type(initlist) ==...`
                                         YesNodeGen SourceSection: None
-                                          BinaryComparisonNodeGen SourceSection: [6442,6475]`type(initlist) == ty...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __eq__
+                                          EqNodeGen SourceSection: [6442,6475]`type(initlist) == ty...`
                                             PythonCallUnary SourceSection: [6442,6456]`type(initlist)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [6442,6446]`type`
@@ -2659,9 +2655,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [6758,6789]`self.data <  self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __lt__
+                                        LtNodeGen SourceSection: [6758,6789]`self.data <  self.__...`
                                           GetAttributeNode SourceSection: [6758,6767]`self.data`
                                             GetFixedAttributeNode SourceSection: None
                                               Key: data
@@ -2725,9 +2719,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [6826,6857]`self.data <= self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __le__
+                                        LeNodeGen SourceSection: [6826,6857]`self.data <= self.__...`
                                           GetAttributeNode SourceSection: [6826,6835]`self.data`
                                             GetFixedAttributeNode SourceSection: None
                                               Key: data
@@ -2791,9 +2783,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [6894,6925]`self.data == self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __eq__
+                                        EqNodeGen SourceSection: [6894,6925]`self.data == self.__...`
                                           GetAttributeNode SourceSection: [6894,6903]`self.data`
                                             GetFixedAttributeNode SourceSection: None
                                               Key: data
@@ -2857,9 +2847,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [6962,6993]`self.data >  self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [6962,6993]`self.data >  self.__...`
                                           GetAttributeNode SourceSection: [6962,6971]`self.data`
                                             GetFixedAttributeNode SourceSection: None
                                               Key: data
@@ -2923,9 +2911,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [7030,7061]`self.data >= self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __ge__
+                                        GeNodeGen SourceSection: [7030,7061]`self.data >= self.__...`
                                           GetAttributeNode SourceSection: [7030,7039]`self.data`
                                             GetFixedAttributeNode SourceSection: None
                                               Key: data
@@ -5201,9 +5187,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [9977,10001]`self.data == string....`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __eq__
+                                              EqNodeGen SourceSection: [9977,10001]`self.data == string....`
                                                 GetAttributeNode SourceSection: [9977,9986]`self.data`
                                                   GetFixedAttributeNode SourceSection: None
                                                     Key: data
@@ -5227,9 +5211,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10017,10036]`self.data == string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __eq__
+                                            EqNodeGen SourceSection: [10017,10036]`self.data == string`
                                               GetAttributeNode SourceSection: [10017,10026]`self.data`
                                                 GetFixedAttributeNode SourceSection: None
                                                   Key: data
@@ -5300,9 +5282,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [10129,10152]`self.data < string.d...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __lt__
+                                              LtNodeGen SourceSection: [10129,10152]`self.data < string.d...`
                                                 GetAttributeNode SourceSection: [10129,10138]`self.data`
                                                   GetFixedAttributeNode SourceSection: None
                                                     Key: data
@@ -5326,9 +5306,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10168,10186]`self.data < string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __lt__
+                                            LtNodeGen SourceSection: [10168,10186]`self.data < string`
                                               GetAttributeNode SourceSection: [10168,10177]`self.data`
                                                 GetFixedAttributeNode SourceSection: None
                                                   Key: data
@@ -5399,9 +5377,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [10279,10303]`self.data <= string....`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __le__
+                                              LeNodeGen SourceSection: [10279,10303]`self.data <= string....`
                                                 GetAttributeNode SourceSection: [10279,10288]`self.data`
                                                   GetFixedAttributeNode SourceSection: None
                                                     Key: data
@@ -5425,9 +5401,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10319,10338]`self.data <= string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __le__
+                                            LeNodeGen SourceSection: [10319,10338]`self.data <= string`
                                               GetAttributeNode SourceSection: [10319,10328]`self.data`
                                                 GetFixedAttributeNode SourceSection: None
                                                   Key: data
@@ -5498,9 +5472,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [10431,10454]`self.data > string.d...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __gt__
+                                              GtNodeGen SourceSection: [10431,10454]`self.data > string.d...`
                                                 GetAttributeNode SourceSection: [10431,10440]`self.data`
                                                   GetFixedAttributeNode SourceSection: None
                                                     Key: data
@@ -5524,9 +5496,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10470,10488]`self.data > string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __gt__
+                                            GtNodeGen SourceSection: [10470,10488]`self.data > string`
                                               GetAttributeNode SourceSection: [10470,10479]`self.data`
                                                 GetFixedAttributeNode SourceSection: None
                                                   Key: data
@@ -5597,9 +5567,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [10581,10605]`self.data >= string....`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __ge__
+                                              GeNodeGen SourceSection: [10581,10605]`self.data >= string....`
                                                 GetAttributeNode SourceSection: [10581,10590]`self.data`
                                                   GetFixedAttributeNode SourceSection: None
                                                     Key: data
@@ -5623,9 +5591,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10621,10640]`self.data >= string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __ge__
+                                            GeNodeGen SourceSection: [10621,10640]`self.data >= string`
                                               GetAttributeNode SourceSection: [10621,10630]`self.data`
                                                 GetFixedAttributeNode SourceSection: None
                                                   Key: data

@@ -8,9 +8,7 @@ ModuleRootNode Name: <module 'comparision04'> SourceSection: [0,12]`x < y() <= z
     AndNode SourceSection: [0,12]`x < y() <= z`
       ExpressionWithSideEffect SourceSection: None
         Expression:
-          BinaryComparisonNodeGen SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __lt__
+          LtNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [0,1]`x`
               Identifier: x
               IsBuiltinClassProfile SourceSection: None
@@ -27,9 +25,7 @@ ModuleRootNode Name: <module 'comparision04'> SourceSection: [0,12]`x < y() <= z
                 Identifier: y
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-      BinaryComparisonNodeGen SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __le__
+      LeNodeGen SourceSection: None
         ReadLocalVariableNodeGen SourceSection: None
           Frame: [0,<>temp0,Illegal]
         ReadNameNodeGen SourceSection: [11,12]`z`

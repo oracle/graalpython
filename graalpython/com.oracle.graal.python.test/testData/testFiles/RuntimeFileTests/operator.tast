@@ -119,9 +119,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryComparisonNodeGen SourceSection: [1126,1131]`a < b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __lt__
+                        LtNodeGen SourceSection: [1126,1131]`a < b`
                           ReadLocalVariableNodeGen SourceSection: [1126,1127]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [1130,1131]`b`
@@ -170,9 +168,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryComparisonNodeGen SourceSection: [1180,1186]`a <= b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __le__
+                        LeNodeGen SourceSection: [1180,1186]`a <= b`
                           ReadLocalVariableNodeGen SourceSection: [1180,1181]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [1185,1186]`b`
@@ -221,9 +217,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryComparisonNodeGen SourceSection: [1235,1241]`a == b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [1235,1241]`a == b`
                           ReadLocalVariableNodeGen SourceSection: [1235,1236]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [1240,1241]`b`
@@ -272,9 +266,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryComparisonNodeGen SourceSection: [1290,1296]`a != b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __ne__
+                        NeNodeGen SourceSection: [1290,1296]`a != b`
                           ReadLocalVariableNodeGen SourceSection: [1290,1291]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [1295,1296]`b`
@@ -323,9 +315,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryComparisonNodeGen SourceSection: [1345,1351]`a >= b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __ge__
+                        GeNodeGen SourceSection: [1345,1351]`a >= b`
                           ReadLocalVariableNodeGen SourceSection: [1345,1346]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [1350,1351]`b`
@@ -374,9 +364,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryComparisonNodeGen SourceSection: [1399,1404]`a > b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __gt__
+                        GtNodeGen SourceSection: [1399,1404]`a > b`
                           ReadLocalVariableNodeGen SourceSection: [1399,1400]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [1403,1404]`b`
@@ -1643,9 +1631,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               Frame: [3,i,Illegal]
                           IfNode SourceSection: [3330,3368]`if i == b:↵         ...`
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [3333,3339]`i == b`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [3333,3339]`i == b`
                                 ReadLocalVariableNodeGen SourceSection: [3333,3334]`i`
                                   Frame: [3,i,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: [3338,3339]`b`
@@ -1827,9 +1813,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Frame: [6,<>temp6,Illegal]
                           IfNode SourceSection: [3592,3628]`if j == b:↵         ...`
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [3595,3601]`j == b`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [3595,3601]`j == b`
                                 ReadLocalVariableNodeGen SourceSection: [3595,3596]`j`
                                   Frame: [3,j,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: [3600,3601]`b`
@@ -2129,9 +2113,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       BlockNode SourceSection: None
                     IfNode SourceSection: [4744,4843]`if val < 0:↵        ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [4747,4754]`val < 0`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __lt__
+                        LtNodeGen SourceSection: [4747,4754]`val < 0`
                           ReadLocalVariableNodeGen SourceSection: [4747,4750]`val`
                             Frame: [4,val,Illegal]
                           IntegerLiteralNode SourceSection: [4753,4754]`0`
@@ -3360,9 +3342,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   FunctionBodyNode SourceSection: [7661,8005]`if len(args) < 2:↵  ...`
                                     IfNode SourceSection: [7661,7798]`if len(args) < 2:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [7664,7677]`len(args) < 2`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __lt__
+                                        LtNodeGen SourceSection: [7664,7677]`len(args) < 2`
                                           PythonCallUnary SourceSection: [7664,7673]`len(args)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7664,7667]`len`

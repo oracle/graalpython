@@ -849,9 +849,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [5,<>temp5,Illegal]
                                     IfNode SourceSection: [4207,4313]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [4210,4223]`len(args) > 1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [4210,4223]`len(args) > 1`
                                           PythonCallUnary SourceSection: [4210,4219]`len(args)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4210,4213]`len`
@@ -3534,9 +3532,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Frame: [4,defaults,Illegal]
                         IfNode SourceSection: [13627,13744]`if len(defaults) > l...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [13630,13662]`len(defaults) > len(...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __gt__
+                            GtNodeGen SourceSection: [13630,13662]`len(defaults) > len(...`
                               PythonCallUnary SourceSection: [13630,13643]`len(defaults)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13630,13633]`len`
@@ -3876,9 +3872,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [1,iterable,Illegal]
                                     IfNode SourceSection: [14807,14929]`if _len(result) != n...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [14810,14836]`_len(result) != num_...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __ne__
+                                        NeNodeGen SourceSection: [14810,14836]`_len(result) != num_...`
                                           PythonCallUnary SourceSection: [14810,14822]`_len(result)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: [14810,14814]`_len`
@@ -4671,9 +4665,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [5,<>temp5,Illegal]
                                         IfNode SourceSection: [20883,20989]`if len(args) > 1:↵  ...`
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [20886,20899]`len(args) > 1`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __gt__
+                                            GtNodeGen SourceSection: [20886,20899]`len(args) > 1`
                                               PythonCallUnary SourceSection: [20886,20895]`len(args)`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20886,20889]`len`
@@ -5090,9 +5082,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [9,<>temp9,Illegal]
                                         IfNode SourceSection: [24050,24156]`if len(args) > 1:↵  ...`
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [24053,24066]`len(args) > 1`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __gt__
+                                            GtNodeGen SourceSection: [24053,24066]`len(args) > 1`
                                               PythonCallUnary SourceSection: [24053,24062]`len(args)`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [24053,24056]`len`
@@ -5339,9 +5329,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [8,<>temp8,Illegal]
                                         IfNode SourceSection: [25623,25729]`if len(args) > 1:↵  ...`
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [25626,25639]`len(args) > 1`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __gt__
+                                            GtNodeGen SourceSection: [25626,25639]`len(args) > 1`
                                               PythonCallUnary SourceSection: [25626,25635]`len(args)`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [25626,25629]`len`
@@ -5947,9 +5935,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         Frame: [4,elem,Illegal]
                                                 IfNode SourceSection: [27628,27693]`if newcount > 0:↵   ...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [27631,27643]`newcount > 0`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __gt__
+                                                    GtNodeGen SourceSection: [27631,27643]`newcount > 0`
                                                       ReadLocalVariableNodeGen SourceSection: [27631,27639]`newcount`
                                                         Frame: [3,newcount,Illegal]
                                                       IntegerLiteralNode SourceSection: [27642,27643]`0`
@@ -6002,9 +5988,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           Frame: [4,elem,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: [27754,27758]`self`
                                                           Frame: [0,self,Illegal]
-                                                    BinaryComparisonNodeGen SourceSection: [27763,27772]`count > 0`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __gt__
+                                                    GtNodeGen SourceSection: [27763,27772]`count > 0`
                                                       ReadLocalVariableNodeGen SourceSection: [27763,27768]`count`
                                                         Frame: [5,count,Illegal]
                                                       IntegerLiteralNode SourceSection: [27771,27772]`0`
@@ -6139,9 +6123,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         Frame: [4,elem,Illegal]
                                                 IfNode SourceSection: [28231,28296]`if newcount > 0:↵   ...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [28234,28246]`newcount > 0`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __gt__
+                                                    GtNodeGen SourceSection: [28234,28246]`newcount > 0`
                                                       ReadLocalVariableNodeGen SourceSection: [28234,28242]`newcount`
                                                         Frame: [3,newcount,Illegal]
                                                       IntegerLiteralNode SourceSection: [28245,28246]`0`
@@ -6194,9 +6176,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           Frame: [4,elem,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: [28357,28361]`self`
                                                           Frame: [0,self,Illegal]
-                                                    BinaryComparisonNodeGen SourceSection: [28366,28375]`count < 0`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __lt__
+                                                    LtNodeGen SourceSection: [28366,28375]`count < 0`
                                                       ReadLocalVariableNodeGen SourceSection: [28366,28371]`count`
                                                         Frame: [5,count,Illegal]
                                                       IntegerLiteralNode SourceSection: [28374,28375]`0`
@@ -6334,9 +6314,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Frame: [4,newcount,Illegal]
                                                   TernaryIfNode SourceSection: [28851,28896]`other_count if count...`
                                                     YesNodeGen SourceSection: None
-                                                      BinaryComparisonNodeGen SourceSection: [28866,28885]`count < other_count`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __lt__
+                                                      LtNodeGen SourceSection: [28866,28885]`count < other_count`
                                                         ReadLocalVariableNodeGen SourceSection: [28866,28871]`count`
                                                           Frame: [6,count,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: [28874,28885]`other_count`
@@ -6347,9 +6325,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [6,count,Illegal]
                                                 IfNode SourceSection: [28909,28974]`if newcount > 0:↵   ...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [28912,28924]`newcount > 0`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __gt__
+                                                    GtNodeGen SourceSection: [28912,28924]`newcount > 0`
                                                       ReadLocalVariableNodeGen SourceSection: [28912,28920]`newcount`
                                                         Frame: [4,newcount,Illegal]
                                                       IntegerLiteralNode SourceSection: [28923,28924]`0`
@@ -6402,9 +6378,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           Frame: [5,elem,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: [29035,29039]`self`
                                                           Frame: [0,self,Illegal]
-                                                    BinaryComparisonNodeGen SourceSection: [29044,29053]`count > 0`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __gt__
+                                                    GtNodeGen SourceSection: [29044,29053]`count > 0`
                                                       ReadLocalVariableNodeGen SourceSection: [29044,29049]`count`
                                                         Frame: [6,count,Illegal]
                                                       IntegerLiteralNode SourceSection: [29052,29053]`0`
@@ -6537,9 +6511,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Frame: [4,newcount,Illegal]
                                                   TernaryIfNode SourceSection: [29501,29546]`count if count < oth...`
                                                     YesNodeGen SourceSection: None
-                                                      BinaryComparisonNodeGen SourceSection: [29510,29529]`count < other_count`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __lt__
+                                                      LtNodeGen SourceSection: [29510,29529]`count < other_count`
                                                         ReadLocalVariableNodeGen SourceSection: [29510,29515]`count`
                                                           Frame: [6,count,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: [29518,29529]`other_count`
@@ -6550,9 +6522,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [3,other_count,Illegal]
                                                 IfNode SourceSection: [29559,29624]`if newcount > 0:↵   ...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [29562,29574]`newcount > 0`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __gt__
+                                                    GtNodeGen SourceSection: [29562,29574]`newcount > 0`
                                                       ReadLocalVariableNodeGen SourceSection: [29562,29570]`newcount`
                                                         Frame: [4,newcount,Illegal]
                                                       IntegerLiteralNode SourceSection: [29573,29574]`0`
@@ -6645,9 +6615,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [5,<>temp5,Illegal]
                                               IfNode SourceSection: [29822,29881]`if count > 0:↵      ...`
                                                 YesNodeGen SourceSection: None
-                                                  BinaryComparisonNodeGen SourceSection: [29825,29834]`count > 0`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __gt__
+                                                  GtNodeGen SourceSection: [29825,29834]`count > 0`
                                                     ReadLocalVariableNodeGen SourceSection: [29825,29830]`count`
                                                       Frame: [3,count,Illegal]
                                                     IntegerLiteralNode SourceSection: [29833,29834]`0`
@@ -6740,9 +6708,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [5,<>temp5,Illegal]
                                               IfNode SourceSection: [30137,30200]`if count < 0:↵      ...`
                                                 YesNodeGen SourceSection: None
-                                                  BinaryComparisonNodeGen SourceSection: [30140,30149]`count < 0`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __lt__
+                                                  LtNodeGen SourceSection: [30140,30149]`count < 0`
                                                     ReadLocalVariableNodeGen SourceSection: [30140,30145]`count`
                                                       Frame: [3,count,Illegal]
                                                     IntegerLiteralNode SourceSection: [30148,30149]`0`
@@ -6844,9 +6810,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         GeneratorAccessNode SourceSection: None
                                                         YesNodeGen SourceSection: None
                                                           NotNodeGen SourceSection: [30386,30399]`not count > 0`
-                                                            BinaryComparisonNodeGen SourceSection: [30390,30399]`count > 0`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __gt__
+                                                            GtNodeGen SourceSection: [30390,30399]`count > 0`
                                                               ReadGeneratorFrameVariableNodeGen SourceSection: [30390,30395]`count`
                                                                 Frame: [1,count,Illegal]
                                                               IntegerLiteralNode SourceSection: [30398,30399]`0`
@@ -7181,9 +7145,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [3,elem,Illegal]
                                                 IfNode SourceSection: [31511,31584]`if other_count > cou...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [31514,31533]`other_count > count`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __gt__
+                                                    GtNodeGen SourceSection: [31514,31533]`other_count > count`
                                                       ReadLocalVariableNodeGen SourceSection: [31514,31525]`other_count`
                                                         Frame: [4,other_count,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: [31528,31533]`count`
@@ -7287,9 +7249,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [3,elem,Illegal]
                                                 IfNode SourceSection: [31926,31999]`if other_count < cou...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [31929,31948]`other_count < count`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __lt__
+                                                    LtNodeGen SourceSection: [31929,31948]`other_count < count`
                                                       ReadLocalVariableNodeGen SourceSection: [31929,31940]`other_count`
                                                         Frame: [2,other_count,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: [31943,31948]`count`

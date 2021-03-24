@@ -38,24 +38,18 @@ ModuleRootNode Name: <module 'unicode03'> SourceSection: [0,183]`def test():↵ 
                         YesNodeGen SourceSection: None
                           AndNode SourceSection: [70,107]`a == '𝒜' and b == '...`
                             AndNode SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [70,79]`a == '𝒜'`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [70,79]`a == '𝒜'`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [70,71]`a`
                                   Identifier: a
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [75,79]`'𝒜'`
-                              BinaryComparisonNodeGen SourceSection: [84,93]`b == '𝒞'`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [84,93]`b == '𝒞'`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [84,85]`b`
                                   Identifier: b
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [89,93]`'𝒞'`
                               YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [98,107]`c == '𝒵'`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [98,107]`c == '𝒵'`
                               ReadGlobalOrBuiltinNodeGen SourceSection: [98,99]`c`
                                 Identifier: c
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

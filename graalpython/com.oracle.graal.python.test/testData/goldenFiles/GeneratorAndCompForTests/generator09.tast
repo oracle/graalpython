@@ -62,9 +62,7 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                                 Frame: [1,value,Illegal]
                               GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [63,68]`h > 1`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __gt__
+                            GtNodeGen SourceSection: [63,68]`h > 1`
                               ReadGeneratorFrameVariableNodeGen SourceSection: [63,64]`h`
                                 Frame: [0,h,Illegal]
                               IntegerLiteralNode SourceSection: [67,68]`1`

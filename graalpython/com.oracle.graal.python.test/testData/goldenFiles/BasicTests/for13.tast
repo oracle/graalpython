@@ -60,9 +60,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                     ObjectLiteralNode SourceSection: None
                                 IfNode SourceSection: [68,112]`if count >= 3:â†µ     ...`
                                   YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [71,81]`count >= 3`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __ge__
+                                    GeNodeGen SourceSection: [71,81]`count >= 3`
                                       ReadLocalVariableNodeGen SourceSection: [71,76]`count`
                                         Frame: [1,count,Illegal]
                                       IntegerLiteralNode SourceSection: [80,81]`3`
@@ -71,9 +69,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                   BlockNode SourceSection: None
                                 IfNode SourceSection: [112,186]`if count == 4:â†µ     ...`
                                   YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [115,125]`count == 4`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __eq__
+                                    EqNodeGen SourceSection: [115,125]`count == 4`
                                       ReadLocalVariableNodeGen SourceSection: [115,120]`count`
                                         Frame: [1,count,Illegal]
                                       IntegerLiteralNode SourceSection: [124,125]`4`

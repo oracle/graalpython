@@ -19,9 +19,7 @@ ModuleRootNode Name: <module 'for08'> SourceSection: [0,71]`for x in range(10):â
                 BlockNode SourceSection: None
                   IfNode SourceSection: [24,63]`if call01() == 0:â†µ  ...`
                     YesNodeGen SourceSection: None
-                      BinaryComparisonNodeGen SourceSection: [27,40]`call01() == 0`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __eq__
+                      EqNodeGen SourceSection: [27,40]`call01() == 0`
                         PythonCallNodeGen SourceSection: [27,35]`call01()`
                           CallNodeGen SourceSection: None
                           ReadNameNodeGen SourceSection: [27,33]`call01`
