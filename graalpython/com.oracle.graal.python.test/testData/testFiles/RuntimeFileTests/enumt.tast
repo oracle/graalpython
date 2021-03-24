@@ -170,9 +170,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           AndNode SourceSection: None
                             AndNode SourceSection: None
                               AndNode SourceSection: [660,689]`name[:2] == name[-2:...`
-                                BinaryComparisonNodeGen SourceSection: None
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
+                                EqNodeGen SourceSection: None
                                   GetItemNodeGen SourceSection: [660,668]`name[:2]`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [0,name,Illegal]
@@ -191,9 +189,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Value: -2
                                       EmptyNode SourceSection: None
                                       EmptyNode SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: None
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
+                                EqNodeGen SourceSection: None
                                   GetItemNodeGen SourceSection: [672,681]`name[-2:]`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [0,name,Illegal]
@@ -205,9 +201,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       EmptyNode SourceSection: None
                                   StringLiteralNode SourceSection: [685,689]`'__'`
                                 YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [706,722]`name[2:3] != '_'`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __ne__
+                              NeNodeGen SourceSection: [706,722]`name[2:3] != '_'`
                                 GetItemNodeGen SourceSection: [706,715]`name[2:3]`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,name,Illegal]
@@ -220,9 +214,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     EmptyNode SourceSection: None
                                 StringLiteralNode SourceSection: [719,722]`'_'`
                               YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [739,757]`name[-3:-2] != '_'`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __ne__
+                            NeNodeGen SourceSection: [739,757]`name[-3:-2] != '_'`
                               GetItemNodeGen SourceSection: [739,750]`name[-3:-2]`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,name,Illegal]
@@ -235,9 +227,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   EmptyNode SourceSection: None
                               StringLiteralNode SourceSection: [754,757]`'_'`
                             YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [774,787]`len(name) > 4`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
+                          GtNodeGen SourceSection: [774,787]`len(name) > 4`
                             PythonCallUnary SourceSection: [774,783]`len(name)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [774,777]`len`
@@ -289,9 +279,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           AndNode SourceSection: None
                             AndNode SourceSection: None
                               AndNode SourceSection: [885,911]`name[0] == name[-1] ...`
-                                BinaryComparisonNodeGen SourceSection: None
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
+                                EqNodeGen SourceSection: None
                                   GetItemNodeGen SourceSection: [885,892]`name[0]`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [0,name,Illegal]
@@ -302,9 +290,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       Frame: [0,name,Illegal]
                                     IntegerLiteralNode SourceSection: [901,903]`-1`
                                       Value: -1
-                                BinaryComparisonNodeGen SourceSection: None
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
+                                EqNodeGen SourceSection: None
                                   GetItemNodeGen SourceSection: [896,904]`name[-1]`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [0,name,Illegal]
@@ -312,9 +298,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       Value: -1
                                   StringLiteralNode SourceSection: [908,911]`'_'`
                                 YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [928,944]`name[1:2] != '_'`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __ne__
+                              NeNodeGen SourceSection: [928,944]`name[1:2] != '_'`
                                 GetItemNodeGen SourceSection: [928,937]`name[1:2]`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,name,Illegal]
@@ -327,9 +311,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     EmptyNode SourceSection: None
                                 StringLiteralNode SourceSection: [941,944]`'_'`
                               YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [961,979]`name[-2:-1] != '_'`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __ne__
+                            NeNodeGen SourceSection: [961,979]`name[-2:-1] != '_'`
                               GetItemNodeGen SourceSection: [961,972]`name[-2:-1]`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,name,Illegal]
@@ -342,9 +324,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   EmptyNode SourceSection: None
                               StringLiteralNode SourceSection: [976,979]`'_'`
                             YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [996,1009]`len(name) > 2`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
+                          GtNodeGen SourceSection: [996,1009]`len(name) > 2`
                             PythonCallUnary SourceSection: [996,1005]`len(name)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [996,999]`len`
@@ -713,9 +693,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [2340,2872]`if key == '_generate...`
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [2343,2373]`key == '_generate_ne...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __eq__
+                                            EqNodeGen SourceSection: [2343,2373]`key == '_generate_ne...`
                                               ReadLocalVariableNodeGen SourceSection: [2343,2346]`key`
                                                 Frame: [1,key,Illegal]
                                               StringLiteralNode SourceSection: [2350,2373]`'_generate_next_valu...`
@@ -732,9 +710,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [2,value,Illegal]
                                           IfNode SourceSection: [2448,2872]`elif key == '_ignore...`
                                             YesNodeGen SourceSection: None
-                                              BinaryComparisonNodeGen SourceSection: [2453,2470]`key == '_ignore_'`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __eq__
+                                              EqNodeGen SourceSection: [2453,2470]`key == '_ignore_'`
                                                 ReadLocalVariableNodeGen SourceSection: [2453,2456]`key`
                                                   Frame: [1,key,Illegal]
                                                 StringLiteralNode SourceSection: [2460,2470]`'_ignore_'`
@@ -839,9 +815,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Frame: [1,key,Illegal]
                                         IfNode SourceSection: [2906,2969]`if key == '__order__...`
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [2909,2927]`key == '__order__'`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __eq__
+                                            EqNodeGen SourceSection: [2909,2927]`key == '__order__'`
                                               ReadLocalVariableNodeGen SourceSection: [2909,2912]`key`
                                                 Frame: [1,key,Illegal]
                                               StringLiteralNode SourceSection: [2916,2927]`'__order__'`
@@ -955,9 +929,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   BlockNode SourceSection: None
                                                     IfNode SourceSection: [3415,3576]`if value.value == _a...`
                                                       YesNodeGen SourceSection: None
-                                                        BinaryComparisonNodeGen SourceSection: [3418,3443]`value.value == _auto...`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __eq__
+                                                        EqNodeGen SourceSection: [3418,3443]`value.value == _auto...`
                                                           GetAttributeNode SourceSection: [3418,3429]`value.value`
                                                             GetFixedAttributeNode SourceSection: None
                                                               Key: value
@@ -2033,9 +2005,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           Frame: [33,<>temp33,Illegal]
                                                   IfNode SourceSection: [9023,9164]`if canonical_member....`
                                                     YesNodeGen SourceSection: None
-                                                      BinaryComparisonNodeGen SourceSection: [9026,9073]`canonical_member._va...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __eq__
+                                                      EqNodeGen SourceSection: [9026,9073]`canonical_member._va...`
                                                         GetAttributeNode SourceSection: [9026,9050]`canonical_member._va...`
                                                           GetFixedAttributeNode SourceSection: None
                                                             Key: _value_
@@ -2315,9 +2285,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [11071,11192]`if _order_ != enum_c...`
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [11074,11110]`_order_ != enum_clas...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __ne__
+                                            NeNodeGen SourceSection: [11074,11110]`_order_ != enum_clas...`
                                               ReadLocalVariableNodeGen SourceSection: [11074,11081]`_order_`
                                                 Frame: [13,_order_,Illegal]
                                               GetAttributeNode SourceSection: [11085,11110]`enum_class._member_n...`
@@ -4575,9 +4543,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     Frame: [2,member,Illegal]
                                                 IfNode SourceSection: [21891,22009]`if member._value_ ==...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [21894,21917]`member._value_ == va...`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __eq__
+                                                    EqNodeGen SourceSection: [21894,21917]`member._value_ == va...`
                                                       GetAttributeNode SourceSection: [21894,21908]`member._value_`
                                                         GetFixedAttributeNode SourceSection: None
                                                           Key: _value_
@@ -5023,9 +4989,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
                                                         AndNode SourceSection: [22806,22848]`m[0] != '_' and m no...`
-                                                          BinaryComparisonNodeGen SourceSection: [22806,22817]`m[0] != '_'`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __ne__
+                                                          NeNodeGen SourceSection: [22806,22817]`m[0] != '_'`
                                                             GetItemNodeGen SourceSection: [22806,22810]`m[0]`
                                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                 Frame: [0,m,Illegal]
@@ -6213,9 +6177,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [1,value,Illegal]
                                       IfNode SourceSection: [26708,26757]`if value < 0:↵      ...`
                                         YesNodeGen SourceSection: None
-                                          BinaryComparisonNodeGen SourceSection: [26711,26720]`value < 0`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __lt__
+                                          LtNodeGen SourceSection: [26711,26720]`value < 0`
                                             ReadLocalVariableNodeGen SourceSection: [26711,26716]`value`
                                               Frame: [1,value,Illegal]
                                             IntegerLiteralNode SourceSection: [26719,26720]`0`
@@ -6241,9 +6203,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [1,value,Illegal]
                                       IfNode SourceSection: [26817,26895]`if original_value < ...`
                                         YesNodeGen SourceSection: None
-                                          BinaryComparisonNodeGen SourceSection: [26820,26838]`original_value < 0`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __lt__
+                                          LtNodeGen SourceSection: [26820,26838]`original_value < 0`
                                             ReadLocalVariableNodeGen SourceSection: [26820,26834]`original_value`
                                               Frame: [2,original_value,Illegal]
                                             IntegerLiteralNode SourceSection: [26837,26838]`0`
@@ -6535,9 +6495,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [3,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [28129,28174]`other._value_ & self...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __eq__
+                                        EqNodeGen SourceSection: [28129,28174]`other._value_ & self...`
                                           BinaryArithmeticExpression SourceSection: [28129,28157]`other._value_ & self...`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __and__
@@ -6936,9 +6894,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     IfNode SourceSection: [28798,29097]`if len(members) == 1...`
                                       YesNodeGen SourceSection: None
                                         AndNode SourceSection: [28801,28848]`len(members) == 1 an...`
-                                          BinaryComparisonNodeGen SourceSection: [28801,28818]`len(members) == 1`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __eq__
+                                          EqNodeGen SourceSection: [28801,28818]`len(members) == 1`
                                             PythonCallUnary SourceSection: [28801,28813]`len(members)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [28801,28804]`len`
@@ -7943,9 +7899,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     BlockNode SourceSection: None
                                                   IfNode SourceSection: [30981,31128]`if extra_flags == -f...`
                                                     YesNodeGen SourceSection: None
-                                                      BinaryComparisonNodeGen SourceSection: [30984,31010]`extra_flags == -flag...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __eq__
+                                                      EqNodeGen SourceSection: [30984,31010]`extra_flags == -flag...`
                                                         ReadLocalVariableNodeGen SourceSection: [30984,30995]`extra_flags`
                                                           Frame: [5,extra_flags,Illegal]
                                                         UnaryArithmeticExpression SourceSection: [30999,31010]`-flag_value`
@@ -8589,9 +8543,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   Frame: [6,<>temp6,Illegal]
                           IfNode SourceSection: [32700,32779]`if name != member.na...`
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [32703,32722]`name != member.name`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __ne__
+                              NeNodeGen SourceSection: [32703,32722]`name != member.name`
                                 ReadLocalVariableNodeGen SourceSection: [32703,32707]`name`
                                   Frame: [2,name,Illegal]
                                 GetAttributeNode SourceSection: [32711,32722]`member.name`
@@ -8798,9 +8750,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     WriteLocalVariableNodeGen SourceSection: [33200,33220]`negative = value < 0...`
                       Identifier: negative
                       Frame: [3,negative,Illegal]
-                      BinaryComparisonNodeGen SourceSection: [33211,33220]`value < 0`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __lt__
+                      LtNodeGen SourceSection: [33211,33220]`value < 0`
                         ReadLocalVariableNodeGen SourceSection: [33211,33216]`value`
                           Frame: [1,value,Illegal]
                         IntegerLiteralNode SourceSection: [33219,33220]`0`
@@ -9063,9 +9013,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               AndNode SourceSection: [33976,34029]`member_value and mem...`
                                 ReadLocalVariableNodeGen SourceSection: [33976,33988]`member_value`
                                   Frame: [7,member_value,Illegal]
-                                BinaryComparisonNodeGen SourceSection: [33993,34029]`member_value & value...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
+                                EqNodeGen SourceSection: [33993,34029]`member_value & value...`
                                   BinaryArithmeticExpression SourceSection: [33993,34013]`member_value & value...`
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __and__
@@ -9202,9 +9150,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                     IfNode SourceSection: [34279,34425]`if len(members) > 1 ...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [34282,34328]`len(members) > 1 and...`
-                          BinaryComparisonNodeGen SourceSection: [34282,34298]`len(members) > 1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
+                          GtNodeGen SourceSection: [34282,34298]`len(members) > 1`
                             PythonCallUnary SourceSection: [34282,34294]`len(members)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [34282,34285]`len`
@@ -9214,9 +9160,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Frame: [5,members,Illegal]
                             IntegerLiteralNode SourceSection: [34297,34298]`1`
                               Value: 1
-                          BinaryComparisonNodeGen SourceSection: [34303,34328]`members[0].value == ...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [34303,34328]`members[0].value == ...`
                             GetAttributeNode SourceSection: [34303,34319]`members[0].value`
                               GetFixedAttributeNode SourceSection: None
                                 Key: value
@@ -9290,9 +9234,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       FunctionBodyNode SourceSection: [34484,34560]`if value < 1:↵      ...`
                         IfNode SourceSection: [34484,34523]`if value < 1:↵      ...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [34487,34496]`value < 1`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __lt__
+                            LtNodeGen SourceSection: [34487,34496]`value < 1`
                               ReadLocalVariableNodeGen SourceSection: [34487,34492]`value`
                                 Frame: [0,value,Illegal]
                               IntegerLiteralNode SourceSection: [34495,34496]`1`
@@ -9307,9 +9249,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
                             Frame: [1,<return_val>,Illegal]
-                            BinaryComparisonNodeGen SourceSection: [34530,34560]`value == 2 ** _high_...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [34530,34560]`value == 2 ** _high_...`
                               ReadLocalVariableNodeGen SourceSection: [34530,34535]`value`
                                 Frame: [0,value,Illegal]
                               BinaryArithmeticExpression SourceSection: [34539,34560]`2 ** _high_bit(value...`

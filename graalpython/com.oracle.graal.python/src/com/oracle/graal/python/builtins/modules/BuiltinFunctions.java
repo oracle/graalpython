@@ -1203,9 +1203,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         protected final BinaryComparisonNode createComparison() {
             if (this instanceof MaxNode) {
-                return BinaryComparisonNode.create(SpecialMethodNames.__GT__, SpecialMethodNames.__LT__, ">");
+                return BinaryComparisonNode.GtNode.create();
             } else {
-                return BinaryComparisonNode.create(SpecialMethodNames.__LT__, SpecialMethodNames.__GT__, "<");
+                return BinaryComparisonNode.LtNode.create();
             }
         }
 

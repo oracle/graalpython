@@ -1571,9 +1571,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       BlockNode SourceSection: None
                         IfNode SourceSection: [12634,12851]`if len(_cache) >= _M...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [12637,12661]`len(_cache) >= _MAXC...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __ge__
+                            GeNodeGen SourceSection: [12637,12661]`len(_cache) >= _MAXC...`
                               PythonCallUnary SourceSection: [12637,12648]`len(_cache)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12637,12640]`len`
@@ -1847,9 +1845,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 Frame: [1,template,Illegal]
                               IntegerLiteralNode SourceSection: [13424,13425]`0`
                                 Value: 0
-                          BinaryComparisonNodeGen SourceSection: [13431,13452]`len(template[1]) == ...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [13431,13452]`len(template[1]) == ...`
                             PythonCallUnary SourceSection: [13431,13447]`len(template[1])`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [13431,13434]`len`
@@ -2423,9 +2419,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                         Frame: [6,m,Illegal]
                                                 IfNode SourceSection: [14876,14921]`if i == j:↵         ...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [14879,14885]`i == j`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __eq__
+                                                    EqNodeGen SourceSection: [14879,14885]`i == j`
                                                       ReadLocalVariableNodeGen SourceSection: [14879,14880]`i`
                                                         Frame: [5,i,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: [14884,14885]`j`

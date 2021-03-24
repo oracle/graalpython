@@ -97,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -456,13 +455,12 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Child private SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
-        boolean eq(VirtualFrame frame, PBytesLike self, PBytesLike other) {
-            return getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
+        boolean eq(VirtualFrame frame, PBytesLike self, PBytesLike other,
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode cmp) {
+            return cmp.execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Fallback
@@ -472,25 +470,16 @@ public class BytesBuiltins extends PythonBuiltins {
             }
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__eq__", "bytes-like", self);
         }
-
-        private SequenceStorageNodes.CmpNode getEqNode() {
-            if (eqNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(SequenceStorageNodes.CmpNode.createEq());
-            }
-            return eqNode;
-        }
     }
 
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ImportStatic(PGuards.class)
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
-        @Child SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
-        boolean ne(VirtualFrame frame, PBytesLike self, PBytesLike other) {
-            return !getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
+        boolean ne(VirtualFrame frame, PBytesLike self, PBytesLike other,
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode cmp) {
+            return !cmp.execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Fallback
@@ -499,14 +488,6 @@ public class BytesBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__ne__", "bytes-like", self);
-        }
-
-        private SequenceStorageNodes.CmpNode getEqNode() {
-            if (eqNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(SequenceStorageNodes.CmpNode.createEq());
-            }
-            return eqNode;
         }
     }
 

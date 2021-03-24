@@ -96,9 +96,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                             GeneratorAccessNode SourceSection: None
                           BlockNode SourceSection: None
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [24,34]`len(h) > 1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
+                          GtNodeGen SourceSection: [24,34]`len(h) > 1`
                             PythonCallUnary SourceSection: [24,30]`len(h)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [24,27]`len`

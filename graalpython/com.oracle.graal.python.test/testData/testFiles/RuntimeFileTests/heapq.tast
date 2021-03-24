@@ -291,9 +291,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         AndNode SourceSection: [7383,7406]`heap and heap[0] < i...`
                           ReadLocalVariableNodeGen SourceSection: [7383,7387]`heap`
                             Frame: [0,heap,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [7392,7406]`heap[0] < item`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __lt__
+                          LtNodeGen SourceSection: [7392,7406]`heap[0] < item`
                             GetItemNodeGen SourceSection: [7392,7399]`heap[0]`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [0,heap,Illegal]
@@ -719,9 +717,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [9046,9060]`pos > startpos`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __gt__
+                            GtNodeGen SourceSection: [9046,9060]`pos > startpos`
                               ReadLocalVariableNodeGen SourceSection: [9046,9049]`pos`
                                 Frame: [2,pos,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [9052,9060]`startpos`
@@ -753,9 +749,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [4,parentpos,Illegal]
                               IfNode SourceSection: [9138,9247]`if newitem < parent:...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [9141,9157]`newitem < parent`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __lt__
+                                  LtNodeGen SourceSection: [9141,9157]`newitem < parent`
                                     ReadLocalVariableNodeGen SourceSection: [9141,9148]`newitem`
                                       Frame: [3,newitem,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [9151,9157]`parent`
@@ -866,9 +860,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [11553,11570]`childpos < endpos`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __lt__
+                            LtNodeGen SourceSection: [11553,11570]`childpos < endpos`
                               ReadLocalVariableNodeGen SourceSection: [11553,11561]`childpos`
                                 Frame: [5,childpos,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [11564,11570]`endpos`
@@ -887,17 +879,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             IfNode SourceSection: [11662,11801]`if rightpos < endpos...`
                               YesNodeGen SourceSection: None
                                 AndNode SourceSection: [11665,11722]`rightpos < endpos an...`
-                                  BinaryComparisonNodeGen SourceSection: [11665,11682]`rightpos < endpos`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __lt__
+                                  LtNodeGen SourceSection: [11665,11682]`rightpos < endpos`
                                     ReadLocalVariableNodeGen SourceSection: [11665,11673]`rightpos`
                                       Frame: [6,rightpos,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [11676,11682]`endpos`
                                       Frame: [2,endpos,Illegal]
                                   NotNodeGen SourceSection: [11687,11722]`not heap[childpos] <...`
-                                    BinaryComparisonNodeGen SourceSection: [11691,11722]`heap[childpos] < hea...`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __lt__
+                                    LtNodeGen SourceSection: [11691,11722]`heap[childpos] < hea...`
                                       GetItemNodeGen SourceSection: [11691,11705]`heap[childpos]`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,heap,Illegal]
@@ -1023,9 +1011,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [12283,12297]`pos > startpos`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __gt__
+                            GtNodeGen SourceSection: [12283,12297]`pos > startpos`
                               ReadLocalVariableNodeGen SourceSection: [12283,12286]`pos`
                                 Frame: [2,pos,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [12289,12297]`startpos`
@@ -1057,9 +1043,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [4,parentpos,Illegal]
                               IfNode SourceSection: [12375,12484]`if parent < newitem:...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [12378,12394]`parent < newitem`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __lt__
+                                  LtNodeGen SourceSection: [12378,12394]`parent < newitem`
                                     ReadLocalVariableNodeGen SourceSection: [12378,12384]`parent`
                                       Frame: [5,parent,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [12387,12394]`newitem`
@@ -1170,9 +1154,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       WhileNode SourceSection: None
                         WhileRepeatingNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [12761,12778]`childpos < endpos`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __lt__
+                            LtNodeGen SourceSection: [12761,12778]`childpos < endpos`
                               ReadLocalVariableNodeGen SourceSection: [12761,12769]`childpos`
                                 Frame: [5,childpos,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [12772,12778]`endpos`
@@ -1191,17 +1173,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             IfNode SourceSection: [12869,13007]`if rightpos < endpos...`
                               YesNodeGen SourceSection: None
                                 AndNode SourceSection: [12872,12929]`rightpos < endpos an...`
-                                  BinaryComparisonNodeGen SourceSection: [12872,12889]`rightpos < endpos`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __lt__
+                                  LtNodeGen SourceSection: [12872,12889]`rightpos < endpos`
                                     ReadLocalVariableNodeGen SourceSection: [12872,12880]`rightpos`
                                       Frame: [6,rightpos,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [12883,12889]`endpos`
                                       Frame: [2,endpos,Illegal]
                                   NotNodeGen SourceSection: [12894,12929]`not heap[rightpos] <...`
-                                    BinaryComparisonNodeGen SourceSection: [12898,12929]`heap[rightpos] < hea...`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __lt__
+                                    LtNodeGen SourceSection: [12898,12929]`heap[rightpos] < hea...`
                                       GetItemNodeGen SourceSection: [12898,12912]`heap[rightpos]`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,heap,Illegal]
@@ -1563,9 +1541,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 GeneratorAccessNode SourceSection: None
                               GeneratorAccessNode SourceSection: None
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [14546,14556]`len(h) > 1`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __gt__
+                              GtNodeGen SourceSection: [14546,14556]`len(h) > 1`
                                 PythonCallUnary SourceSection: [14546,14552]`len(h)`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [14546,14549]`len`
@@ -1866,9 +1842,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             GeneratorAccessNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [15392,15402]`len(h) > 1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
+                          GtNodeGen SourceSection: [15392,15402]`len(h) > 1`
                             PythonCallUnary SourceSection: [15392,15398]`len(h)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [15392,15395]`len`
@@ -2032,9 +2006,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                   FunctionBodyNode SourceSection: [19152,20824]`if n == 1:↵        i...`
                     IfNode SourceSection: [19152,19467]`if n == 1:↵        i...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [19155,19161]`n == 1`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [19155,19161]`n == 1`
                           ReadLocalVariableNodeGen SourceSection: [19155,19156]`n`
                             Frame: [0,n,Illegal]
                           IntegerLiteralNode SourceSection: [19160,19161]`1`
@@ -2146,9 +2118,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [19572,19687]`if n >= size:↵      ...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [19575,19584]`n >= size`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __ge__
+                            GeNodeGen SourceSection: [19575,19584]`n >= size`
                               ReadLocalVariableNodeGen SourceSection: [19575,19576]`n`
                                 Frame: [0,n,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [19580,19584]`size`
@@ -2337,9 +2307,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Frame: [11,elem,Illegal]
                               IfNode SourceSection: [20105,20247]`if elem < top:↵     ...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [20108,20118]`elem < top`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __lt__
+                                  LtNodeGen SourceSection: [20108,20118]`elem < top`
                                     ReadLocalVariableNodeGen SourceSection: [20108,20112]`elem`
                                       Frame: [11,elem,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [20115,20118]`top`
@@ -2642,9 +2610,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Frame: [11,elem,Illegal]
                             IfNode SourceSection: [20629,20762]`if k < top:↵        ...`
                               YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [20632,20639]`k < top`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __lt__
+                                LtNodeGen SourceSection: [20632,20639]`k < top`
                                   ReadLocalVariableNodeGen SourceSection: [20632,20633]`k`
                                     Frame: [12,k,Illegal]
                                   ReadLocalVariableNodeGen SourceSection: [20636,20639]`top`
@@ -2846,9 +2812,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                   FunctionBodyNode SourceSection: [21031,22626]`if n == 1:↵        i...`
                     IfNode SourceSection: [21031,21346]`if n == 1:↵        i...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [21034,21040]`n == 1`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [21034,21040]`n == 1`
                           ReadLocalVariableNodeGen SourceSection: [21034,21035]`n`
                             Frame: [0,n,Illegal]
                           IntegerLiteralNode SourceSection: [21039,21040]`1`
@@ -2960,9 +2924,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [21451,21580]`if n >= size:↵      ...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [21454,21463]`n >= size`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __ge__
+                            GeNodeGen SourceSection: [21454,21463]`n >= size`
                               ReadLocalVariableNodeGen SourceSection: [21454,21455]`n`
                                 Frame: [0,n,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [21459,21463]`size`
@@ -3163,9 +3125,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Frame: [11,elem,Illegal]
                               IfNode SourceSection: [21884,22026]`if top < elem:↵     ...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [21887,21897]`top < elem`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __lt__
+                                  LtNodeGen SourceSection: [21887,21897]`top < elem`
                                     ReadLocalVariableNodeGen SourceSection: [21887,21890]`top`
                                       Frame: [7,top,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [21893,21897]`elem`
@@ -3483,9 +3443,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Frame: [11,elem,Illegal]
                             IfNode SourceSection: [22419,22552]`if top < k:↵        ...`
                               YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [22422,22429]`top < k`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __lt__
+                                LtNodeGen SourceSection: [22422,22429]`top < k`
                                   ReadLocalVariableNodeGen SourceSection: [22422,22425]`top`
                                     Frame: [7,top,Illegal]
                                   ReadLocalVariableNodeGen SourceSection: [22428,22429]`k`
@@ -3724,9 +3682,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
         SideEffect:
           IfNode SourceSection: [22940,23017]`if __name__ == "__ma...`
             YesNodeGen SourceSection: None
-              BinaryComparisonNodeGen SourceSection: [22943,22965]`__name__ == "__main_...`
-                LookupAndCallBinaryNodeGen SourceSection: None
-                  Op: __eq__
+              EqNodeGen SourceSection: [22943,22965]`__name__ == "__main_...`
                 ReadNameNodeGen SourceSection: [22943,22951]`__name__`
                   Identifier: __name__
                   IsBuiltinClassProfile SourceSection: None

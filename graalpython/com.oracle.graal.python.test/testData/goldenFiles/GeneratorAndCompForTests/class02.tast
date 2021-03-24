@@ -116,9 +116,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
                                                         NotNodeGen SourceSection: [114,127]`not count > 0`
-                                                          BinaryComparisonNodeGen SourceSection: [118,127]`count > 0`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __gt__
+                                                          GtNodeGen SourceSection: [118,127]`count > 0`
                                                             ReadGeneratorFrameVariableNodeGen SourceSection: [118,123]`count`
                                                               Frame: [1,count,Illegal]
                                                             IntegerLiteralNode SourceSection: [126,127]`0`

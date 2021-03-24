@@ -3432,9 +3432,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         GeneratorIfNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [9904,9916]`n[:1] != '_'`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __ne__
+                            NeNodeGen SourceSection: [9904,9916]`n[:1] != '_'`
                               GetItemNodeGen SourceSection: [9904,9909]`n[:1]`
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [0,n,Illegal]

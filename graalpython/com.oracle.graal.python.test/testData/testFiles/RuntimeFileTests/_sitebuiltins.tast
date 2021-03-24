@@ -682,9 +682,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             Frame: [0,self,Illegal]
                                     IfNode SourceSection: [1738,1915]`if len(self.__lines)...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [1741,1775]`len(self.__lines) <=...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __le__
+                                        LeNodeGen SourceSection: [1741,1775]`len(self.__lines) <=...`
                                           PythonCallUnary SourceSection: [1741,1758]`len(self.__lines)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1741,1744]`len`
@@ -921,9 +919,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   BlockNode SourceSection: None
                                                 IfNode SourceSection: [2495,2538]`if key == 'q':↵     ...`
                                                   YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [2498,2508]`key == 'q'`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __eq__
+                                                    EqNodeGen SourceSection: [2498,2508]`key == 'q'`
                                                       ReadLocalVariableNodeGen SourceSection: [2498,2501]`key`
                                                         Frame: [4,key,Illegal]
                                                       StringLiteralNode SourceSection: [2505,2508]`'q'`

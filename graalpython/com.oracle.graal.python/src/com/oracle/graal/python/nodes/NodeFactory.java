@@ -50,7 +50,7 @@ import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -374,18 +374,18 @@ public class NodeFactory {
     public ExpressionNode createComparisonOperation(String operator, ExpressionNode left, ExpressionNode right) {
         switch (operator) {
             case "<":
-                return BinaryComparisonNode.create(SpecialMethodNames.__LT__, SpecialMethodNames.__GT__, operator, left, right);
+                return BinaryComparisonNodeFactory.LtNodeGen.create(left, right);
             case ">":
-                return BinaryComparisonNode.create(SpecialMethodNames.__GT__, SpecialMethodNames.__LT__, operator, left, right);
+                return BinaryComparisonNodeFactory.GtNodeGen.create(left, right);
             case "==":
-                return BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, operator, left, right);
+                return BinaryComparisonNodeFactory.EqNodeGen.create(left, right);
             case ">=":
-                return BinaryComparisonNode.create(SpecialMethodNames.__GE__, SpecialMethodNames.__LE__, operator, left, right);
+                return BinaryComparisonNodeFactory.GeNodeGen.create(left, right);
             case "<=":
-                return BinaryComparisonNode.create(SpecialMethodNames.__LE__, SpecialMethodNames.__GE__, operator, left, right);
+                return BinaryComparisonNodeFactory.LeNodeGen.create(left, right);
             case "<>":
             case "!=":
-                return BinaryComparisonNode.create(SpecialMethodNames.__NE__, SpecialMethodNames.__NE__, operator, left, right);
+                return BinaryComparisonNodeFactory.NeNodeGen.create(left, right);
             case "in":
                 return ContainsNode.create(left, right);
             case "notin":

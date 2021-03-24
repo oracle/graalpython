@@ -180,7 +180,6 @@ public abstract class SpecialMethodNames {
     // in various places
     @CompilationFinal(dimensions = 1) private static final String[] COMPARE_OPSTRINGS = new String[]{"<", "<=", "==", "!=", ">", ">="};
     @CompilationFinal(dimensions = 1) private static final String[] COMPARE_OPNAMES = new String[]{__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__};
-    @CompilationFinal(dimensions = 1) private static final String[] COMPARE_REVERSALS = new String[]{__GT__, __GE__, __EQ__, __NE__, __GT__, __GE__};
     public static final int COMPARE_OP_COUNT = COMPARE_OPNAMES.length;
 
     public static String getCompareOpString(int op) {
@@ -189,9 +188,5 @@ public abstract class SpecialMethodNames {
 
     public static String getCompareName(int op) {
         return COMPARE_OPNAMES[op];
-    }
-
-    public static String getCompareReversal(int op) {
-        return COMPARE_REVERSALS[op];
     }
 }

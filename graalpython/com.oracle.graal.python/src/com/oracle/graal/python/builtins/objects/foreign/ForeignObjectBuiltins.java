@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
@@ -105,8 +104,8 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -456,8 +455,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     public abstract static class ForeignBinaryComparisonNode extends PythonBinaryBuiltinNode {
         @Child private BinaryComparisonNode comparisonNode;
 
-        protected ForeignBinaryComparisonNode(BinaryComparisonNode genericOp) {
-            this.comparisonNode = genericOp;
+        protected ForeignBinaryComparisonNode(BinaryComparisonNode op) {
+            this.comparisonNode = op;
         }
 
         @Specialization(guards = {"lib.isBoolean(left)"})
@@ -510,7 +509,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LtNode extends ForeignBinaryComparisonNode {
         protected LtNode() {
-            super(BinaryComparisonNode.create(__LT__, __GT__, "<"));
+            super(BinaryComparisonNode.LtNode.create());
         }
     }
 
@@ -518,7 +517,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LeNode extends ForeignBinaryComparisonNode {
         protected LeNode() {
-            super(BinaryComparisonNode.create(__LE__, __GE__, "<="));
+            super(BinaryComparisonNode.LeNode.create());
         }
     }
 
@@ -526,7 +525,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GtNode extends ForeignBinaryComparisonNode {
         protected GtNode() {
-            super(BinaryComparisonNode.create(__GT__, __LT__, ">"));
+            super(BinaryComparisonNode.GtNode.create());
         }
     }
 
@@ -534,7 +533,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GeNode extends ForeignBinaryComparisonNode {
         protected GeNode() {
-            super(BinaryComparisonNode.create(__GE__, __LE__, ">="));
+            super(BinaryComparisonNode.GeNode.create());
         }
     }
 
@@ -542,7 +541,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends ForeignBinaryComparisonNode {
         protected EqNode() {
-            super(BinaryComparisonNode.create(__EQ__, __NE__, "=="));
+            super(BinaryComparisonNode.EqNode.create());
         }
     }
 

@@ -54,9 +54,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                   Value: 4
                               IfNode SourceSection: [45,115]`if x == 1:↵      pri...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [48,54]`x == 1`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [48,54]`x == 1`
                                     ReadLocalVariableNodeGen SourceSection: [48,49]`x`
                                       Frame: [0,x,Illegal]
                                     IntegerLiteralNode SourceSection: [53,54]`1`

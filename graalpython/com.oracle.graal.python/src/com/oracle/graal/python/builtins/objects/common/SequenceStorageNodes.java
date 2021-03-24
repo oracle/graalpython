@@ -35,11 +35,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -1724,237 +1719,15 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    protected abstract static class BinCmpOp {
-        protected abstract boolean cmp(int l, int r);
-
-        protected abstract boolean cmp(long l, long r);
-
-        protected abstract boolean cmp(char l, char r);
-
-        protected abstract boolean cmp(byte l, byte r);
-
-        protected abstract boolean cmp(double l, double r);
-
-        protected abstract boolean cmpLen(int l, int r);
-
-        protected abstract BinaryComparisonNode createBinaryComparisonNode();
-    }
-
-    private static final class Le extends BinCmpOp {
-        private static final Le INSTANCE = new Le();
-
-        @Override
-        protected boolean cmp(int l, int r) {
-            return l <= r;
-        }
-
-        @Override
-        protected boolean cmp(long l, long r) {
-            return l <= r;
-        }
-
-        @Override
-        protected boolean cmp(char l, char r) {
-            return l <= r;
-        }
-
-        @Override
-        protected boolean cmp(byte l, byte r) {
-            return l <= r;
-        }
-
-        @Override
-        protected boolean cmp(double l, double r) {
-            return l <= r;
-        }
-
-        @Override
-        protected BinaryComparisonNode createBinaryComparisonNode() {
-            return BinaryComparisonNode.create(__LE__, __GE__, "<=");
-        }
-
-        @Override
-        protected boolean cmpLen(int l, int r) {
-            return l <= r;
-        }
-
-    }
-
-    private static final class Lt extends BinCmpOp {
-
-        private static final Lt INSTANCE = new Lt();
-
-        @Override
-        protected boolean cmp(int l, int r) {
-            return l < r;
-        }
-
-        @Override
-        protected boolean cmp(long l, long r) {
-            return l < r;
-        }
-
-        @Override
-        protected boolean cmp(char l, char r) {
-            return l < r;
-        }
-
-        @Override
-        protected boolean cmp(byte l, byte r) {
-            return l < r;
-        }
-
-        @Override
-        protected boolean cmp(double l, double r) {
-            return l < r;
-        }
-
-        @Override
-        protected BinaryComparisonNode createBinaryComparisonNode() {
-            return BinaryComparisonNode.create(__LT__, __GT__, "<");
-        }
-
-        @Override
-        protected boolean cmpLen(int l, int r) {
-            return l < r;
-        }
-
-    }
-
-    private static final class Ge extends BinCmpOp {
-
-        private static final Ge INSTANCE = new Ge();
-
-        @Override
-        protected boolean cmp(int l, int r) {
-            return l >= r;
-        }
-
-        @Override
-        protected boolean cmp(long l, long r) {
-            return l >= r;
-        }
-
-        @Override
-        protected boolean cmp(char l, char r) {
-            return l >= r;
-        }
-
-        @Override
-        protected boolean cmp(byte l, byte r) {
-            return l >= r;
-        }
-
-        @Override
-        protected boolean cmp(double l, double r) {
-            return l >= r;
-        }
-
-        @Override
-        protected BinaryComparisonNode createBinaryComparisonNode() {
-            return BinaryComparisonNode.create(__GE__, __LE__, ">=");
-        }
-
-        @Override
-        protected boolean cmpLen(int l, int r) {
-            return l >= r;
-        }
-
-    }
-
-    private static final class Gt extends BinCmpOp {
-
-        private static final Gt INSTANCE = new Gt();
-
-        @Override
-        protected boolean cmp(int l, int r) {
-            return l > r;
-        }
-
-        @Override
-        protected boolean cmp(long l, long r) {
-            return l > r;
-        }
-
-        @Override
-        protected boolean cmp(char l, char r) {
-            return l > r;
-        }
-
-        @Override
-        protected boolean cmp(byte l, byte r) {
-            return l > r;
-        }
-
-        @Override
-        protected boolean cmp(double l, double r) {
-            return l > r;
-        }
-
-        @Override
-        protected BinaryComparisonNode createBinaryComparisonNode() {
-            return BinaryComparisonNode.create(__GT__, __LT__, ">");
-        }
-
-        @Override
-        protected boolean cmpLen(int l, int r) {
-            return l > r;
-        }
-
-    }
-
-    private static final class Eq extends BinCmpOp {
-
-        private static final Eq INSTANCE = new Eq();
-
-        @Override
-        protected boolean cmp(int l, int r) {
-            return l == r;
-        }
-
-        @Override
-        protected boolean cmp(long l, long r) {
-            return l == r;
-        }
-
-        @Override
-        protected boolean cmp(char l, char r) {
-            return l == r;
-        }
-
-        @Override
-        protected boolean cmp(byte l, byte r) {
-            return l == r;
-        }
-
-        @Override
-        protected boolean cmp(double l, double r) {
-            return java.lang.Double.compare(l, r) == 0;
-        }
-
-        @Override
-        protected BinaryComparisonNode createBinaryComparisonNode() {
-            return BinaryComparisonNode.create(__EQ__, __EQ__, "==");
-        }
-
-        @Override
-        protected boolean cmpLen(int l, int r) {
-            return l == r;
-        }
-
-    }
-
     public abstract static class CmpNode extends SequenceStorageBaseNode {
         @Child private GetItemScalarNode getItemNode;
         @Child private GetItemScalarNode getRightItemNode;
-        @Child private BinaryComparisonNode comparisonNode;
+        @Child private BinaryComparisonNode cmpOp;
         @Child private CoerceToBooleanNode castToBooleanNode;
 
         @Child private LenNode lenNode;
 
-        private final BinCmpOp cmpOp;
-
-        protected CmpNode(BinCmpOp cmpOp) {
+        protected CmpNode(BinaryComparisonNode cmpOp) {
             this.cmpOp = cmpOp;
         }
 
@@ -1972,10 +1745,10 @@ public abstract class SequenceStorageNodes {
             return lenNode;
         }
 
-        private static final boolean testingEqualsWithDifferingLengths(int llen, int rlen, BinCmpOp op) {
+        private boolean testingEqualsWithDifferingLengths(int llen, int rlen) {
             // shortcut: if the lengths differ, the lists differ.
-            CompilerAsserts.compilationConstant(op);
-            if (op == Eq.INSTANCE) {
+            CompilerAsserts.compilationConstant(cmpOp.getClass());
+            if (cmpOp instanceof BinaryComparisonNode.EqNode) {
                 if (llen != rlen) {
                     return true;
                 }
@@ -1993,7 +1766,7 @@ public abstract class SequenceStorageNodes {
         boolean doBoolStorage(BoolSequenceStorage left, BoolSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2010,7 +1783,7 @@ public abstract class SequenceStorageNodes {
         boolean doByteStorage(ByteSequenceStorage left, ByteSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2027,7 +1800,7 @@ public abstract class SequenceStorageNodes {
         boolean doIntStorage(IntSequenceStorage left, IntSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2044,7 +1817,7 @@ public abstract class SequenceStorageNodes {
         boolean doLongStorage(LongSequenceStorage left, LongSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2061,7 +1834,7 @@ public abstract class SequenceStorageNodes {
         boolean doDoubleStorage(DoubleSequenceStorage left, DoubleSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
-            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen)) {
                 return false;
             }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
@@ -2080,7 +1853,7 @@ public abstract class SequenceStorageNodes {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             int llen = getLenNode().execute(left);
             int rlen = getLenNode().execute(right);
-            if (testingEqualsWithDifferingLengths(llen, rlen, cmpOp)) {
+            if (testingEqualsWithDifferingLengths(llen, rlen)) {
                 return false;
             }
             ThreadState state;
@@ -2122,11 +1895,7 @@ public abstract class SequenceStorageNodes {
         }
 
         private boolean cmpGeneric(VirtualFrame frame, Object left, Object right) {
-            if (comparisonNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                comparisonNode = insert(cmpOp.createBinaryComparisonNode());
-            }
-            return castToBoolean(frame, comparisonNode.executeWith(frame, left, right));
+            return castToBoolean(frame, cmpOp.executeWith(frame, left, right));
         }
 
         private boolean castToBoolean(VirtualFrame frame, Object value) {
@@ -2138,24 +1907,25 @@ public abstract class SequenceStorageNodes {
         }
 
         public static CmpNode createLe() {
-            return CmpNodeGen.create(Le.INSTANCE);
+            return CmpNodeGen.create(BinaryComparisonNode.LeNode.create());
         }
 
         public static CmpNode createLt() {
-            return CmpNodeGen.create(Lt.INSTANCE);
+            return CmpNodeGen.create(BinaryComparisonNode.LtNode.create());
         }
 
         public static CmpNode createGe() {
-            return CmpNodeGen.create(Ge.INSTANCE);
+            return CmpNodeGen.create(BinaryComparisonNode.GeNode.create());
         }
 
         public static CmpNode createGt() {
-            return CmpNodeGen.create(Gt.INSTANCE);
+            return CmpNodeGen.create(BinaryComparisonNode.GtNode.create());
         }
 
         public static CmpNode createEq() {
-            return CmpNodeGen.create(Eq.INSTANCE);
+            return CmpNodeGen.create(BinaryComparisonNode.EqNode.create());
         }
+
     }
 
     /**
@@ -3560,7 +3330,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
         static SequenceStorage doSpecial(SequenceStorage s,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            return CompilerDirectives.castExact(cachedClass.cast(s).copy(), cachedClass);
+            return CompilerDirectives.castExact(CompilerDirectives.castExact(s, cachedClass).copy(), cachedClass);
         }
 
         @Specialization(replaces = "doSpecial")

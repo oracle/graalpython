@@ -79,9 +79,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                           GeneratorIfNode SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None
-                                              BinaryComparisonNodeGen SourceSection: [35,41]`i != j`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __ne__
+                                              NeNodeGen SourceSection: [35,41]`i != j`
                                                 ReadLocalCellNodeGen SourceSection: [35,36]`i`
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [1,i,Illegal]
