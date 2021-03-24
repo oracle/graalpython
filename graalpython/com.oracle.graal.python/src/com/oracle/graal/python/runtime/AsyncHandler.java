@@ -52,6 +52,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -141,8 +143,8 @@ public class AsyncHandler {
     });
 
     private final WeakReference<PythonContext> context;
-    private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
-    private static final int GIL_RELEASE_DELAY = 10;
+    private static final int ASYNC_ACTION_DELAY = 25;
+    private static final int GIL_RELEASE_DELAY = 100;
 
     private class AsyncRunnable implements Runnable {
         private final Supplier<AsyncAction> actionSupplier;
@@ -162,9 +164,21 @@ public class AsyncHandler {
                         @Override
                         @SuppressWarnings("try")
                         protected void perform(ThreadLocalAction.Access access) {
-                            if (tas.compareAndSet(false, true)) {
-                                try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-                                    asyncAction.execute(ctx);
+                            ReentrantLock gil = ctx.getGil();
+                            // if this thread owns the gil, or if nobody does, try to run the action here
+                            if (gil.isHeldByCurrentThread() || !gil.isLocked()) {
+                                if (tas.compareAndSet(false, true)) {
+                                    boolean ownsGil = gil.isHeldByCurrentThread();
+                                    if (!ownsGil) {
+                                        TruffleSafepoint.setBlockedThreadInterruptible(access.getLocation(), ReentrantLock::lockInterruptibly, gil);
+                                    }
+                                    try {
+                                        asyncAction.execute(ctx);
+                                    } finally {
+                                        if (!ownsGil) {
+                                            gil.unlock();
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -240,18 +254,24 @@ public class AsyncHandler {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext ctx = context.get();
         Env env = ctx.getEnv();
+        final AtomicBoolean gilReleaseRequested = new AtomicBoolean(false);
         executorService.scheduleWithFixedDelay(() -> {
-            env.submitThreadLocal(null, new ThreadLocalAction(false, false) {
-                @Override
-                @SuppressWarnings("try")
-                protected void perform(ThreadLocalAction.Access access) {
-                    if (ctx.ownsGil()) {
-                        try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
+            if (gilReleaseRequested.compareAndSet(false, true)) {
+                env.submitThreadLocal(null, new ThreadLocalAction(true, false) {
+                    @Override
+                    @SuppressWarnings("try")
+                    protected void perform(ThreadLocalAction.Access access) {
+                        gilReleaseRequested.set(false);
+                        ReentrantLock gil = ctx.getGil();
+                        // if this thread owns the gil, or if nobody does, try to run the action here
+                        if (gil.isHeldByCurrentThread()) {
+                            gil.unlock();
                             Thread.yield();
+                            TruffleSafepoint.setBlockedThreadInterruptible(access.getLocation(), ReentrantLock::lockInterruptibly, gil);
                         }
                     }
-                }
-            });
+                });
+            }
         }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
     }
 

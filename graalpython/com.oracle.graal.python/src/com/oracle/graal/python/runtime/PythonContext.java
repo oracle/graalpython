@@ -1121,6 +1121,13 @@ public final class PythonContext {
     }
 
     /**
+     * Only to be used from {@link AsyncHandler}
+     */
+    ReentrantLock getGil() {
+        return globalInterpreterLock;
+    }
+
+    /**
      * Should not be called directly.
      *
      * @see GilNode
