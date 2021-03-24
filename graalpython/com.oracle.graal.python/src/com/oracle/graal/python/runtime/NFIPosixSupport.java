@@ -42,15 +42,14 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
-import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
-import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR;
-import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY;
-import static com.oracle.graal.python.runtime.PosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
+import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.reflect.Field;
 import java.nio.ByteOrder;
@@ -68,6 +67,8 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.SocketLibrary.SockAddrIn;
+import com.oracle.graal.python.runtime.SocketLibrary.SockAddrStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -196,11 +197,17 @@ public final class NFIPosixSupport extends PosixSupport {
         call_system("([sint8]):sint32"),
 
         call_socket("(sint32, sint32, sint32):sint32"),
-        call_bind("(sint32, [sint8], sint32):sint32"),
-        call_getsockname("(sint32, [sint8], [sint32]):sint32"),
-        call_sendto("(sint32, [sint8], sint32, sint32, [sint8], sint32):sint32"),
-        call_recvfrom("(sint32, [sint8], sint32, sint32, [sint8], [sint32]):sint32"),
-        ;
+        call_bind("(sint32, sint64, sint32):sint32"),
+        call_bind_inet("(sint32, sint32, sint32):sint32"),
+        call_getsockname("(sint32, sint64, [sint32]):sint32"),
+        call_getsockname_inet("(sint32, [sint32]):sint32"),
+        call_sendto("(sint32, [sint8], sint32, sint32, sint64, sint32):sint32"),
+        call_sendto_inet("(sint32, [sint8], sint32, sint32, sint32, sint32):sint32"),
+        call_recvfrom("(sint32, [sint8], sint32, sint32, sint64, [sint32]):sint32"),
+        call_recvfrom_inet("(sint32, [sint8], sint32, sint32, [sint32]):sint32"),
+
+        get_sockaddr_in_members("(sint64, [sint32]):void"),
+        set_sockaddr_in_members("(sint64, sint32, sint32):void");
 
         private final String signature;
 
@@ -1326,109 +1333,187 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void bind(int sockfd, Object addrObj,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Sockaddr addr = (Sockaddr) addrObj;
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_bind, sockfd, wrap(addr.data), addr.len);
-        if (result == -1) {
-            throw getErrnoAndThrowPosixException(invokeNode);
-        }
-    }
-
-    @ExportMessage
-    public void getsockname(int sockfd, Object addrObj,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Sockaddr addr = (Sockaddr) addrObj;
-        int[] addrLen = new int[]{addr.len};
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_getsockname, sockfd, wrap(addr.data), wrap(addrLen));
-        if (result == -1) {
-            throw getErrnoAndThrowPosixException(invokeNode);
-        }
-        if (addrLen[0] > addr.len) {
-            // TODO the address has been truncated
-        }
-        addr.len = addrLen[0];
-    }
-
-    @ExportMessage
-    public int sendto(int sockfd, byte[] buf, int len, int flags, Object destAddrObj,
-                      @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int result;
-        if (destAddrObj == null) {
-            result = invokeNode.callInt(this, PosixNativeFunction.call_sendto, sockfd, wrap(buf), len, flags, null, 0);
-        } else {
-            Sockaddr destAddr = (Sockaddr) destAddrObj;
-            result = invokeNode.callInt(this, PosixNativeFunction.call_sendto, sockfd, wrap(buf), len, flags, wrap(destAddr.data), destAddr.len);
-        }
-        if (result == -1) {
-            throw getErrnoAndThrowPosixException(invokeNode);
-        }
-        return result;
-    }
-
-    @ExportMessage
-    public int recvfrom(int sockfd, byte[] buf, int len, int flags, Object srcAddrObj,
+    public static class Bind {
+        @Specialization
+        static void inet(NFIPosixSupport receiver, int sockfd, SockAddrIn addr,
                         @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int result;
-        if (srcAddrObj == null) {
-            result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), len, flags, null, 0);
-        } else {
-            Sockaddr srcAddr = (Sockaddr) srcAddrObj;
-            int[] addrLen = new int[]{srcAddr.len};
-            result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), len, flags, wrap(srcAddr.data), wrap(addrLen));
-            if (addrLen[0] > srcAddr.len) {
-                // TODO the address has been truncated, but data have been received
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_bind_inet, sockfd, addr.getPort(), addr.getAddress());
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
             }
-            srcAddr.len = addrLen[0];
         }
-        if (result == -1) {
-            throw getErrnoAndThrowPosixException(invokeNode);
+
+        @Specialization
+        static void generic(NFIPosixSupport receiver, int sockfd, SockAddrStorageImpl addr,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_bind, sockfd, addr.getPtr(), addr.getLen());
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
         }
-        return result;
+
     }
 
     @ExportMessage
-    public Object createSockaddrIn() {
-        Sockaddr sockaddrIn = new Sockaddr(SIZEOF_STRUCT_SOCKADDR_IN.value);
-        // TODO assumes sin_family is u16
-        nativeByteArraySupport().putShort(sockaddrIn.data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY.value, (short) AF_INET.value);
-        return sockaddrIn;
+    public static class Getsockname {
+        @Specialization
+        static void inet(NFIPosixSupport receiver, int sockfd, SockAddrIn addr,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int[] members = new int[2];
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_getsockname_inet, sockfd, receiver.wrap(members));
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            addr.setPort(members[0]);
+            addr.setAddress(members[1]);
+        }
+
+        @Specialization
+        static void generic(NFIPosixSupport receiver, int sockfd, SockAddrStorageImpl addr,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_getsockname, sockfd, addr.getPtr(), receiver.wrap(addr.lenAndFamily));
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            assert addr.getLen() <= SIZEOF_STRUCT_SOCKADDR_STORAGE.value;
+        }
     }
 
     @ExportMessage
-    public short sockaddrInGetPort(Object sockaddrIn) {
-        // TODO check that it is AF_INET?
-        // TODO assumes sin_port is u16
-        // TODO should we use positive ints for ports instead of signed shorts? Would not work well with htons
-        return nativeByteArraySupport().getShort(((Sockaddr) sockaddrIn).data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT.value);
+    public static class Sendto {
+        @Specialization
+        static int inet(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, SockAddrIn destAddr,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_sendto_inet, sockfd, receiver.wrap(buf), len, flags, destAddr.getPort(), destAddr.getAddress());
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            return result;
+        }
+
+        @Specialization
+        static int generic(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, SockAddrStorageImpl destAddr,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_sendto, sockfd, receiver.wrap(buf), len, flags, destAddr.getPtr(), destAddr.getLen());
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            return result;
+        }
     }
 
     @ExportMessage
-    public int sockaddrInGetAddr(Object sockaddrIn) {
-        // TODO check that it is AF_INET?
-        // TODO assumes sin_addr is u32
-        return nativeByteArraySupport().getInt(((Sockaddr) sockaddrIn).data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR.value + OFFSETOF_STRUCT_IN_ADDR_S_ADDR.value);
+    public static class Recvfrom {
+        @Specialization
+        static int inet(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, SockAddrIn srcAddr,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int[] members = new int[2];
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_recvfrom_inet, sockfd, receiver.wrap(buf), len, flags, receiver.wrap(members));
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            srcAddr.setPort(members[0]);
+            srcAddr.setAddress(members[1]);
+            return result;
+        }
+
+        @Specialization
+        static int generic(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, SockAddrStorageImpl srcAddr,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_recvfrom, sockfd, receiver.wrap(buf), len, flags, srcAddr.getPtr(), receiver.wrap(srcAddr.lenAndFamily));
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            assert srcAddr.getLen() <= SIZEOF_STRUCT_SOCKADDR_STORAGE.value;
+            return result;
+        }
     }
 
     @ExportMessage
-    public void sockaddrInSetPort(Object sockaddrIn, short port) {
-        // TODO check that it is AF_INET?
-        nativeByteArraySupport().putShort(((Sockaddr) sockaddrIn).data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT.value, port);
+    public SockAddrStorage allocSockAddrStorage() {
+        return new SockAddrStorageImpl();
     }
 
     @ExportMessage
-    public void sockaddrInSetAddr(Object sockaddrIn, int addr) {
-        // TODO check that it is AF_INET?
-        nativeByteArraySupport().putInt(((Sockaddr) sockaddrIn).data, OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR.value + OFFSETOF_STRUCT_IN_ADDR_S_ADDR.value, addr);
+    public void freeSockAddrStorage(SockAddrStorage sockAddrStorage) {
+        ((SockAddrStorageImpl) sockAddrStorage).release();
     }
 
-    protected static class Sockaddr {
-        final byte[] data;
-        int len;
+    @ExportMessage
+    public int getSockAddrStorageFamily(SockAddrStorage sockAddrStorage) {
+        SockAddrStorageImpl addr = (SockAddrStorageImpl) sockAddrStorage;
+        return addr.getFamily();
+    }
 
-        Sockaddr(int len) {
-            this.data = new byte[len];      // TODO may not be aligned correctly
-            this.len = len;
+    @ExportMessage
+    public static class FillSockAddrStorage {
+        @Specialization
+        static void inet(NFIPosixSupport receiver, SockAddrStorage sockAddrStorage, SockAddrIn src,
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            SockAddrStorageImpl dest = (SockAddrStorageImpl) sockAddrStorage;
+            invokeNode.call(receiver, PosixNativeFunction.set_sockaddr_in_members, dest.getPtr(), src.getPort(), src.getAddress());
+            dest.setLenAndFamily(SIZEOF_STRUCT_SOCKADDR_IN.value, AF_INET.value);
+        }
+
+        @Specialization
+        static void copy(NFIPosixSupport receiver, SockAddrStorage sockAddrStorage, SockAddrStorageImpl src) {
+            SockAddrStorageImpl dest = (SockAddrStorageImpl) sockAddrStorage;
+            UNSAFE.copyMemory(src.ptr, dest.ptr, SIZEOF_STRUCT_SOCKADDR_STORAGE.value);
+            dest.lenAndFamily[0] = src.lenAndFamily[0];
+            dest.lenAndFamily[1] = src.lenAndFamily[1];
+        }
+    }
+
+    @ExportMessage
+    public SockAddrIn sockAddrStorageAsSockAddrIn(SockAddrStorage sockAddrStorage,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        SockAddrStorageImpl addr = (SockAddrStorageImpl) sockAddrStorage;
+        assert addr.getFamily() == AF_INET.value;
+        assert addr.getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
+        int[] members = new int[2];
+        invokeNode.call(this, PosixNativeFunction.get_sockaddr_in_members, addr.getPtr(), wrap(members));
+        return new SockAddrIn(members[0], members[1]);
+    }
+
+    protected static class SockAddrStorageImpl implements SockAddrStorage {
+        private long ptr;
+        private final int[] lenAndFamily = new int[]{0, AF_UNSPEC.value};
+
+        SockAddrStorageImpl() {
+            ptr = UNSAFE.allocateMemory(SIZEOF_STRUCT_SOCKADDR_STORAGE.value);
+        }
+
+        void release() {
+            checkReleased();
+            UNSAFE.freeMemory(ptr);
+            ptr = 0;
+        }
+
+        long getPtr() {
+            checkReleased();
+            return ptr;
+        }
+
+        int getLen() {
+            checkReleased();
+            return lenAndFamily[0];
+        }
+
+        int getFamily() {
+            checkReleased();
+            return lenAndFamily[1];
+        }
+
+        void setLenAndFamily(int len, int family) {
+            checkReleased();
+            lenAndFamily[0] = len;
+            lenAndFamily[1] = family;
+        }
+
+        private void checkReleased() {
+            if (ptr == 0) {
+                throw shouldNotReachHere("SockAddrStorage has already been released");
+            }
         }
     }
 

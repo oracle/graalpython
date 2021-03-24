@@ -556,36 +556,92 @@ int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
     return socket(family, type, protocol);
 }
 
-int32_t call_bind(int32_t sockfd, struct sockaddr *addr, int32_t addr_len) {
-    assert(addr_len >= 0 && addr_len <= sizeof(sockaddr_storage));
-    return bind(sockfd, addr, addr_len);
+int32_t call_bind(int32_t sockfd, int64_t addr, int32_t addr_len) {
+    return bind(sockfd, (struct sockaddr *) addr, addr_len);
 }
 
-int32_t call_getsockname(int32_t sockfd, struct sockaddr *addr, int32_t *addr_len) {
-    assert(addr_len != NULL && *addr_len >= 0 && *addr_len <= sizeof(sockaddr_storage));
-    socklen_t l = *addr_len;
-    int res = getsockname(sockfd, addr, &l);
-    assert(l <= sizeof(sockaddr_storage));  // the conversion to signed below is well-defined
-    *addr_len = l;
+int32_t call_bind_inet(int32_t sockfd, int32_t port, int32_t address) {
+    struct sockaddr_in sa;
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(port);
+    sa.sin_addr.s_addr = htonl(address);
+    return bind(sockfd, (struct sockaddr *) &sa, sizeof(sa));
+}
+
+int32_t call_getsockname(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
+    struct sockaddr *sa = (struct sockaddr *) addr;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int res = getsockname(sockfd, sa, &l);
+    if (res != -1) {
+        assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
+        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
+        len_and_family[1] = sa->sa_family;
+    }
+    return res;
+}
+
+int32_t call_getsockname_inet(int32_t sockfd, int32_t *members) {
+    struct sockaddr_in sa;
+    socklen_t l = sizeof(sa);
+    int res = getsockname(sockfd, (struct sockaddr *) &sa, &l);
+    if (res != -1) {
+        assert(l == sizeof(sa) && sa.sin_family != AF_INET);
+        members[0] = ntohs(sa.sin_port);
+        members[1] = ntohl(sa.sin_addr.s_addr);
+    }
     return res;
 }
 
 //TODO len should be size_t, retval should be ssize_t
-int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, struct sockaddr *dest_addr, int32_t addr_len) {
-    assert(addr_len >= 0 && addr_len <= sizeof(sockaddr_storage));
-    return sendto(sockfd, buf, len, flags, dest_addr, addr_len);
+int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t addr, int32_t addr_len) {
+    return sendto(sockfd, buf, len, flags, (struct sockaddr *) addr, addr_len);
 }
 
-int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, struct sockaddr *src_addr, int32_t *addr_len) {
-    if (src_addr == NULL || addr_len == NULL) {
-        return recvfrom(sockfd, buf, len, flags, NULL, NULL);
+int32_t call_sendto_inet(int32_t sockfd, void *buf, int32_t len, int32_t flags, int32_t port, int32_t address) {
+    struct sockaddr_in sa;
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(port);
+    sa.sin_addr.s_addr = htonl(address);
+    return sendto(sockfd, buf, len, flags, (struct sockaddr *) &sa, sizeof(sa));
+}
+
+int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t src_addr, int32_t *len_and_family) {
+    struct sockaddr *sa = (struct sockaddr *) src_addr;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int res = recvfrom(sockfd, buf, len, flags, sa, &l);
+    if (res != -1) {
+        assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
+        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
+        len_and_family[1] = sa->sa_family;
     }
-    assert(*addr_len >= 0 && *addr_len <= sizeof(sockaddr_storage));
-    socklen_t l = *addr_len;
-    int res = recvfrom(sockfd, buf, len, flags, src_addr, &l);
-    assert(l <= sizeof(sockaddr_storage));  // the conversion to signed below is well-defined
-    *addr_len = l;
     return res;
+}
+
+int32_t call_recvfrom_inet(int32_t sockfd, void *buf, int32_t len, int32_t flags, int32_t *members) {
+    struct sockaddr_in sa;
+    socklen_t l = sizeof(sa);
+    int res = recvfrom(sockfd, buf, len, flags, (struct sockaddr *) &sa, &l);
+    if (res != -1) {
+        assert(l == sizeof(sa) && sa.sin_family != AF_INET);
+        members[0] = ntohs(sa.sin_port);
+        members[1] = ntohl(sa.sin_addr.s_addr);
+    }
+    return res;
+}
+
+void get_sockaddr_in_members(int64_t addr, int32_t *members) {
+    struct sockaddr_in *sa = (struct sockaddr_in *) addr;
+    assert(sa->sin_family == AF_INET);
+    members[0] = ntohs(sa->sin_port);
+    members[1] = ntohl(sa->sin_addr.s_addr);
+}
+
+void set_sockaddr_in_members(int64_t addr, int32_t port, int32_t address) {
+    struct sockaddr_in *sa = (struct sockaddr_in *) addr;
+    memset(sa, 0, sizeof(*sa));
+    sa->sin_family = AF_INET;
+    sa->sin_port = htons(port);
+    sa->sin_addr.s_addr = htonl(address);
 }
 
 int32_t get_errno() {
