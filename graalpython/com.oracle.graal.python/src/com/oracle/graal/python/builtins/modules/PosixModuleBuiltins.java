@@ -497,7 +497,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         errorProfile.enter();
                         gil.acquire();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                            getContext().triggerAsyncActions(frame);
+                            getContext().triggerAsyncActions();
                             gil.release(true);
                         } else {
                             throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
@@ -578,7 +578,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             gil.acquire(); // need gil to trigger actions or construct OSError
-                            getContext().triggerAsyncActions(frame);
+                            getContext().triggerAsyncActions();
                             gil.release(true); // continue read loop without gil
                         } else {
                             throw e;
@@ -608,14 +608,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached BranchProfile errorProfile,
                         @Cached GilNode gil) {
             try {
-                return write(frame, fd, data, posixLib, errorProfile, gil);
+                return write(fd, data, posixLib, errorProfile, gil);
             } catch (PosixException e) {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
 
-        public long write(VirtualFrame frame, int fd, byte[] data,
+        public long write(int fd, byte[] data,
                         PosixSupportLibrary posixLib,
                         BranchProfile errorProfile, GilNode gil) throws PosixException {
             gil.release(true);
@@ -627,7 +627,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             gil.acquire();
-                            getContext().triggerAsyncActions(frame);
+                            getContext().triggerAsyncActions();
                             gil.release(true);
                         } else {
                             throw e;
@@ -821,7 +821,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
+                        getContext().triggerAsyncActions();
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -851,7 +851,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
+                        getContext().triggerAsyncActions();
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1027,7 +1027,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
+                        getContext().triggerAsyncActions();
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1249,7 +1249,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
+                        getContext().triggerAsyncActions();
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1798,7 +1798,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     errorProfile.enter();
                     gil.acquire();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
+                        getContext().triggerAsyncActions();
                         gil.release(true);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);

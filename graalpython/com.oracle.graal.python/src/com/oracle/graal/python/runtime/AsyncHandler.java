@@ -71,6 +71,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -142,6 +143,17 @@ public class AsyncHandler {
     private static final byte SHOULD_RELEASE_GIL = 2;
 
     private volatile byte scheduledActionsFlags = 0;
+
+    /**
+     * We separate checking and running async actions in the compilation root from running the at
+     * backedges of loops. At a compilation root it is quite cheap to do the check and branch into a
+     * call, but at the backedges of loops this is expensive. So instead, we use the scheduled
+     * actions to set this flag if we didn't enter an async action trigger in a reasonable time, and
+     * the backedge triggers use a profile so that it is quite unlikely that short running loops or
+     * loops with proper non-inlined calls in them would ever trigger async actions, since the
+     * compilation roots are entered often enough.
+     */
+    private volatile boolean needsAdditionalSafepointExecution = false;
 
     private final WeakReference<PythonContext> context;
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
@@ -231,13 +243,26 @@ public class AsyncHandler {
     void activateGIL() {
         CompilerAsserts.neverPartOfCompilation();
         executorService.scheduleWithFixedDelay(() -> {
+            if ((scheduledActionsFlags & SHOULD_RELEASE_GIL) != 0) {
+                // didn't release the gil at all in the last GIL_RELEASE_DELAY timeframe. Panic.
+                needsAdditionalSafepointExecution = true;
+            }
             scheduledActionsFlags |= SHOULD_RELEASE_GIL;
         }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
     }
 
-    void triggerAsyncActions(@SuppressWarnings("unused") VirtualFrame frame) {
+    void triggerAsyncActions() {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, scheduledActionsFlags != 0)) {
             triggerAsyncActionsBoundary();
+        }
+    }
+
+    void triggerAsyncActionsProfiled(ConditionProfile profile) {
+        if (profile.profile(needsAdditionalSafepointExecution)) {
+            needsAdditionalSafepointExecution = false;
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, scheduledActionsFlags != 0)) {
+                triggerAsyncActionsBoundary();
+            }
         }
     }
 

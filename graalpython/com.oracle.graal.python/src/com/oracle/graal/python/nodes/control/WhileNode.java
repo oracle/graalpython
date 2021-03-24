@@ -37,12 +37,14 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
     private final LoopConditionProfile conditionProfile = LoopConditionProfile.createCountingProfile();
     @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @CompilationFinal private ConditionProfile asyncActionProfile;
 
     @Child CoerceToBooleanNode condition;
     @Child StatementNode body;
@@ -60,7 +62,11 @@ final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
-            contextRef.get().triggerAsyncActions(frame);
+            if (asyncActionProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asyncActionProfile = ConditionProfile.createBinaryProfile();
+            }
+            contextRef.get().triggerAsyncActionsProfiled(asyncActionProfile);
             return true;
         }
         return false;
