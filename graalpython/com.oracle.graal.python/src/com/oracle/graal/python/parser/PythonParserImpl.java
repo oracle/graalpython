@@ -40,6 +40,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -386,17 +388,35 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
-        try {
-            if (e instanceof PException && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.PARSE_ERROR) {
-                throw (PException) e;
+        String message = null;
+        Object[] messageArgs = PythonUtils.EMPTY_OBJECT_ARRAY;
+        if (e instanceof PException) {
+            PException pException = (PException) e;
+            try {
+                InteropLibrary uncached = InteropLibrary.getUncached(pException);
+                // If the exception is already a syntax error then just re-throw.
+                if (uncached.getExceptionType(pException) == ExceptionType.PARSE_ERROR) {
+                    throw pException;
+                }
+            } catch (UnsupportedMessageException unsupportedMessageException) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
-        } catch (UnsupportedMessageException unsupportedMessageException) {
-            throw CompilerDirectives.shouldNotReachHere();
+            /*
+             * If we got a Python exception but it's not a syntax error then we need to pass the
+             * message format AND the message arguments. Also, there is no need to reify the Python
+             * exception since we just drop it.
+             */
+            PBaseException unreifiedException = pException.getUnreifiedException();
+            if (unreifiedException.hasMessageFormat()) {
+                message = unreifiedException.getMessageFormat();
+                messageArgs = unreifiedException.getMessageArgs();
+            }
+        } else {
+            // from parser we are getting RuntimeExceptions
+            message = e instanceof RuntimeException ? e.getMessage() : null;
         }
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
-        // from parser we are getting RuntimeExceptions
-        String message = e instanceof RuntimeException && e.getMessage() != null ? e.getMessage() : "invalid syntax";
         ErrorType errorType = PythonErrorStrategy.getErrorType(e, section);
-        throw errors.raiseInvalidSyntax(errorType, source, section, message);
+        throw errors.raiseInvalidSyntax(errorType, source, section, message != null ? message : "invalid syntax", messageArgs);
     }
 }

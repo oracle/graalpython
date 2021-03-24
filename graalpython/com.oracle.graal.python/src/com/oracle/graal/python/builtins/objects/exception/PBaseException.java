@@ -58,10 +58,10 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -194,21 +194,16 @@ public final class PBaseException extends PythonObject {
 
     public Object[] getMessageArgs() {
         // clone message args to ensure that they stay unmodified
-        return messageArgs.clone();
+        return messageArgs != null ? messageArgs.clone() : PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @TruffleBoundary
-    public String getFormattedMessage(PythonObjectLibrary lib) {
-        final Object clazz;
-        if (lib == null) {
-            clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(this);
-        } else {
-            clazz = lib.getLazyPythonClass(this);
-        }
+    public String getFormattedMessage(PythonObjectLibrary baseExceptionLib, PythonObjectLibrary argsLib) {
+        final Object clazz = baseExceptionLib.getLazyPythonClass(this);
         String typeName = GetNameNode.doSlowPath(clazz);
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(lib, messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(argsLib, messageFormat, getMessageArgs());
             } else if (hasMessageFormat) {
                 return typeName + ": " + messageFormat;
             } else {
@@ -228,7 +223,18 @@ public final class PBaseException extends PythonObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return getFormattedMessage(PythonObjectLibrary.getUncached());
+        // We *MUST NOT* call anything here that may need a context!
+        StringBuilder sb = new StringBuilder(GetLazyPythonClass.getInitialClass(this).toString());
+        if (messageArgs != null && messageArgs.length > 0) {
+            sb.append("(fmt=\"").append(messageFormat).append("\", args = (");
+            for (Object arg : messageArgs) {
+                sb.append(arg).append(", ");
+            }
+            sb.append(") )");
+        } else if (hasMessageFormat) {
+            sb.append("(fmt=\"").append(messageFormat).append('"');
+        }
+        return sb.toString();
     }
 
     public LazyTraceback internalReifyException(PFrame.Reference curFrameInfo) {
@@ -276,7 +282,8 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     RuntimeException throwException(
                     @Cached PRaiseNode raiseNode,
-                    @CachedLanguage PythonLanguage language, @Exclusive @Cached GilNode gil) {
+                    @CachedLanguage PythonLanguage language,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             throw raiseNode.raiseExceptionObject(this, language);
@@ -287,7 +294,8 @@ public final class PBaseException extends PythonObject {
 
     @ExportMessage
     ExceptionType getExceptionType(
-                    @CachedLibrary("this") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object clazz = lib.getLazyPythonClass(this);
@@ -321,10 +329,12 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    String getExceptionMessage(@CachedLibrary("this") PythonObjectLibrary lib, @Exclusive @Cached GilNode gil) {
+    String getExceptionMessage(@CachedLibrary("this") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary argsLib,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return getFormattedMessage(lib);
+            return getFormattedMessage(lib, argsLib);
         } finally {
             gil.release(mustRelease);
         }
@@ -334,7 +344,8 @@ public final class PBaseException extends PythonObject {
     int getExceptionExitStatus(
                     @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
-                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (getExceptionType(lib, gil) == ExceptionType.EXIT) {
@@ -357,7 +368,7 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    boolean hasExceptionCause(@Exclusive @Cached GilNode gil) {
+    boolean hasExceptionCause(@Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return cause != null || (!suppressContext && context != null);
@@ -368,7 +379,8 @@ public final class PBaseException extends PythonObject {
 
     @ExportMessage
     Object getExceptionCause(
-                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
             if (cause != null) {

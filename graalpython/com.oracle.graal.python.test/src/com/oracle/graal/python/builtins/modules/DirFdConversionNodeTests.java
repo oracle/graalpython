@@ -50,26 +50,13 @@ import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.DirFdConversionNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
-public class DirFdConversionNodeTests {
-    @Rule public ExpectedException expectedException = ExpectedException.none();
+public class DirFdConversionNodeTests extends ConversionNodeTests {
 
     @Before
     public void setUp() {
@@ -105,15 +92,13 @@ public class DirFdConversionNodeTests {
 
     @Test
     public void longTooBig() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: fd is greater than maximum");
+        expectPythonMessage("OverflowError: fd is greater than maximum");
         call(1L << 40);
     }
 
     @Test
     public void longTooSmall() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: fd is less than minimum");
+        expectPythonMessage("OverflowError: fd is less than minimum");
         call(-1L << 40);
     }
 
@@ -124,15 +109,13 @@ public class DirFdConversionNodeTests {
 
     @Test
     public void pintTooBig() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: fd is greater than maximum");
+        expectPythonMessage("OverflowError: fd is greater than maximum");
         call(factory().createInt(BigInteger.ONE.shiftLeft(100)));
     }
 
     @Test
     public void pintTooSmall() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: fd is less than minimum");
+        expectPythonMessage("OverflowError: fd is less than minimum");
         call(factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
     }
 
@@ -143,15 +126,13 @@ public class DirFdConversionNodeTests {
 
     @Test
     public void indexTooBig() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: fd is greater than maximum");
+        expectPythonMessage("OverflowError: fd is greater than maximum");
         call(evalValue("class C:\n  def __index__(self):\n    return 1 << 40\nC()"));
     }
 
     @Test
     public void indexTooSmall() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("OverflowError: fd is less than minimum");
+        expectPythonMessage("OverflowError: fd is less than minimum");
         call(evalValue("class C:\n  def __index__(self):\n    return -1 << 100\nC()"));
     }
 
@@ -162,30 +143,12 @@ public class DirFdConversionNodeTests {
 
     @Test
     public void unsupportedType1() {
-        expectedException.expect(PException.class);
-        expectedException.expectMessage("TypeError: argument should be integer or None, not float");
+        expectPythonMessage("TypeError: argument should be integer or None, not float");
         call(3.14);
     }
 
-    private static int call(Object arg) {
-        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new RootNode(null) {
-            @Child private DirFdConversionNode node = PosixModuleBuiltinsFactory.DirFdConversionNodeGen.create();
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                Object[] arguments = PArguments.create(0);
-                PythonContext pythonContext = getContext();
-                PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
-                PFrame.Reference frameInfo = ExecutionContext.IndirectCalleeContext.enterIndirect(pythonContext, arguments);
-                PArguments.setCurrentFrameInfo(arguments, frameInfo);
-                try {
-                    return node.execute(Truffle.getRuntime().createMaterializedFrame(arguments), arg);
-                } finally {
-                    ExecutionContext.IndirectCalleeContext.exit(pythonContext, frameInfo);
-                }
-            }
-        });
-        Object result = callTarget.call();
+    protected static int call(Object arg) {
+        Object result = call(arg, PosixModuleBuiltinsFactory.DirFdConversionNodeGen.create());
         Assert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
         return (int) result;
     }

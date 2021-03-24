@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.nodes.literal;
 
+import com.oracle.graal.python.test.PythonTests;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -91,6 +92,7 @@ import com.oracle.graal.python.parser.sst.WhileSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.parser.ParserTestBase;
 
 public class FormatStringTests extends ParserTestBase {
@@ -101,300 +103,300 @@ public class FormatStringTests extends ParserTestBase {
     }
 
     @Test
-    public void justBraces() throws Exception {
+    public void justBraces() {
         testFormatString("f'{{}}'", "{}");
     }
 
     @Test
-    public void doubleBrace01() throws Exception {
+    public void doubleBrace01() {
         testFormatString("f'{{name}}'", "{name}");
     }
 
     @Test
-    public void doubleBrace02() throws Exception {
+    public void doubleBrace02() {
         testFormatString("f'Hi {{name}}'", "Hi {name}");
     }
 
     @Test
-    public void doubleBrace03() throws Exception {
+    public void doubleBrace03() {
         testFormatString("f'{{name}} first'", "{name} first");
     }
 
     @Test
-    public void doubleBrace04() throws Exception {
+    public void doubleBrace04() {
         testFormatString("f'Hi {{name}} first'", "Hi {name} first");
     }
 
     @Test
-    public void doubleBrace05() throws Exception {
+    public void doubleBrace05() {
         testFormatString("f'{{'", "{");
     }
 
     @Test
-    public void doubleBrace06() throws Exception {
+    public void doubleBrace06() {
         testFormatString("f'a{{'", "a{");
     }
 
     @Test
-    public void doubleBrace07() throws Exception {
+    public void doubleBrace07() {
         testFormatString("f'{{b'", "{b");
     }
 
     @Test
-    public void doubleBrace08() throws Exception {
+    public void doubleBrace08() {
         testFormatString("f'a{{b'", "a{b");
     }
 
     @Test
-    public void doubleBrace09() throws Exception {
+    public void doubleBrace09() {
         testFormatString("f'}}'", "}");
     }
 
     @Test
-    public void doubleBrace10() throws Exception {
+    public void doubleBrace10() {
         testFormatString("f'a}}'", "a}");
     }
 
     @Test
-    public void doubleBrace11() throws Exception {
+    public void doubleBrace11() {
         testFormatString("f'}}b'", "}b");
     }
 
     @Test
-    public void doubleBrace12() throws Exception {
+    public void doubleBrace12() {
         testFormatString("f'a}}b'", "a}b");
     }
 
     @Test
-    public void doubleBrace13() throws Exception {
+    public void doubleBrace13() {
         testFormatString("f'{{}}'", "{}");
     }
 
     @Test
-    public void doubleBrace14() throws Exception {
+    public void doubleBrace14() {
         testFormatString("f'a{{}}'", "a{}");
     }
 
     @Test
-    public void doubleBrace15() throws Exception {
+    public void doubleBrace15() {
         testFormatString("f'{{b}}'", "{b}");
     }
 
     @Test
-    public void doubleBrace16() throws Exception {
+    public void doubleBrace16() {
         testFormatString("f'{{}}c'", "{}c");
     }
 
     @Test
-    public void doubleBrace17() throws Exception {
+    public void doubleBrace17() {
         testFormatString("f'a{{b}}'", "a{b}");
     }
 
     @Test
-    public void doubleBrace18() throws Exception {
+    public void doubleBrace18() {
         testFormatString("f'a{{}}c'", "a{}c");
     }
 
     @Test
-    public void doubleBrace19() throws Exception {
+    public void doubleBrace19() {
         testFormatString("f'{{b}}'", "{b}");
     }
 
     @Test
-    public void doubleBrace20() throws Exception {
+    public void doubleBrace20() {
         testFormatString("f'a{{b}}c'", "a{b}c");
     }
 
     @Test
-    public void doubleBrace21() throws Exception {
+    public void doubleBrace21() {
         testFormatString("f'{{{10}'", "{+format((10))");
     }
 
     @Test
-    public void doubleBrace22() throws Exception {
+    public void doubleBrace22() {
         testFormatString("f'}}{10}'", "}+format((10))");
     }
 
     @Test
-    public void doubleBrace23() throws Exception {
+    public void doubleBrace23() {
         testFormatString("f'}}{{{10}'", "}{+format((10))");
     }
 
     @Test
-    public void doubleBrace24() throws Exception {
+    public void doubleBrace24() {
         testFormatString("f'}}a{{{10}'", "}a{+format((10))");
     }
 
     @Test
-    public void doubleBrace25() throws Exception {
+    public void doubleBrace25() {
         testFormatString("f'{10}{{'", "format((10))+{");
     }
 
     @Test
-    public void doubleBrace26() throws Exception {
+    public void doubleBrace26() {
         testFormatString("f'{10}}}'", "format((10))+}");
     }
 
     @Test
-    public void doubleBrace27() throws Exception {
+    public void doubleBrace27() {
         testFormatString("f'{10}}}{{'", "format((10))+}{");
     }
 
     @Test
-    public void doubleBrace28() throws Exception {
+    public void doubleBrace28() {
         testFormatString("f'{10}}}a{{'", "format((10))+}a{");
     }
 
     @Test
-    public void quotes01() throws Exception {
+    public void quotes01() {
         testFormatString("f'{\"{{}}\"}'", "format((\"{{}}\"))");
     }
 
     @Test
-    public void embeddedColon() throws Exception {
+    public void embeddedColon() {
         testFormatString("f'{var[:1]}'", "format((var[:1]))");
     }
 
     @Test
-    public void parser01() throws Exception {
+    public void parser01() {
         testFormatString("f'{name}'", "format((name))");
     }
 
     @Test
-    public void parser02() throws Exception {
+    public void parser02() {
         testFormatString("f'name'", "name");
     }
 
     @Test
-    public void parser03() throws Exception {
+    public void parser03() {
         testFormatString("f'First: {name}'", "First: +format((name))");
     }
 
     @Test
-    public void parser04() throws Exception {
+    public void parser04() {
         testFormatString("f'{name} was here'", "format((name))+ was here");
     }
 
     @Test
-    public void parser05() throws Exception {
+    public void parser05() {
         testFormatString("f'It {name} was'", "It +format((name))+ was");
     }
 
     @Test
-    public void strWithColon() throws Exception {
+    public void strWithColon() {
         testFormatString("f'{myarray[:1]}'", "format((myarray[:1]))");
     }
 
     @Test
-    public void str01() throws Exception {
+    public void str01() {
         testFormatString("f'{name!s}'", "format(str((name)))");
     }
 
     @Test
-    public void repr01() throws Exception {
+    public void repr01() {
         testFormatString("f'{name!r}'", "format(repr((name)))");
     }
 
     @Test
-    public void ascii01() throws Exception {
+    public void ascii01() {
         testFormatString("f'{name!a}'", "format(ascii((name)))");
     }
 
     @Test
-    public void emptyExpression01() throws Exception {
+    public void emptyExpression01() {
         checkSyntaxError("f'{}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void emptyExpression02() throws Exception {
+    public void emptyExpression02() {
         checkSyntaxError("f'start{}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void emptyExpression03() throws Exception {
+    public void emptyExpression03() {
         checkSyntaxError("f'start{}}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void emptyExpression04() throws Exception {
+    public void emptyExpression04() {
         checkSyntaxError("f'start{{{}}}end'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void singleBracket01() throws Exception {
+    public void singleBracket01() {
         checkSyntaxError("f'}'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
-    public void singleBracket02() throws Exception {
+    public void singleBracket02() {
         checkSyntaxError("f'start}end'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
-    public void singleBracket03() throws Exception {
+    public void singleBracket03() {
         checkSyntaxError("f'start{{}end'", FormatStringParser.ERROR_MESSAGE_SINGLE_BRACE);
     }
 
     @Test
-    public void spaces01() throws Exception {
+    public void spaces01() {
         testFormatString("f'{     {}}'", "format((     {}))");
     }
 
     @Test
-    public void spaces02() throws Exception {
+    public void spaces02() {
         testFormatString("f'{     {}                 }'", "format((     {}                 ))");
     }
 
     @Test
-    public void innerExp01() throws Exception {
+    public void innerExp01() {
         testFormatString("f'result: {value:{width}.{precision}}'", "result: +format((value),(format((width))+.+format((precision))))");
     }
 
     @Test
-    public void missingSpecifier01() throws Exception {
+    public void missingSpecifier01() {
         testFormatString("f'{x:}'", "format((x))");
     }
 
     @Test
-    public void missingSpecifier02() throws Exception {
+    public void missingSpecifier02() {
         testFormatString("f'{x!s:}'", "format(str((x)))");
     }
 
     @Test
-    public void missingExpression01() throws Exception {
+    public void missingExpression01() {
         checkSyntaxError("f'{!x}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void missingExpression02() throws Exception {
+    public void missingExpression02() {
         checkSyntaxError("f'{     !x}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void missingExpression03() throws Exception {
+    public void missingExpression03() {
         checkSyntaxError("f'{ !xr:a}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void missingExpression04() throws Exception {
+    public void missingExpression04() {
         checkSyntaxError("f'{:x'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void missingExpression05() throws Exception {
+    public void missingExpression05() {
         checkSyntaxError("f'{!'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
     @Test
-    public void missingExpression06() throws Exception {
+    public void missingExpression06() {
         checkSyntaxError("f'{10:{ }}'", FormatStringParser.ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
 
-    private void checkSyntaxError(String text, String expectedMessage) throws Exception {
+    private void checkSyntaxError(String text, String expectedMessage) {
         try {
             testFormatString(text, "Expected Error: " + expectedMessage);
-        } catch (RuntimeException e) {
-            Assert.assertEquals("SyntaxError: " + expectedMessage, e.getMessage());
+        } catch (PException e) {
+            Assert.assertEquals("SyntaxError: " + expectedMessage, PythonTests.getExceptionMessage(e));
         }
     }
 
