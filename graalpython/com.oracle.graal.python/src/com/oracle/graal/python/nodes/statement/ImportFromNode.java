@@ -95,7 +95,7 @@ public class ImportFromNode extends AbstractImportNode {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
             try {
-                writeNode.writeObject(frame, pol.lookupAttributeStrict(importedModule, frame, attr));
+                writeNode.executeObject(frame, pol.lookupAttributeStrict(importedModule, frame, attr));
             } catch (PException pe) {
                 pe.expectAttributeError(getAttrErrorProfile);
                 Object moduleName = "<unknown module name>";
@@ -104,7 +104,7 @@ public class ImportFromNode extends AbstractImportNode {
                     try {
                         String pkgname = ensureCastToStringNode().execute(moduleName);
                         String fullname = PString.cat(pkgname, ".", attr);
-                        writeNode.writeObject(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
+                        writeNode.executeObject(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
                     } catch (CannotCastException cce) {
                         throw pe;
                     }

@@ -33,21 +33,13 @@ public interface WriteNode extends NodeInterface {
 
     ExpressionNode getRhs();
 
-    default void writeBoolean(VirtualFrame frame, boolean value) {
-        writeObject(frame, value);
-    }
+    void executeBoolean(VirtualFrame frame, boolean value);
 
-    default void writeInt(VirtualFrame frame, int value) {
-        writeObject(frame, value);
-    }
+    void executeInt(VirtualFrame frame, int value);
 
-    default void writeLong(VirtualFrame frame, long value) {
-        writeObject(frame, value);
-    }
+    void executeLong(VirtualFrame frame, long value);
 
-    default void writeDouble(VirtualFrame frame, double value) {
-        writeObject(frame, value);
-    }
+    void executeDouble(VirtualFrame frame, double value);
 
-    void writeObject(VirtualFrame frame, Object value);
+    void executeObject(VirtualFrame frame, Object value);
 }

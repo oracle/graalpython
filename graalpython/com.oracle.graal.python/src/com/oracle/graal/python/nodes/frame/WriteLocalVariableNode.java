@@ -32,7 +32,6 @@ import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "write_local")
@@ -68,38 +67,28 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
     }
 
     @Specialization(guards = "isBooleanKind(frame, frameSlot)")
-    @Override
-    public void writeBoolean(VirtualFrame frame, boolean value) {
+    void writeBoolean(VirtualFrame frame, boolean value) {
         frame.setBoolean(frameSlot, value);
     }
 
     @Specialization(guards = "isIntegerKind(frame, frameSlot)")
-    @Override
-    public void writeInt(VirtualFrame frame, int value) {
+    void writeInt(VirtualFrame frame, int value) {
         frame.setInt(frameSlot, value);
     }
 
     @Specialization(guards = "isLongKind(frame, frameSlot)")
-    @Override
-    public void writeLong(VirtualFrame frame, long value) {
+    void writeLong(VirtualFrame frame, long value) {
         frame.setLong(frameSlot, value);
     }
 
     @Specialization(guards = "isDoubleKind(frame, frameSlot)")
-    @Override
-    public void writeDouble(VirtualFrame frame, double value) {
+    void writeDouble(VirtualFrame frame, double value) {
         frame.setDouble(frameSlot, value);
     }
 
     @Specialization(replaces = {"writeBoolean", "writeInt", "writeDouble", "writeLong"})
-    @Override
-    public void writeObject(VirtualFrame frame, Object value) {
+    void writeObject(VirtualFrame frame, Object value) {
         FrameSlotGuards.ensureObjectKind(frame, frameSlot);
         frame.setObject(frameSlot, value);
-    }
-
-    @Override
-    public NodeCost getCost() {
-        return NodeCost.NONE;
     }
 }

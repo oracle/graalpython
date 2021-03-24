@@ -133,7 +133,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
         }
     }
 
-    private static class WriteClassAttributeCellNode extends StatementNode implements WriteNode {
+    private static final class WriteClassAttributeCellNode extends StatementNode implements WriteNode {
         @Child private WriteNode writeCellLocal;
         @Child private WriteNode writeNsItem;
         @Child private ExpressionNode right;
@@ -148,15 +148,34 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
             return right;
         }
 
-        public void writeObject(VirtualFrame frame, Object value) {
-            writeCellLocal.writeObject(frame, value);
-            writeNsItem.writeObject(frame, value);
+        public void executeObject(VirtualFrame frame, Object value) {
+            writeCellLocal.executeObject(frame, value);
+            writeNsItem.executeObject(frame, value);
         }
 
         @Override
         public void executeVoid(VirtualFrame frame) {
-            Object value = right.execute(frame);
-            writeObject(frame, value);
+            executeObject(frame, right.execute(frame));
+        }
+
+        public void executeBoolean(VirtualFrame frame, boolean value) {
+            writeCellLocal.executeBoolean(frame, value);
+            writeNsItem.executeBoolean(frame, value);
+        }
+
+        public void executeInt(VirtualFrame frame, int value) {
+            writeCellLocal.executeInt(frame, value);
+            writeNsItem.executeInt(frame, value);
+        }
+
+        public void executeLong(VirtualFrame frame, long value) {
+            writeCellLocal.executeLong(frame, value);
+            writeNsItem.executeLong(frame, value);
+        }
+
+        public void executeDouble(VirtualFrame frame, double value) {
+            writeCellLocal.executeDouble(frame, value);
+            writeNsItem.executeDouble(frame, value);
         }
     }
 }

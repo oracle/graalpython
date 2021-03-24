@@ -93,7 +93,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 e.expectStopIteration(errorProfile);
                 return;
             }
-            target.writeObject(frame, value);
+            target.executeObject(frame, value);
         } else {
             iterator = startIterator;
         }
@@ -110,7 +110,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                     e.expectStopIteration(errorProfile);
                     break;
                 }
-                target.writeObject(frame, value);
+                target.executeObject(frame, value);
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
