@@ -91,6 +91,7 @@ public final class PTuple extends PSequence {
         this.store = store;
     }
 
+    @Override
     @ExportMessage.Ignore
     public boolean equals(Object other) {
         CompilerAsserts.neverPartOfCompilation();
