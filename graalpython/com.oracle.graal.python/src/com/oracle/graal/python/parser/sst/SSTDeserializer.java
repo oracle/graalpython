@@ -77,6 +77,8 @@ public final class SSTDeserializer {
                 return readAnd();
             case AnnAssignmentID:
                 return readAnnAssignment();
+            case AnnotationID:
+                return readAnnotation();
             case AssertID:
                 return readAssert();
             case AssignmentID:
@@ -287,10 +289,18 @@ public final class SSTDeserializer {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        SSTNode type = readNode();
-        SSTNode lhs = readNode();
+        SSTNode annotation = readNode();
         SSTNode rhs = readNode();
-        return new AnnAssignmentSSTNode(lhs, type, rhs, startOffset, endOffset);
+        return new AnnAssignmentSSTNode((AnnotationSSTNode) annotation, rhs, startOffset, endOffset);
+    }
+
+    private SSTNode readAnnotation() throws IOException {
+        readPosition();
+        int startOffset = startIndex;
+        int endOffset = endIndex;
+        SSTNode lhs = readNode();
+        SSTNode type = readNode();
+        return new AnnotationSSTNode(lhs, type, startOffset, endOffset);
     }
 
     private SSTNode readAssert() throws IOException {
