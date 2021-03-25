@@ -251,6 +251,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -1657,12 +1658,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyThreadState_Get")
     @GenerateNodeFactory
-    abstract static class PyThreadState_Get extends NativeBuiltin {
+    abstract static class PyThreadStateGet extends NativeBuiltin {
 
         @Specialization
         PThreadState get() {
+            PythonThreadState threadState = getContext().getThreadState();
+            PThreadState nativeWrapper = threadState.getNativeWrapper();
+            if (nativeWrapper == null) {
+                nativeWrapper = new PThreadState(threadState);
+                threadState.setNativeWrapper(nativeWrapper);
+            }
             // does not require a 'to_sulong' since it is already a native wrapper type
-            return getContext().getCustomThreadState();
+            return nativeWrapper;
         }
     }
 
