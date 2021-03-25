@@ -42,6 +42,7 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -118,11 +119,21 @@ public abstract class GilNode extends Node {
         @Override
         public final boolean tryRelease() {
             PythonContext context = getContext();
-            if (binaryProfile.profile(context.ownsGil())) {
+            if (binaryProfile.profile(context.ownsGil() && !checkCriticalSectionAndRecordReleaseAttempt(context))) {
                 context.releaseGil();
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public final long enterCriticalSection() {
+            return enterCriticalSection(getContext());
+        }
+
+        @Override
+        public final void leaveCriticalSection(long nesting) {
+            leaveCriticalSection(getContext(), nesting, binaryProfile);
         }
     }
 
@@ -176,11 +187,21 @@ public abstract class GilNode extends Node {
         @TruffleBoundary
         public final boolean tryRelease() {
             PythonContext context = PythonLanguage.getContext();
-            if (context.ownsGil()) {
+            if (context.ownsGil() && !checkCriticalSectionAndRecordReleaseAttempt(context)) {
                 context.releaseGil();
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public final long enterCriticalSection() {
+            return enterCriticalSection(PythonLanguage.getContext());
+        }
+
+        @Override
+        public final void leaveCriticalSection(long nesting) {
+            leaveCriticalSection(PythonLanguage.getContext(), nesting, ConditionProfile.getUncached());
         }
 
         public abstract void close();
@@ -213,6 +234,47 @@ public abstract class GilNode extends Node {
                 release(this == INSTANCE_WITH_RELEASE);
             }
         }
+    }
+
+    /**
+     * Enter a critical section where preemption should not be possible and the GIL
+     * will only be released explicitly.
+     */
+    public abstract long enterCriticalSection();
+
+    /**
+     * Leave a critical section. Needs to receive the previous nesting depth returned from
+     * #enterCriticalSection. This is done in order to trigger an immediate preemption in case
+     * the critical section was executing for too long to avoid starving other threads.
+     */
+    public abstract void leaveCriticalSection(long nesting);
+
+    @SuppressWarnings("static-method")
+    protected final long enterCriticalSection(PythonContext context) {
+        assert context.ownsGil() : "only the gil owner can enter a critical section";
+        return context.getThreadState().isInCriticalSection++;
+    }
+
+    protected final void leaveCriticalSection(PythonContext context, long nesting, ConditionProfile mustYield) {
+        assert context.ownsGil() : "only the gil owner can leave a critical section";
+        PythonThreadState ts = context.getThreadState();
+        long currentNesting = ts.isInCriticalSection;
+        ts.isInCriticalSection = nesting;
+        assert currentNesting == nesting + 1 || currentNesting == nesting + 2;
+        if (mustYield.profile(currentNesting == nesting + 2)) {
+            release(true);
+            Thread.yield();
+            acquire();
+        }
+    }
+
+    private static final boolean checkCriticalSectionAndRecordReleaseAttempt(PythonContext context) {
+        PythonThreadState ts = context.getThreadState();
+        if (ts.isInCriticalSection > 0) {
+            ts.isInCriticalSection++;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -262,7 +324,10 @@ public abstract class GilNode extends Node {
     public abstract int tryAcquire();
 
     /**
-     * Release the GIL if it is currently owned by this Thread.
+     * Release the GIL if it is currently owned by this Thread and preemption is
+     * allowed. Preemption may be disabled while running C extension code that does not expect to
+     * be preempted or for certain built-in operations of the implementation.
+     *
      * @return {@code true} if GIL was released, {@code false} if it wasn't locked by this Thread
      */
     public abstract boolean tryRelease();
