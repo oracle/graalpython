@@ -218,6 +218,11 @@ PyObject* PyUnicode_FromString(const char* o) {
     return to_sulong(polyglot_from_string(o, SRC_CS));
 }
 
+PyObject* PyUnicode_DecodeFSDefault(const char* o) {
+	// TODO: this implementation does not honor Py_FileSystemDefaultEncoding and Py_FileSystemDefaultEncodeErrors
+    return to_sulong(polyglot_from_string(o, "utf-8"));
+}
+
 static PyObject* _PyUnicode_FromUTF8(const char* o) {
     return to_sulong(polyglot_from_string(o, "utf-8"));
 }
