@@ -123,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -1957,19 +1958,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     abstract static class UpdateBasesNode extends PNodeWithRaise {
 
-        abstract PTuple execute(VirtualFrame frame, PTuple bases, Object[] arguments, int nargs);
+        abstract PTuple execute(PTuple bases, Object[] arguments, int nargs);
 
         @Specialization
-        PTuple update(VirtualFrame frame, PTuple bases, Object[] arguments, int nargs,
+        PTuple update(PTuple bases, Object[] arguments, int nargs,
                         @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "3") InteropLibrary interop,
                         @Cached GetClassNode getMroClass,
                         @Cached(parameters = "__MRO_ENTRIES__") LookupAttributeInMRONode getMroEntries,
                         @Cached CallBinaryMethodNode callMroEntries) {
             ArrayList<Object> newBases = null;
             for (int i = 0; i < nargs; i++) {
                 Object base = arguments[i];
-                if (PGuards.isClass(base, interop)) {
+                if (IsTypeNode.getUncached().execute(base)) {
                     if (newBases != null) {
                         // If we already have made a replacement, then we append every normal base,
                         // otherwise just skip it.
@@ -1985,7 +1985,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     }
                     continue;
                 }
-                Object newBase = callMroEntries.executeObject(frame, meth, base, bases);
+                Object newBase = callMroEntries.executeObject(null, meth, base, bases);
                 if (newBase == null) {
                     // error
                     return null;
@@ -2051,13 +2051,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = BuiltinNames.__BUILD_CLASS__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
-        @Child private com.oracle.graal.python.nodes.call.CallNode callNode = com.oracle.graal.python.nodes.call.CallNode.create();
 
         @Specialization
         protected Object doItNonFunction(VirtualFrame frame, Object function, Object[] arguments, PKeyword[] keywords,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @CachedLibrary(limit = "3") InteropLibrary interop,
-                        @Cached CastToJavaStringNode castToString,
                         @Cached PythonObjectFactory factory,
                         @Cached CalculateMetaclassNode calculateMetaClass,
                         @Cached(parameters = "__PREPARE__") LookupAttributeInMRONode getPrepare,
@@ -2070,84 +2067,91 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached SetItemNode setOrigBases,
                         @Cached GetClassNode getClass) {
 
-            boolean isClass = false;
+            class InitializeBuildClass {
+                String name;
+                boolean isClass;
+                Object meta;
+                PKeyword[] mkw;
+                PTuple bases;
+                PTuple origBases;
 
-            if (arguments.length < 1) {
-                throw raise(PythonErrorType.TypeError, "__build_class__: not enough arguments");
-            }
-
-            if (!PGuards.isFunction(function)) {
-                throw raise(PythonErrorType.TypeError, "__build_class__: func must be a function");
-            }
-            String name;
-            try {
-                name = castToString.execute(arguments[0]);
-            } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, "__build_class__: name is not a string");
-            }
-
-            Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
-            PTuple origBases = factory.createTuple(basesArray);
-
-            PTuple bases = update.execute(frame, origBases, basesArray, basesArray.length);
-
-            Object meta = null;
-            PKeyword[] mkw = keywords;
-            if (keywords.length > 0) {
-                for (int i = 0; i < keywords.length; i++) {
-                    if ("metaclass".equals(keywords[i].getName())) {
-                        meta = keywords[i].getValue();
-                        mkw = new PKeyword[keywords.length - 1];
-                        System.arraycopy(keywords, 0, mkw, 0, i);
-                        System.arraycopy(keywords, i + 1, mkw, i, mkw.length - i);
-
-                        // metaclass is explicitly given, check if it's indeed a class
-                        isClass = PGuards.isClass(meta, interop);
-                        break;
+                @TruffleBoundary
+                InitializeBuildClass() {
+                    if (arguments.length < 1) {
+                        throw raise(PythonErrorType.TypeError, "__build_class__: not enough arguments");
                     }
-                }
-            }
-            if (meta == null) {
-                // if there are no bases, use type:
-                if (bases.getSequenceStorage().length() == 0) {
-                    meta = contextRef.get().getCore().lookupType(PythonBuiltinClassType.PythonClass);
-                } else {
-                    // else get the type of the first base
-                    meta = getClass.execute(bases.getSequenceStorage().getItemNormalized(0));
-                }
-                isClass = true;  // meta is really a class
-            }
 
-            if (isClass) {
-                // meta is really a class, so check for a more derived metaclass, or possible
-                // metaclass conflicts:
-                meta = calculateMetaClass.execute(meta, bases);
+                    if (!PGuards.isFunction(function)) {
+                        throw raise(PythonErrorType.TypeError, "__build_class__: func must be a function");
+                    }
+                    try {
+                        name = CastToJavaStringNode.getUncached().execute(arguments[0]);
+                    } catch (CannotCastException e) {
+                        throw raise(PythonErrorType.TypeError, "__build_class__: name is not a string");
+                    }
+
+                    Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
+                    origBases = factory.createTuple(basesArray);
+
+                    bases = update.execute(origBases, basesArray, basesArray.length);
+
+                    mkw = keywords;
+                    for (int i = 0; i < keywords.length; i++) {
+                        if ("metaclass".equals(keywords[i].getName())) {
+                            meta = keywords[i].getValue();
+                            mkw = new PKeyword[keywords.length - 1];
+
+                            PythonUtils.arraycopy(keywords, 0, mkw, 0, i);
+                            PythonUtils.arraycopy(keywords, i + 1, mkw, i, mkw.length - i);
+
+                            // metaclass is explicitly given, check if it's indeed a class
+                            isClass = IsTypeNode.getUncached().equals(meta);
+                            break;
+                        }
+                    }
+                    if (meta == null) {
+                        // if there are no bases, use type:
+                        if (bases.getSequenceStorage().length() == 0) {
+                            meta = contextRef.get().getCore().lookupType(PythonBuiltinClassType.PythonClass);
+                        } else {
+                            // else get the type of the first base
+                            meta = getClass.execute(bases.getSequenceStorage().getItemNormalized(0));
+                        }
+                        isClass = true;  // meta is really a class
+                    }
+                    if (isClass) {
+                        // meta is really a class, so check for a more derived metaclass, or
+                        // possible
+                        // metaclass conflicts:
+                        meta = calculateMetaClass.execute(meta, bases);
+                    }
+                    // else: meta is not a class, so we cannot do the metaclass calculation, so we
+                    // will
+                    // use the explicitly given object as it is
+                }
             }
-            // else: meta is not a class, so we cannot do the metaclass calculation, so we will
-            // use the explicitly given object as it is
-            Object prep = getPrepare.execute(meta);
+            InitializeBuildClass init = new InitializeBuildClass();
+
+            Object prep = getPrepare.execute(init.meta);
             Object ns;
             if (PGuards.isNoValue(prep)) {
                 ns = factory.createDict();
             } else {
-                if (PGuards.isFunction(prep)) {
-                    ns = callPrep.execute(frame, prep, new Object[]{name, bases}, mkw);
-                } else {
-                    ns = callPrep.execute(frame, prep, new Object[]{meta, name, bases}, mkw);
-                }
+                Object[] args = PGuards.isFunction(prep) ? new Object[]{init.name, init.bases} : new Object[]{init.meta, init.name, init.bases};
+                ns = callPrep.execute(frame, prep, args, init.mkw);
             }
             if (PGuards.isNoValue(getGetItem.execute(getGetItemClass.execute(ns)))) {
-                if (isClass) {
-                    throw raise(PythonErrorType.TypeError, "%p.__prepare__() must return a mapping, not %p", meta, ns);
+                if (init.isClass) {
+                    throw raise(PythonErrorType.TypeError, "%p.__prepare__() must return a mapping, not %p", init.meta, ns);
                 } else {
                     throw raise(PythonErrorType.TypeError, "<metaclass>.__prepare__() must return a mapping, not %p", ns);
                 }
             }
             callBody.executeObject(frame, function, ns);
-            if (bases != origBases) {
-                setOrigBases.executeWith(frame, ns, SpecialAttributeNames.__ORIG_BASES__, origBases);
+            if (init.bases != init.origBases) {
+                setOrigBases.executeWith(frame, ns, SpecialAttributeNames.__ORIG_BASES__, init.origBases);
             }
-            Object cls = callType.execute(frame, meta, new Object[]{name, bases, ns}, mkw);
+            Object cls = callType.execute(frame, init.meta, new Object[]{init.name, init.bases, ns}, init.mkw);
 
             /*
              * We could check here and throw "__class__ not set defining..." errors.

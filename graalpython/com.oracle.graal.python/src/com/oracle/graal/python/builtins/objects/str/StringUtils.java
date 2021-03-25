@@ -214,6 +214,11 @@ public final class StringUtils {
     }
 
     @TruffleBoundary
+    public static boolean equalsBoundary(String a, String b) {
+        return a.equals(b);
+    }
+
+    @TruffleBoundary
     public static boolean containsNullCharacter(String value) {
         return value.indexOf(0) > 0;
     }
