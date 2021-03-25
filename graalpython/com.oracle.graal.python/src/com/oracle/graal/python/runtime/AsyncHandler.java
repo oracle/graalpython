@@ -52,7 +52,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -72,7 +71,6 @@ import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -157,28 +155,19 @@ public class AsyncHandler {
         public void run() {
             final AsyncAction asyncAction = actionSupplier.get();
             if (asyncAction != null) {
-                final AtomicBoolean tas = new AtomicBoolean(false);
                 final PythonContext ctx = context.get();
                 if (ctx != null) {
                     ctx.getEnv().submitThreadLocal(null, new ThreadLocalAction(true, false) {
                         @Override
                         @SuppressWarnings("try")
                         protected void perform(ThreadLocalAction.Access access) {
-                            ReentrantLock gil = ctx.getGil();
-                            // if this thread owns the gil, or if nobody does, try to run the action here
-                            if (gil.isHeldByCurrentThread() || !gil.isLocked()) {
-                                if (tas.compareAndSet(false, true)) {
-                                    boolean ownsGil = gil.isHeldByCurrentThread();
-                                    if (!ownsGil) {
-                                        TruffleSafepoint.setBlockedThreadInterruptible(access.getLocation(), ReentrantLock::lockInterruptibly, gil);
-                                    }
-                                    try {
-                                        asyncAction.execute(ctx);
-                                    } finally {
-                                        if (!ownsGil) {
-                                            gil.unlock();
-                                        }
-                                    }
+                            GilNode gil = GilNode.getUncached();
+                            int state = gil.tryAcquire();
+                            if (state >= 0) {
+                                try {
+                                    asyncAction.execute(ctx);
+                                } finally {
+                                    gil.release(state == 1);
                                 }
                             }
                         }
@@ -259,15 +248,16 @@ public class AsyncHandler {
             if (gilReleaseRequested.compareAndSet(false, true)) {
                 env.submitThreadLocal(null, new ThreadLocalAction(true, false) {
                     @Override
-                    @SuppressWarnings("try")
                     protected void perform(ThreadLocalAction.Access access) {
+                        // it may happen that we request a GIL release and no thread is currently
+                        // holding the GIL (e.g. all are sleeping). We still need to tick again
+                        // later, so we reset the gilReleaseRequested flag even when the thread in
+                        // question isn't actually holding it.
                         gilReleaseRequested.set(false);
-                        ReentrantLock gil = ctx.getGil();
-                        // if this thread owns the gil, or if nobody does, try to run the action here
-                        if (gil.isHeldByCurrentThread()) {
-                            gil.unlock();
+                        GilNode gil = GilNode.getUncached();
+                        if (gil.tryRelease()) {
                             Thread.yield();
-                            TruffleSafepoint.setBlockedThreadInterruptible(access.getLocation(), ReentrantLock::lockInterruptibly, gil);
+                            gil.acquire(access.getLocation());
                         }
                     }
                 });

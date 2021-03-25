@@ -518,7 +518,11 @@ public final class PythonContext {
     }
 
     public void initialize() {
-        acquireGil();
+        try {
+            acquireGil();
+        } catch (InterruptedException e) {
+            throw new IllegalStateException(e);
+        }
         try {
             initializePosixSupport();
             core.initialize(this);
@@ -535,7 +539,11 @@ public final class PythonContext {
     }
 
     public void patch(Env newEnv) {
-        acquireGil();
+        try {
+            acquireGil();
+        } catch (InterruptedException e) {
+            throw new IllegalStateException(e);
+        }
         try {
             setEnv(newEnv);
             setupRuntimeInformation(true);
@@ -1087,6 +1095,11 @@ public final class PythonContext {
         return null;
     }
 
+    /**
+     * Should not be called directly.
+     *
+     * @see GilNode
+     */
     boolean ownsGil() {
         return globalInterpreterLock.isHeldByCurrentThread();
     }
@@ -1097,7 +1110,17 @@ public final class PythonContext {
      * @see GilNode
      */
     @TruffleBoundary
-    void acquireGil() {
+    boolean tryAcquireGil() {
+        return globalInterpreterLock.tryLock();
+    }
+
+    /**
+     * Should not be called directly.
+     *
+     * @see GilNode
+     */
+    @TruffleBoundary
+    void acquireGil() throws InterruptedException {
         assert !ownsGil() : "trying to acquire the GIL more than once";
         try {
             globalInterpreterLock.lockInterruptibly();
@@ -1112,19 +1135,13 @@ public final class PythonContext {
                 // shutdown is happening and exit.
                 throw new PythonThreadKillException();
             } else {
-                // We are being interrupted through some non-internal means. If this happens to
-                // the main thread (which can only occur if we are embedded somewhere) we exit
-                // with the same exit code that SIGINT would produce. Other threads just die.
-                throw new PythonExitException(null, 130);
+                // We are being interrupted through some non-internal means. Commonly this may be
+                // because Truffle wants to run some safepoint action. In this case, we need to
+                // rethrow the InterruptedException.
+                Thread.interrupted();
+                throw e;
             }
         }
-    }
-
-    /**
-     * Only to be used from {@link AsyncHandler}
-     */
-    ReentrantLock getGil() {
-        return globalInterpreterLock;
     }
 
     /**
