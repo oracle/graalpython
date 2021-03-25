@@ -173,6 +173,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -197,6 +198,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -2051,6 +2053,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = BuiltinNames.__BUILD_CLASS__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
+        @TruffleBoundary
+        private static Object buildJavaClass(Object func, String name, Object base) {
+            Object module = AbstractImportNode.importModule(BuiltinNames.__GRAALPYTHON__);
+            Object buildFunction = PythonObjectLibrary.getUncached().lookupAttribute(module, null, "build_java_class");
+            return CallNode.getUncached().execute(buildFunction, func, name, base);
+        }
 
         @Specialization
         protected Object doItNonFunction(VirtualFrame frame, Object function, Object[] arguments, PKeyword[] keywords,
@@ -2067,31 +2075,37 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached SetItemNode setOrigBases,
                         @Cached GetClassNode getClass) {
 
+            if (arguments.length < 1) {
+                throw raise(PythonErrorType.TypeError, "__build_class__: not enough arguments");
+            }
+
+            if (!PGuards.isFunction(function)) {
+                throw raise(PythonErrorType.TypeError, "__build_class__: func must be a function");
+            }
+            String name;
+            try {
+                name = CastToJavaStringNode.getUncached().execute(arguments[0]);
+            } catch (CannotCastException e) {
+                throw raise(PythonErrorType.TypeError, "__build_class__: name is not a string");
+            }
+
+            Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
+            PTuple origBases = factory.createTuple(basesArray);
+
+            Env env = PythonLanguage.getContext().getEnv();
+            if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
+                // we want to subclass a Java class
+                return buildJavaClass(function, name, arguments[1]);
+            }
+
             class InitializeBuildClass {
-                String name;
                 boolean isClass;
                 Object meta;
                 PKeyword[] mkw;
                 PTuple bases;
-                PTuple origBases;
 
                 @TruffleBoundary
                 InitializeBuildClass() {
-                    if (arguments.length < 1) {
-                        throw raise(PythonErrorType.TypeError, "__build_class__: not enough arguments");
-                    }
-
-                    if (!PGuards.isFunction(function)) {
-                        throw raise(PythonErrorType.TypeError, "__build_class__: func must be a function");
-                    }
-                    try {
-                        name = CastToJavaStringNode.getUncached().execute(arguments[0]);
-                    } catch (CannotCastException e) {
-                        throw raise(PythonErrorType.TypeError, "__build_class__: name is not a string");
-                    }
-
-                    Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
-                    origBases = factory.createTuple(basesArray);
 
                     bases = update.execute(origBases, basesArray, basesArray.length);
 
@@ -2137,7 +2151,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (PGuards.isNoValue(prep)) {
                 ns = factory.createDict();
             } else {
-                Object[] args = PGuards.isFunction(prep) ? new Object[]{init.name, init.bases} : new Object[]{init.meta, init.name, init.bases};
+                Object[] args = PGuards.isFunction(prep) ? new Object[]{name, init.bases} : new Object[]{init.meta, name, init.bases};
                 ns = callPrep.execute(frame, prep, args, init.mkw);
             }
             if (PGuards.isNoValue(getGetItem.execute(getGetItemClass.execute(ns)))) {
@@ -2148,10 +2162,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
             callBody.executeObject(frame, function, ns);
-            if (init.bases != init.origBases) {
-                setOrigBases.executeWith(frame, ns, SpecialAttributeNames.__ORIG_BASES__, init.origBases);
+            if (init.bases != origBases) {
+                setOrigBases.executeWith(frame, ns, SpecialAttributeNames.__ORIG_BASES__, origBases);
             }
-            Object cls = callType.execute(frame, init.meta, new Object[]{init.name, init.bases, ns}, init.mkw);
+            Object cls = callType.execute(frame, init.meta, new Object[]{name, init.bases, ns}, init.mkw);
 
             /*
              * We could check here and throw "__class__ not set defining..." errors.
