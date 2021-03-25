@@ -56,6 +56,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddrLibrary;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1427,67 +1428,62 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public UniversalSockAddr allocUniversalSockAddr() {
-        return new UniversalSockAddrImpl();
+        return new UniversalSockAddrImpl(this);
     }
 
-    @ExportMessage
-    public void freeUniversalSockAddr(UniversalSockAddr universalSockAddr) {
-        ((UniversalSockAddrImpl) universalSockAddr).release();
-    }
-
-    @ExportMessage
-    public int getUniversalSockAddrFamily(UniversalSockAddr universalSockAddr) {
-        UniversalSockAddrImpl addr = (UniversalSockAddrImpl) universalSockAddr;
-        return addr.getFamily();
-    }
-
-    @ExportMessage
-    public static class FillUniversalSockAddr {
-        @Specialization
-        static void inet4(NFIPosixSupport receiver, UniversalSockAddr universalSockAddr, Inet4SockAddr src,
-                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-            UniversalSockAddrImpl dest = (UniversalSockAddrImpl) universalSockAddr;
-            invokeNode.call(receiver, PosixNativeFunction.set_sockaddr_in_members, dest.getPtr(), src.getPort(), src.getAddress());
-            dest.setLenAndFamily(SIZEOF_STRUCT_SOCKADDR_IN.value, AF_INET.value);
-        }
-
-        @Specialization
-        static void copy(@SuppressWarnings("unused") NFIPosixSupport receiver, UniversalSockAddr universalSockAddr, UniversalSockAddrImpl src) {
-            UniversalSockAddrImpl dest = (UniversalSockAddrImpl) universalSockAddr;
-            UNSAFE.copyMemory(src.ptr, dest.ptr, UniversalSockAddrImpl.MAX_SIZE);
-            dest.lenAndFamily[0] = src.lenAndFamily[0];
-            dest.lenAndFamily[1] = src.lenAndFamily[1];
-        }
-    }
-
-    @ExportMessage
-    public Inet4SockAddr universalSockAddrAsInet4SockAddr(UniversalSockAddr universalSockAddr,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        UniversalSockAddrImpl addr = (UniversalSockAddrImpl) universalSockAddr;
-        if (addr.getFamily() != AF_INET.value) {
-            throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
-        }
-        assert addr.getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
-        int[] members = new int[2];
-        invokeNode.call(this, PosixNativeFunction.get_sockaddr_in_members, addr.getPtr(), wrap(members));
-        return new Inet4SockAddr(members[0], members[1]);
-    }
-
+    @ExportLibrary(UniversalSockAddrLibrary.class)
     protected static class UniversalSockAddrImpl implements UniversalSockAddr {
 
         static final int MAX_SIZE = SIZEOF_STRUCT_SOCKADDR_STORAGE.value;
 
+        private final NFIPosixSupport nfiPosixSupport;
         private long ptr;
         private final int[] lenAndFamily = new int[]{0, AF_UNSPEC.value};
 
-        UniversalSockAddrImpl() {
+        UniversalSockAddrImpl(NFIPosixSupport nfiPosixSupport) {
+            this.nfiPosixSupport = nfiPosixSupport;
             ptr = UNSAFE.allocateMemory(MAX_SIZE);
         }
 
+        @ExportMessage
         void release() {
             checkReleased();
             UNSAFE.freeMemory(ptr);
             ptr = 0;
+        }
+
+        @ExportMessage
+        int getFamily() {
+            checkReleased();
+            return lenAndFamily[1];
+        }
+
+        @ExportMessage
+        static class Fill {
+            @Specialization
+            static void inet4(UniversalSockAddrImpl receiver, Inet4SockAddr src,
+                              @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+                invokeNode.call(receiver.nfiPosixSupport, PosixNativeFunction.set_sockaddr_in_members, receiver.getPtr(), src.getPort(), src.getAddress());
+                receiver.setLenAndFamily(SIZEOF_STRUCT_SOCKADDR_IN.value, AF_INET.value);
+            }
+
+            @Specialization
+            static void copy(@SuppressWarnings("unused") UniversalSockAddrImpl receiver, UniversalSockAddrImpl src) {
+                UNSAFE.copyMemory(src.ptr, receiver.ptr, UniversalSockAddrImpl.MAX_SIZE);
+                receiver.lenAndFamily[0] = src.lenAndFamily[0];
+                receiver.lenAndFamily[1] = src.lenAndFamily[1];
+            }
+        }
+
+        @ExportMessage
+        Inet4SockAddr asInet4SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            if (getFamily() != AF_INET.value) {
+                throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
+            }
+            assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
+            int[] members = new int[2];
+            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in_members, getPtr(), nfiPosixSupport.wrap(members));
+            return new Inet4SockAddr(members[0], members[1]);
         }
 
         long getPtr() {
@@ -1498,11 +1494,6 @@ public final class NFIPosixSupport extends PosixSupport {
         int getLen() {
             checkReleased();
             return lenAndFamily[0];
-        }
-
-        int getFamily() {
-            checkReleased();
-            return lenAndFamily[1];
         }
 
         void setLenAndFamily(int len, int family) {

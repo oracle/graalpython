@@ -48,11 +48,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 
-import com.oracle.graal.python.runtime.SocketLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddr;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,51 +57,48 @@ import org.junit.Test;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.SocketLibrary;
+import com.oracle.graal.python.runtime.SocketLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddr;
 
 public class SocketLibraryTests {
 
-    private static Map<String, String> getOptions() {
-        HashMap<String, String> options = new HashMap<>();
-        options.put("python.PosixModuleBackend", "native");
-        options.put("python.CAPI", "/home/otethal/graalvm/graalpython/mxbuild/graalpython/com.oracle.graal.python.cext");
-        return options;
-    }
-
-    @Rule public WithPythonContextRule withPythonContextRule = new WithPythonContextRule(getOptions());
+    @Rule public WithPythonContextRule withPythonContextRule = new WithPythonContextRule(Collections.singletonMap("python.PosixModuleBackend", "native"));
 
     @Rule public CleanupRule cleanup = new CleanupRule();
 
     private Object posixSupport;
     private SocketLibrary lib;
+    private SocketLibrary.UniversalSockAddrLibrary usaLib;
 
     @Before
     public void setUp() {
         posixSupport = withPythonContextRule.getPythonContext().getPosixSupport();
         lib = SocketLibrary.getUncached();
+        usaLib = SocketLibrary.UniversalSockAddrLibrary.getUncached();
     }
 
     @Test
-    public void fillSockAddrStorage() {
+    public void fillUniversalSockAddr() {
         Inet4SockAddr addr = new Inet4SockAddr(12345, INADDR_LOOPBACK.value);
 
-        UniversalSockAddr storage = sockAddrStorage();
-        lib.fillUniversalSockAddr(posixSupport, storage, addr);
-        assertEquals(AF_INET.value, lib.getUniversalSockAddrFamily(posixSupport, storage));
-        Inet4SockAddr addr2 = lib.universalSockAddrAsInet4SockAddr(posixSupport, storage);
+        UniversalSockAddr usa = createUsa();
+        usaLib.fill(usa, addr);
+        assertEquals(AF_INET.value, usaLib.getFamily(usa));
+        Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
         assertEquals(addr.getPort(), addr2.getPort());
         assertEquals(addr.getAddress(), addr2.getAddress());
 
-        UniversalSockAddr storageCopy = sockAddrStorage();
-        lib.fillUniversalSockAddr(posixSupport, storageCopy, storage);
-        assertEquals(AF_INET.value, lib.getUniversalSockAddrFamily(posixSupport, storageCopy));
-        Inet4SockAddr addr3 = lib.universalSockAddrAsInet4SockAddr(posixSupport, storageCopy);
+        UniversalSockAddr usaCopy = createUsa();
+        usaLib.fill(usaCopy, usa);
+        assertEquals(AF_INET.value, usaLib.getFamily(usaCopy));
+        Inet4SockAddr addr3 = usaLib.asInet4SockAddr(usaCopy);
         assertEquals(addr.getPort(), addr3.getPort());
         assertEquals(addr.getAddress(), addr3.getAddress());
     }
 
     @Test
-    public void bindGetsocknameDirectAddr() throws PosixException {
-        int s = socket(AF_INET.value, SOCK_DGRAM.value, 0);
+    public void bindGetsocknameFamilySpecific() throws PosixException {
+        int s = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
         lib.bind(posixSupport, s, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
 
         Inet4SockAddr boundAddr = new Inet4SockAddr();
@@ -114,29 +108,29 @@ public class SocketLibraryTests {
     }
 
     @Test
-    public void bindGetsocknameAddrStorage() throws PosixException {
-        int s = socket(AF_INET.value, SOCK_DGRAM.value, 0);
-        UniversalSockAddr bindAddrStorage = sockAddrStorage();
-        lib.fillUniversalSockAddr(posixSupport, bindAddrStorage, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
-        lib.bind(posixSupport, s, bindAddrStorage);
+    public void bindGetsocknameUniversal() throws PosixException {
+        int s = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
+        UniversalSockAddr bindUsa = createUsa();
+        usaLib.fill(bindUsa, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
+        lib.bind(posixSupport, s, bindUsa);
 
-        UniversalSockAddr boundAddrStorage = sockAddrStorage();
-        lib.getsockname(posixSupport, s, boundAddrStorage);
-        assertEquals(AF_INET.value, lib.getUniversalSockAddrFamily(posixSupport, boundAddrStorage));
-        Inet4SockAddr boundAddr = lib.universalSockAddrAsInet4SockAddr(posixSupport, boundAddrStorage);
+        UniversalSockAddr boundUsa = createUsa();
+        lib.getsockname(posixSupport, s, boundUsa);
+        assertEquals(AF_INET.value, usaLib.getFamily(boundUsa));
+        Inet4SockAddr boundAddr = usaLib.asInet4SockAddr(boundUsa);
         assertTrue(boundAddr.getPort() != 0);
         assertEquals(INADDR_LOOPBACK.value, boundAddr.getAddress());
     }
 
     @Test
-    public void sendtoRecvfromDirectAddr() throws PosixException {
-        int srvSocket = socket(AF_INET.value, SOCK_DGRAM.value, 0);
+    public void sendtoRecvfromFamilySpecific() throws PosixException {
+        int srvSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
         lib.bind(posixSupport, srvSocket, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
 
         Inet4SockAddr srvAddr = new Inet4SockAddr();
         lib.getsockname(posixSupport, srvSocket, srvAddr);
 
-        int cliSocket = socket(AF_INET.value, SOCK_DGRAM.value, 0);
+        int cliSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
         byte[] data = new byte[]{1, 2, 3};
         int sentCount = lib.sendto(posixSupport, cliSocket, data, data.length, 0, srvAddr);
         assertEquals(data.length, sentCount);
@@ -156,48 +150,48 @@ public class SocketLibraryTests {
     }
 
     @Test
-    public void sendtoRecvfromAddrStorage() throws PosixException {
-        int srvSocket = socket(AF_INET.value, SOCK_DGRAM.value, 0);
-        UniversalSockAddr bindAddrStorage = sockAddrStorage();
-        lib.fillUniversalSockAddr(posixSupport, bindAddrStorage, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
-        lib.bind(posixSupport, srvSocket, bindAddrStorage);
+    public void sendtoRecvfromUniversal() throws PosixException {
+        int srvSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
+        UniversalSockAddr bindUsa = createUsa();
+        usaLib.fill(bindUsa, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
+        lib.bind(posixSupport, srvSocket, bindUsa);
 
-        UniversalSockAddr srvAddrStorage = sockAddrStorage();
-        lib.getsockname(posixSupport, srvSocket, srvAddrStorage);
+        UniversalSockAddr srvUsa = createUsa();
+        lib.getsockname(posixSupport, srvSocket, srvUsa);
 
-        int cliSocket = socket(AF_INET.value, SOCK_DGRAM.value, 0);
+        int cliSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
         byte[] data = new byte[]{1, 2, 3};
-        int sentCount = lib.sendto(posixSupport, cliSocket, data, data.length, 0, srvAddrStorage);
+        int sentCount = lib.sendto(posixSupport, cliSocket, data, data.length, 0, srvUsa);
         assertEquals(data.length, sentCount);
 
         byte[] buf = new byte[100];
-        UniversalSockAddr srcAddrStorage = sockAddrStorage();
-        int recvCount = lib.recvfrom(posixSupport, srvSocket, buf, buf.length, 0, srcAddrStorage);
+        UniversalSockAddr srcUsa = createUsa();
+        int recvCount = lib.recvfrom(posixSupport, srvSocket, buf, buf.length, 0, srcUsa);
 
         assertEquals(data.length, recvCount);
         assertArrayEquals(data, Arrays.copyOf(buf, recvCount));
 
-        assertEquals(AF_INET.value, lib.getUniversalSockAddrFamily(posixSupport, srcAddrStorage));
-        Inet4SockAddr srcAddr = lib.universalSockAddrAsInet4SockAddr(posixSupport, srcAddrStorage);
+        assertEquals(AF_INET.value, usaLib.getFamily(srcUsa));
+        Inet4SockAddr srcAddr = usaLib.asInet4SockAddr(srcUsa);
 
-        UniversalSockAddr cliAddrStorage = sockAddrStorage();
-        lib.getsockname(posixSupport, cliSocket, cliAddrStorage);
-        assertEquals(AF_INET.value, lib.getUniversalSockAddrFamily(posixSupport, cliAddrStorage));
-        Inet4SockAddr cliAddr = lib.universalSockAddrAsInet4SockAddr(posixSupport, cliAddrStorage);
+        UniversalSockAddr cliUsa = createUsa();
+        lib.getsockname(posixSupport, cliSocket, cliUsa);
+        assertEquals(AF_INET.value, usaLib.getFamily(cliUsa));
+        Inet4SockAddr cliAddr = usaLib.asInet4SockAddr(cliUsa);
 
         assertEquals(INADDR_LOOPBACK.value, srcAddr.getAddress());
         assertEquals(cliAddr.getPort(), srcAddr.getPort());
     }
 
-    private int socket(int family, int type, int protocol) throws PosixException {
+    private int createSocket(int family, int type, int protocol) throws PosixException {
         int sockfd = lib.socket(posixSupport, family, type, protocol);
         cleanup.add(() -> PosixSupportLibrary.getUncached().close(posixSupport, sockfd));
         return sockfd;
     }
 
-    private UniversalSockAddr sockAddrStorage() {
+    private UniversalSockAddr createUsa() {
         UniversalSockAddr universalSockAddr = lib.allocUniversalSockAddr(posixSupport);
-        cleanup.add(() -> lib.freeUniversalSockAddr(posixSupport, universalSockAddr));
+        cleanup.add(() -> usaLib.release(universalSockAddr));
         return universalSockAddr;
     }
 }

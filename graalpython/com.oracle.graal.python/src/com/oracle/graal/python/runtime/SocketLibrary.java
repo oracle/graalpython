@@ -11,6 +11,8 @@ import com.oracle.truffle.api.library.LibraryFactory;
 @GenerateLibrary(receiverType = PosixSupport.class)
 public abstract class SocketLibrary extends Library {
 
+    // region Socket addresses
+
     /**
      * Represents an address of a socket.
      *
@@ -57,6 +59,8 @@ public abstract class SocketLibrary extends Library {
      * disadvantage of {@link UniversalSockAddr} is that it needs to be explicitly deallocated since
      * it is stored in the native heap (in the NFI backend). This interface corresponds to POSIX
      * {@code struct sockaddr_storage}.
+     *
+     * @see UniversalSockAddrLibrary
      */
     public interface UniversalSockAddr extends SockAddr {
     }
@@ -102,6 +106,19 @@ public abstract class SocketLibrary extends Library {
         }
     }
 
+    // endregion
+
+    protected SocketLibrary() {
+    }
+
+    // region socket messages
+
+    /**
+     * Creates a new socket.
+     *
+     * @see "socket(2) man pages"
+     * @see PosixConstants
+     */
     public abstract int socket(Object receiver, int domain, int type, int protocol) throws PosixException;
 
     // addr is an input parameter
@@ -116,42 +133,71 @@ public abstract class SocketLibrary extends Library {
 
     // Unlike POSIX recvfrom(), we don't support srcAddr == null. Use plain recv instead.
     // srcAddr is an output parameter
-    // throws IllegalArgumentException if the type of srcAddr does not match the actual socket family of the packet's source address, in which case the state of the socket and buf is unspecified.
+    // throws IllegalArgumentException if the type of srcAddr does not match the actual socket
+    // family of the packet's source address, in which case the state of the socket and buf is
+    // unspecified.
     public abstract int recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags, SockAddr srcAddr) throws PosixException;
+
+    // endregion
 
     /**
      * Allocates a new {@link UniversalSockAddr} and sets its family to
      * {@link PosixConstants#AF_UNSPEC}. It can be either filled by
-     * {@link #fillUniversalSockAddr(Object, UniversalSockAddr, SockAddr)} or used in a call that
+     * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, SockAddr)} or used in a call that
      * returns an address, such as {@link #getsockname(Object, int, SockAddr)} or
      * {@link #recvfrom(Object, int, byte[], int, int, SockAddr)}. The returned object must be
-     * explicitly deallocated exactly once by using
-     * {@link #freeUniversalSockAddr(Object, UniversalSockAddr)}.
+     * explicitly deallocated exactly once using the
+     * {@link UniversalSockAddrLibrary#release(UniversalSockAddr)} message.
      */
     public abstract UniversalSockAddr allocUniversalSockAddr(Object receiver);
 
-    // TODO move the following messages to a TruffleLibrary dedicated to UniversalSockAddr
-
-    public abstract void freeUniversalSockAddr(Object receiver, UniversalSockAddr universalSockAddr);
-
     /**
-     * Returns the socket family of the address.
+     * Provides messages for manipulating {@link UniversalSockAddr}.
      */
-    public abstract int getUniversalSockAddrFamily(Object receiver, UniversalSockAddr universalSockAddr);
+    @GenerateLibrary
+    public static abstract class UniversalSockAddrLibrary extends Library {
 
-    /**
-     * Fills {@code universalSockAddr} by the address represented by {@code src}. Note that
-     * {@code src} can itself be an instance of {@link UniversalSockAddr}, in which case a direct
-     * copy is made.
-     */
-    public abstract void fillUniversalSockAddr(Object receiver, UniversalSockAddr universalSockAddr, SockAddr src);
+        /**
+         * Releases resources associated with the address.
+         *
+         * This must be called exactly once on all instances returned from
+         * {@link #allocUniversalSockAddr(Object)}. Released instances can no longer be used for any
+         * purpose.
+         */
+        public abstract void release(UniversalSockAddr receiver);
 
-    /**
-     * Converts a {@link UniversalSockAddr} into a {@link Inet4SockAddr} instance.
-     *
-     * @throws IllegalArgumentException if the socket family of the address is not {@link PosixConstants#AF_INET}
-     */
-    public abstract Inet4SockAddr universalSockAddrAsInet4SockAddr(Object receiver, UniversalSockAddr universalSockAddr);
+        /**
+         * Returns the socket family of the address (one of the {@code AF_xxx} values defined in
+         * {@link PosixConstants}).
+         */
+        public abstract int getFamily(UniversalSockAddr receiver);
+
+        /**
+         * Fills the receiver with the backend-specific representation of the {@code src} address.
+         * Note that {@code src} can itself be an instance of {@link UniversalSockAddr} (provided by
+         * the same backend), in which case a direct copy is made.
+         */
+        public abstract void fill(UniversalSockAddr receiver, SockAddr src);
+
+        /**
+         * Converts the address represented by the receiver (which must be of the
+         * {@link PosixConstants#AF_INET} family) into a {@link Inet4SockAddr} instance.
+         *
+         * @throws IllegalArgumentException if the socket family of the address is not
+         *             {@link PosixConstants#AF_INET}
+         */
+        public abstract Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver);
+
+        static final LibraryFactory<UniversalSockAddrLibrary> FACTORY = LibraryFactory.resolve(UniversalSockAddrLibrary.class);
+
+        public static LibraryFactory<UniversalSockAddrLibrary> getFactory() {
+            return FACTORY;
+        }
+
+        public static UniversalSockAddrLibrary getUncached() {
+            return FACTORY.getUncached();
+        }
+    }
 
     static final LibraryFactory<SocketLibrary> FACTORY = LibraryFactory.resolve(SocketLibrary.class);
 
