@@ -420,7 +420,6 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_RETURN_2TUPLE = "%p.__divmod__() must return a 2-tuple, not %p";
     public static final String MUST_S_ITER_RETURN_2TUPLE = "%s iterator must return 2-tuples";
-    public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String S_MUST_RETURN_S_NOT_P = "%s must return a %s, not %p";
     public static final String S_MUST_RETURN_S_OR_S = "%s must return a %s or %s";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";

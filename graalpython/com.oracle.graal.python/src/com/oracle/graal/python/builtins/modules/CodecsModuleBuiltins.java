@@ -512,6 +512,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsDecodeNodeClinicProviderGen.INSTANCE;
         }
 
+        @Override
         public abstract Object execute(VirtualFrame frame, Object str, Object encoding, Object errors, Object finalData);
 
         @Specialization
