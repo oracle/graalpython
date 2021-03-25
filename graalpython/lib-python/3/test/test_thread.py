@@ -1,12 +1,14 @@
-import os
-import unittest
-import random
-from test import support
-import _thread as thread
 import time
-import weakref
 
+import _thread as thread
+
+import os
+import random
+import unittest
+import weakref
 from test import lock_tests
+from test import support
+from test.support import impl_detail
 
 NUMTASKS = 10
 NUMTRIPS = 3
@@ -133,6 +135,7 @@ class ThreadRunningTests(BasicThreadTest):
             time.sleep(POLL_SLEEP)
             self.assertEqual(thread._count(), orig)
 
+    @impl_detail("[GR-30386] skip until implemented", graalvm=False)
     def test_unraisable_exception(self):
         def task():
             started.release()

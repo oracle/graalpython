@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
 
+import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
@@ -51,13 +52,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -204,13 +205,23 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                 } catch (PythonThreadKillException e) {
                     return;
                 } catch (PException e) {
-                    WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), "in thread started by", callable);
+                    dumpError(context, e.getUnreifiedException(), callable);
+                    // TODO (cbasca): when GR-30386 is completed use the intrinsified
+                    // sys.unraisablehook
+                    // WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), "in
+                    // thread started by", callable);
                 }
             }, env.getContext(), context.getThreadGroup());
 
             PThread pThread = factory().createPythonThread(cls, thread);
             pThread.start();
             return pThread.getId();
+        }
+
+        @TruffleBoundary
+        static void dumpError(PythonContext context, PBaseException exception, Object object) {
+            PrintWriter err = new PrintWriter(context.getStandardErr());
+            err.println(String.format("%s in thread started by %s", exception.toString(), object));
         }
     }
 
