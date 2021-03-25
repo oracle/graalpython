@@ -401,29 +401,16 @@ public final class PArguments {
         setClosure(copiedArgs, getClosure(arguments));
 
         // copy all user arguments
-        // TODO: do we want to/need to also store user arguments in the ThreadState?
-        // It's already becoming rather heavy
         PythonUtils.arraycopy(arguments, USER_ARGUMENTS_OFFSET, copiedArgs, USER_ARGUMENTS_OFFSET, getUserArgumentLength(arguments));
 
         escapedFrame.setArguments(copiedArgs);
-    }
-
-    public static boolean haveSynchronizedArgs(Frame frame, PFrame frameRef) {
-        Object[] refArgs = frameRef.getArguments();
-        return getSpecialArgument(frame) == getSpecialArgument(refArgs) && //
-                        getGeneratorFrameSafe(frame) == getGeneratorFrameSafe(refArgs) && //
-                        getGlobals(frame) == getGlobals(refArgs) && //
-                        getClosure(frame) == getClosure(refArgs);
     }
 
     public static ThreadState getThreadState(VirtualFrame frame) {
         assert frame != null : "cannot get thread state without a frame";
         return new ThreadState(PArguments.getCurrentFrameInfo(frame),
                         PArguments.getExceptionUnchecked(frame),
-                        PArguments.getSpecialArgument(frame),
-                        PArguments.getGeneratorFrame(frame),
-                        PArguments.getGlobals(frame),
-                        PArguments.getClosure(frame));
+                        PArguments.getGlobals(frame));
     }
 
     public static ThreadState getThreadStateOrNull(VirtualFrame frame, ConditionProfile hasFrameProfile) {
@@ -434,10 +421,7 @@ public final class PArguments {
         Object[] args = PArguments.create();
         PArguments.setCurrentFrameInfo(args, frame.info);
         PArguments.setExceptionUnchecked(args, frame.exc);
-        PArguments.setSpecialArgument(args, frame.specialArg);
-        args[INDEX_GENERATOR_FRAME] = frame.genFrame;
         args[INDEX_GLOBALS_ARGUMENT] = frame.globals;
-        args[INDEX_CLOSURE] = frame.closure;
         return Truffle.getRuntime().createVirtualFrame(args, EMTPY_FD);
     }
 
@@ -449,18 +433,12 @@ public final class PArguments {
         private final PFrame.Reference info;
         // The type is object because it is Object in the frame and casting it slows things down
         private final Object exc;
-        private final Object specialArg;
-        private final Object genFrame;
         private final Object globals;
-        private final Object closure;
 
-        private ThreadState(Reference info, Object exc, Object specialArg, Object genFrame, Object globals, Object closure) {
+        private ThreadState(Reference info, Object exc, Object globals) {
             this.info = info;
             this.exc = exc;
-            this.specialArg = specialArg;
-            this.genFrame = genFrame;
             this.globals = globals;
-            this.closure = closure;
         }
     }
 }
