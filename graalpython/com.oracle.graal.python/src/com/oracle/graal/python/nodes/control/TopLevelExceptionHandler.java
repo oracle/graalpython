@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -86,6 +87,8 @@ public class TopLevelExceptionHandler extends RootNode {
     private final SourceSection sourceSection;
     @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
+
+    @Child GilNode gilNode = GilNode.create();
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
@@ -118,24 +121,30 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     @Override
+    @SuppressWarnings("try")
     public Object execute(VirtualFrame frame) {
-        if (exception != null) {
-            throw handlePythonException(exception.getEscapedException());
-        } else {
-            assert getContext().getCurrentException() == null;
-            try {
-                return run(frame);
-            } catch (PException e) {
-                assert !PArguments.isPythonFrame(frame);
-                throw handlePythonException(e.getEscapedException());
-            } catch (StackOverflowError e) {
-                PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
-                PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
-                throw handlePythonException(pe.getEscapedException());
-            } catch (Throwable e) {
-                handleJavaException(e);
-                throw e;
+        boolean wasAcquired = gilNode.acquire();
+        try {
+            if (exception != null) {
+                throw handlePythonException(exception.getEscapedException());
+            } else {
+                assert getContext().getCurrentException() == null;
+                try {
+                    return run(frame);
+                } catch (PException e) {
+                    assert !PArguments.isPythonFrame(frame);
+                    throw handlePythonException(e.getEscapedException());
+                } catch (StackOverflowError e) {
+                    PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
+                    PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
+                    throw handlePythonException(pe.getEscapedException());
+                } catch (Throwable e) {
+                    handleJavaException(e);
+                    throw e;
+                }
             }
+        } finally {
+            gilNode.release(wasAcquired);
         }
     }
 
@@ -162,7 +171,11 @@ public class TopLevelExceptionHandler extends RootNode {
                 throw new PythonExitException(this, 1);
             }
         }
-        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+        // Before we leave Python, format the message since outside the context
+        PException exceptionForReraise = pythonException.getExceptionForReraise(pythonException.getTraceback());
+        PythonObjectLibrary pythonObjectLibrary = PythonObjectLibrary.getUncached();
+        exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage(pythonObjectLibrary, pythonObjectLibrary));
+        throw exceptionForReraise;
     }
 
     @TruffleBoundary

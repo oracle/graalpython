@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
@@ -102,7 +103,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateTimeMode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -150,6 +150,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -241,27 +242,45 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"key == cachedObBase", "isObBase(cachedObBase)"}, limit = "1")
         static Object doObBaseCached(DynamicObjectNativeWrapper object, @SuppressWarnings("unused") String key,
-                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObBase) {
-            return object;
+                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObBase,
+                        @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return object;
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization(guards = {"key == cachedObRefcnt", "isObRefcnt(cachedObRefcnt)"}, limit = "1")
         static Object doObRefcnt(DynamicObjectNativeWrapper object, @SuppressWarnings("unused") String key,
-                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt) {
-            return object.getRefCount();
+                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt,
+                        @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                return object.getRefCount();
+            } finally {
+                gil.release(mustRelease);
+            }
         }
 
         @Specialization
         static Object execute(DynamicObjectNativeWrapper object, String key,
                         @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                        @Exclusive @Cached AsPythonObjectNode getDelegate) throws UnsupportedMessageException, UnknownIdentifierException {
-            Object delegate = getDelegate.execute(object);
+                        @Exclusive @Cached AsPythonObjectNode getDelegate,
+                        @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object delegate = getDelegate.execute(object);
 
-            // special key for the debugger
-            if (DynamicObjectNativeWrapper.GP_OBJECT.equals(key)) {
-                return delegate;
+                // special key for the debugger
+                if (DynamicObjectNativeWrapper.GP_OBJECT.equals(key)) {
+                    return delegate;
+                }
+                return readNativeMemberNode.execute(delegate, object, key);
+            } finally {
+                gil.release(mustRelease);
             }
-            return readNativeMemberNode.execute(delegate, object, key);
         }
 
         protected static boolean isObBase(String key) {
@@ -976,9 +995,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(SET_USED, key)", limit = "1")
         static long doSetUsed(PSet object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStorageNode,
-                        @CachedLibrary("getStorageNode.execute(object)") HashingStorageLibrary lib) {
-            return lib.length(getStorageNode.execute(object));
+                        @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
+            return lib.length(object.getDictStorage());
         }
 
         @Specialization(guards = "eq(MMAP_DATA, key)")
@@ -1208,11 +1226,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             static void doTpSubclasses(PythonClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value,
                             @Cached GetSubclassesNode getSubclassesNode,
                             @Cached EachSubclassAdd eachNode,
-                            @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
                             @CachedLibrary("value") PythonNativeWrapperLibrary lib,
                             @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
                 PDict dict = (PDict) lib.getDelegate(value);
-                HashingStorage storage = getStorage.execute(dict);
+                HashingStorage storage = dict.getDictStorage();
                 Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(object);
                 hashLib.forEach(storage, eachNode, new SubclassAddState(storage, hashLib, subclasses));
             }
@@ -1358,8 +1375,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteNativeMemberNode writeNativeMemberNode) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
-        writeNativeMemberNode.execute(lib.getDelegate(this), this, member, value);
+                    @Cached WriteNativeMemberNode writeNativeMemberNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
+        boolean mustRelease = gil.acquire();
+        try {
+            writeNativeMemberNode.execute(lib.getDelegate(this), this, member, value);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -1384,19 +1407,25 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     @Cached AllToJavaNode allToJavaNode,
                     @Cached ToNewRefNode toNewRefNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode) throws UnsupportedMessageException {
-
-        Object[] converted = allToJavaNode.execute(arguments);
+                    @Cached GetNativeNullNode getNativeNullNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
         try {
-            Object result = executeNode.execute(lib.getDelegate(this), converted);
+            Object[] converted = allToJavaNode.execute(arguments);
+            try {
+                Object result = executeNode.execute(lib.getDelegate(this), converted);
 
-            // If a native wrapper is executed, we directly wrap some managed function and assume
-            // that new references are returned. So, we increase the ref count for each native
-            // object here.
-            return toNewRefNode.execute(result);
-        } catch (PException e) {
-            transformExceptionToNativeNode.execute(e);
-            return toNewRefNode.execute(getNativeNullNode.execute());
+                // If a native wrapper is executed, we directly wrap some managed function and
+                // assume
+                // that new references are returned. So, we increase the ref count for each native
+                // object here.
+                return toNewRefNode.execute(result);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return toNewRefNode.execute(getNativeNullNode.execute());
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -1760,51 +1789,68 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = {"key == cachedObRefcnt", "isObRefcnt(cachedObRefcnt)"}, limit = "1")
             static Object doObRefcnt(PrimitiveNativeWrapper object, @SuppressWarnings("unused") String key,
-                            @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt) {
-                return object.getRefCount();
+                            @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt,
+                            @Exclusive @Cached GilNode gil) {
+                boolean mustRelease = gil.acquire();
+                try {
+                    return object.getRefCount();
+                } finally {
+                    gil.release(mustRelease);
+                }
             }
 
             @Specialization(guards = {"key == cachedObType", "isObType(cachedObType)"}, limit = "1")
             static Object doObType(PrimitiveNativeWrapper object, @SuppressWarnings("unused") String key,
                             @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObType,
                             @Exclusive @Cached ToSulongNode toSulongNode,
-                            @Cached GetClassNode getClassNode) {
+                            @Cached GetClassNode getClassNode,
+                            @Exclusive @Cached GilNode gil) {
+                boolean mustRelease = gil.acquire();
+                try {
+                    Object clazz;
+                    if (object.isBool()) {
+                        clazz = getClassNode.execute(true);
+                    } else if (object.isByte() || object.isInt() || object.isLong()) {
+                        clazz = getClassNode.execute(0);
+                    } else if (object.isDouble()) {
+                        clazz = getClassNode.execute(0.0);
+                    } else {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new IllegalStateException("should not reach");
+                    }
 
-                Object clazz;
-                if (object.isBool()) {
-                    clazz = getClassNode.execute(true);
-                } else if (object.isByte() || object.isInt() || object.isLong()) {
-                    clazz = getClassNode.execute(0);
-                } else if (object.isDouble()) {
-                    clazz = getClassNode.execute(0.0);
-                } else {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("should not reach");
+                    return toSulongNode.execute(clazz);
+                } finally {
+                    gil.release(mustRelease);
                 }
-
-                return toSulongNode.execute(clazz);
             }
 
             @Specialization
             static Object execute(PrimitiveNativeWrapper object, String key,
                             @Exclusive @Cached BranchProfile isNotObRefcntProfile,
                             @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
-                            @Exclusive @Cached AsPythonObjectNode getDelegate) throws UnsupportedMessageException, UnknownIdentifierException {
-                // avoid materialization of primitive native wrappers if we only ask for the
-                // reference
-                // count
-                if (isObRefcnt(key)) {
-                    return object.getRefCount();
-                }
-                isNotObRefcntProfile.enter();
+                            @Exclusive @Cached AsPythonObjectNode getDelegate,
+                            @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                boolean mustRelease = gil.acquire();
+                try {
+                    // avoid materialization of primitive native wrappers if we only ask for the
+                    // reference
+                    // count
+                    if (isObRefcnt(key)) {
+                        return object.getRefCount();
+                    }
+                    isNotObRefcntProfile.enter();
 
-                Object delegate = getDelegate.execute(object);
+                    Object delegate = getDelegate.execute(object);
 
-                // special key for the debugger
-                if (DynamicObjectNativeWrapper.GP_OBJECT.equals(key)) {
-                    return delegate;
+                    // special key for the debugger
+                    if (DynamicObjectNativeWrapper.GP_OBJECT.equals(key)) {
+                        return delegate;
+                    }
+                    return readNativeMemberNode.execute(delegate, object, key);
+                } finally {
+                    gil.release(mustRelease);
                 }
-                return readNativeMemberNode.execute(delegate, object, key);
             }
 
             protected static boolean isObBase(String key) {
@@ -1834,8 +1880,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @ExportMessage
         TriState isIdenticalOrUndefined(Object obj) {
             if (obj instanceof PrimitiveNativeWrapper) {
-                // This basically emulates singletons for boxed values. However, we need to do so to
-                // preserve the invariant that storing an object into a list and getting it out (in
+                // This basically emulates singletons for boxed values. However, we need to do
+                // so to
+                // preserve the invariant that storing an object into a list and getting it out
+                // (in
                 // the same critical region) returns the same object.
                 PrimitiveNativeWrapper other = (PrimitiveNativeWrapper) obj;
                 return TriState.valueOf(other.state == state && other.value == value &&

@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -61,6 +60,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -144,13 +144,13 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // read from the Dict
     @Specialization(guards = {
                     "!isHiddenKey(key)",
-                    "lib.hasDict(object)"
+                    "dict != null"
     }, replaces = "readFromBuiltinModuleDict")
-    protected static Object readFromDict(PythonObject object, Object key,
-                    @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
+    protected static Object readFromDict(@SuppressWarnings("unused") PythonObject object, Object key,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
+                    @Bind("lib.getDict(object)") PDict dict,
                     @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
-        Object value = hlib.getItem(getDictStorage.execute(lib.getDict(object)), key);
+        Object value = hlib.getItem(dict.getDictStorage(), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -192,9 +192,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeObject(PythonAbstractNativeObject object, Object key,
                         @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
-            return readNative(key, lib.getDict(object), hlib, getDictStorage);
+            return readNative(key, lib.getDict(object), hlib);
         }
     }
 
@@ -202,16 +201,15 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeClass(PythonAbstractNativeObject object, Object key,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached GetTypeMemberNode getNativeDict,
                         @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
-            return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), hlib, getDictStorage);
+            return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), hlib);
         }
     }
 
-    private static Object readNative(Object key, Object dict, HashingStorageLibrary hlib, HashingCollectionNodes.GetDictStorageNode getDictStorage) {
+    private static Object readNative(Object key, Object dict, HashingStorageLibrary hlib) {
         if (dict instanceof PHashingCollection) {
-            Object result = hlib.getItem(getDictStorage.execute((PHashingCollection) dict), key);
+            Object result = hlib.getItem(((PHashingCollection) dict).getDictStorage(), key);
             if (result != null) {
                 return result;
             }

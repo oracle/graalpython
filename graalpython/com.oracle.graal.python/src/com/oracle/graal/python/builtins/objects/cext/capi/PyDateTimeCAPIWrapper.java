@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.util.PythonUtils;
@@ -165,12 +166,18 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("lookupAttrNode") @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                    @Exclusive @Cached ToSulongNode toSulongNode) throws UnknownIdentifierException {
-        Object attr = lookupGetattributeNode.execute(lib.getDelegate(this), member);
-        if (attr != PNone.NO_VALUE) {
-            return toSulongNode.execute(attr);
+                    @Exclusive @Cached ToSulongNode toSulongNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object attr = lookupGetattributeNode.execute(lib.getDelegate(this), member);
+            if (attr != PNone.NO_VALUE) {
+                return toSulongNode.execute(attr);
+            }
+            throw UnknownIdentifierException.create(member);
+        } finally {
+            gil.release(mustRelease);
         }
-        throw UnknownIdentifierException.create(member);
     }
 
     @ExportMessage
@@ -181,30 +188,42 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                     @Shared("lookupAttrNode") @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached ToSulongNode toSulongNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
-        Object attr = lookupGetattributeNode.execute(lib.getDelegate(this), member);
-        if (attr != PNone.NO_VALUE) {
-            try {
-                Object[] convertedArgs = allToJavaNode.execute(args);
-                return toSulongNode.execute(callNode.execute(null, attr, convertedArgs, PKeyword.EMPTY_KEYWORDS));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(null, e);
-                return toSulongNode.execute(getNativeNullNode.execute());
+                    @Cached GetNativeNullNode getNativeNullNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object attr = lookupGetattributeNode.execute(lib.getDelegate(this), member);
+            if (attr != PNone.NO_VALUE) {
+                try {
+                    Object[] convertedArgs = allToJavaNode.execute(args);
+                    return toSulongNode.execute(callNode.execute(null, attr, convertedArgs, PKeyword.EMPTY_KEYWORDS));
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(null, e);
+                    return toSulongNode.execute(getNativeNullNode.execute());
+                }
             }
+            throw UnknownIdentifierException.create(member);
+        } finally {
+            gil.release(mustRelease);
         }
-        throw UnknownIdentifierException.create(member);
     }
 
     @ExportMessage
     void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
-                    @Exclusive @Cached ToJavaNode toJavaNode) throws UnknownIdentifierException {
-        if (isMemberModifiable(member)) {
-            writeAttrNode.execute(lib.getDelegate(this), member, toJavaNode.execute(value));
-        } else {
-            // reach member is modifiable
-            throw UnknownIdentifierException.create(member);
+                    @Exclusive @Cached ToJavaNode toJavaNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (isMemberModifiable(member)) {
+                writeAttrNode.execute(lib.getDelegate(this), member, toJavaNode.execute(value));
+            } else {
+                // reach member is modifiable
+                throw UnknownIdentifierException.create(member);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 

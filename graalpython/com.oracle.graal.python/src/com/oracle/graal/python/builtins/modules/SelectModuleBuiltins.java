@@ -72,6 +72,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableE
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -114,9 +115,10 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
-                        @Cached BranchProfile notSelectableBranch) {
+                        @Cached BranchProfile notSelectableBranch,
+                        @Cached GilNode gil) {
             return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, posixLib, rlistLibrary, wlistLibrary, xlistLibrary,
-                            callGetItemNode, constructListNode, pyTimeFromObjectNode, itemLib, notSelectableBranch);
+                            callGetItemNode, constructListNode, pyTimeFromObjectNode, itemLib, notSelectableBranch, gil);
         }
 
         @Specialization(replaces = "doWithoutTimeout", limit = "3")
@@ -129,7 +131,8 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
-                        @Cached BranchProfile notSelectableBranch) {
+                        @Cached BranchProfile notSelectableBranch,
+                        @Cached GilNode gil) {
             EmulatedPosixSupport emulatedPosixSupport = getContext().getResources();
             ObjAndFDList readFDs = seq2set(frame, rlist, rlistLibrary, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
             ObjAndFDList writeFDs = seq2set(frame, wlist, wlistLibrary, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
@@ -145,11 +148,16 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
             SelectResult result;
             try {
-                if (readFDs.containsSocket || writeFDs.containsSocket || xFDs.containsSocket) {
-                    // TODO remove this once native sockets are supported
-                    result = PosixSupportLibrary.getUncached().select(emulatedPosixSupport, readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
-                } else {
-                    result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                gil.release(true);
+                try {
+                    if (readFDs.containsSocket || writeFDs.containsSocket || xFDs.containsSocket) {
+                        // TODO remove this once native sockets are supported
+                        result = PosixSupportLibrary.getUncached().select(emulatedPosixSupport, readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                    } else {
+                        result = posixLib.select(getPosixSupport(), readFDs.fds, writeFDs.fds, xFDs.fds, timeoutval);
+                    }
+                } finally {
+                    gil.acquire();
                 }
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -187,7 +195,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             // repeatedly in the loop condition
             ArrayBuilder<Object> objects = new ArrayBuilder<>();
             IntArrayBuilder fds = new IntArrayBuilder();
-            PSequence pSequence = constructListNode.execute(sequence);
+            PSequence pSequence = constructListNode.execute(frame, sequence);
             boolean containsSocket = false;
             for (int i = 0; i < sequenceLib.lengthWithState(sequence, threadState); i++) {
                 Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);

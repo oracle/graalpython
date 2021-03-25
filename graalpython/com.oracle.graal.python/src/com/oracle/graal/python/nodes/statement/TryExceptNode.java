@@ -39,12 +39,15 @@ import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -211,43 +214,55 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @ExportMessage
-    CatchesFunction readMember(String name) throws UnknownIdentifierException {
-        if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
-            if (catchesFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                ArrayList<Object> literalCatches = new ArrayList<>();
-                for (ExceptNode node : exceptNodes) {
-                    PNode exceptType = node.getExceptType();
-                    if (exceptType instanceof ReadNameNode) {
-                        literalCatches.add(((ReadNameNode) exceptType).getAttributeId());
-                    } else if (exceptType instanceof ReadGlobalOrBuiltinNode) {
-                        literalCatches.add(((ReadGlobalOrBuiltinNode) exceptType).getAttributeId());
-                    } else if (exceptType instanceof TupleLiteralNode) {
-                        for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
-                            if (tupleValue instanceof ReadNameNode) {
-                                literalCatches.add(((ReadNameNode) tupleValue).getAttributeId());
-                            } else if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
-                                literalCatches.add(((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId());
+    CatchesFunction readMember(String name,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
+                if (catchesFunction == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    ArrayList<Object> literalCatches = new ArrayList<>();
+                    for (ExceptNode node : exceptNodes) {
+                        PNode exceptType = node.getExceptType();
+                        if (exceptType instanceof ReadNameNode) {
+                            literalCatches.add(((ReadNameNode) exceptType).getAttributeId());
+                        } else if (exceptType instanceof ReadGlobalOrBuiltinNode) {
+                            literalCatches.add(((ReadGlobalOrBuiltinNode) exceptType).getAttributeId());
+                        } else if (exceptType instanceof TupleLiteralNode) {
+                            for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
+                                if (tupleValue instanceof ReadNameNode) {
+                                    literalCatches.add(((ReadNameNode) tupleValue).getAttributeId());
+                                } else if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
+                                    literalCatches.add(((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId());
+                                }
                             }
+                        } else {
+                            literalCatches.add("BaseException");
                         }
-                    } else {
-                        literalCatches.add("BaseException");
                     }
+                    catchesFunction = new CatchesFunction(literalCatches.toArray(PythonUtils.EMPTY_STRING_ARRAY));
                 }
-                catchesFunction = new CatchesFunction(literalCatches.toArray(PythonUtils.EMPTY_STRING_ARRAY));
+                return catchesFunction;
+            } else {
+                throw UnknownIdentifierException.create(name);
             }
-            return catchesFunction;
-        } else {
-            throw UnknownIdentifierException.create(name);
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
-    Object invokeMember(String name, Object[] arguments) throws ArityException, UnknownIdentifierException {
-        if (arguments.length != 1) {
-            throw ArityException.create(1, arguments.length);
+    Object invokeMember(String name,
+                    Object[] arguments, @Exclusive @Cached GilNode gil) throws ArityException, UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, arguments.length);
+            }
+            return readMember(name, gil).catches(new Object[]{arguments[0]}, gil);
+        } finally {
+            gil.release(mustRelease);
         }
-        return readMember(name).catches(arguments[0]);
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -265,26 +280,32 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         }
 
         @ExportMessage(name = "execute")
-        boolean catches(Object... arguments) throws ArityException {
-            if (arguments.length != 1) {
-                throw ArityException.create(1, arguments.length);
-            }
-            Object exception = arguments[0];
-            if (exception instanceof PBaseException) {
-                PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
-                IsSubtypeNode isSubtype = IsSubtypeNode.getUncached();
-                ReadAttributeFromObjectNode readAttr = ReadAttributeFromObjectNode.getUncached();
+        boolean catches(Object[] arguments,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (arguments.length != 1) {
+                    throw ArityException.create(1, arguments.length);
+                }
+                Object exception = arguments[0];
+                if (exception instanceof PBaseException) {
+                    PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                    IsSubtypeNode isSubtype = IsSubtypeNode.getUncached();
+                    ReadAttributeFromObjectNode readAttr = ReadAttributeFromObjectNode.getUncached();
 
-                for (String c : caughtClasses) {
-                    Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
-                    if (lib.isLazyPythonClass(cls)) {
-                        if (isSubtype.execute(lib.getLazyPythonClass(exception), cls)) {
-                            return true;
+                    for (String c : caughtClasses) {
+                        Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
+                        if (lib.isLazyPythonClass(cls)) {
+                            if (isSubtype.execute(lib.getLazyPythonClass(exception), cls)) {
+                                return true;
+                            }
                         }
                     }
                 }
+                return false;
+            } finally {
+                gil.release(mustRelease);
             }
-            return false;
         }
     }
 

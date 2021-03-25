@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -153,8 +154,14 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     final Object readArrayElement(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ReadArrayItemNode readArrayItemNode) {
-        return readArrayItemNode.execute(lib.getDelegate(this), index);
+                    @Exclusive @Cached ReadArrayItemNode readArrayItemNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readArrayItemNode.execute(lib.getDelegate(this), index);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     static int getCallSiteInlineCacheMaxDepth() {
@@ -282,8 +289,14 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     public void writeArrayElement(long index, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteArrayItemNode writeArrayItemNode) throws UnsupportedMessageException {
-        writeArrayItemNode.execute(lib.getDelegate(this), index, value);
+                    @Cached WriteArrayItemNode writeArrayItemNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            writeArrayItemNode.execute(lib.getDelegate(this), index, value);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -320,7 +333,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         @Specialization
         void doBytes(PBytesLike s, long idx, byte value,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
-            setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, value);
+            setByteItemNode.execute(null, NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, value);
         }
 
         @Specialization
@@ -328,7 +341,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         void doBytes(PBytesLike s, long idx, short value,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Short.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(null, NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
@@ -337,7 +350,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         void doBytes(PBytesLike s, long idx, int value,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Integer.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(null, NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
@@ -346,7 +359,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         void doBytes(PBytesLike s, long idx, long value,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Long.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(null, NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
@@ -356,7 +369,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile updateStorageProfile) {
             SequenceStorage storage = s.getSequenceStorage();
-            SequenceStorage updatedStorage = setListItemNode.execute(ListGeneralizationNode.SUPPLIER, storage, idx, toJavaNode.execute(value));
+            SequenceStorage updatedStorage = setListItemNode.execute(null, ListGeneralizationNode.SUPPLIER, storage, idx, toJavaNode.execute(value));
             if (updateStorageProfile.profile(storage != updatedStorage)) {
                 s.setSequenceStorage(updatedStorage);
             }
@@ -366,7 +379,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         void doTuple(PTuple s, long idx, Object value,
                         @Shared("toJavaNode") @Cached ToJavaStealingNode toJavaNode,
                         @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode) {
-            setListItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, toJavaNode.execute(value));
+            setListItemNode.execute(null, NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, toJavaNode.execute(value));
         }
 
         @Specialization

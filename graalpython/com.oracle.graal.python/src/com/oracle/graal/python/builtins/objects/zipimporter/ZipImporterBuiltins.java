@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -210,132 +211,137 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         /** Size of the input stream buffer. */
         public static final int BUFFER_SIZE = 512 * 1024;
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
+        @SuppressWarnings("try")
         private void initZipImporter(PZipImporter self, String path) {
-            if (path == null || path.isEmpty()) {
-                throw raise(PythonErrorType.ZipImportError, ErrorMessages.IS_EMPTY, "archive path");
-            }
-
-            TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(path);
-            String prefix = "";
-            String archive = "";
-            while (true) {
-                boolean isRegularFile;
-                try {
-                    isRegularFile = tfile.isRegularFile();
-                } catch (SecurityException e) {
-                    isRegularFile = false;
+            try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
+                if (path == null || path.isEmpty()) {
+                    throw raise(PythonErrorType.ZipImportError, ErrorMessages.IS_EMPTY, "archive path");
                 }
-                if (isRegularFile) {
-                    // we don't have to store absolute path
-                    archive = tfile.getPath();
-                    break;
-                }
-                TruffleFile parentFile = tfile.getParent();
-                if (parentFile == null) {
-                    break;
-                }
-                prefix = tfile.getName() + getContext().getEnv().getFileNameSeparator() + prefix;
-                tfile = parentFile;
-            }
 
-            boolean existsAndIsRegular;
-            try {
-                existsAndIsRegular = tfile.exists() && tfile.isRegularFile();
-            } catch (SecurityException e) {
-                existsAndIsRegular = false;
-            }
-
-            if (existsAndIsRegular) {
-                Object files = self.getZipDirectoryCache().getItem(path);
-                if (files == null) {
-                    // fill the cache
-                    PDict filesDict = factory().createDict();
-                    ZipInputStream zis = null;
-                    LOCZipEntryStream locis = null;
+                TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(path);
+                String prefix = "";
+                String archive = "";
+                while (true) {
+                    boolean isRegularFile;
                     try {
-                        locis = new LOCZipEntryStream(new BufferedInputStream(tfile.newInputStream(StandardOpenOption.READ), BUFFER_SIZE));
-                        locis.findFirstEntryPosition(); // find location of the first zip entry
-                        if (locis.positions.isEmpty()) {
-                            // no PK\003\004 found -> not a correct zip file
-                            throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
-                        }
-                        zis = new ZipInputStream(locis); // and create new ZipInput stream from this
-                                                         // location
-                        ZipEntry entry;
+                        isRegularFile = tfile.isRegularFile();
+                    } catch (SecurityException e) {
+                        isRegularFile = false;
+                    }
+                    if (isRegularFile) {
+                        // we don't have to store absolute path
+                        archive = tfile.getPath();
+                        break;
+                    }
+                    TruffleFile parentFile = tfile.getParent();
+                    if (parentFile == null) {
+                        break;
+                    }
+                    prefix = tfile.getName() + getContext().getEnv().getFileNameSeparator() + prefix;
+                    tfile = parentFile;
+                }
 
-                        // help variable to handle case when there LOC is in content of a file
-                        long lastZipEntryCSize = 0;
-                        long lastZipEntryPos = 0;
-                        int lastZipLocFileHeaderSize = 0;
-                        long zipEntryPos = 0;
+                boolean existsAndIsRegular;
+                try {
+                    existsAndIsRegular = tfile.exists() && tfile.isRegularFile();
+                } catch (SecurityException e) {
+                    existsAndIsRegular = false;
+                }
 
-                        byte[] extraField;
-                        while ((entry = zis.getNextEntry()) != null) {
-                            if (!locis.positions.isEmpty()) {
-                                zipEntryPos = locis.positions.remove(0);
-                                // handles situation when the local file signature is
-                                // in the content of a file
-                                while (lastZipEntryPos + lastZipEntryCSize + lastZipLocFileHeaderSize > zipEntryPos) {
+                if (existsAndIsRegular) {
+                    Object files = self.getZipDirectoryCache().getItem(path);
+                    if (files == null) {
+                        // fill the cache
+                        PDict filesDict = factory().createDict();
+                        ZipInputStream zis = null;
+                        LOCZipEntryStream locis = null;
+                        try {
+                            locis = new LOCZipEntryStream(new BufferedInputStream(tfile.newInputStream(StandardOpenOption.READ), BUFFER_SIZE));
+                            locis.findFirstEntryPosition(); // find location of the first zip entry
+                            if (locis.positions.isEmpty()) {
+                                // no PK\003\004 found -> not a correct zip file
+                                throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
+                            }
+                            zis = new ZipInputStream(locis); // and create new ZipInput stream from
+                                                             // this
+                            // location
+                            ZipEntry entry;
+
+                            // help variable to handle case when there LOC is in content of a file
+                            long lastZipEntryCSize = 0;
+                            long lastZipEntryPos = 0;
+                            int lastZipLocFileHeaderSize = 0;
+                            long zipEntryPos = 0;
+
+                            byte[] extraField;
+                            while ((entry = zis.getNextEntry()) != null) {
+                                if (!locis.positions.isEmpty()) {
                                     zipEntryPos = locis.positions.remove(0);
+                                    // handles situation when the local file signature is
+                                    // in the content of a file
+                                    while (lastZipEntryPos + lastZipEntryCSize + lastZipLocFileHeaderSize > zipEntryPos) {
+                                        zipEntryPos = locis.positions.remove(0);
+                                    }
+                                } else {
+                                    throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANNOT_HANDLE_ZIP_FILE, archive);
                                 }
-                            } else {
-                                throw raise(PythonErrorType.ZipImportError, ErrorMessages.CANNOT_HANDLE_ZIP_FILE, archive);
-                            }
 
-                            PTuple tuple = factory().createTuple(new Object[]{
-                                            tfile.getPath() + getContext().getEnv().getFileNameSeparator() + entry.getName(),
-                                            // for our implementation currently we don't need these
-                                            // these properties to store there. Keeping them for
-                                            // compatibility.
-                                            entry.getMethod(),
-                                            lastZipEntryCSize = entry.getCompressedSize(),
-                                            entry.getSize(),
-                                            entry.getLastModifiedTime().toMillis(),
-                                            entry.getCrc(),
-                                            // store the entry position for faster reading content
-                                            lastZipEntryPos = zipEntryPos
-                            });
-                            filesDict.setItem(entry.getName(), tuple);
-                            // count local file header from the last zipentry
-                            lastZipLocFileHeaderSize = 30 + entry.getName().length();
-                            extraField = entry.getExtra();
-                            if (extraField != null) {
-                                lastZipLocFileHeaderSize += extraField.length;
+                                PTuple tuple = factory().createTuple(new Object[]{
+                                                tfile.getPath() + getContext().getEnv().getFileNameSeparator() + entry.getName(),
+                                                // for our implementation currently we don't need
+                                                // these
+                                                // these properties to store there. Keeping them for
+                                                // compatibility.
+                                                entry.getMethod(),
+                                                lastZipEntryCSize = entry.getCompressedSize(),
+                                                entry.getSize(),
+                                                entry.getLastModifiedTime().toMillis(),
+                                                entry.getCrc(),
+                                                // store the entry position for faster reading
+                                                // content
+                                                lastZipEntryPos = zipEntryPos
+                                });
+                                filesDict.setItem(entry.getName(), tuple);
+                                // count local file header from the last zipentry
+                                lastZipLocFileHeaderSize = 30 + entry.getName().length();
+                                extraField = entry.getExtra();
+                                if (extraField != null) {
+                                    lastZipLocFileHeaderSize += extraField.length;
+                                }
                             }
-                        }
-                    } catch (IOException ex) {
-                        throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
-                    } catch (SecurityException ex) {
-                        throw raise(PythonErrorType.ZipImportError, ErrorMessages.SECURITY_EX_WHILE_READING, archive);
-                    } finally {
-                        if (zis != null) {
-                            try {
-                                zis.close();
-                            } catch (IOException e) {
-                                // just ignore it.
-                            }
-                        } else {
-                            if (locis != null) {
+                        } catch (IOException ex) {
+                            throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
+                        } catch (SecurityException ex) {
+                            throw raise(PythonErrorType.ZipImportError, ErrorMessages.SECURITY_EX_WHILE_READING, archive);
+                        } finally {
+                            if (zis != null) {
                                 try {
-                                    locis.close();
+                                    zis.close();
                                 } catch (IOException e) {
                                     // just ignore it.
                                 }
+                            } else {
+                                if (locis != null) {
+                                    try {
+                                        locis.close();
+                                    } catch (IOException e) {
+                                        // just ignore it.
+                                    }
+                                }
                             }
                         }
+                        files = filesDict;
+                        self.getZipDirectoryCache().setItem(path, files);
                     }
-                    files = filesDict;
-                    self.getZipDirectoryCache().setItem(path, files);
+                    self.setArchive(archive);
+                    self.setPrefix(prefix);
+                    self.setFiles((PDict) files);
+
+                } else {
+                    throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
                 }
-                self.setArchive(archive);
-                self.setPrefix(prefix);
-                self.setFiles((PDict) files);
-
-            } else {
-                throw raise(PythonErrorType.ZipImportError, ErrorMessages.NOT_A_ZIP_FILE, archive);
             }
-
         }
 
         @Specialization
@@ -522,6 +528,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
+        @SuppressWarnings("try")
         public PBytes doit(PZipImporter self, String pathname) {
             if (self.getPrefix() == null) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
@@ -548,7 +555,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             long streamPosition = (long) tocEntries[6];
             ZipInputStream zis = null;
             TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(archive);
-            try (InputStream in = tfile.newInputStream(StandardOpenOption.READ)) {
+            try (InputStream in = tfile.newInputStream(StandardOpenOption.READ);
+                            GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
                 in.skip(streamPosition); // we can fast skip bytes, because there is cached position
                                          // of the zip entry
                 zis = new ZipInputStream(in);

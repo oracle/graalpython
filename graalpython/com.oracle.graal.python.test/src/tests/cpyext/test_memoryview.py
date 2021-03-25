@@ -37,11 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-import time
-import gc
 import itertools
+import sys
+
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare_with_message, unhandled_error_compare
+
 __dir__ = __file__.rpartition("/")[0]
 
 indices = (-2, 2, 10)
@@ -407,11 +407,6 @@ class TestObject(object):
         assert mv2[3] == 126
         mv2.release()
         assert mv3[2] == 126
-        del mv1
-        del mv3
-        for i in range(120):
-            gc.collect()
-            if obj.get_bufcount() == 0:
-                break
-            time.sleep(1)
+        mv1.release()
+        mv3.release()
         assert obj.get_bufcount() == 0

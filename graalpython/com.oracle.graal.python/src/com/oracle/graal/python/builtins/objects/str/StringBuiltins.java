@@ -2355,14 +2355,13 @@ public final class StringBuiltins extends PythonBuiltins {
             } else {
                 index = lib.asSize(idx);
             }
-            try {
-                if (index < 0) {
-                    index += str.length();
-                }
-                return charAtToString(str, index);
-            } catch (StringIndexOutOfBoundsException | ArithmeticException e) {
+            if (index < 0) {
+                index += str.length();
+            }
+            if (index < 0 || index >= str.length()) {
                 throw raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
+            return charAtToString(str, index);
         }
 
         @SuppressWarnings("unused")

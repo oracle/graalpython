@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -38,6 +39,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -136,16 +138,21 @@ public final class PList extends PSequence {
     }
 
     @ExportMessage
-    public SourceSection getSourceLocation() throws UnsupportedMessageException {
-        ListLiteralNode node = getOrigin();
-        SourceSection result = null;
-        if (node != null) {
-            result = node.getSourceSection();
+    public SourceSection getSourceLocation(@Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            ListLiteralNode node = getOrigin();
+            SourceSection result = null;
+            if (node != null) {
+                result = node.getSourceSection();
+            }
+            if (result == null) {
+                throw UnsupportedMessageException.create();
+            }
+            return result;
+        } finally {
+            gil.release(mustRelease);
         }
-        if (result == null) {
-            throw UnsupportedMessageException.create();
-        }
-        return result;
     }
 
     @ExportMessage
@@ -156,56 +163,86 @@ public final class PList extends PSequence {
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
                     @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
-        final int len = lenNode.execute(store);
+                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
-        } catch (PException e) {
-            return false;
+            final int len = lenNode.execute(store);
+            try {
+                normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
+            } catch (PException e) {
+                return false;
+            }
+            return true;
+        } finally {
+            gil.release(mustRelease);
         }
-        return true;
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode) {
-        final int len = lenNode.execute(store);
-        return index == len;
+                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            final int len = lenNode.execute(store);
+            return index == len;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
                     @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
-        final int len = lenNode.execute(store);
+                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
-        } catch (PException e) {
-            return false;
+            final int len = lenNode.execute(store);
+            try {
+                normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
+            } catch (PException e) {
+                return false;
+            }
+            return true;
+        } finally {
+            gil.release(mustRelease);
         }
-        return true;
     }
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem) throws InvalidArrayIndexException {
+                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
         try {
-            setItem.execute(store, PInt.intValueExact(index), convert.executeConvert(value));
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
+            try {
+                setItem.execute(store, PInt.intValueExact(index), convert.executeConvert(value));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     public void removeArrayElement(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem) throws InvalidArrayIndexException {
+                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
         try {
-            delItem.execute(store, PInt.intValueExact(index));
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
+            try {
+                delItem.execute(store, PInt.intValueExact(index));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 }

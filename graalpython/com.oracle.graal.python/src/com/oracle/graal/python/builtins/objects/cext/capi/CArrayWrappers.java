@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -196,20 +197,26 @@ public abstract class CArrayWrappers {
 
         @ExportMessage
         Object readArrayElement(long index,
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) throws InvalidArrayIndexException {
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+            boolean mustRelease = gil.acquire();
             try {
-                int idx = PInt.intValueExact(index);
-                byte[] arr = getByteArray(lib);
-                if (idx >= 0 && idx < arr.length) {
-                    return arr[idx];
-                } else if (idx == arr.length) {
-                    return (byte) 0;
+                try {
+                    int idx = PInt.intValueExact(index);
+                    byte[] arr = getByteArray(lib);
+                    if (idx >= 0 && idx < arr.length) {
+                        return arr[idx];
+                    } else if (idx == arr.length) {
+                        return (byte) 0;
+                    }
+                } catch (OverflowException e) {
+                    // fall through
                 }
-            } catch (OverflowException e) {
-                // fall through
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            } finally {
+                gil.release(mustRelease);
             }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
         }
 
         @ExportMessage

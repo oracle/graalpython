@@ -45,7 +45,7 @@ import tempfile
 if PY3:
     import urllib.request as urllib_request
 else:
-    import urllib2 as urllib_request
+    raise "The build scripts are no longer compatible with Python 2"
 from argparse import ArgumentParser
 
 import mx
@@ -280,7 +280,7 @@ def run_cpython_test(args):
     testfiles = []
     for g in globs:
         testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", "%s*" % g))
-    mx.run([python_gvm()] + interp_args + [
+    mx.run([python_gvm_with_assertions()] + interp_args + [
         os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
     ] + test_args + testfiles)
 
@@ -300,7 +300,7 @@ def retag_unittests(args):
     args = [
         '--experimental-options=true',
         '--python.CatchAllExceptions=true',
-        '--python.WithThread=true']
+    ]
     if parsed_args.inspect:
         args.append('--inspect')
     if parsed_args.debug_java:
@@ -309,7 +309,7 @@ def retag_unittests(args):
         'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
         '--retag'
     ]
-    mx.run([python_gvm()] + args + remaining_args, env=env)
+    mx.run([python_gvm_with_assertions()] + args + remaining_args, env=env)
     if parsed_args.upload_results_to:
         with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
             filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
@@ -484,6 +484,12 @@ def python_gvm(args=None, **kwargs):
     return _python_graalvm_launcher(args or [], **kwargs)
 
 
+def python_gvm_with_assertions(args=None, **kwargs):
+    launcher = python_gvm(args, **kwargs)
+    patch_batch_launcher(launcher, '-ea')
+    return launcher
+
+
 def python_svm(args=None, **kwargs):
     "Build and run the native graalpython image"
     with set_env(FORCE_BASH_LAUNCHERS="true", NATIVE_IMAGES="graalpython", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
@@ -621,12 +627,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         launcher_path_bak = launcher_path + ".bak"
         shutil.copy(launcher_path, launcher_path_bak)
         try:
-            with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
-                lines = launcher.readlines()
-            assert re.match(r'^#!.*bash', lines[0]), "jacoco needs a bash launcher"
-            lines.insert(-1, 'jvm_args+=(%s)\n' % agent_args)
-            with open(launcher_path, 'w') as launcher:
-                launcher.writelines(lines)
+            patch_batch_launcher(launcher_path, agent_args)
             # jacoco only dumps the data on exit, and when we run all our unittests
             # at once it generates so much data we run out of heap space
             for testfile in testfiles:
@@ -637,6 +638,15 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
         return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
+
+
+def patch_batch_launcher(launcher_path, jvm_args):
+    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+        lines = launcher.readlines()
+    assert re.match(r'^#!.*bash', lines[0]), "expected a bash launcher"
+    lines.insert(-1, 'jvm_args+=(%s)\n' % jvm_args)
+    with open(launcher_path, 'w') as launcher:
+        launcher.writelines(lines)
 
 
 def run_hpy_unittests(python_binary, args=None):
@@ -662,8 +672,7 @@ def run_tagged_unittests(python_binary, env=None):
     )
     run_python_unittests(
         python_binary,
-        args=["-v",
-              "--python.WithThread=true"],
+        args=["-v"],
         paths=["test_tagged_unittests.py"],
         env=env,
     )
@@ -690,36 +699,36 @@ def graalpython_gate_runner(args, tasks):
                 test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
                 mx.run(test_args, nonZeroIsFatal=True, env=env)
             mx.run(["env"])
-            run_python_unittests(python_gvm())
+            run_python_unittests(python_gvm_with_assertions())
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(python_gvm(["sandboxed"]))
+            run_python_unittests(python_gvm_with_assertions(["sandboxed"]))
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["-multi-context"])
+            run_python_unittests(python_gvm_with_assertions(), args=["-multi-context"])
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["--python.EmulateJython"], paths=["test_interop.py"])
+            run_python_unittests(python_gvm_with_assertions(), args=["--python.EmulateJython"], paths=["test_interop.py"])
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_hpy_unittests(python_gvm())
+            run_hpy_unittests(python_gvm_with_assertions())
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_hpy_unittests(python_gvm(["sandboxed"]))
+            run_hpy_unittests(python_gvm_with_assertions(["sandboxed"]))
 
     with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
         if task:
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"])
-            run_python_unittests(python_gvm(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"])
+            run_python_unittests(python_gvm_with_assertions(), args=["--PosixModuleBackend=native"], paths=["test_posix.py", "test_mmap.py"])
+            run_python_unittests(python_gvm_with_assertions(), args=["--PosixModuleBackend=java"], paths=["test_posix.py", "test_mmap.py"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            run_tagged_unittests(python_gvm())
+            run_tagged_unittests(python_gvm_with_assertions())
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
@@ -1621,7 +1630,7 @@ def python_coverage(args):
             'coverage-upload',
         ])
     if args.truffle:
-        executable = python_gvm()
+        executable = python_gvm_with_assertions()
         variants = [
             {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
@@ -1843,8 +1852,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             # always add "-q" if not verbose to suppress hello message
             args.append("-q")
 
-        args += ["--python.WithThread",
-                 "--python.PyCachePrefix=" + pycache_dir,
+        args += ["--python.PyCachePrefix=" + pycache_dir,
                  "-B",
                  "-S", os.path.join(self.src_dir(), "setup.py"),
                  self.subject.get_output_root()]

@@ -40,7 +40,9 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,22]`(x for x in ra
               ArgumentExpressionNode SourceSection: None
                 ReadIndexedArgumentNodeGen SourceSection: None
                   Index: 0
-              GetNextNode SourceSection: None
+              GetNextCached SourceSection: None
+                LookupAndCallUnaryNodeGen SourceSection: None
+                  Op: __next__
               GeneratorAccessNode SourceSection: None
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None

@@ -30,6 +30,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -177,19 +178,31 @@ public abstract class PSequence extends PythonBuiltinObject {
 
     @ExportMessage
     public long getArraySize(@Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Exclusive @Cached SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(getSequenceStorageNode.execute(this));
+                    @Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return lenNode.execute(getSequenceStorageNode.execute(this));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     public Object readArrayElement(long index,
                     @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                    @Cached SequenceStorageNodes.GetItemScalarNode getItem) throws InvalidArrayIndexException {
+                    @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+        boolean mustRelease = gil.acquire();
         try {
-            return getItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
+            try {
+                return getItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidArrayIndexException.create(index);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 

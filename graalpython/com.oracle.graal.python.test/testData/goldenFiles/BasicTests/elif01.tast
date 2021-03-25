@@ -13,9 +13,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
           SideEffect:
             IfNode SourceSection: [10,96]`if var == 200:↵  pri...`
               YesNodeGen SourceSection: None
-                BinaryComparisonNodeGen SourceSection: [13,23]`var == 200`
-                  LookupAndCallBinaryNodeGen SourceSection: None
-                    Op: __eq__
+                EqNodeGen SourceSection: [13,23]`var == 200`
                   ReadNameNodeGen SourceSection: [13,16]`var`
                     Identifier: var
                     IsBuiltinClassProfile SourceSection: None
@@ -33,9 +31,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     Value: 2
               IfNode SourceSection: [37,96]`elif var == 150:↵  p...`
                 YesNodeGen SourceSection: None
-                  BinaryComparisonNodeGen SourceSection: [42,52]`var == 150`
-                    LookupAndCallBinaryNodeGen SourceSection: None
-                      Op: __eq__
+                  EqNodeGen SourceSection: [42,52]`var == 150`
                     ReadNameNodeGen SourceSection: [42,45]`var`
                       Identifier: var
                       IsBuiltinClassProfile SourceSection: None
@@ -52,9 +48,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     DoubleLiteralNode SourceSection: [63,66]`1.5`
                 IfNode SourceSection: [68,96]`elif var == 100:↵  p...`
                   YesNodeGen SourceSection: None
-                    BinaryComparisonNodeGen SourceSection: [73,83]`var == 100`
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __eq__
+                    EqNodeGen SourceSection: [73,83]`var == 100`
                       ReadNameNodeGen SourceSection: [73,76]`var`
                         Identifier: var
                         IsBuiltinClassProfile SourceSection: None

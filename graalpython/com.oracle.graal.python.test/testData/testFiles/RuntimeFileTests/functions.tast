@@ -419,9 +419,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               ReadLocalVariableNodeGen SourceSection: [2812,2821]`metaclass`
                                 Frame: [3,metaclass,Illegal]
                               ObjectLiteralNode SourceSection: [2829,2833]`None`
-                          BinaryComparisonNodeGen SourceSection: [2837,2852]`len(kwargs) > 0`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
+                          GtNodeGen SourceSection: [2837,2852]`len(kwargs) > 0`
                             PythonCallUnary SourceSection: [2837,2848]`len(kwargs)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2837,2840]`len`
@@ -802,9 +800,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                               Frame: [2,i,Illegal]
                                           IfNode SourceSection: [3573,3620]`if x == i:↵         ...`
                                             YesNodeGen SourceSection: None
-                                              BinaryComparisonNodeGen SourceSection: [3576,3582]`x == i`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __eq__
+                                              EqNodeGen SourceSection: [3576,3582]`x == i`
                                                 ReadLocalVariableNodeGen SourceSection: [3576,3577]`x`
                                                   Frame: [1,x,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [3581,3582]`i`
@@ -905,9 +901,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                     FunctionBodyNode SourceSection: [3877,4271]`if len(obj) == 0:↵  ...`
                       IfNode SourceSection: [3877,4134]`if len(obj) == 0:↵  ...`
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [3880,3893]`len(obj) == 0`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [3880,3893]`len(obj) == 0`
                             PythonCallUnary SourceSection: [3880,3888]`len(obj)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [3880,3883]`len`
@@ -937,9 +931,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   Value: 1
                         IfNode SourceSection: [4050,4134]`elif len(obj) != 1:↵...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [4055,4068]`len(obj) != 1`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __ne__
+                            NeNodeGen SourceSection: [4055,4068]`len(obj) != 1`
                               PythonCallUnary SourceSection: [4055,4063]`len(obj)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4055,4058]`len`

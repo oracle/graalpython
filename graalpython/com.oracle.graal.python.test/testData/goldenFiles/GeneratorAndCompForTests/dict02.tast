@@ -76,7 +76,9 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
                               Index: 0
-                          GetNextNode SourceSection: None
+                          GetNextCached SourceSection: None
+                            LookupAndCallUnaryNodeGen SourceSection: None
+                              Op: __next__
                           GeneratorAccessNode SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None

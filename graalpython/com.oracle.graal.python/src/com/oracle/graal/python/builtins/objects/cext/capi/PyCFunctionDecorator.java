@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.truffle.api.interop.ArityException;
@@ -69,7 +70,8 @@ public final class PyCFunctionDecorator implements TruffleObject {
     @ExportMessage
     Object execute(Object[] arguments,
                     @CachedLibrary("this.nativeFunction") InteropLibrary nativeFunctionLib,
-                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib)
+                    throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
         Object res = nativeFunctionLib.execute(nativeFunction, arguments);
         return resultConverterLib.execute(resultConverter, res);
     }

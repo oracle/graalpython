@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -68,7 +67,7 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
     }
 
     protected static boolean isHiddenKey(Object key) {
-        return key instanceof HiddenPythonKey || key instanceof HiddenKey;
+        return key instanceof HiddenKey;
     }
 
     @Override

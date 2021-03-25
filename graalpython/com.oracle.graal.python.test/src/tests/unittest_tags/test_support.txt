@@ -12,7 +12,6 @@
 *graalpython.lib-python.3.test.test_support.TestSupport.test_check_syntax_error
 *graalpython.lib-python.3.test.test_support.TestSupport.test_detect_api_mismatch
 *graalpython.lib-python.3.test.test_support.TestSupport.test_detect_api_mismatch__ignore
-*graalpython.lib-python.3.test.test_support.TestSupport.test_find_unused_port
 *graalpython.lib-python.3.test.test_support.TestSupport.test_forget
 *graalpython.lib-python.3.test.test_support.TestSupport.test_gc_collect
 *graalpython.lib-python.3.test.test_support.TestSupport.test_get_attribute

@@ -60,98 +60,96 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextCachedNodeGen;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@NodeInfo(cost = NONE)
-public final class GetNextNode extends PNodeWithContext {
+public abstract class GetNextNode extends PNodeWithContext {
+    public abstract Object execute(Frame frame, Object iterator);
 
-    private GetNextNode(LookupAndCallUnaryNode nextCall) {
-        this.nextCall = nextCall;
-    }
+    public abstract boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
-    public static GetNextNode create() {
-        return new GetNextNode(null);
-    }
+    public abstract int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
-    public static GetNextNode create(LookupAndCallUnaryNode nextCall) {
-        return new GetNextNode(nextCall);
-    }
+    public abstract long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
-    @Child private PythonObjectLibrary lib;
-    @Child private GetNextFastPathNode fastPathNode;
-    @Child private LookupAndCallUnaryNode nextCall;
+    public abstract double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
-    public Object execute(VirtualFrame frame, Object iterator) {
-        ensureFastPathAndLib();
-        return fastPathNode.execute(frame, iterator, lib.getLazyPythonClass(iterator), this);
-    }
+    @NodeInfo(cost = NONE)
+    protected abstract static class GetNextCached extends GetNextNode {
 
-    public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-        try {
-            return ensureNextCall().executeBoolean(frame, iterator);
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(e.getResult());
+        @Child private LookupAndCallUnaryNode nextCall;
+
+        protected GetNextCached(LookupAndCallUnaryNode nextCall) {
+            this.nextCall = nextCall;
         }
-    }
 
-    public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-        try {
-            return ensureNextCall().executeInt(frame, iterator);
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(e.getResult());
+        private LookupAndCallUnaryNode ensureNextCall() {
+            if (nextCall == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nextCall = insert(LookupAndCallUnaryNode.create(__NEXT__, NoAttrHandlerSupplier.INSTANCE));
+            }
+            return nextCall;
         }
-    }
 
-    public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-        try {
-            return ensureNextCall().executeLong(frame, iterator);
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(e.getResult());
+        // Only the generic execute dispatches to the specializations, return type specialization
+        // does not help in case of builtin nodes, they always return Object
+        @Override
+        public final Object execute(Frame frame, Object iterator) {
+            return executeWithFrame((VirtualFrame) frame, iterator);
         }
-    }
 
-    public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-        try {
-            return ensureNextCall().executeDouble(frame, iterator);
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(e.getResult());
-        }
-    }
+        // Only the generic execute dispatches to the specializations, return type specialization
+        // does not help in case of builtin nodes, they always return Object
+        protected abstract Object executeWithFrame(VirtualFrame frame, Object iterator);
 
-    private LookupAndCallUnaryNode ensureNextCall() {
-        if (nextCall == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            nextCall = insert(LookupAndCallUnaryNode.create(__NEXT__, NoAttrHandlerSupplier.INSTANCE));
+        @Override
+        public final boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            try {
+                return ensureNextCall().executeBoolean(frame, iterator);
+            } catch (UnexpectedResultException e) {
+                throw new UnexpectedResultException(e.getResult());
+            }
         }
-        return nextCall;
-    }
 
-    private void ensureFastPathAndLib() {
-        if (fastPathNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            fastPathNode = insert(GetNextNodeFactory.GetNextFastPathNodeGen.create());
+        @Override
+        public final int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            try {
+                return ensureNextCall().executeInt(frame, iterator);
+            } catch (UnexpectedResultException e) {
+                throw new UnexpectedResultException(e.getResult());
+            }
         }
-        if (lib == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            lib = insert(PythonObjectLibrary.getFactory().createDispatched(4));
-        }
-    }
 
-    public abstract static class GetNextFastPathNode extends PNodeWithContext {
-        public abstract Object execute(VirtualFrame frame, Object iterator, Object lazyClass, GetNextNode getNextNode);
+        @Override
+        public final long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            try {
+                return ensureNextCall().executeLong(frame, iterator);
+            } catch (UnexpectedResultException e) {
+                throw new UnexpectedResultException(e.getResult());
+            }
+        }
+
+        @Override
+        public final double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            try {
+                return ensureNextCall().executeDouble(frame, iterator);
+            } catch (UnexpectedResultException e) {
+                throw new UnexpectedResultException(e.getResult());
+            }
+        }
 
         protected static boolean isNext(PythonBuiltinClassType klassType, NodeFactory<? extends PythonUnaryBuiltinNode> factory) {
             Object slot = SpecialMethodSlot.Next.getValue(klassType);
@@ -184,50 +182,82 @@ public final class GetNextNode extends PNodeWithContext {
             return isNext(lazyClass, EnumerateBuiltinsFactory.NextNodeFactory.getInstance());
         }
 
-        @Specialization(guards = "isIteratorNext(lazyClass)")
-        Object doIterator(VirtualFrame frame, Object object, @SuppressWarnings("unused") Object lazyClass, @SuppressWarnings("unused") GetNextNode getNextNode,
+        // TODO: share the lib...
+        @Specialization(guards = "isIteratorNext(lib.getLazyPythonClass(object))")
+        Object doIterator(VirtualFrame frame, Object object,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached IteratorBuiltins.NextNode nextNode) {
             return nextNode.call(frame, object);
         }
 
-        @Specialization(guards = "isGeneratorNext(lazyClass)")
-        Object doGenerator(VirtualFrame frame, Object object, @SuppressWarnings("unused") Object lazyClass,
-                        @SuppressWarnings("unused") GetNextNode getNextNode,
+        @Specialization(guards = "isGeneratorNext(lib.getLazyPythonClass(object))")
+        Object doGenerator(VirtualFrame frame, Object object,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached GeneratorBuiltins.NextNode nextNode) {
             return nextNode.call(frame, object);
         }
 
-        @Specialization(guards = "isEnumerateNext(lazyClass)")
-        Object doEnumerate(VirtualFrame frame, Object object, @SuppressWarnings("unused") Object lazyClass,
-                        @SuppressWarnings("unused") GetNextNode getNextNode,
+        @Specialization(guards = "isEnumerateNext(lib.getLazyPythonClass(object))")
+        Object doEnumerate(VirtualFrame frame, Object object,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached EnumerateBuiltins.NextNode nextNode) {
             return nextNode.call(frame, object);
         }
 
         @Specialization(replaces = {"doEnumerate", "doIterator", "doGenerator"})
-        Object doGeneric(VirtualFrame frame, Object iterator, @SuppressWarnings("unused") Object lazyClass, GetNextNode getNextNode) {
-            return getNextNode.ensureNextCall().executeObject(frame, iterator);
+        Object doGeneric(VirtualFrame frame, Object iterator) {
+            return ensureNextCall().executeObject(frame, iterator);
         }
     }
 
-    @GenerateUncached
-    public abstract static class GetNextWithoutFrameNode extends PNodeWithContext {
+    private static final class GetNextUncached extends GetNextNode {
+        static final GetNextUncached INSTANCE = new GetNextUncached();
 
-        public abstract Object executeWithGlobalState(Object iterator);
-
-        private static Object checkResult(PRaiseNode raiseNode, ConditionProfile notAnIterator, Object result, Object iterator) {
-            if (notAnIterator.profile(result == PNone.NO_VALUE)) {
-                throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, __NEXT__);
+        @Override
+        @TruffleBoundary
+        public Object execute(Frame frame, Object iterator) {
+            PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+            Object nextMethod = lib.lookupAttributeOnType(iterator, __NEXT__);
+            if (nextMethod == PNone.NO_VALUE) {
+                throw PRaiseNode.getUncached().raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, iterator, __NEXT__);
             }
-            return result;
+            return lib.callUnboundMethod(nextMethod, (VirtualFrame) frame, iterator);
         }
 
-        @Specialization
-        Object doObject(Object iterator,
-                        @Cached LookupAndCallUnaryDynamicNode nextCall,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached("createBinaryProfile()") ConditionProfile notAnIterator) {
-            return checkResult(raiseNode, notAnIterator, nextCall.executeObject(iterator, __NEXT__), iterator);
+        @Override
+        public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            Object value = execute(frame, iterator);
+            if (value instanceof Boolean) {
+                return (boolean) value;
+            }
+            throw new UnexpectedResultException(value);
+        }
+
+        @Override
+        public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            Object value = execute(frame, iterator);
+            if (value instanceof Integer) {
+                return (int) value;
+            }
+            throw new UnexpectedResultException(value);
+        }
+
+        @Override
+        public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            Object value = execute(frame, iterator);
+            if (value instanceof Long) {
+                return (long) value;
+            }
+            throw new UnexpectedResultException(value);
+        }
+
+        @Override
+        public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+            Object value = execute(frame, iterator);
+            if (value instanceof Double) {
+                return (double) value;
+            }
+            throw new UnexpectedResultException(value);
         }
     }
 
@@ -245,5 +275,17 @@ public final class GetNextNode extends PNodeWithContext {
                 }
             };
         }
+    }
+
+    public static GetNextCached create() {
+        return GetNextCachedNodeGen.create(null);
+    }
+
+    public static GetNextCached create(LookupAndCallUnaryNode nextCall) {
+        return GetNextCachedNodeGen.create(nextCall);
+    }
+
+    public static GetNextUncached getUncached() {
+        return GetNextUncached.INSTANCE;
     }
 }

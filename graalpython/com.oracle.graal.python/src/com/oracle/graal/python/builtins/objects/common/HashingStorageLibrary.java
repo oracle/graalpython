@@ -75,36 +75,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * argument. Thus, storages must ensure to cache the hash value if a call could be observed.
  */
 @GenerateLibrary
-@SuppressWarnings("unused")
 public abstract class HashingStorageLibrary extends Library {
+
     /**
      * @return the length of {@code self}
      */
-    public int lengthWithState(HashingStorage self, ThreadState state) {
-        if (state == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError("HashingStorageLibrary.lengthWithState");
-        }
-        return length(self);
-    }
-
-    /**
-     * @see #lengthWithState(HashingStorage, ThreadState)
-     */
-    public int length(HashingStorage self) {
-        return lengthWithState(self, null);
-    }
-
-    /**
-     * @see #lengthWithState(HashingStorage, ThreadState)
-     */
-    public final int lengthWithFrame(HashingStorage self, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
-            return lengthWithState(self, PArguments.getThreadState(frame));
-        } else {
-            return length(self);
-        }
-    }
+    public abstract int length(HashingStorage self);
 
     /**
      * Implementers <i>must</i> call {@code __hash__} on the key if that could be visible, to comply
@@ -295,11 +271,11 @@ public abstract class HashingStorageLibrary extends Library {
 
     /**
      * Determines if the storage has elements with a potential side effect on access.
-     * 
+     *
      * @return {@code true} if the storage has elements with a potential side effect, otherwise
      *         {@code false}.
      */
-    public boolean hasSideEffect(HashingStorage self) {
+    public boolean hasSideEffect(@SuppressWarnings("unused") HashingStorage self) {
         return false;
     }
 
@@ -473,7 +449,7 @@ public abstract class HashingStorageLibrary extends Library {
 
         @Override
         public HashingStorageIterator<T> iterator() {
-            return new HashingStorageIterator<T>(this.iterator);
+            return new HashingStorageIterator<>(this.iterator);
         }
     }
 

@@ -201,7 +201,9 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                         Frame: [2,<>temp2,Illegal]
                                         YieldFromNode SourceSection: [194,213]`yield from MyIter()`
                                           CachedDispatchFirst SourceSection: None
-                                          GetNextNode SourceSection: None
+                                          GetNextCached SourceSection: None
+                                            LookupAndCallUnaryNodeGen SourceSection: None
+                                              Op: __next__
                                           GeneratorAccessNode SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None

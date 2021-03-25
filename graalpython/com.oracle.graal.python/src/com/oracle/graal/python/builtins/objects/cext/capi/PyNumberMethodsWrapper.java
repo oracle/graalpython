@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -235,9 +236,15 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadMethodNode readMethodNode,
-                    @Exclusive @Cached ToSulongNode toSulongNode) throws UnknownIdentifierException {
-        // translate key to attribute name
-        return toSulongNode.execute(readMethodNode.execute(getPythonClass(lib), member));
+                    @Exclusive @Cached ToSulongNode toSulongNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            // translate key to attribute name
+            return toSulongNode.execute(readMethodNode.execute(getPythonClass(lib), member));
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage

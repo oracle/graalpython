@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -130,8 +131,14 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached ReadFieldNode readFieldNode) {
-        return readFieldNode.execute(lib.getDelegate(this), member);
+                    @Cached ReadFieldNode readFieldNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return readFieldNode.execute(lib.getDelegate(this), member);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @GenerateUncached
@@ -247,8 +254,14 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached WriteFieldNode writeFieldNode) throws UnsupportedMessageException, UnknownIdentifierException {
-        writeFieldNode.execute(lib.getDelegate(this), member, value);
+                    @Exclusive @Cached WriteFieldNode writeFieldNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            writeFieldNode.execute(lib.getDelegate(this), member, value);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage

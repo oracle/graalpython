@@ -60,7 +60,7 @@ public class AssignmentNode extends StatementNode {
     }
 
     public void doWrite(VirtualFrame frame, Object value) {
-        ((WriteNode) writeTemp).writeObject(frame, value);
+        ((WriteNode) writeTemp).executeObject(frame, value);
         assignment.executeVoid(frame);
     }
 

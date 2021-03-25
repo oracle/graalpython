@@ -230,7 +230,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [1043,1052]`self.maps`
                                           GetAttributeNode SourceSection: [1043,1052]`self.maps`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maps
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -370,7 +370,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             CallNodeGen SourceSection: None
                                             PositionalArgumentsNode SourceSection: None
                                               GetAttributeNode SourceSection: [1456,1465]`self.maps`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: maps
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -448,7 +448,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               Identifier: reversed
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [1584,1593]`self.maps`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: maps
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -564,7 +564,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
+                                                      LookupAndCallUnaryNodeGen SourceSection: None
+                                                        Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -575,7 +577,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [1778,1787]`self.maps`
                                               GetAttributeNode SourceSection: [1778,1787]`self.maps`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: maps
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -630,7 +632,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: any
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [1833,1842]`self.maps`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: maps
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -710,7 +712,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   Identifier: repr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [1983,1992]`self.maps`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: maps
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -846,7 +848,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetItemNodeGen SourceSection: [2313,2325]`self.maps[0]`
                                                   GetAttributeNode SourceSection: None
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: maps
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -858,7 +860,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                     Value: 0
                                             GetItemNodeGen SourceSection: [2335,2348]`self.maps[1:]`
                                               GetAttributeNode SourceSection: None
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: maps
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -956,7 +958,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNodeGen SourceSection: [2658,2659]`m`
                                               Frame: [1,m,Illegal]
                                             GetAttributeNode SourceSection: [2662,2671]`self.maps`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: maps
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1024,7 +1026,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             PositionalArgumentsNode SourceSection: None
                                               GetItemNodeGen SourceSection: [2835,2848]`self.maps[1:]`
                                                 GetAttributeNode SourceSection: None
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: maps
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -1094,7 +1096,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                     SetItemNodeGen SourceSection: [2898,2923]`self.maps[0][key] = ...`
                                       GetItemNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: None
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: maps
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -1156,7 +1158,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         DeleteItemNodeGen SourceSection: [2982,3003]`del self.maps[0][key...`
                                           GetItemNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: maps
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1233,7 +1235,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetItemNodeGen SourceSection: [3259,3271]`self.maps[0]`
                                                   GetAttributeNode SourceSection: None
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: maps
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -1322,7 +1324,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetItemNodeGen SourceSection: [3535,3547]`self.maps[0]`
                                                   GetAttributeNode SourceSection: None
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: maps
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -1392,7 +1394,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetItemNodeGen SourceSection: [3752,3764]`self.maps[0]`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: maps
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1407,7 +1409,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           GetAttributeNode SourceSection: [176,207]`_collections_abc.Mut...`
-            GetFixedAttributeNodeGen SourceSection: None
+            GetFixedAttributeNode SourceSection: None
               Key: MutableMapping
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
@@ -1530,9 +1532,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           Frame: [6,<>temp6,Illegal]
                                     IfNode SourceSection: [4263,4369]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [4266,4279]`len(args) > 1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [4266,4279]`len(args) > 1`
                                           PythonCallUnary SourceSection: [4266,4275]`len(args)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4266,4269]`len`
@@ -1703,7 +1703,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [4850,4859]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1763,7 +1763,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ReadLocalVariableNodeGen SourceSection: [4904,4907]`key`
                                             Frame: [1,key,Illegal]
                                           GetAttributeNode SourceSection: [4911,4920]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1777,7 +1777,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           Frame: [2,<return_val>,Illegal]
                                           GetItemNodeGen SourceSection: [4941,4955]`self.data[key]`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1796,7 +1796,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: hasattr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [4975,4989]`self.__class__`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: __class__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1813,7 +1813,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             CallBinaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [5026,5040]`self.__class__`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -1886,7 +1886,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                   FunctionBodyNode SourceSection: [5130,5151]`self.data[key] = ite...`
                                     SetItemNodeGen SourceSection: [5130,5151]`self.data[key] = ite...`
                                       GetAttributeNode SourceSection: None
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: data
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1943,7 +1943,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                   FunctionBodyNode SourceSection: [5184,5202]`del self.data[key]`
                                     DeleteItemNodeGen SourceSection: [5184,5202]`del self.data[key]`
                                       GetAttributeNode SourceSection: None
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: data
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1999,7 +1999,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: iter
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [5247,5256]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2061,7 +2061,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ReadLocalVariableNodeGen SourceSection: [5379,5382]`key`
                                             Frame: [1,key,Illegal]
                                           GetAttributeNode SourceSection: [5386,5395]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2115,7 +2115,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [5495,5504]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2163,7 +2163,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       YesNodeGen SourceSection: None
                                         IsExpressionNodeGen SourceSection: [5537,5563]`self.__class__ is Us...`
                                           GetAttributeNode SourceSection: [5537,5551]`self.__class__`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: __class__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2187,7 +2187,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [5593,5602]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -2206,7 +2206,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       Identifier: data
                                       Frame: [2,data,Illegal]
                                       GetAttributeNode SourceSection: [5646,5655]`self.data`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: data
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -2351,7 +2351,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           GetAttributeNode SourceSection: [3966,3997]`_collections_abc.Mut...`
-            GetFixedAttributeNodeGen SourceSection: None
+            GetFixedAttributeNode SourceSection: None
               Key: MutableMapping
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
@@ -2461,9 +2461,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ObjectLiteralNode SourceSection: [6361,6365]`None`
                                       IfNode SourceSection: [6439,6679]`if type(initlist) ==...`
                                         YesNodeGen SourceSection: None
-                                          BinaryComparisonNodeGen SourceSection: [6442,6475]`type(initlist) == ty...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __eq__
+                                          EqNodeGen SourceSection: [6442,6475]`type(initlist) == ty...`
                                             PythonCallUnary SourceSection: [6442,6456]`type(initlist)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [6442,6446]`type`
@@ -2477,7 +2475,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [6465,6474]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2487,7 +2485,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   Frame: [0,self,Illegal]
                                         SetItemNodeGen SourceSection: [6493,6516]`self.data[:] = initl...`
                                           GetAttributeNode SourceSection: None
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2516,7 +2514,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           SetItemNodeGen SourceSection: [6582,6613]`self.data[:] = initl...`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2531,7 +2529,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               EmptyNode SourceSection: None
                                             GetItemNodeGen SourceSection: [6597,6613]`initlist.data[:]`
                                               GetAttributeNode SourceSection: None
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2602,7 +2600,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [6711,6720]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2657,11 +2655,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [6758,6789]`self.data <  self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __lt__
+                                        LtNodeGen SourceSection: [6758,6789]`self.data <  self.__...`
                                           GetAttributeNode SourceSection: [6758,6767]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2723,11 +2719,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [6826,6857]`self.data <= self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __le__
+                                        LeNodeGen SourceSection: [6826,6857]`self.data <= self.__...`
                                           GetAttributeNode SourceSection: [6826,6835]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2789,11 +2783,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [6894,6925]`self.data == self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __eq__
+                                        EqNodeGen SourceSection: [6894,6925]`self.data == self.__...`
                                           GetAttributeNode SourceSection: [6894,6903]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2855,11 +2847,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [6962,6993]`self.data >  self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [6962,6993]`self.data >  self.__...`
                                           GetAttributeNode SourceSection: [6962,6971]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2921,11 +2911,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [7030,7061]`self.data >= self.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __ge__
+                                        GeNodeGen SourceSection: [7030,7061]`self.data >= self.__...`
                                           GetAttributeNode SourceSection: [7030,7039]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3000,7 +2988,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: UserList
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [7106,7116]`other.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3064,7 +3052,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ReadLocalVariableNodeGen SourceSection: [7200,7204]`item`
                                             Frame: [1,item,Illegal]
                                           GetAttributeNode SourceSection: [7208,7217]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3118,7 +3106,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [7252,7261]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3175,7 +3163,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         Frame: [2,<return_val>,Illegal]
                                         GetItemNodeGen SourceSection: [7300,7312]`self.data[i]`
                                           GetAttributeNode SourceSection: None
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3236,7 +3224,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                   FunctionBodyNode SourceSection: [7349,7368]`self.data[i] = item`
                                     SetItemNodeGen SourceSection: [7349,7368]`self.data[i] = item`
                                       GetAttributeNode SourceSection: None
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: data
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -3293,7 +3281,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                   FunctionBodyNode SourceSection: [7399,7415]`del self.data[i]`
                                     DeleteItemNodeGen SourceSection: [7399,7415]`del self.data[i]`
                                       GetAttributeNode SourceSection: None
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: data
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -3371,7 +3359,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __add__
                                               GetAttributeNode SourceSection: [7520,7529]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3380,7 +3368,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 ReadLocalVariableNodeGen SourceSection: [7520,7524]`self`
                                                   Frame: [0,self,Illegal]
                                               GetAttributeNode SourceSection: [7532,7542]`other.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3403,7 +3391,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [7580,7589]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3424,7 +3412,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __add__
                                                 GetAttributeNode SourceSection: [7627,7636]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3448,7 +3436,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __add__
                                             GetAttributeNode SourceSection: [7676,7685]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3531,7 +3519,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __add__
                                               GetAttributeNode SourceSection: [7806,7816]`other.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3540,7 +3528,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 ReadLocalVariableNodeGen SourceSection: [7806,7811]`other`
                                                   Frame: [1,other,Illegal]
                                               GetAttributeNode SourceSection: [7819,7828]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3563,7 +3551,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [7866,7875]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3586,7 +3574,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 ReadLocalVariableNodeGen SourceSection: [7913,7918]`other`
                                                   Frame: [1,other,Illegal]
                                                 GetAttributeNode SourceSection: [7921,7930]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3615,7 +3603,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadLocalVariableNodeGen SourceSection: [7967,7972]`other`
                                                 Frame: [1,other,Illegal]
                                             GetAttributeNode SourceSection: [7976,7985]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3684,7 +3672,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           Frame: [0,self,Illegal]
                                         LookupAndCallInplaceNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8070,8079]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3693,7 +3681,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNodeGen SourceSection: [8070,8074]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [8083,8093]`other.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3717,7 +3705,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [8130,8139]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3731,7 +3719,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Frame: [0,self,Illegal]
                                           LookupAndCallInplaceNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [8155,8164]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3748,7 +3736,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Frame: [0,self,Illegal]
                                           LookupAndCallInplaceNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [8200,8209]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3826,7 +3814,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mul__
                                             GetAttributeNode SourceSection: [8301,8310]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3899,7 +3887,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         Frame: [0,self,Illegal]
                                       LookupAndCallInplaceNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [8372,8381]`self.data`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: data
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -3964,7 +3952,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8435,8444]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -4028,7 +4016,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8489,8498]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -4093,7 +4081,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [8547,8556]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -4151,7 +4139,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8592,8601]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -4202,7 +4190,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         CallNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8636,8645]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -4308,7 +4296,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [8736,8745]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -4381,7 +4369,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [8799,8808]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -4430,7 +4418,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         CallNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8851,8860]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -4501,7 +4489,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Frame: [2,kwds,Illegal]
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8906,8915]`self.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -4569,7 +4557,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [9017,9026]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -4578,7 +4566,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadLocalVariableNodeGen SourceSection: [9017,9021]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [9034,9044]`other.data`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -4591,7 +4579,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           CallUnaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [9072,9081]`self.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -4606,7 +4594,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           GetAttributeNode SourceSection: [6161,6193]`_collections_abc.Mut...`
-            GetFixedAttributeNodeGen SourceSection: None
+            GetFixedAttributeNode SourceSection: None
               Key: MutableSequence
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
@@ -4735,7 +4723,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Frame: [0,self,Illegal]
                                               GetItemNodeGen SourceSection: [9478,9489]`seq.data[:]`
                                                 GetAttributeNode SourceSection: None
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -4805,7 +4793,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: str
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [9571,9580]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -4859,7 +4847,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: repr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [9618,9627]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -4913,7 +4901,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: int
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [9663,9672]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -4967,7 +4955,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: float
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [9712,9721]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5021,7 +5009,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: complex
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [9765,9774]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5075,7 +5063,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: hash
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [9812,9821]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5126,7 +5114,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             TupleLiteralNode SourceSection: [9868,9883]`(self.data[:],)`
                                               GetItemNodeGen SourceSection: [9869,9881]`self.data[:]`
                                                 GetAttributeNode SourceSection: None
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5199,11 +5187,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [9977,10001]`self.data == string....`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __eq__
+                                              EqNodeGen SourceSection: [9977,10001]`self.data == string....`
                                                 GetAttributeNode SourceSection: [9977,9986]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5212,7 +5198,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadLocalVariableNodeGen SourceSection: [9977,9981]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [9990,10001]`string.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5225,11 +5211,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10017,10036]`self.data == string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __eq__
+                                            EqNodeGen SourceSection: [10017,10036]`self.data == string`
                                               GetAttributeNode SourceSection: [10017,10026]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5298,11 +5282,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [10129,10152]`self.data < string.d...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __lt__
+                                              LtNodeGen SourceSection: [10129,10152]`self.data < string.d...`
                                                 GetAttributeNode SourceSection: [10129,10138]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5311,7 +5293,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadLocalVariableNodeGen SourceSection: [10129,10133]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [10141,10152]`string.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5324,11 +5306,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10168,10186]`self.data < string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __lt__
+                                            LtNodeGen SourceSection: [10168,10186]`self.data < string`
                                               GetAttributeNode SourceSection: [10168,10177]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5397,11 +5377,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [10279,10303]`self.data <= string....`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __le__
+                                              LeNodeGen SourceSection: [10279,10303]`self.data <= string....`
                                                 GetAttributeNode SourceSection: [10279,10288]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5410,7 +5388,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadLocalVariableNodeGen SourceSection: [10279,10283]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [10292,10303]`string.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5423,11 +5401,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10319,10338]`self.data <= string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __le__
+                                            LeNodeGen SourceSection: [10319,10338]`self.data <= string`
                                               GetAttributeNode SourceSection: [10319,10328]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5496,11 +5472,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [10431,10454]`self.data > string.d...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __gt__
+                                              GtNodeGen SourceSection: [10431,10454]`self.data > string.d...`
                                                 GetAttributeNode SourceSection: [10431,10440]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5509,7 +5483,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadLocalVariableNodeGen SourceSection: [10431,10435]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [10443,10454]`string.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5522,11 +5496,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10470,10488]`self.data > string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __gt__
+                                            GtNodeGen SourceSection: [10470,10488]`self.data > string`
                                               GetAttributeNode SourceSection: [10470,10479]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5595,11 +5567,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               Frame: [2,<return_val>,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [10581,10605]`self.data >= string....`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __ge__
+                                              GeNodeGen SourceSection: [10581,10605]`self.data >= string....`
                                                 GetAttributeNode SourceSection: [10581,10590]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5608,7 +5578,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadLocalVariableNodeGen SourceSection: [10581,10585]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [10594,10605]`string.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5621,11 +5591,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [10621,10640]`self.data >= string`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __ge__
+                                            GeNodeGen SourceSection: [10621,10640]`self.data >= string`
                                               GetAttributeNode SourceSection: [10621,10630]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5694,7 +5662,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: char
                                             Frame: [1,char,Illegal]
                                             GetAttributeNode SourceSection: [10736,10745]`char.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -5714,7 +5682,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadLocalVariableNodeGen SourceSection: [10761,10765]`char`
                                                 Frame: [1,char,Illegal]
                                               GetAttributeNode SourceSection: [10769,10778]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5768,7 +5736,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [10814,10823]`self.data`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -5830,7 +5798,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   Frame: [0,self,Illegal]
                                               GetItemNodeGen SourceSection: [10881,10897]`self.data[index]`
                                                 GetAttributeNode SourceSection: None
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -5908,7 +5876,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__
                                                   GetAttributeNode SourceSection: [11005,11014]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -5917,7 +5885,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                     ReadLocalVariableNodeGen SourceSection: [11005,11009]`self`
                                                       Frame: [0,self,Illegal]
                                                   GetAttributeNode SourceSection: [11017,11027]`other.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -5950,7 +5918,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __add__
                                                     GetAttributeNode SourceSection: [11100,11109]`self.data`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: data
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
@@ -5974,7 +5942,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __add__
                                                 GetAttributeNode SourceSection: [11149,11158]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -6059,7 +6027,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadLocalVariableNodeGen SourceSection: [11273,11278]`other`
                                                     Frame: [1,other,Illegal]
                                                   GetAttributeNode SourceSection: [11281,11290]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -6088,7 +6056,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadLocalVariableNodeGen SourceSection: [11326,11331]`other`
                                                     Frame: [1,other,Illegal]
                                                 GetAttributeNode SourceSection: [11335,11344]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -6152,7 +6120,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __mul__
                                                 GetAttributeNode SourceSection: [11402,11411]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -6232,7 +6200,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __mod__
                                                 GetAttributeNode SourceSection: [11497,11506]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -6351,7 +6319,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [11704,11713]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -6408,7 +6376,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [11782,11791]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -6484,7 +6452,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [11870,11879]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -6504,7 +6472,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 IntegerLiteralNode SourceSection: [11933,11934]`0`
                                   Value: 0
                                 GetAttributeNode SourceSection: [11940,11952]`_sys.maxsize`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: maxsize
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -6581,7 +6549,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: sub
                                             Frame: [1,sub,Illegal]
                                             GetAttributeNode SourceSection: [12013,12021]`sub.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -6598,7 +6566,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [12037,12046]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -6685,7 +6653,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                       CallBinaryMethodNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [12222,12231]`self.data`
-                                                          GetFixedAttributeNodeGen SourceSection: None
+                                                          GetFixedAttributeNode SourceSection: None
                                                             Key: data
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
@@ -6711,7 +6679,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       GetAttributeNode SourceSection: [12292,12301]`self.data`
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: data
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
@@ -6735,7 +6703,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [12350,12359]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -6755,7 +6723,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 IntegerLiteralNode SourceSection: [12407,12408]`0`
                                   Value: 0
                                 GetAttributeNode SourceSection: [12414,12426]`_sys.maxsize`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: maxsize
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -6824,7 +6792,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [12444,12453]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -6896,7 +6864,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [12550,12559]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -6918,7 +6886,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 IntegerLiteralNode SourceSection: [12611,12612]`0`
                                   Value: 0
                                 GetAttributeNode SourceSection: [12618,12630]`_sys.maxsize`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: maxsize
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -6995,7 +6963,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: sub
                                             Frame: [1,sub,Illegal]
                                             GetAttributeNode SourceSection: [12691,12699]`sub.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -7012,7 +6980,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [12715,12724]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7092,7 +7060,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   Frame: [2,kwds,Illegal]
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [12799,12808]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7151,7 +7119,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [12881,12890]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7173,7 +7141,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 IntegerLiteralNode SourceSection: [12942,12943]`0`
                                   Value: 0
                                 GetAttributeNode SourceSection: [12949,12961]`_sys.maxsize`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: maxsize
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -7242,7 +7210,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [12979,12988]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7300,7 +7268,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13042,13051]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7352,7 +7320,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13092,13101]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7404,7 +7372,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13142,13151]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7456,7 +7424,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13194,13203]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7508,7 +7476,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13246,13255]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7560,7 +7528,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13301,13310]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7612,7 +7580,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13356,13365]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7664,7 +7632,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13408,13417]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7716,7 +7684,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13464,13473]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7768,7 +7736,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13518,13527]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7820,7 +7788,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13568,13577]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7872,7 +7840,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13618,13627]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7931,7 +7899,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13670,13679]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8009,7 +7977,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [13755,13764]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -8066,7 +8034,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [13829,13838]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -8131,7 +8099,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [13904,13913]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -8149,7 +8117,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             GetAttributeNode SourceSection: [13945,13958]`str.maketrans`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: maketrans
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -8213,7 +8181,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [14004,14013]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8296,7 +8264,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: old
                                             Frame: [1,old,Illegal]
                                             GetAttributeNode SourceSection: [14133,14141]`old.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -8321,7 +8289,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: new
                                             Frame: [2,new,Illegal]
                                             GetAttributeNode SourceSection: [14200,14208]`new.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -8343,7 +8311,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallTernaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [14239,14248]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -8369,7 +8337,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 IntegerLiteralNode SourceSection: [14309,14310]`0`
                                   Value: 0
                                 GetAttributeNode SourceSection: [14316,14328]`_sys.maxsize`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: maxsize
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -8446,7 +8414,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: sub
                                             Frame: [1,sub,Illegal]
                                             GetAttributeNode SourceSection: [14389,14397]`sub.data`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: data
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -8463,7 +8431,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [14413,14422]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8489,7 +8457,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 IntegerLiteralNode SourceSection: [14478,14479]`0`
                                   Value: 0
                                 GetAttributeNode SourceSection: [14485,14497]`_sys.maxsize`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: maxsize
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -8558,7 +8526,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [14515,14524]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8640,7 +8608,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [14614,14623]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -8699,7 +8667,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [14691,14700]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8766,7 +8734,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [14781,14790]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -8836,7 +8804,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallBinaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [14865,14874]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8908,7 +8876,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallBinaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [14956,14965]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8972,7 +8940,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [15037,15046]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8994,7 +8962,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                 IntegerLiteralNode SourceSection: [15107,15108]`0`
                                   Value: 0
                                 GetAttributeNode SourceSection: [15114,15126]`_sys.maxsize`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: maxsize
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -9063,7 +9031,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [15144,15153]`self.data`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: data
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -9134,7 +9102,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [15240,15249]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -9193,7 +9161,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [15310,15319]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -9250,7 +9218,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [15375,15384]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -9318,7 +9286,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [15456,15465]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -9375,7 +9343,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [15527,15536]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -9439,7 +9407,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [15596,15605]`self.data`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: data
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -9454,7 +9422,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
               GetAttributeNode SourceSection: [9294,9319]`_collections_abc.Seq...`
-                GetFixedAttributeNodeGen SourceSection: None
+                GetFixedAttributeNode SourceSection: None
                   Key: Sequence
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__

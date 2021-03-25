@@ -44,7 +44,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -93,26 +95,32 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached ToSulongNode toSulongNode) throws UnknownIdentifierException {
-        // translate key to attribute name
-        PythonClassNativeWrapper nativeWrapper = getPythonClass(lib).getClassNativeWrapper();
-        // TODO handle case if nativeWrapper does not exist yet
-        Object result;
-        switch (member) {
-            case BF_GETBUFFER:
-                result = nativeWrapper.getGetBufferProc();
-                break;
-            case BF_RELEASEBUFFER:
-                // TODO
-                result = nativeWrapper.getReleaseBufferProc();
-                break;
-            default:
-                // TODO extend list
-                throw UnknownIdentifierException.create(member);
+                    @Cached ToSulongNode toSulongNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+        boolean mustRelease = gil.acquire();
+        try {
+            // translate key to attribute name
+            PythonClassNativeWrapper nativeWrapper = getPythonClass(lib).getClassNativeWrapper();
+            // TODO handle case if nativeWrapper does not exist yet
+            Object result;
+            switch (member) {
+                case BF_GETBUFFER:
+                    result = nativeWrapper.getGetBufferProc();
+                    break;
+                case BF_RELEASEBUFFER:
+                    // TODO
+                    result = nativeWrapper.getReleaseBufferProc();
+                    break;
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.create(member);
+            }
+            // do not wrap result if exists since this is directly a native object
+            // use NO_VALUE for NULL
+            return result == null ? toSulongNode.execute(PNone.NO_VALUE) : result;
+        } finally {
+            gil.release(mustRelease);
         }
-        // do not wrap result if exists since this is directly a native object
-        // use NO_VALUE for NULL
-        return result == null ? toSulongNode.execute(PNone.NO_VALUE) : result;
     }
 
     @ExportMessage

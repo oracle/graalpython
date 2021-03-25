@@ -99,7 +99,7 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
     }
 
     @Override
-    public final void writeObject(VirtualFrame frame, Object value) {
+    public final void executeObject(VirtualFrame frame, Object value) {
         executeVoid(frame, getObject().execute(frame), value);
     }
 

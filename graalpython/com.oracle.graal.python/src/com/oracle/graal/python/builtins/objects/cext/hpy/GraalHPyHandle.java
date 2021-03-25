@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -189,15 +190,17 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
-        if (isPointer(isAllocatedProfile)) {
-            try {
-                hpyContext.releaseHPyHandleForObject((int) asPointer());
-                id = -1;
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("trying to release non-native handle that claims to be native");
+        synchronized (isAllocatedProfile) {
+            if (isPointer(isAllocatedProfile)) {
+                try {
+                    hpyContext.releaseHPyHandleForObject((int) asPointer());
+                    id = -1;
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("trying to release non-native handle that claims to be native");
+                }
             }
+            // nothing to do if the handle never got 'toNative'
         }
-        // nothing to do if the handle never got 'toNative'
     }
 }

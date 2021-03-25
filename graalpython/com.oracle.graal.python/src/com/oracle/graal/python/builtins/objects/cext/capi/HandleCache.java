@@ -41,10 +41,12 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -89,12 +91,18 @@ public final class HandleCache implements TruffleObject {
 
     @ExportMessage
     public Object execute(Object[] arguments,
-                    @Cached GetOrInsertNode getOrInsertNode) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
-        if (arguments.length != 1) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw ArityException.create(1, arguments.length);
+                    @Cached GetOrInsertNode getOrInsertNode,
+                    @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (arguments.length != 1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(1, arguments.length);
+            }
+            return getOrInsertNode.execute(this, (long) arguments[0]);
+        } finally {
+            gil.release(mustRelease);
         }
-        return getOrInsertNode.execute(this, (long) arguments[0]);
     }
 
     @GenerateUncached

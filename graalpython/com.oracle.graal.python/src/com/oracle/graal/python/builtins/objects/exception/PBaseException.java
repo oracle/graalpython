@@ -53,10 +53,12 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -192,21 +194,16 @@ public final class PBaseException extends PythonObject {
 
     public Object[] getMessageArgs() {
         // clone message args to ensure that they stay unmodified
-        return messageArgs.clone();
+        return messageArgs != null ? messageArgs.clone() : PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @TruffleBoundary
-    public String getFormattedMessage(PythonObjectLibrary lib) {
-        final Object clazz;
-        if (lib == null) {
-            clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(this);
-        } else {
-            clazz = lib.getLazyPythonClass(this);
-        }
+    public String getFormattedMessage(PythonObjectLibrary baseExceptionLib, PythonObjectLibrary argsLib) {
+        final Object clazz = baseExceptionLib.getLazyPythonClass(this);
         String typeName = GetNameNode.doSlowPath(clazz);
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(lib, messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(argsLib, messageFormat, getMessageArgs());
             } else if (hasMessageFormat) {
                 return typeName + ": " + messageFormat;
             } else {
@@ -226,7 +223,18 @@ public final class PBaseException extends PythonObject {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return getFormattedMessage(PythonObjectLibrary.getUncached());
+        // We *MUST NOT* call anything here that may need a context!
+        StringBuilder sb = new StringBuilder(GetLazyPythonClass.getInitialClass(this).toString());
+        if (messageArgs != null && messageArgs.length > 0) {
+            sb.append("(fmt=\"").append(messageFormat).append("\", args = (");
+            for (Object arg : messageArgs) {
+                sb.append(arg).append(", ");
+            }
+            sb.append(") )");
+        } else if (hasMessageFormat) {
+            sb.append("(fmt=\"").append(messageFormat).append('"');
+        }
+        return sb.toString();
     }
 
     public LazyTraceback internalReifyException(PFrame.Reference curFrameInfo) {
@@ -274,26 +282,38 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     RuntimeException throwException(
                     @Cached PRaiseNode raiseNode,
-                    @CachedLanguage PythonLanguage language) {
-        throw raiseNode.raiseExceptionObject(this, language);
+                    @CachedLanguage PythonLanguage language,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            throw raiseNode.raiseExceptionObject(this, language);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     ExceptionType getExceptionType(
-                    @CachedLibrary("this") PythonObjectLibrary lib) {
-        Object clazz = lib.getLazyPythonClass(this);
-        if (clazz instanceof PythonBuiltinClass) {
-            clazz = ((PythonBuiltinClass) clazz).getType();
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            Object clazz = lib.getLazyPythonClass(this);
+            if (clazz instanceof PythonBuiltinClass) {
+                clazz = ((PythonBuiltinClass) clazz).getType();
+            }
+            // these are the only ones we'll raise, we don't want to report user subtypes of
+            // SyntaxError as Truffle syntax errors
+            if (clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError || clazz == PythonBuiltinClassType.TabError) {
+                return ExceptionType.PARSE_ERROR;
+            }
+            if (clazz == PythonBuiltinClassType.SystemExit) {
+                return ExceptionType.EXIT;
+            }
+            return ExceptionType.RUNTIME_ERROR;
+        } finally {
+            gil.release(mustRelease);
         }
-        // these are the only ones we'll raise, we don't want to report user subtypes of
-        // SyntaxError as Truffle syntax errors
-        if (clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError || clazz == PythonBuiltinClassType.TabError) {
-            return ExceptionType.PARSE_ERROR;
-        }
-        if (clazz == PythonBuiltinClassType.SystemExit) {
-            return ExceptionType.EXIT;
-        }
-        return ExceptionType.RUNTIME_ERROR;
     }
 
     @ExportMessage
@@ -309,46 +329,70 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    String getExceptionMessage(@CachedLibrary("this") PythonObjectLibrary lib) {
-        return getFormattedMessage(lib);
+    String getExceptionMessage(@CachedLibrary("this") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary argsLib,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getFormattedMessage(lib, argsLib);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     int getExceptionExitStatus(
                     @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
-                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
-        if (getExceptionType(lib) == ExceptionType.EXIT) {
-            try {
-                // Avoiding getattr because this message shouldn't have side-effects
-                Object code = readNode.execute(this, "code");
-                if (code == PNone.NO_VALUE) {
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (getExceptionType(lib, gil) == ExceptionType.EXIT) {
+                try {
+                    // Avoiding getattr because this message shouldn't have side-effects
+                    Object code = readNode.execute(this, "code");
+                    if (code == PNone.NO_VALUE) {
+                        return 1;
+                    }
+                    return (int) lib.asJavaLong(code);
+                } catch (PException e) {
                     return 1;
                 }
-                return (int) lib.asJavaLong(code);
-            } catch (PException e) {
-                return 1;
             }
+            unsupportedProfile.enter();
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        unsupportedProfile.enter();
-        throw UnsupportedMessageException.create();
     }
 
     @ExportMessage
-    boolean hasExceptionCause() {
-        return cause != null || (!suppressContext && context != null);
+    boolean hasExceptionCause(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return cause != null || (!suppressContext && context != null);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
     Object getExceptionCause(
-                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
-        if (cause != null) {
-            return cause;
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            if (cause != null) {
+                return cause;
+            }
+            if (!suppressContext && context != null) {
+                return context;
+            }
+            unsupportedProfile.enter();
+            throw UnsupportedMessageException.create();
+        } finally {
+            gil.release(mustRelease);
         }
-        if (!suppressContext && context != null) {
-            return context;
-        }
-        unsupportedProfile.enter();
-        throw UnsupportedMessageException.create();
     }
 }

@@ -121,16 +121,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         BinaryArithmeticExpression SourceSection: [1293,1310]`(a > b) - (a < b)`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __sub__
-                          BinaryComparisonNodeGen SourceSection: [1294,1299]`a > b`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
+                          GtNodeGen SourceSection: [1294,1299]`a > b`
                             ReadLocalVariableNodeGen SourceSection: [1294,1295]`a`
                               Frame: [0,a,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [1298,1299]`b`
                               Frame: [1,b,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [1304,1309]`a < b`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __lt__
+                          LtNodeGen SourceSection: [1304,1309]`a < b`
                             ReadLocalVariableNodeGen SourceSection: [1304,1305]`a`
                               Frame: [0,a,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [1308,1309]`b`
@@ -513,9 +509,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         GeneratorBlockNode SourceSection: None
                           IfNode SourceSection: [3589,3685]`if interval == CHAR_...`
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [3592,3612]`interval == CHAR_MAX...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [3592,3612]`interval == CHAR_MAX...`
                                 ReadGeneratorFrameVariableNodeGen SourceSection: [3592,3600]`interval`
                                   Frame: [2,interval,Illegal]
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3604,3612]`CHAR_MAX`
@@ -526,9 +520,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           GeneratorIfNode SourceSection: [3685,3862]`if interval == 0:↵  ...`
                             GeneratorAccessNode SourceSection: None
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [3688,3701]`interval == 0`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [3688,3701]`interval == 0`
                                 ReadGeneratorFrameVariableNodeGen SourceSection: [3688,3696]`interval`
                                   Frame: [2,interval,Illegal]
                                 IntegerLiteralNode SourceSection: [3700,3701]`0`
@@ -581,7 +573,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         GetIteratorExpressionNodeGen SourceSection: [3530,3538]`grouping`
                           ReadGeneratorFrameVariableNodeGen SourceSection: [3530,3538]`grouping`
                             Frame: [0,grouping,Illegal]
-                        GetNextNode SourceSection: None
+                        GetNextCached SourceSection: None
+                          LookupAndCallUnaryNodeGen SourceSection: None
+                            Op: __next__
                         GeneratorAccessNode SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
                           CachedDispatchFirst SourceSection: None
@@ -689,9 +683,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       BlockNode SourceSection: None
                     IfNode SourceSection: [4195,4344]`if s[-1] == ' ':↵   ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [4198,4210]`s[-1] == ' '`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [4198,4210]`s[-1] == ' '`
                           GetItemNodeGen SourceSection: [4198,4203]`s[-1]`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [0,s,Illegal]
@@ -938,9 +930,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             AndNode SourceSection: [4970,4995]`amount and s[lpos] =...`
                               ReadLocalVariableNodeGen SourceSection: [4970,4976]`amount`
                                 Frame: [1,amount,Illegal]
-                              BinaryComparisonNodeGen SourceSection: [4981,4995]`s[lpos] == ' '`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [4981,4995]`s[lpos] == ' '`
                                 GetItemNodeGen SourceSection: [4981,4988]`s[lpos]`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,s,Illegal]
@@ -990,9 +980,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             AndNode SourceSection: [5067,5092]`amount and s[rpos] =...`
                               ReadLocalVariableNodeGen SourceSection: [5067,5073]`amount`
                                 Frame: [1,amount,Illegal]
-                              BinaryComparisonNodeGen SourceSection: [5078,5092]`s[rpos] == ' '`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [5078,5092]`s[rpos] == ' '`
                                 GetItemNodeGen SourceSection: [5078,5085]`s[rpos]`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,s,Illegal]
@@ -1420,7 +1408,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNodeGen SourceSection: [6643,6646]`val`
                             Frame: [1,val,Illegal]
                           GetAttributeNode SourceSection: [6648,6672]`_collections_abc.Map...`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: Mapping
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -1444,9 +1432,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [7,perc,Illegal]
                               IfNode SourceSection: [6738,6901]`if perc.group()[-1]=...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [6741,6762]`perc.group()[-1]=='%...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [6741,6762]`perc.group()[-1]=='%...`
                                     GetItemNodeGen SourceSection: [6741,6757]`perc.group()[-1]`
                                       PythonCallNodeGen SourceSection: [6741,6753]`perc.group()`
                                         CallNodeGen SourceSection: None
@@ -1529,9 +1515,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [7,perc,Illegal]
                               IfNode SourceSection: [7048,7491]`if perc.group()[-1]=...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [7051,7072]`perc.group()[-1]=='%...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [7051,7072]`perc.group()[-1]=='%...`
                                     GetItemNodeGen SourceSection: [7051,7067]`perc.group()[-1]`
                                       PythonCallNodeGen SourceSection: [7051,7063]`perc.group()`
                                         CallNodeGen SourceSection: None
@@ -1752,9 +1736,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           NotNodeGen SourceSection: [7911,7920]`not match`
                             ReadLocalVariableNodeGen SourceSection: [7915,7920]`match`
                               Frame: [6,match,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [7924,7957]`len(match.group())!=...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [7924,7957]`len(match.group())!=...`
                             PythonCallUnary SourceSection: [7924,7942]`len(match.group())`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [7924,7927]`len`
@@ -1892,9 +1874,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                     IfNode SourceSection: [8460,8597]`if digits == 127:↵  ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [8463,8476]`digits == 127`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [8463,8476]`digits == 127`
                           ReadLocalVariableNodeGen SourceSection: [8463,8469]`digits`
                             Frame: [5,digits,Illegal]
                           IntegerLiteralNode SourceSection: [8473,8476]`127`
@@ -1976,9 +1956,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Frame: [4,conv,Illegal]
                             OrNode SourceSection: [8886,8930]`val<0 and 'n_cs_prec...`
                               AndNode SourceSection: [8886,8911]`val<0 and 'n_cs_prec...`
-                                BinaryComparisonNodeGen SourceSection: [8886,8891]`val<0`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __lt__
+                                LtNodeGen SourceSection: [8886,8891]`val<0`
                                   ReadLocalVariableNodeGen SourceSection: [8886,8889]`val`
                                     Frame: [0,val,Illegal]
                                   IntegerLiteralNode SourceSection: [8890,8891]`0`
@@ -1995,9 +1973,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Frame: [4,conv,Illegal]
                             OrNode SourceSection: [8957,9003]`val<0 and 'n_sep_by_...`
                               AndNode SourceSection: [8957,8983]`val<0 and 'n_sep_by_...`
-                                BinaryComparisonNodeGen SourceSection: [8957,8962]`val<0`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __lt__
+                                LtNodeGen SourceSection: [8957,8962]`val<0`
                                   ReadLocalVariableNodeGen SourceSection: [8957,8960]`val`
                                     Frame: [0,val,Illegal]
                                   IntegerLiteralNode SourceSection: [8961,8962]`0`
@@ -2061,9 +2037,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Frame: [4,conv,Illegal]
                         OrNode SourceSection: [9166,9206]`val<0 and 'n_sign_po...`
                           AndNode SourceSection: [9166,9189]`val<0 and 'n_sign_po...`
-                            BinaryComparisonNodeGen SourceSection: [9166,9171]`val<0`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __lt__
+                            LtNodeGen SourceSection: [9166,9171]`val<0`
                               ReadLocalVariableNodeGen SourceSection: [9166,9169]`val`
                                 Frame: [0,val,Illegal]
                               IntegerLiteralNode SourceSection: [9170,9171]`0`
@@ -2080,9 +2054,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Frame: [4,conv,Illegal]
                         OrNode SourceSection: [9224,9268]`val<0 and 'negative_...`
                           AndNode SourceSection: [9224,9249]`val<0 and 'negative_...`
-                            BinaryComparisonNodeGen SourceSection: [9224,9229]`val<0`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __lt__
+                            LtNodeGen SourceSection: [9224,9229]`val<0`
                               ReadLocalVariableNodeGen SourceSection: [9224,9227]`val`
                                 Frame: [0,val,Illegal]
                               IntegerLiteralNode SourceSection: [9228,9229]`0`
@@ -2093,9 +2065,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                     IfNode SourceSection: [9275,9659]`if sign_pos == 0:↵  ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [9278,9291]`sign_pos == 0`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [9278,9291]`sign_pos == 0`
                           ReadLocalVariableNodeGen SourceSection: [9278,9286]`sign_pos`
                             Frame: [10,sign_pos,Illegal]
                           IntegerLiteralNode SourceSection: [9290,9291]`0`
@@ -2115,9 +2085,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           StringLiteralNode SourceSection: [9315,9318]`')'`
                       IfNode SourceSection: [9323,9659]`elif sign_pos == 1:↵...`
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [9328,9341]`sign_pos == 1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [9328,9341]`sign_pos == 1`
                             ReadLocalVariableNodeGen SourceSection: [9328,9336]`sign_pos`
                               Frame: [10,sign_pos,Illegal]
                             IntegerLiteralNode SourceSection: [9340,9341]`1`
@@ -2134,9 +2102,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Frame: [6,s,Illegal]
                         IfNode SourceSection: [9368,9659]`elif sign_pos == 2:↵...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [9373,9386]`sign_pos == 2`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [9373,9386]`sign_pos == 2`
                               ReadLocalVariableNodeGen SourceSection: [9373,9381]`sign_pos`
                                 Frame: [10,sign_pos,Illegal]
                               IntegerLiteralNode SourceSection: [9385,9386]`2`
@@ -2153,9 +2119,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Frame: [11,sign,Illegal]
                           IfNode SourceSection: [9413,9659]`elif sign_pos == 3:↵...`
                             YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [9418,9431]`sign_pos == 3`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [9418,9431]`sign_pos == 3`
                                 ReadLocalVariableNodeGen SourceSection: [9418,9426]`sign_pos`
                                   Frame: [10,sign_pos,Illegal]
                                 IntegerLiteralNode SourceSection: [9430,9431]`3`
@@ -2173,9 +2137,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [11,sign,Illegal]
                             IfNode SourceSection: [9470,9659]`elif sign_pos == 4:↵...`
                               YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [9475,9488]`sign_pos == 4`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
+                                EqNodeGen SourceSection: [9475,9488]`sign_pos == 4`
                                   ReadLocalVariableNodeGen SourceSection: [9475,9483]`sign_pos`
                                     Frame: [10,sign_pos,Illegal]
                                   IntegerLiteralNode SourceSection: [9487,9488]`4`
@@ -2648,14 +2610,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [11243,11268]`encodings.aliases.al...`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: aliases
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
                             GetAttributeNode SourceSection: [11243,11260]`encodings.aliases`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: aliases
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -2803,9 +2765,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                   FunctionBodyNode SourceSection: [11940,12273]`if modifier == 'euro...`
                     IfNode SourceSection: [11940,12245]`if modifier == 'euro...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [11943,11961]`modifier == 'euro'`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [11943,11961]`modifier == 'euro'`
                           ReadLocalVariableNodeGen SourceSection: [11943,11951]`modifier`
                             Frame: [1,modifier,Illegal]
                           StringLiteralNode SourceSection: [11955,11961]`'euro'`
@@ -2882,9 +2842,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           BlockNode SourceSection: None
                         IfNode SourceSection: [12156,12245]`if encoding == 'ISO8...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [12159,12182]`encoding == 'ISO8859...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [12159,12182]`encoding == 'ISO8859...`
                               ReadLocalVariableNodeGen SourceSection: [12159,12167]`encoding`
                                 Frame: [3,encoding,Illegal]
                               StringLiteralNode SourceSection: [12171,12182]`'ISO8859-1'`
@@ -3206,9 +3164,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               BlockNode SourceSection: None
                             IfNode SourceSection: [13926,14044]`if code.split('@', 1...`
                               YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [13929,13970]`code.split('@', 1)[1...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
+                                EqNodeGen SourceSection: [13929,13970]`code.split('@', 1)[1...`
                                   PythonCallNodeGen SourceSection: [13929,13958]`code.split('@', 1)[1...`
                                     CallNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
@@ -3439,9 +3395,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Frame: [17,<>temp17,Illegal]
                                 IfNode SourceSection: [15037,15149]`if defmod.lower() ==...`
                                   YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [15040,15066]`defmod.lower() == mo...`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __eq__
+                                    EqNodeGen SourceSection: [15040,15066]`defmod.lower() == mo...`
                                       PythonCallNodeGen SourceSection: [15040,15054]`defmod.lower()`
                                         CallNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
@@ -3562,9 +3516,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         IfNode SourceSection: [15809,16082]`if modifier == 'euro...`
                           YesNodeGen SourceSection: None
                             AndNode SourceSection: [15812,15850]`modifier == 'euro' a...`
-                              BinaryComparisonNodeGen SourceSection: [15812,15830]`modifier == 'euro'`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
+                              EqNodeGen SourceSection: [15812,15830]`modifier == 'euro'`
                                 ReadLocalVariableNodeGen SourceSection: [15812,15820]`modifier`
                                   Frame: [2,modifier,Illegal]
                                 StringLiteralNode SourceSection: [15824,15830]`'euro'`
@@ -3621,9 +3573,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 EmptyNode SourceSection: None
                       IfNode SourceSection: [16144,16192]`elif code == 'C':↵  ...`
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [16149,16160]`code == 'C'`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [16149,16160]`code == 'C'`
                             ReadLocalVariableNodeGen SourceSection: [16149,16153]`code`
                               Frame: [1,code,Illegal]
                             StringLiteralNode SourceSection: [16157,16160]`'C'`
@@ -3846,11 +3796,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             YesNodeGen SourceSection: None
                               AndNode SourceSection: [18179,18232]`sys.platform == "win...`
                                 AndNode SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [18179,18202]`sys.platform == "win...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [18179,18202]`sys.platform == "win...`
                                     GetAttributeNode SourceSection: [18179,18191]`sys.platform`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: platform
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -3863,9 +3811,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadLocalVariableNodeGen SourceSection: [18207,18211]`code`
                                     Frame: [2,code,Illegal]
                                   YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [18216,18232]`code[:2] == "0x"`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __eq__
+                                EqNodeGen SourceSection: [18216,18232]`code[:2] == "0x"`
                                   GetItemNodeGen SourceSection: [18216,18224]`code[:2]`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [2,code,Illegal]
@@ -3916,14 +3862,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Identifier: lookup
                       Frame: [5,lookup,Illegal]
                       GetAttributeNode SourceSection: [18526,18540]`os.environ.get`
-                        GetFixedAttributeNodeGen SourceSection: None
+                        GetFixedAttributeNode SourceSection: None
                           Key: get
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
                         GetAttributeNode SourceSection: [18526,18536]`os.environ`
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: environ
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -3956,9 +3902,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               BlockNode SourceSection: None
                                 IfNode SourceSection: [18648,18741]`if variable == 'LANG...`
                                   YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [18651,18673]`variable == 'LANGUAG...`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __eq__
+                                    EqNodeGen SourceSection: [18651,18673]`variable == 'LANGUAG...`
                                       ReadLocalVariableNodeGen SourceSection: [18651,18659]`variable`
                                         Frame: [7,variable,Illegal]
                                       StringLiteralNode SourceSection: [18663,18673]`'LANGUAGE'`
@@ -4045,9 +3989,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IfNode SourceSection: [19281,19390]`if category == LC_AL...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [19284,19324]`category == LC_ALL a...`
-                          BinaryComparisonNodeGen SourceSection: [19284,19302]`category == LC_ALL`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [19284,19302]`category == LC_ALL`
                             ReadLocalVariableNodeGen SourceSection: [19284,19292]`category`
                               Frame: [0,category,Illegal]
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19296,19302]`LC_ALL`
@@ -4231,7 +4173,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNode SourceSection: [20291,20303]`sys.platform`
-                GetFixedAttributeNodeGen SourceSection: None
+                GetFixedAttributeNode SourceSection: None
                   Key: platform
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
@@ -4277,14 +4219,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       IfNode SourceSection: [20498,20557]`if sys.flags.utf8_mo...`
                         YesNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [20501,20520]`sys.flags.utf8_mode`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: utf8_mode
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
                             GetAttributeNode SourceSection: [20501,20510]`sys.flags`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: flags
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -4412,14 +4354,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               IfNode SourceSection: [21276,21351]`if sys.flags.utf8_mo...`
                                 YesNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [21279,21298]`sys.flags.utf8_mode`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: utf8_mode
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                     GetAttributeNode SourceSection: [21279,21288]`sys.flags`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: flags
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -4503,14 +4445,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           IfNode SourceSection: [21736,21803]`if sys.flags.utf8_mo...`
                             YesNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [21739,21758]`sys.flags.utf8_mode`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: utf8_mode
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                 GetAttributeNode SourceSection: [21739,21748]`sys.flags`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: flags
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -7401,9 +7343,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                                 Frame: [4,<>temp4,Illegal]
                                         IfNode SourceSection: [76227,76284]`if k[:3] == 'LC_':↵ ...`
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [76230,76244]`k[:3] == 'LC_'`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __eq__
+                                            EqNodeGen SourceSection: [76230,76244]`k[:3] == 'LC_'`
                                               GetItemNodeGen SourceSection: [76230,76235]`k[:3]`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [1,k,Illegal]
@@ -7932,9 +7872,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
         SideEffect:
           IfNode SourceSection: [77872,78027]`if __name__=='__main...`
             YesNodeGen SourceSection: None
-              BinaryComparisonNodeGen SourceSection: [77875,77895]`__name__=='__main__'...`
-                LookupAndCallBinaryNodeGen SourceSection: None
-                  Op: __eq__
+              EqNodeGen SourceSection: [77875,77895]`__name__=='__main__'...`
                 ReadNameNodeGen SourceSection: [77875,77883]`__name__`
                   Identifier: __name__
                   IsBuiltinClassProfile SourceSection: None

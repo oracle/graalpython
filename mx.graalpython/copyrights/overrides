@@ -75,6 +75,7 @@ graalpython/com.oracle.graal.python.cext/include/common/hpytype.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/implementation.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/macros.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/argparse.h,hpy.copyright
+graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_call.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_listbuilder.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_module.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_tuplebuilder.h,hpy.copyright
@@ -459,7 +460,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/Fram
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadGlobalOrBuiltinNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadLocalVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/ReadVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/WriteIdentifierNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/WriteLocalVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/WriteNode.java,zippy.copyright
@@ -470,7 +470,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/F
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/GeneratorExpressionNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/GeneratorFunctionDefinitionNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/PythonBuiltinNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/FrameTransferNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorAccessNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorBlockNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorControlNode.java,zippy.copyright
@@ -560,6 +559,7 @@ graalpython/lib-graalpython/_io.py,pypy.copyright
 graalpython/lib-graalpython/itertools.py,pypy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/__init__.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/argparse.c,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_call.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_listbuilder.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_module.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tracker.c,hpy.copyright
@@ -572,7 +572,8 @@ graalpython/lib-graalpython/modules/hpy/test/check_py27_compat.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/conftest.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/support.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_argparse.py,hpy.copyright
-graalpython/lib-graalpython/modules/hpy/test/test_basic.py,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/test/test_00_basic.py,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/test/test_call.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_cpy_compat.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_hpybytes.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/test/test_hpydict.py,hpy.copyright

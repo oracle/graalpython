@@ -358,7 +358,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           GetAttributeNode SourceSection: [1999,2012]`type.__dict__`
-            GetFixedAttributeNodeGen SourceSection: None
+            GetFixedAttributeNode SourceSection: None
               Key: __dict__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
@@ -574,7 +574,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       Identifier: mro
                       Frame: [2,mro,Illegal]
                       GetAttributeNode SourceSection: [2374,2383]`C.__mro__`
-                        GetFixedAttributeNodeGen SourceSection: None
+                        GetFixedAttributeNode SourceSection: None
                           Key: __mro__
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -605,7 +605,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       ReadLocalVariableNodeGen SourceSection: [2448,2454]`method`
                                         Frame: [4,method,Illegal]
                                       GetAttributeNode SourceSection: [2458,2468]`B.__dict__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __dict__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -619,7 +619,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         IsExpressionNodeGen SourceSection: [2489,2515]`B.__dict__[method] i...`
                                           GetItemNodeGen SourceSection: [2489,2507]`B.__dict__[method]`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __dict__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -4354,9 +4354,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11033,11093]`if len(self) > len(o...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [11036,11058]`len(self) > len(othe...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [11036,11058]`len(self) > len(othe...`
                                           PythonCallUnary SourceSection: [11036,11045]`len(self)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11036,11039]`len`
@@ -4477,9 +4475,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
                                         AndNode SourceSection: [11312,11357]`len(self) < len(othe...`
-                                          BinaryComparisonNodeGen SourceSection: [11312,11334]`len(self) < len(othe...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __lt__
+                                          LtNodeGen SourceSection: [11312,11334]`len(self) < len(othe...`
                                             PythonCallUnary SourceSection: [11312,11321]`len(self)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11312,11315]`len`
@@ -4570,9 +4566,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
                                         AndNode SourceSection: [11476,11521]`len(self) > len(othe...`
-                                          BinaryComparisonNodeGen SourceSection: [11476,11498]`len(self) > len(othe...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __gt__
+                                          GtNodeGen SourceSection: [11476,11498]`len(self) > len(othe...`
                                             PythonCallUnary SourceSection: [11476,11485]`len(self)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11476,11479]`len`
@@ -4660,9 +4654,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11633,11693]`if len(self) < len(o...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [11636,11658]`len(self) < len(othe...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __lt__
+                                        LtNodeGen SourceSection: [11636,11658]`len(self) < len(othe...`
                                           PythonCallUnary SourceSection: [11636,11645]`len(self)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11636,11639]`len`
@@ -4783,9 +4775,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
                                         AndNode SourceSection: [11912,11958]`len(self) == len(oth...`
-                                          BinaryComparisonNodeGen SourceSection: [11912,11935]`len(self) == len(oth...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __eq__
+                                          EqNodeGen SourceSection: [11912,11935]`len(self) == len(oth...`
                                             PythonCallUnary SourceSection: [11912,11921]`len(self)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11912,11915]`len`
@@ -4996,7 +4986,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
+                                                      LookupAndCallUnaryNodeGen SourceSection: None
+                                                        Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -5200,7 +5192,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   GetIteratorExpressionNodeGen SourceSection: [12807,12808]`s`
                                                     ReadGeneratorFrameVariableNodeGen SourceSection: [12807,12808]`s`
                                                       Frame: [1,s,Illegal]
-                                                  GetNextNode SourceSection: None
+                                                  GetNextCached SourceSection: None
+                                                    LookupAndCallUnaryNodeGen SourceSection: None
+                                                      Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
@@ -5210,7 +5204,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadIndexedArgumentNodeGen SourceSection: None
                                                     Index: 0
-                                                GetNextNode SourceSection: None
+                                                GetNextCached SourceSection: None
+                                                  LookupAndCallUnaryNodeGen SourceSection: None
+                                                    Op: __next__
                                                 GeneratorAccessNode SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
@@ -5406,7 +5402,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
+                                                      LookupAndCallUnaryNodeGen SourceSection: None
+                                                        Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -5570,7 +5568,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
+                                                      LookupAndCallUnaryNodeGen SourceSection: None
+                                                        Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
@@ -5745,7 +5745,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       Identifier: MAX
                                       Frame: [1,MAX,Illegal]
                                       GetAttributeNode SourceSection: [14395,14406]`sys.maxsize`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: maxsize
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -5889,9 +5889,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         ObjectLiteralNode SourceSection: None
                                     IfNode SourceSection: [14697,14743]`if h > MAX:↵        ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [14700,14707]`h > MAX`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [14700,14707]`h > MAX`
                                           ReadLocalVariableNodeGen SourceSection: [14700,14701]`h`
                                             Frame: [4,h,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [14704,14707]`MAX`
@@ -5913,9 +5911,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [14743,14789]`if h == -1:↵        ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [14746,14753]`h == -1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __eq__
+                                        EqNodeGen SourceSection: [14746,14753]`h == -1`
                                           ReadLocalVariableNodeGen SourceSection: [14746,14747]`h`
                                             Frame: [4,h,Illegal]
                                           IntegerLiteralNode SourceSection: [14751,14753]`-1`
@@ -7143,9 +7139,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryComparisonNodeGen SourceSection: [18168,18209]`dict(self.items()) =...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __eq__
+                                        EqNodeGen SourceSection: [18168,18209]`dict(self.items()) =...`
                                           PythonCallUnary SourceSection: [18168,18186]`dict(self.items())`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [18168,18172]`dict`
@@ -7331,7 +7325,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [18433,18446]`self._mapping`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _mapping
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -7555,7 +7549,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReadLocalVariableNodeGen SourceSection: [18722,18725]`key`
                                             Frame: [1,key,Illegal]
                                           GetAttributeNode SourceSection: [18729,18742]`self._mapping`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _mapping
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -7600,7 +7594,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   ExpressionStatementNode SourceSection: [18776,18800]`yield from self._map...`
                                     YieldFromNode SourceSection: [18776,18800]`yield from self._map...`
                                       CachedDispatchFirst SourceSection: None
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
+                                        LookupAndCallUnaryNodeGen SourceSection: None
+                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -7615,7 +7611,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                       GetAttributeNode SourceSection: [18787,18800]`self._mapping`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: _mapping
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -7832,7 +7828,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [4,v,Illegal]
                                           GetItemNodeGen SourceSection: [19053,19071]`self._mapping[key]`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _mapping
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -7861,9 +7857,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [4,v,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [19160,19165]`value`
                                                   Frame: [3,value,Illegal]
-                                              BinaryComparisonNodeGen SourceSection: [19169,19179]`v == value`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __eq__
+                                              EqNodeGen SourceSection: [19169,19179]`v == value`
                                                 ReadLocalVariableNodeGen SourceSection: [19169,19170]`v`
                                                   Frame: [4,v,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [19174,19179]`value`
@@ -7913,7 +7907,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [1,key,Illegal]
                                             GetItemNodeGen SourceSection: [19263,19281]`self._mapping[key]`
                                               GetAttributeNode SourceSection: None
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: _mapping
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -7930,7 +7924,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [1,key,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [19224,19237]`self._mapping`
                                         GetAttributeNode SourceSection: [19224,19237]`self._mapping`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: _mapping
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -7938,7 +7932,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CachedDispatchFirst SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19224,19228]`self`
                                             Frame: [0,self,Illegal]
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
+                                        LookupAndCallUnaryNodeGen SourceSection: None
+                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -8074,7 +8070,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [2,v,Illegal]
                                               GetItemNodeGen SourceSection: [19466,19484]`self._mapping[key]`
                                                 GetAttributeNode SourceSection: None
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: _mapping
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -8092,9 +8088,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       Frame: [2,v,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [19505,19510]`value`
                                                       Frame: [1,value,Illegal]
-                                                  BinaryComparisonNodeGen SourceSection: [19514,19524]`v == value`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __eq__
+                                                  EqNodeGen SourceSection: [19514,19524]`v == value`
                                                     ReadLocalVariableNodeGen SourceSection: [19514,19515]`v`
                                                       Frame: [2,v,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [19519,19524]`value`
@@ -8108,7 +8102,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [19435,19448]`self._mapping`
                                           GetAttributeNode SourceSection: [19435,19448]`self._mapping`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: _mapping
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -8163,7 +8157,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           flagSlot: 0
                                           GetItemNodeGen SourceSection: [19652,19670]`self._mapping[key]`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: _mapping
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -8179,7 +8173,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [1,key,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [19619,19632]`self._mapping`
                                         GetAttributeNode SourceSection: [19619,19632]`self._mapping`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: _mapping
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -8187,7 +8181,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CachedDispatchFirst SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19619,19623]`self`
                                             Frame: [0,self,Illegal]
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
+                                        LookupAndCallUnaryNodeGen SourceSection: None
+                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -8485,7 +8481,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   ReadLocalVariableNodeGen SourceSection: [20500,20507]`default`
                                                     Frame: [2,default,Illegal]
                                                   GetAttributeNode SourceSection: [20511,20524]`self.__marker`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: _MutableMapping__marker
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -8738,9 +8734,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [7,<>temp7,Illegal]
                                     IfNode SourceSection: [21747,21888]`if len(args) > 1:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [21750,21763]`len(args) > 1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [21750,21763]`len(args) > 1`
                                           PythonCallUnary SourceSection: [21750,21759]`len(args)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [21750,21753]`len`
@@ -9272,9 +9266,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     Frame: [2,v,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [23199,23204]`value`
                                                     Frame: [1,value,Illegal]
-                                                BinaryComparisonNodeGen SourceSection: [23208,23218]`v == value`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __eq__
+                                                EqNodeGen SourceSection: [23208,23218]`v == value`
                                                   ReadLocalVariableNodeGen SourceSection: [23208,23209]`v`
                                                     Frame: [2,v,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [23213,23218]`value`
@@ -9361,7 +9353,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [23334,23338]`self`
                                                 Frame: [0,self,Illegal]
-                                      GetNextNode SourceSection: None
+                                      GetNextCached SourceSection: None
+                                        LookupAndCallUnaryNodeGen SourceSection: None
+                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -9440,9 +9434,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ReadLocalVariableNodeGen SourceSection: [23674,23679]`start`
                                                 Frame: [2,start,Illegal]
                                               ObjectLiteralNode SourceSection: [23687,23691]`None`
-                                          BinaryComparisonNodeGen SourceSection: [23696,23705]`start < 0`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __lt__
+                                          LtNodeGen SourceSection: [23696,23705]`start < 0`
                                             ReadLocalVariableNodeGen SourceSection: [23696,23701]`start`
                                               Frame: [2,start,Illegal]
                                             IntegerLiteralNode SourceSection: [23704,23705]`0`
@@ -9479,9 +9471,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ReadLocalVariableNodeGen SourceSection: [23764,23768]`stop`
                                                 Frame: [3,stop,Illegal]
                                               ObjectLiteralNode SourceSection: [23776,23780]`None`
-                                          BinaryComparisonNodeGen SourceSection: [23785,23793]`stop < 0`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __lt__
+                                          LtNodeGen SourceSection: [23785,23793]`stop < 0`
                                             ReadLocalVariableNodeGen SourceSection: [23785,23789]`stop`
                                               Frame: [3,stop,Illegal]
                                             IntegerLiteralNode SourceSection: [23792,23793]`0`
@@ -9516,9 +9506,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 ReadLocalVariableNodeGen SourceSection: [23858,23862]`stop`
                                                   Frame: [3,stop,Illegal]
                                                 ObjectLiteralNode SourceSection: [23866,23870]`None`
-                                              BinaryComparisonNodeGen SourceSection: [23874,23882]`i < stop`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __lt__
+                                              LtNodeGen SourceSection: [23874,23882]`i < stop`
                                                 ReadLocalVariableNodeGen SourceSection: [23874,23875]`i`
                                                   Frame: [4,i,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [23878,23882]`stop`
@@ -9544,9 +9532,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                             Frame: [5,v,Illegal]
                                                           ReadLocalVariableNodeGen SourceSection: [23953,23958]`value`
                                                             Frame: [1,value,Illegal]
-                                                        BinaryComparisonNodeGen SourceSection: [23962,23972]`v == value`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __eq__
+                                                        EqNodeGen SourceSection: [23962,23972]`v == value`
                                                           ReadLocalVariableNodeGen SourceSection: [23962,23963]`v`
                                                             Frame: [5,v,Illegal]
                                                           ReadLocalVariableNodeGen SourceSection: [23967,23972]`value`
@@ -9667,9 +9653,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                 Frame: [1,value,Illegal]
                                                               ReadFromCellNodeGen SourceSection: None
-                                                          BinaryComparisonNodeGen SourceSection: [24258,24268]`v == value`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __eq__
+                                                          EqNodeGen SourceSection: [24258,24268]`v == value`
                                                             ReadGeneratorFrameVariableNodeGen SourceSection: [24258,24259]`v`
                                                               Frame: [0,v,Illegal]
                                                             ReadLocalCellNodeGen SourceSection: [24263,24268]`value`
@@ -9690,7 +9674,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
-                                                    GetNextNode SourceSection: None
+                                                    GetNextCached SourceSection: None
+                                                      LookupAndCallUnaryNodeGen SourceSection: None
+                                                        Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None

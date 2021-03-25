@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// skip GIL
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
@@ -391,11 +392,13 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void close(int fd,
+    public int close(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        if (invokeNode.callInt(this, PosixNativeFunction.call_close, fd) < 0) {
+        final int rv = invokeNode.callInt(this, PosixNativeFunction.call_close, fd);
+        if (rv < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
+        return rv;
     }
 
     @ExportMessage

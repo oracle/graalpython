@@ -43,6 +43,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -52,40 +54,34 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PDict extends PHashingCollection {
-
-    protected HashingStorage dictStorage;
 
     public PDict(PythonLanguage lang) {
         this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(lang));
     }
 
     public PDict(Object cls, Shape instanceShape, HashingStorage dictStorage) {
-        super(cls, instanceShape);
-        this.dictStorage = dictStorage;
+        super(cls, instanceShape, dictStorage);
     }
 
     public PDict(Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
-        this.dictStorage = new EmptyStorage();
+        super(cls, instanceShape, new EmptyStorage());
     }
 
     public PDict(Object cls, Shape instanceShape, PKeyword[] keywords) {
-        super(cls, instanceShape);
-        this.dictStorage = (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage();
+        super(cls, instanceShape, (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage());
     }
 
     public Object getItem(Object key) {
-        return HashingStorageLibrary.getUncached().getItem(dictStorage, key);
+        return HashingStorageLibrary.getUncached().getItem(storage, key);
     }
 
     public void setItem(Object key, Object value) {
-        dictStorage = HashingStorageLibrary.getUncached().setItem(dictStorage, key, value);
+        storage = HashingStorageLibrary.getUncached().setItem(storage, key, value);
     }
 
     public static HashingStorage createNewStorage(PythonLanguage lang, boolean isStringKey, int expectedSize) {
@@ -101,17 +97,7 @@ public final class PDict extends PHashingCollection {
     }
 
     public void update(PDict other) {
-        dictStorage = HashingStorageLibrary.getUncached().addAllToOther(other.getDictStorage(), dictStorage);
-    }
-
-    @Override
-    public void setDictStorage(HashingStorage newStorage) {
-        dictStorage = newStorage;
-    }
-
-    @Override
-    public HashingStorage getDictStorage() {
-        return dictStorage;
+        storage = HashingStorageLibrary.getUncached().addAllToOther(other.getDictStorage(), storage);
     }
 
     @ExportMessage
@@ -128,17 +114,12 @@ public final class PDict extends PHashingCollection {
         @Specialization(guards = {
                         "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupDict)"
         }, limit = "1")
-        static int doBuiltin(PDict self, ThreadState state,
+        static int doBuiltin(PDict self, @SuppressWarnings("unused") ThreadState state,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary storageLib,
-                        @Shared("gotState") @Cached ConditionProfile gotState,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Cached LookupAttributeInMRONode.Dynamic lookupDict) {
-            if (gotState.profile(state == null)) {
-                return storageLib.length(self.dictStorage);
-            } else {
-                return storageLib.lengthWithState(self.dictStorage, state);
-            }
+            return storageLib.length(self.storage);
         }
 
         @Specialization(replaces = "doBuiltin")
@@ -151,15 +132,21 @@ public final class PDict extends PHashingCollection {
                         @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Exclusive @Cached CastToJavaLongLossyNode toLong,
                         @Exclusive @Cached ConditionProfile ignoreOverflow,
-                        @Exclusive @Cached BranchProfile overflow) {
-            // call the generic implementation in the superclass
-            return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow);
+                        @Exclusive @Cached BranchProfile overflow,
+                        @Exclusive @Cached GilNode gil) {
+            boolean mustRelease = gil.acquire();
+            try {
+                // call the generic implementation in the superclass
+                return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow, gil);
+            } finally {
+                gil.release(mustRelease);
+            }
         }
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "PDict<" + dictStorage.getClass().getSimpleName() + ">";
+        return "PDict<" + storage.getClass().getSimpleName() + ">";
     }
 }

@@ -48,12 +48,14 @@ public class SerializationUtils {
     // version 7 - mangle names of private properties in classes
     // version 8 - rework starargs handling
     // version 9 - refactoring of parsing fstring
+    // version 10 - adding AnnotationSSTNode
 
-    public static byte VERSION = 9;
+    public static byte VERSION = 10;
 
     public static enum SSTId {
         AndID,
         AnnAssignmentID,
+        AnnotationID,
         AssertID,
         AssignmentID,
         AugAssignmentID,

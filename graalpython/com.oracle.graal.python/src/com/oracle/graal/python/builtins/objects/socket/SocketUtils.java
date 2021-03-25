@@ -75,7 +75,12 @@ public class SocketUtils {
     public static int recv(PNodeWithRaise node, PSocket socket, ByteBuffer target, long timeoutMilliseconds) throws IOException {
         SocketChannel nativeSocket = socket.getSocket();
         handleTimeout(node, nativeSocket, SelectionKey.OP_READ, timeoutMilliseconds);
-        return nativeSocket.read(target);
+        int length = nativeSocket.read(target);
+        if (length < 0) {
+            return 0; // EOF, but Python expects 0-bytes
+        } else {
+            return length;
+        }
     }
 
     public static int send(PNodeWithRaise node, PSocket socket, ByteBuffer source) throws IOException {

@@ -46,6 +46,8 @@ public interface SSTreeVisitor<T> {
 
     T visit(AnnAssignmentSSTNode node);
 
+    T visit(AnnotationSSTNode node);
+
     T visit(AssertSSTNode node);
 
     T visit(AssignmentSSTNode node);

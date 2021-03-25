@@ -59,24 +59,24 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
      */
     protected abstract ArgumentClinicProvider getArgumentClinic();
 
-    private Object cast(VirtualFrame frame, int argIndex, Object value) {
+    private Object cast(VirtualFrame frame, Object value) {
         // no point in using argument clinic if the only argument does not have a cast node
         ArgumentClinicProvider clinic = getArgumentClinic();
-        assert clinic.hasCastNode(argIndex);
+        assert clinic.hasCastNode(0);
         if (castNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castNode = insert(clinic.createCastNode(argIndex, this));
+            castNode = insert(clinic.createCastNode(0, this));
         }
         return castNode.execute(frame, value);
     }
 
     @Override
-    public Object call(VirtualFrame frame, Object arg) {
-        return execute(frame, cast(frame, 0, arg));
+    public final Object call(VirtualFrame frame, Object arg) {
+        return execute(frame, cast(frame, arg));
     }
 
     @Override
-    public boolean callBool(VirtualFrame frame, boolean arg) throws UnexpectedResultException {
+    public final boolean callBool(VirtualFrame frame, boolean arg) throws UnexpectedResultException {
         if (getArgumentClinic().acceptsBoolean(0)) {
             return executeBool(frame, arg);
         } else {
@@ -85,7 +85,7 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
     }
 
     @Override
-    public int callInt(VirtualFrame frame, int arg) throws UnexpectedResultException {
+    public final int callInt(VirtualFrame frame, int arg) throws UnexpectedResultException {
         if (getArgumentClinic().acceptsInt(0)) {
             return executeInt(frame, arg);
         } else {
@@ -94,7 +94,7 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
     }
 
     @Override
-    public long callLong(VirtualFrame frame, long arg) throws UnexpectedResultException {
+    public final long callLong(VirtualFrame frame, long arg) throws UnexpectedResultException {
         if (getArgumentClinic().acceptsLong(0)) {
             return executeLong(frame, arg);
         } else {
@@ -103,7 +103,7 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
     }
 
     @Override
-    public double callDouble(VirtualFrame frame, double arg) throws UnexpectedResultException {
+    public final double callDouble(VirtualFrame frame, double arg) throws UnexpectedResultException {
         if (getArgumentClinic().acceptsDouble(0)) {
             return executeDouble(frame, arg);
         } else {
@@ -112,7 +112,7 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
     }
 
     @Override
-    public boolean callBool(VirtualFrame frame, int arg) throws UnexpectedResultException {
+    public final boolean callBool(VirtualFrame frame, int arg) throws UnexpectedResultException {
         if (getArgumentClinic().acceptsInt(0)) {
             return executeBool(frame, arg);
         } else {
@@ -121,7 +121,7 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
     }
 
     @Override
-    public boolean callBool(VirtualFrame frame, long arg) throws UnexpectedResultException {
+    public final boolean callBool(VirtualFrame frame, long arg) throws UnexpectedResultException {
         if (getArgumentClinic().acceptsLong(0)) {
             return executeBool(frame, arg);
         } else {
@@ -130,7 +130,7 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
     }
 
     @Override
-    public boolean callBool(VirtualFrame frame, double arg) throws UnexpectedResultException {
+    public final boolean callBool(VirtualFrame frame, double arg) throws UnexpectedResultException {
         if (getArgumentClinic().acceptsDouble(0)) {
             return executeBool(frame, arg);
         } else {

@@ -104,6 +104,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -444,9 +445,10 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached BranchProfile readErrorProfile,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile exceptionProfile) {
+                        @Cached BranchProfile exceptionProfile,
+                        @Cached GilNode gil) {
             try {
-                return posixRead.read(frame, self.getFD(), size, posixLib, readErrorProfile);
+                return posixRead.read(frame, self.getFD(), size, posixLib, readErrorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
@@ -479,7 +481,8 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached BranchProfile readErrorProfile,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile exceptionProfile) {
+                        @Cached BranchProfile exceptionProfile,
+                        @Cached GilNode gil) {
             int bufsize = SMALLCHUNK;
             try {
                 long pos = posixLib.lseek(getPosixSupport(), self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
@@ -512,7 +515,7 @@ public class FileIOBuiltins extends PythonBuiltins {
 
                 int n;
                 try {
-                    PBytes b = posixRead.read(frame, self.getFD(), bufsize - bytesRead, posixLib, readErrorProfile);
+                    PBytes b = posixRead.read(frame, self.getFD(), bufsize - bytesRead, posixLib, readErrorProfile, gil);
                     /*
                      * PosixModuleBuiltins#ReadNode creates PBytes with exact size;
                      */
@@ -557,13 +560,14 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode,
                         @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile exceptionProfile) {
+                        @Cached BranchProfile exceptionProfile,
+                        @Cached GilNode gil) {
             int size = getLen.execute(frame, buffer);
             if (size == 0) {
                 return 0;
             }
             try {
-                PBytes data = posixRead.read(frame, self.getFD(), size, posixLib, readErrorProfile);
+                PBytes data = posixRead.read(frame, self.getFD(), size, posixLib, readErrorProfile, gil);
                 byte[] buf = getBytes.execute(data.getSequenceStorage());
                 int n = buf.length;
                 memcpyNode.execute(frame, buffer, 0, buf, 0, n);
@@ -599,9 +603,10 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile errorProfile) {
+                        @Cached BranchProfile errorProfile,
+                        @Cached GilNode gil) {
             try {
-                return posixWrite.write(frame, self.getFD(), toBytes.execute(data), posixLib, errorProfile);
+                return posixWrite.write(frame, self.getFD(), toBytes.execute(data), posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;

@@ -63,6 +63,7 @@ from collections import namedtuple
 
 includes = '''
 #include <dirent.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -170,6 +171,12 @@ constant_defs = '''
   x W_OK
   x X_OK
   x F_OK
+
+[rtld]
+  x RTLD_LAZY
+  x RTLD_NOW
+  x RTLD_GLOBAL
+  x RTLD_LOCAL
 '''
 
 

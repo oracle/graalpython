@@ -89,8 +89,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -132,17 +132,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 return;
             }
             ManagedBuffer buffer = reference.getManagedBuffer();
-            boolean shouldLock = !context.getSingleThreadedAssumption().isValid();
-            if (shouldLock) {
-                context.acquireInteropLock();
-            }
-            try {
-                CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
-            } finally {
-                if (shouldLock) {
-                    context.releaseInteropLock();
-                }
-            }
+            CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
         }
     }
 
@@ -737,16 +727,15 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getReference() != null"})
         Object releaseNative(VirtualFrame frame, PMemoryView self,
-                        @Cached ExecutionContext.ForeignCallContext foreignCallContext,
                         @Cached CExtNodes.PCallCapiFunction callRelease) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                Object state = foreignCallContext.enter(frame, getContext(), this);
+                Object state = IndirectCallContext.enter(frame, getContext(), this);
                 ManagedBuffer buffer = self.getManagedBuffer();
                 try {
                     callRelease.call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
                 } finally {
-                    foreignCallContext.exit(frame, getContext(), state);
+                    IndirectCallContext.exit(frame, getContext(), state);
                 }
             }
             self.setReleased();

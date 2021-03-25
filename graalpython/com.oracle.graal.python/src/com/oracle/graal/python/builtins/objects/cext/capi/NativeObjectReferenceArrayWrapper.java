@@ -41,6 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -66,13 +69,25 @@ public abstract class NativeObjectReferenceArrayWrapper implements TruffleObject
     }
 
     @ExportMessage
-    boolean isArrayElementReadable(long i) {
-        return i < data.length;
+    boolean isArrayElementReadable(long i,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return i < data.length;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    Object readArrayElement(long i) {
-        return get(i);
+    Object readArrayElement(long i,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return get(i);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     abstract Object get(long i);

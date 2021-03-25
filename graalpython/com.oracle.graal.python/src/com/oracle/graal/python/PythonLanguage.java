@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.NodeFactory;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -76,6 +78,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -98,6 +101,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
@@ -172,19 +176,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
-    /*
-     * We need to store this here, because the check is on the language and can come from a thread
-     * that has no context, but we enable or disable threads with a context option. So we store this
-     * here when a context is created.
-     */
-    private Boolean isWithThread = null;
-
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
 
     /** A shared shape for the C symbol cache (lazily initialized). */
     private Shape cApiSymbolCache;
     private Shape hpySymbolCache;
+
+    private final ContextThreadLocal<PythonContext.PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
+
+    public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
@@ -233,10 +234,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
-        assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
-        this.isWithThread = PythonOptions.isWithThread(env);
         Python3Core newCore = new Python3Core(new PythonParserImpl(env), env.isNativeAccessAllowed());
-        final PythonContext context = new PythonContext(this, env, newCore);
+        final PythonContext context = new PythonContext(this, env, newCore, threadState);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;
@@ -369,6 +368,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final ExecutableNode executableNode = new ExecutableNode(this) {
             @CompilationFinal private ContextReference<PythonContext> contextRef;
             @CompilationFinal private volatile PythonContext cachedContext;
+            @Child private GilNode gilNode;
             @Child private ExpressionNode expression;
 
             @Override
@@ -385,13 +385,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     parseAndCache(context);
                     cachedCtx = context;
                 }
-                Object result;
-                if (context == cachedCtx) {
-                    result = expression.execute(frame);
-                } else {
-                    result = parseAndEval(context, frame.materialize());
+                if (gilNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    gilNode = insert(GilNode.create());
                 }
-                return result;
+                boolean wasAcquired = gilNode.acquire();
+                try {
+                    Object result;
+                    if (context == cachedCtx) {
+                        result = expression.execute(frame);
+                    } else {
+                        result = parseAndEval(context, frame.materialize());
+                    }
+                    return result;
+                } finally {
+                    gilNode.release(wasAcquired);
+                }
             }
 
             private void parseAndCache(PythonContext context) {
@@ -671,16 +680,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (singleThreaded) {
             return super.isThreadAccessAllowed(thread, singleThreaded);
         }
-        if (isWithThread == null) {
-            isWithThread = false;
-        }
-        return isWithThread;
+        return true;
     }
 
     @Override
     protected void initializeMultiThreading(PythonContext context) {
-        singleThreadedAssumption.invalidate();
-        context.initializeMultiThreading();
+        if (singleThreadedAssumption.isValid()) {
+            singleThreadedAssumption.invalidate();
+            context.initializeMultiThreading();
+        }
     }
 
     @Override

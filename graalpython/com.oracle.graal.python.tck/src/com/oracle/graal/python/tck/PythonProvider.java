@@ -82,12 +82,13 @@ public class PythonProvider implements LanguageProvider {
 
     private static final String ID = "python";
 
-    private static final TypeDescriptor INT = intersection(OBJECT, NUMBER);
-    // as per interop contract, we cannot be boolean and number at the same time
-    private static final TypeDescriptor BOOL = intersection(OBJECT, BOOLEAN);
-    private static final TypeDescriptor FLOAT = intersection(OBJECT, NUMBER);
+    private static final TypeDescriptor INT = NUMBER;
+    // as per interop contract, we cannot be boolean and number at the same time, so it's only a
+    // boolean
+    private static final TypeDescriptor BOOL = BOOLEAN;
+    private static final TypeDescriptor FLOAT = NUMBER;
     private static final TypeDescriptor COMPLEX = intersection(OBJECT);
-    private static final TypeDescriptor NONE = intersection(OBJECT, NULL);
+    private static final TypeDescriptor NONE = NULL;
     private static final TypeDescriptor STR = intersection(OBJECT, STRING, ITERABLE, array(STRING));
     private static final TypeDescriptor BYTES = intersection(OBJECT, ITERABLE, array(INT));
     private static final TypeDescriptor BYTEARRAY = intersection(OBJECT, ITERABLE, array(INT));
@@ -223,15 +224,14 @@ public class PythonProvider implements LanguageProvider {
         List<Snippet> snippets = new ArrayList<>();
 
         // @formatter:off
-        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
-        addExpressionSnippet(context, snippets, "+ str", "lambda x, y: x + y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
-        addExpressionSnippet(context, snippets, "+ list", "lambda x, y: x + y", array(ANY), PNoListCoercionVerifier.INSTANCE, array(ANY), array(ANY));
+        addExpressionSnippet(context, snippets, "+", "lambda x, y: x + y", union(STRING, NUMBER, array(ANY)), AddVerifier.INSTANCE, union(STRING, BOOLEAN, NUMBER, array(ANY)), union(STRING, BOOLEAN, NUMBER, array(ANY)));
+        addExpressionSnippet(context, snippets, "*", "lambda x, y: x * y", union(STRING, NUMBER, array(ANY)), MulVerifier.INSTANCE, union(STRING, BOOLEAN, NUMBER, array(ANY)), union(STRING, BOOLEAN, NUMBER, array(ANY)));
 
         addExpressionSnippet(context, snippets, "-", "lambda x, y: x - y", NUMBER, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
         addExpressionSnippet(context, snippets, "/", "lambda x, y: x / y", NUMBER, PDivByZeroVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY)));
+        // addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY)));
 
         addExpressionSnippet(context, snippets, "==", "lambda x, y: x == y", BOOLEAN, ANY, ANY);
         addExpressionSnippet(context, snippets, "!=", "lambda x, y: x != y", BOOLEAN, ANY, ANY);
@@ -266,10 +266,10 @@ public class PythonProvider implements LanguageProvider {
                                                      "      return False\n\n" +
                                                      "gen_if", BOOLEAN, ANY);
 
-        addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
-                                                      "    for x in l:\n" +
-                                                      "        return x\n\n" +
-                                                      "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY), STRING));
+        // addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
+        //                                               "    for x in l:\n" +
+        //                                               "        return x\n\n" +
+        //                                               "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY), STRING));
 
         // any exception honours the finally block, but non-exception cannot be raised
         addStatementSnippet(context, snippets, "try-finally", "def gen_tryfinally(exc):\n" +
@@ -350,7 +350,7 @@ public class PythonProvider implements LanguageProvider {
     /**
      * Only accepts exact matches of types.
      */
-    private static class PNoListCoercionVerifier extends PResultVerifier {
+    private static class AddVerifier extends PResultVerifier {
 
         public void accept(SnippetRun snippetRun) throws PolyglotException {
             List<? extends Value> parameters = snippetRun.getParameters();
@@ -363,14 +363,81 @@ public class PythonProvider implements LanguageProvider {
             // ignore '(1,2) + [3,4]'.
             if (par0.hasArrayElements() && par1.hasArrayElements()) {
                 if (par0.getMetaObject() == par1.getMetaObject()) {
-                    ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+                    assert snippetRun.getException() == null;
+                    TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
+                    assert array(ANY).isAssignable(resultType);
                 }
+            } else if (par0.isString() && par1.isString()) {
+                assert snippetRun.getException() == null;
+                TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
+                assert STRING.isAssignable(resultType);
+            } else if ((par0.isNumber() || par0.isBoolean()) && (par1.isNumber() || par1.isBoolean())) {
+                assert snippetRun.getException() == null;
+                TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
+                assert NUMBER.isAssignable(resultType);
             } else {
-                ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+                assert snippetRun.getException() != null;
+                TypeDescriptor argType = union(STRING, BOOLEAN, NUMBER, array(ANY));
+                TypeDescriptor par0Type = TypeDescriptor.forValue(par0);
+                TypeDescriptor par1Type = TypeDescriptor.forValue(par1);
+                if (!argType.isAssignable(par0Type) || !argType.isAssignable(par1Type)) {
+                    // argument type error, rethrow
+                    throw snippetRun.getException();
+                } else {
+                    // arguments are ok, just don't work in this combination
+                }
             }
         }
 
-        private static final PNoListCoercionVerifier INSTANCE = new PNoListCoercionVerifier();
+        private static final AddVerifier INSTANCE = new AddVerifier();
+    }
+
+    private static class MulVerifier extends PResultVerifier {
+
+        private static boolean isStringMul(Value x, Value y) {
+            return x.isString() && (y.isBoolean() || (y.isNumber() && y.fitsInInt()));
+        }
+
+        private static boolean isArrayMul(Value x, Value y) {
+            return x.hasArrayElements() && (y.isBoolean() || (y.isNumber() && (y.fitsInInt() || (y.fitsInLong() && y.asLong() < 0))));
+        }
+
+        public void accept(SnippetRun snippetRun) throws PolyglotException {
+            List<? extends Value> parameters = snippetRun.getParameters();
+            assert parameters.size() == 2;
+
+            Value par0 = parameters.get(0);
+            Value par1 = parameters.get(1);
+
+            if (isStringMul(par0, par1) || isStringMul(par1, par0)) {
+                // string * number => string
+                assert snippetRun.getException() == null;
+                TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
+                assert STRING.isAssignable(resultType);
+            } else if (isArrayMul(par0, par1) || isArrayMul(par1, par0)) {
+                // array * number => array
+                assert snippetRun.getException() == null;
+                TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
+                assert array(ANY).isAssignable(resultType);
+            } else if ((par0.isNumber() || par0.isBoolean()) && (par1.isNumber() || par1.isBoolean())) {
+                assert snippetRun.getException() == null;
+                TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
+                assert NUMBER.isAssignable(resultType);
+            } else {
+                assert snippetRun.getException() != null;
+                TypeDescriptor argType = union(STRING, BOOLEAN, NUMBER, array(ANY));
+                TypeDescriptor par0Type = TypeDescriptor.forValue(par0);
+                TypeDescriptor par1Type = TypeDescriptor.forValue(par1);
+                if (!argType.isAssignable(par0Type) || !argType.isAssignable(par1Type)) {
+                    // argument type error, rethrow
+                    throw snippetRun.getException();
+                } else {
+                    // arguments are ok, just don't work in this combination
+                }
+            }
+        }
+
+        private static final MulVerifier INSTANCE = new MulVerifier();
     }
 
     /**

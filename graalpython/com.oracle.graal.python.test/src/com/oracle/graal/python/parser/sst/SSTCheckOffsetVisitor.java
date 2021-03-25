@@ -178,7 +178,21 @@ public class SSTCheckOffsetVisitor implements SSTreeVisitor<Boolean> {
     public Boolean visit(AnnAssignmentSSTNode node) {
         if (checkParent(node)) {
             parentStack.push(node);
-            if (!checkArrayWithOverlap(node.lhs, "left hand side items") || !node.rhs.accept(this) || (node.type != null && !node.type.accept(this))) {
+            if (!node.annotation.accept(this) || !node.rhs.accept(this)) {
+                return false;
+            }
+            parentStack.pop();
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public Boolean visit(AnnotationSSTNode node) {
+        if (checkParent(node)) {
+            parentStack.push(node);
+            if (!node.lhs.accept(this) || !node.type.accept(this)) {
                 return false;
             }
             parentStack.pop();

@@ -34,7 +34,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
           CachedDispatchFirst SourceSection: None
         ListLiteralNode SourceSection: [3151,3180]`[sys.prefix, sys.exe...`
           GetAttributeNode SourceSection: [3152,3162]`sys.prefix`
-            GetFixedAttributeNodeGen SourceSection: None
+            GetFixedAttributeNode SourceSection: None
               Key: prefix
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
@@ -45,7 +45,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
           GetAttributeNode SourceSection: [3164,3179]`sys.exec_prefix`
-            GetFixedAttributeNodeGen SourceSection: None
+            GetFixedAttributeNode SourceSection: None
               Key: exec_prefix
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
@@ -112,7 +112,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ExecutePositionalStarargsNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [3558,3565]`os.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -130,7 +130,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [3602,3609]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -159,7 +159,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [3672,3679]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -245,7 +245,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [4089,4096]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -255,7 +255,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Identifier: os
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GetAttributeNode SourceSection: [4105,4115]`m.__file__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __file__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -288,7 +288,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [4227,4234]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -298,7 +298,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Identifier: os
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GetAttributeNode SourceSection: [4243,4255]`m.__cached__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __cached__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -331,7 +331,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 GetAttributeNode SourceSection: [3810,3821]`sys.modules`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: modules
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -443,7 +443,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [4644,4652]`sys.path`
                           GetAttributeNode SourceSection: [4644,4652]`sys.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -455,7 +455,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [4964,4979]`sys.path[:] = L`
                       GetAttributeNode SourceSection: None
-                        GetFixedAttributeNodeGen SourceSection: None
+                        GetFixedAttributeNode SourceSection: None
                           Key: path
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -528,7 +528,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [5175,5182]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -581,7 +581,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [5137,5145]`sys.path`
                           GetAttributeNode SourceSection: [5137,5145]`sys.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -673,7 +673,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [5740,5747]`os.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -814,7 +814,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [6235,6242]`os.path`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: path
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -832,7 +832,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [6276,6284]`sys.path`
-                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                  GetFixedAttributeNode SourceSection: None
                                                     Key: path
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -874,7 +874,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               ExecuteKeywordArgumentsNode SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
                                                   GetAttributeNode SourceSection: [6482,6492]`sys.stderr`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: stderr
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -920,7 +920,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                           ExecuteKeywordArgumentsNode SourceSection: None
                                                             KeywordLiteralNode SourceSection: None
                                                               GetAttributeNode SourceSection: [6701,6711]`sys.stderr`
-                                                                GetFixedAttributeNodeGen SourceSection: None
+                                                                GetFixedAttributeNode SourceSection: None
                                                                   Key: stderr
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
@@ -963,7 +963,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               ExecuteKeywordArgumentsNode SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
                                                   GetAttributeNode SourceSection: [6771,6781]`sys.stderr`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: stderr
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -992,10 +992,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         BlockNode SourceSection: None
                       ReadLocalVariableNodeGen SourceSection: [5853,5854]`f`
                         Frame: [5,f,Illegal]
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
                       CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
@@ -1120,7 +1118,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [7221,7229]`sys.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -1212,7 +1210,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                  GetNextNode SourceSection: None
+                                  GetNextCached SourceSection: None
+                                    LookupAndCallUnaryNodeGen SourceSection: None
+                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -1298,14 +1298,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                     IfNode SourceSection: [7940,7993]`if sys.flags.no_user...`
                       YesNodeGen SourceSection: None
                         GetAttributeNode SourceSection: [7943,7965]`sys.flags.no_user_si...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: no_user_site
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
                           GetAttributeNode SourceSection: [7943,7952]`sys.flags`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: flags
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -1344,9 +1344,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           YesNodeGen SourceSection: None
                       IfNode SourceSection: [8099,8159]`if os.geteuid() != o...`
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [8102,8129]`os.geteuid() != os.g...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [8102,8129]`os.geteuid() != os.g...`
                             PythonCallNodeGen SourceSection: [8102,8114]`os.geteuid()`
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
@@ -1390,9 +1388,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           YesNodeGen SourceSection: None
                       IfNode SourceSection: [8265,8326]`if os.getegid() != o...`
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [8268,8295]`os.getegid() != os.g...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [8268,8295]`os.getegid() != os.g...`
                             PythonCallNodeGen SourceSection: [8268,8280]`os.getegid()`
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
@@ -1451,7 +1447,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [8615,8625]`os.environ`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: environ
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -1512,7 +1508,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8736,8743]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1529,7 +1525,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [8755,8762]`os.path`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: path
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1542,11 +1538,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Frame: [1,<return_val>,Illegal]
                     IfNode SourceSection: [8781,8894]`if os.name == "nt":↵...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [8784,8799]`os.name == "nt"`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [8784,8799]`os.name == "nt"`
                           GetAttributeNode SourceSection: [8784,8791]`os.name`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: name
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -1565,7 +1559,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 GetAttributeNode SourceSection: [8816,8826]`os.environ`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: environ
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -1592,11 +1586,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                     IfNode SourceSection: [8894,9059]`if sys.platform == "...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [8897,8940]`sys.platform == "dar...`
-                          BinaryComparisonNodeGen SourceSection: [8897,8921]`sys.platform == "dar...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [8897,8921]`sys.platform == "dar...`
                             GetAttributeNode SourceSection: [8897,8909]`sys.platform`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: platform
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -1607,7 +1599,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8913,8921]`"darwin"`
                           GetAttributeNode SourceSection: [8926,8940]`sys._framework`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: _framework
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -1628,7 +1620,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             StringLiteralNode SourceSection: [8966,8969]`"~"`
                             StringLiteralNode SourceSection: [8971,8980]`"Library"`
                             GetAttributeNode SourceSection: [8982,8996]`sys._framework`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: _framework
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -1643,7 +1635,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               StringLiteralNode SourceSection: [9022,9029]`"%d.%d"`
                               GetItemNodeGen SourceSection: [9032,9052]`sys.version_info[:2]...`
                                 GetAttributeNode SourceSection: None
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: version_info
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -1706,7 +1698,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Identifier: version
                       Frame: [1,version,Illegal]
                       GetAttributeNode SourceSection: [9188,9204]`sys.version_info`
-                        GetFixedAttributeNodeGen SourceSection: None
+                        GetFixedAttributeNode SourceSection: None
                           Key: version_info
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -1717,11 +1709,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [9210,9319]`if os.name == 'nt':↵...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [9213,9228]`os.name == 'nt'`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [9213,9228]`os.name == 'nt'`
                           GetAttributeNode SourceSection: [9213,9220]`os.name`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: name
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -1757,11 +1747,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                     IfNode SourceSection: [9319,9427]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [9322,9365]`sys.platform == 'dar...`
-                          BinaryComparisonNodeGen SourceSection: [9322,9346]`sys.platform == 'dar...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [9322,9346]`sys.platform == 'dar...`
                             GetAttributeNode SourceSection: [9322,9334]`sys.platform`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: platform
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -1772,7 +1760,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [9338,9346]`'darwin'`
                           GetAttributeNode SourceSection: [9351,9365]`sys._framework`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: _framework
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -1982,7 +1970,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [10575,10582]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -2107,11 +2095,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Frame: [3,prefix,Illegal]
                               IfNode SourceSection: [11219,11841]`if os.sep == '/':↵  ...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [11222,11235]`os.sep == '/'`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [11222,11235]`os.sep == '/'`
                                     GetAttributeNode SourceSection: [11222,11228]`os.sep`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: sep
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -2132,7 +2118,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [11269,11276]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2150,7 +2136,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           StringLiteralNode SourceSection: [11337,11350]`"python%d.%d"`
                                           GetItemNodeGen SourceSection: [11353,11373]`sys.version_info[:2]...`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: version_info
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2176,7 +2162,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [11544,11551]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2194,7 +2180,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           StringLiteralNode SourceSection: [11619,11623]`"%d"`
                                           GetItemNodeGen SourceSection: [11626,11645]`sys.version_info[0]`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: version_info
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2225,7 +2211,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         CallTernaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [11791,11798]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2302,7 +2288,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [12008,12015]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -2368,11 +2354,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                   FunctionBodyNode SourceSection: [12305,12513]`if os.sep == '\\':↵ ...`
                     IfNode SourceSection: [12305,12408]`if os.sep == '\\':↵ ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [12308,12322]`os.sep == '\\'`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [12308,12322]`os.sep == '\\'`
                           GetAttributeNode SourceSection: [12308,12314]`os.sep`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: sep
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -2458,7 +2442,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [12636,12647]`"copyright"`
                         GetAttributeNode SourceSection: [12649,12662]`sys.copyright`
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: copyright
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -2469,12 +2453,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [12668,13095]`if sys.platform[:4] ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [12671,12697]`sys.platform[:4] == ...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [12671,12697]`sys.platform[:4] == ...`
                           GetItemNodeGen SourceSection: [12671,12687]`sys.platform[:4]`
                             GetAttributeNode SourceSection: None
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: platform
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -2558,7 +2540,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [13265,13272]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -2568,7 +2550,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Identifier: os
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GetAttributeNode SourceSection: [13281,13292]`os.__file__`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: __file__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -2598,7 +2580,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [13364,13371]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -2610,7 +2592,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ReadLocalVariableNodeGen SourceSection: [13377,13381]`here`
                                   Frame: [2,here,Illegal]
                                 GetAttributeNode SourceSection: [13383,13392]`os.pardir`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: pardir
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -2622,7 +2604,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadLocalVariableNodeGen SourceSection: [13395,13399]`here`
                                 Frame: [2,here,Illegal]
                               GetAttributeNode SourceSection: [13401,13410]`os.curdir`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: curdir
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -2827,9 +2809,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       BlockNode SourceSection: None
                                   IfNode SourceSection: [14962,15630]`if readline.get_curr...`
                                     YesNodeGen SourceSection: None
-                                      BinaryComparisonNodeGen SourceSection: [14965,15007]`readline.get_current...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __eq__
+                                      EqNodeGen SourceSection: [14965,15007]`readline.get_current...`
                                         PythonCallNodeGen SourceSection: [14965,15002]`readline.get_current...`
                                           CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
@@ -2845,7 +2825,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [15349,15356]`os.path`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: path
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2858,7 +2838,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [15362,15369]`os.path`
-                                                GetFixedAttributeNodeGen SourceSection: None
+                                                GetFixedAttributeNode SourceSection: None
                                                   Key: path
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2893,7 +2873,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             ReadLocalVariableNodeGen SourceSection: [15571,15577]`atexit`
                                               Frame: [0,atexit,Illegal]
                                           GetAttributeNode SourceSection: [15587,15614]`readline.write_histo...`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: write_history_file
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2952,7 +2932,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Identifier: env
                       Frame: [1,env,Illegal]
                       GetAttributeNode SourceSection: [15747,15757]`os.environ`
-                        GetFixedAttributeNodeGen SourceSection: None
+                        GetFixedAttributeNode SourceSection: None
                           Key: environ
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -2964,11 +2944,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                     IfNode SourceSection: [15762,15929]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [15765,15822]`sys.platform == 'dar...`
-                          BinaryComparisonNodeGen SourceSection: [15765,15789]`sys.platform == 'dar...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [15765,15789]`sys.platform == 'dar...`
                             GetAttributeNode SourceSection: [15765,15777]`sys.platform`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: platform
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -2991,7 +2969,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         Frame: [2,executable,Illegal]
                         GetItemNodeGen SourceSection: [15845,15878]`os.environ['__PYVENV...`
                           GetAttributeNode SourceSection: None
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: environ
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -3005,7 +2983,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         Identifier: executable
                         Frame: [2,executable,Illegal]
                         GetAttributeNode SourceSection: [15910,15924]`sys.executable`
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: executable
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -3019,7 +2997,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [15942,15949]`os.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -3032,7 +3010,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             GetAttributeNode SourceSection: [15956,15963]`os.path`
-                              GetFixedAttributeNodeGen SourceSection: None
+                              GetFixedAttributeNode SourceSection: None
                                 Key: path
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -3066,7 +3044,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallUnaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [16003,16010]`os.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -3125,7 +3103,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [16269,16276]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
+                                            GetFixedAttributeNode SourceSection: None
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3149,7 +3127,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                  GetNextNode SourceSection: None
+                                  GetNextCached SourceSection: None
+                                    LookupAndCallUnaryNodeGen SourceSection: None
+                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -3164,7 +3144,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [16153,16160]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -3181,7 +3161,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [16203,16210]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -3283,9 +3263,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Frame: [11,value,Illegal]
                                     IfNode SourceSection: [16782,16967]`if key == 'include-s...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [16785,16822]`key == 'include-syst...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __eq__
+                                        EqNodeGen SourceSection: [16785,16822]`key == 'include-syst...`
                                           ReadLocalVariableNodeGen SourceSection: [16785,16788]`key`
                                             Frame: [10,key,Illegal]
                                           StringLiteralNode SourceSection: [16792,16822]`'include-system-site...`
@@ -3299,9 +3277,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Frame: [11,value,Illegal]
                                       IfNode SourceSection: [16896,16967]`elif key == 'home':↵...`
                                         YesNodeGen SourceSection: None
-                                          BinaryComparisonNodeGen SourceSection: [16901,16914]`key == 'home'`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __eq__
+                                          EqNodeGen SourceSection: [16901,16914]`key == 'home'`
                                             ReadLocalVariableNodeGen SourceSection: [16901,16904]`key`
                                               Frame: [10,key,Illegal]
                                             StringLiteralNode SourceSection: [16908,16914]`'home'`
@@ -3333,10 +3309,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16516,16520]`open`
                               Identifier: open
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          LookupSpecialMethodNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
-                          LookupSpecialMethodNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
+                          LookupSpecialMethodNodeGen SourceSection: None
+                          LookupSpecialMethodNodeGen SourceSection: None
                           CachedDispatchFirst SourceSection: None
                           CallUnaryMethodNodeGen SourceSection: None
                           CallQuaternaryMethodNodeGen SourceSection: None
@@ -3372,7 +3346,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Frame: [0,known_paths,Illegal]
                             ListLiteralNode SourceSection: [17119,17131]`[sys.prefix]`
                               GetAttributeNode SourceSection: [17120,17130]`sys.prefix`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: prefix
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -3384,9 +3358,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [17296,17457]`if system_site == "t...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [17299,17320]`system_site == "true...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [17299,17320]`system_site == "true...`
                               ReadLocalVariableNodeGen SourceSection: [17299,17310]`system_site`
                                 Frame: [9,system_site,Illegal]
                               StringLiteralNode SourceSection: [17314,17320]`"true"`
@@ -3400,7 +3372,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               IntegerLiteralNode SourceSection: [17350,17351]`0`
                                 Value: 0
                               GetAttributeNode SourceSection: [17353,17363]`sys.prefix`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: prefix
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -3416,7 +3388,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CachedDispatchFirst SourceSection: None
                               ListLiteralNode SourceSection: [17402,17414]`[sys.prefix]`
                                 GetAttributeNode SourceSection: [17403,17413]`sys.prefix`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: prefix
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -3478,11 +3450,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ExceptNode SourceSection: None
                               IfNode SourceSection: [17660,17757]`if exc.name == 'site...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [17663,17690]`exc.name == 'sitecus...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [17663,17690]`exc.name == 'sitecus...`
                                     GetAttributeNode SourceSection: [17663,17671]`exc.name`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: name
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -3507,14 +3477,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           IfNode SourceSection: [17790,18055]`if sys.flags.verbose...`
                             YesNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [17793,17810]`sys.flags.verbose`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: verbose
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                 GetAttributeNode SourceSection: [17793,17802]`sys.flags`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: flags
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -3543,7 +3513,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [17882,17892]`sys.stderr`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: stderr
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -3558,14 +3528,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   StringLiteralNode SourceSection: [17916,18003]`"Error in sitecustom...`
                                   TupleLiteralNode SourceSection: [18022,18051]`(err.__class__.__nam...`
                                     GetAttributeNode SourceSection: [18023,18045]`err.__class__.__name...`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: __name__
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
                                       GetAttributeNode SourceSection: [18023,18036]`err.__class__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __class__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -3623,11 +3593,9 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ExceptNode SourceSection: None
                               IfNode SourceSection: [18237,18334]`if exc.name == 'user...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [18240,18267]`exc.name == 'usercus...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [18240,18267]`exc.name == 'usercus...`
                                     GetAttributeNode SourceSection: [18240,18248]`exc.name`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: name
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -3652,14 +3620,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           IfNode SourceSection: [18367,18632]`if sys.flags.verbose...`
                             YesNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [18370,18387]`sys.flags.verbose`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: verbose
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                 GetAttributeNode SourceSection: [18370,18379]`sys.flags`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: flags
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -3688,7 +3656,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [18459,18469]`sys.stderr`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: stderr
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -3703,14 +3671,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   StringLiteralNode SourceSection: [18493,18580]`"Error in usercustom...`
                                   TupleLiteralNode SourceSection: [18599,18628]`(err.__class__.__nam...`
                                     GetAttributeNode SourceSection: [18600,18622]`err.__class__.__name...`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: __name__
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
                                       GetAttributeNode SourceSection: [18600,18613]`err.__class__`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: __class__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -3762,7 +3730,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Frame: [0,orig_path,Illegal]
                       GetItemNodeGen SourceSection: [18907,18918]`sys.path[:]`
                         GetAttributeNode SourceSection: None
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: path
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -3786,13 +3754,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [18958,19137]`if orig_path != sys....`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [18961,18982]`orig_path != sys.pat...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __ne__
+                        NeNodeGen SourceSection: [18961,18982]`orig_path != sys.pat...`
                           ReadLocalVariableNodeGen SourceSection: [18961,18970]`orig_path`
                             Frame: [0,orig_path,Illegal]
                           GetAttributeNode SourceSection: [18974,18982]`sys.path`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -3876,14 +3842,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                     IfNode SourceSection: [19404,19463]`if not sys.flags.iso...`
                       NotNodeGen SourceSection: [19407,19429]`not sys.flags.isolat...`
                         GetAttributeNode SourceSection: [19411,19429]`sys.flags.isolated`
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: isolated
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
                           GetAttributeNode SourceSection: [19411,19420]`sys.flags`
-                            GetFixedAttributeNodeGen SourceSection: None
+                            GetFixedAttributeNode SourceSection: None
                               Key: flags
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -3922,14 +3888,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
       IfNode SourceSection: [19631,19669]`if not sys.flags.no_...`
         NotNodeGen SourceSection: [19634,19655]`not sys.flags.no_sit...`
           GetAttributeNode SourceSection: [19638,19655]`sys.flags.no_site`
-            GetFixedAttributeNodeGen SourceSection: None
+            GetFixedAttributeNode SourceSection: None
               Key: no_site
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
             GetAttributeNode SourceSection: [19638,19647]`sys.flags`
-              GetFixedAttributeNodeGen SourceSection: None
+              GetFixedAttributeNode SourceSection: None
                 Key: flags
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
@@ -3981,7 +3947,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Frame: [1,args,Illegal]
                       GetItemNodeGen SourceSection: [20149,20161]`sys.argv[1:]`
                         GetAttributeNode SourceSection: None
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: argv
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -4047,7 +4013,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       PythonObjectFactoryNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20304,20312]`sys.path`
                               GetAttributeNode SourceSection: [20304,20312]`sys.path`
-                                GetFixedAttributeNodeGen SourceSection: None
+                                GetFixedAttributeNode SourceSection: None
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -4083,7 +4049,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [20444,20451]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -4116,7 +4082,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       CallUnaryMethodNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [20565,20572]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -4211,7 +4177,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 GetAttributeNode SourceSection: [20864,20874]`os.pathsep`
-                                  GetFixedAttributeNodeGen SourceSection: None
+                                  GetFixedAttributeNode SourceSection: None
                                     Key: pathsep
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -4303,7 +4269,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 TupleLiteralNode SourceSection: [21178,21203]`(sys.argv[0], os.pat...`
                                   GetItemNodeGen SourceSection: [21179,21190]`sys.argv[0]`
                                     GetAttributeNode SourceSection: None
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: argv
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -4315,7 +4281,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     IntegerLiteralNode SourceSection: [21188,21189]`0`
                                       Value: 0
                                   GetAttributeNode SourceSection: [21192,21202]`os.pathsep`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: pathsep
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -4342,9 +4308,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         SideEffect:
           IfNode SourceSection: [21228,21269]`if __name__ == '__ma...`
             YesNodeGen SourceSection: None
-              BinaryComparisonNodeGen SourceSection: [21231,21253]`__name__ == '__main_...`
-                LookupAndCallBinaryNodeGen SourceSection: None
-                  Op: __eq__
+              EqNodeGen SourceSection: [21231,21253]`__name__ == '__main_...`
                 ReadNameNodeGen SourceSection: [21231,21239]`__name__`
                   Identifier: __name__
                   IsBuiltinClassProfile SourceSection: None

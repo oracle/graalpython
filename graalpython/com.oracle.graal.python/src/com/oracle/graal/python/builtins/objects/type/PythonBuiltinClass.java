@@ -29,18 +29,20 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * A Python built-in class that is immutable.
@@ -59,7 +61,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @Override
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        if (name instanceof HiddenPythonKey || !PythonLanguage.getCore().isInitialized()) {
+        if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
             throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
@@ -89,18 +91,34 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     boolean isMetaInstance(Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+                    @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    String getMetaSimpleName() {
-        return type.getName();
+    String getMetaSimpleName(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return type.getName();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    String getMetaQualifiedName() {
-        return type.getPrintName();
+    String getMetaQualifiedName(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return type.getPrintName();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @Override

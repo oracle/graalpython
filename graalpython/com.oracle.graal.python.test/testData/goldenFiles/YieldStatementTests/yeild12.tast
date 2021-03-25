@@ -40,7 +40,9 @@ ModuleRootNode Name: <module 'yeild12'> SourceSection: [0,21]`def f(): yield fro
                     ExpressionStatementNode SourceSection: [9,21]`yield from 1`
                       YieldFromNode SourceSection: [9,21]`yield from 1`
                         CachedDispatchFirst SourceSection: None
-                        GetNextNode SourceSection: None
+                        GetNextCached SourceSection: None
+                          LookupAndCallUnaryNodeGen SourceSection: None
+                            Op: __next__
                         GeneratorAccessNode SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
                           CachedDispatchFirst SourceSection: None

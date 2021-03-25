@@ -171,13 +171,12 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void close(int fd,
+    final int close(int fd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         if (ImageInfo.inImageBuildtimeCode()) {
-            PosixSupportLibrary.getUncached().close(emulatedPosixSupport, removeFd(fd));
-            return;
+            return PosixSupportLibrary.getUncached().close(emulatedPosixSupport, removeFd(fd));
         }
-        nativeLib.close(nativePosixSupport, fd);
+        return nativeLib.close(nativePosixSupport, fd);
     }
 
     @ExportMessage

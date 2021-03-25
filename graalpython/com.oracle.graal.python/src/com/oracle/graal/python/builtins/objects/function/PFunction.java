@@ -36,6 +36,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -207,17 +208,27 @@ public class PFunction extends PythonObject {
     }
 
     @ExportMessage
-    String getExecutableName() {
-        return getName();
+    String getExecutableName(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getName();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    public SourceSection getSourceLocation() throws UnsupportedMessageException {
-        SourceSection result = getSourceLocationDirect();
-        if (result == null) {
-            throw UnsupportedMessageException.create();
-        } else {
-            return result;
+    public SourceSection getSourceLocation(@Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            SourceSection result = getSourceLocationDirect();
+            if (result == null) {
+                throw UnsupportedMessageException.create();
+            } else {
+                return result;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
@@ -239,8 +250,13 @@ public class PFunction extends PythonObject {
     }
 
     @ExportMessage
-    public boolean hasSourceLocation() {
-        return getSourceLocationDirect() != null;
+    public boolean hasSourceLocation(@Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getSourceLocationDirect() != null;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @Override
@@ -253,18 +269,25 @@ public class PFunction extends PythonObject {
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallNode call) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+                    @Shared("callMethod") @Cached CallNode call,
+                    @Shared("gil") @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
+        } finally {
+            gil.release(mustRelease);
         }
-        return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
     }
 
     @ExportMessage
     public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("callMethod") @Cached CallNode call) {
-        return callUnboundMethodWithState(state, receiver, arguments, gotState, call);
+                    @Shared("callMethod") @Cached CallNode call,
+                    @Shared("gil") @Cached GilNode gil) {
+        return callUnboundMethodWithState(state, receiver, arguments, gotState, call, gil);
     }
 }

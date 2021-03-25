@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -155,19 +154,18 @@ public class ModuleBuiltins extends PythonBuiltins {
         Object dir(VirtualFrame frame, PythonModule self,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached IsBuiltinClassProfile isDictProfile,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             Object dict = pol.lookupAttribute(self, frame, __DICT__);
             if (isDict(dict, isDictProfile)) {
-                HashingStorage dictStorage = getDictStorageNode.execute((PHashingCollection) dict);
+                HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
                 Object dirFunc = hashLib.getItem(dictStorage, __DIR__);
                 if (dirFunc != null) {
                     return callNode.execute(frame, dirFunc);
                 } else {
-                    return constructListNode.execute(dict);
+                    return constructListNode.execute(frame, dict);
                 }
             } else {
                 String name = getName(self, pol, hashLib, castToJavaStringNode);

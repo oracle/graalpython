@@ -2770,10 +2770,13 @@ public class Python3Parser extends Parser {
 
 				 
 				                    rhsStopIndex = getStopIndex((_localctx.test!=null?(_localctx.test.stop):null));
+				                    AnnotationSSTNode annotation = factory.createAnnotation(_localctx.lhs.result, _localctx.t.result, getStartIndex(_localctx), rhsStopIndex);
+				                    // the rhs can be null, then we need to process just the annotation
 				                    if (rhs == null) {
-				                        rhs = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  -1, -1);
+				                        push(annotation);
+				                    } else {
+				                        push(factory.createAnnAssignment(annotation, rhs, getStartIndex(_localctx), rhsStopIndex)); 
 				                    }
-				                    push(factory.createAnnAssignment(_localctx.lhs.result, _localctx.t.result, rhs, getStartIndex(_localctx), rhsStopIndex)); 
 				                
 				}
 				break;

@@ -1,8 +1,10 @@
 *graalpython.lib-python.3.test.test_shutil.PublicAPITests.test_module_all_attribute
 *graalpython.lib-python.3.test.test_shutil.TermsizeTests.test_bad_environ
 *graalpython.lib-python.3.test.test_shutil.TermsizeTests.test_does_not_crash
+*graalpython.lib-python.3.test.test_shutil.TermsizeTests.test_fallback
 *graalpython.lib-python.3.test.test_shutil.TermsizeTests.test_os_environ_first
 *graalpython.lib-python.3.test.test_shutil.TermsizeTests.test_stty_match
+*graalpython.lib-python.3.test.test_shutil.TestCopyFile.test_move_dir_caseinsensitive
 *graalpython.lib-python.3.test.test_shutil.TestCopyFile.test_w_dest_close_fails
 *graalpython.lib-python.3.test.test_shutil.TestCopyFile.test_w_dest_open_fails
 *graalpython.lib-python.3.test.test_shutil.TestCopyFile.test_w_source_close_fails
@@ -16,6 +18,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestMove.test_dont_move_dir_in_itself
 *graalpython.lib-python.3.test.test_shutil.TestMove.test_existing_file_inside_dest_dir
 *graalpython.lib-python.3.test.test_shutil.TestMove.test_move_as_rename_return_value
+*graalpython.lib-python.3.test.test_shutil.TestMove.test_move_dangling_symlink
 *graalpython.lib-python.3.test.test_shutil.TestMove.test_move_dir
 *graalpython.lib-python.3.test.test_shutil.TestMove.test_move_dir_altsep_to_dir
 *graalpython.lib-python.3.test.test_shutil.TestMove.test_move_dir_other_fs
@@ -48,6 +51,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copystat_handles_harmless_chflags_errors
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_arg_types_of_ignore
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_custom_copy_function
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_dangling_symlinks
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_dirs_exist_ok
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_named_pipe
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_retains_permissions
@@ -56,6 +60,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_special_func
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_subdirectory
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_symlink_dir
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_symlinks
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_winerror
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_with_exclude
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copyxattr

@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -137,6 +138,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PZipImporter("zipimporter", "zipimport"),
     PBuffer("buffer", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     PThread("start_new_thread", "_thread"),
+    PThreadLocal("_local", "_thread"),
     PLock("LockType", "_thread"),
     PRLock("RLock", "_thread"),
     PSemLock("SemLock", "_multiprocessing"),
@@ -188,6 +190,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PHashInfo("hash_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PThreadInfo("thread_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PUnraisableHookArgs("UnraisableHookArgs", Flags.PUBLIC_DERIVED_WODICT),
+    PSSLSession("SSLSession", "_ssl"),
+    PSSLContext("_SSLContext", "_ssl"),
+    PSSLSocket("_SSLSocket", "_ssl"),
+    PMemoryBIO("MemoryBIO", "_ssl"),
 
     // Errors and exceptions:
 
@@ -240,6 +246,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SocketTimeout("timeout", "_socket", Flags.EXCEPTION),
     BinasciiError("Error", "binascii", Flags.EXCEPTION),
     BinasciiIncomplete("Incomplete", "binascii", Flags.EXCEPTION),
+    SSLError("SSLError", "_ssl", Flags.EXCEPTION),
+    SSLZeroReturnError("SSLZeroReturnError", "_ssl", Flags.EXCEPTION),
+    SSLWantReadError("SSLWantReadError", "_ssl", Flags.EXCEPTION),
+    SSLWantWriteError("SSLWantWriteError", "_ssl", Flags.EXCEPTION),
+    SSLSyscallError("SSLSyscallError", "_ssl", Flags.EXCEPTION),
+    SSLEOFError("SSLEOFError", "_ssl", Flags.EXCEPTION),
+    SSLCertVerificationError("SSLCertVerificationError", "_ssl", Flags.EXCEPTION),
 
     // todo: all OS errors
 
@@ -506,6 +519,14 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SocketHError.base = OSError;
         SocketTimeout.base = OSError;
 
+        SSLError.base = OSError;
+        SSLZeroReturnError.base = SSLError;
+        SSLWantReadError.base = SSLError;
+        SSLWantWriteError.base = SSLError;
+        SSLSyscallError.base = SSLError;
+        SSLCertVerificationError.base = SSLError;
+        SSLEOFError.base = SSLError;
+
         ReferenceError.base = Exception;
         RuntimeError.base = Exception;
         NotImplementedError.base = RuntimeError;
@@ -639,7 +660,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     public void writeMember(String key, Object value,
                     @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
+                    @CachedContext(PythonLanguage.class) PythonContext context)
+                    throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
         lib.writeMember(context.getCore().lookupType(this), key, value);
     }
 
@@ -667,7 +689,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     public Object invokeMember(String key, Object[] arguments,
                     @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, ArityException, UnknownIdentifierException, UnsupportedTypeException {
+                    @CachedContext(PythonLanguage.class) PythonContext context)
+                    throws UnsupportedMessageException, ArityException, UnknownIdentifierException, UnsupportedTypeException {
         return lib.invokeMember(context.getCore().lookupType(this), key, arguments);
     }
 
@@ -737,12 +760,18 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     public Object lookupAttributeInternal(ThreadState state, String attribName, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
+                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,
+                    @Cached.Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            return lookup.execute(frame, this, attribName, strict);
+        } finally {
+            gil.release(mustRelease);
         }
-        return lookup.execute(frame, this, attribName, strict);
     }
 
     @ExportMessage
@@ -803,8 +832,14 @@ public enum PythonBuiltinClassType implements TruffleObject {
     static boolean isMetaInstance(PythonBuiltinClassType self, Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(lib.getLazyPythonClass(convert.executeConvert(instance)), self);
+                    @Cached IsSubtypeNode isSubtype,
+                    @Cached.Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isSubtype.execute(lib.getLazyPythonClass(convert.executeConvert(instance)), self);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage

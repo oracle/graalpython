@@ -33,9 +33,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -44,8 +47,8 @@ import com.oracle.truffle.api.object.Shape;
 // TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PArray extends PythonBuiltinObject {
-    private BufferFormat format;
-    private String formatStr;
+    private final BufferFormat format;
+    private final String formatStr;
     private int length;
     private byte[] buffer;
     private volatile int exports;
@@ -171,8 +174,13 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    byte[] getBufferBytes() {
-        return PythonUtils.arrayCopyOf(buffer, getBufferLength());
+    byte[] getBufferBytes(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return PythonUtils.arrayCopyOf(buffer, getBufferLength());
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage

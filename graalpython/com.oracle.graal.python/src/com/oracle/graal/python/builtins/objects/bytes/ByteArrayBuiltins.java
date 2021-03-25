@@ -197,7 +197,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doSliceSequence(PByteArray self, PSlice slice, PSequence value,
+        PNone doSliceSequence(VirtualFrame frame, PByteArray self, PSlice slice, PSequence value,
                         @Cached ConditionProfile differentLenProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
@@ -212,12 +212,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             if (differentLenProfile.profile(info.sliceLength != otherLen)) {
                 self.checkCanResize(this);
             }
-            setItemSliceNode.execute(storage, info, value, false);
+            setItemSliceNode.execute(frame, storage, info, value, false);
             return PNone.NONE;
         }
 
         @Specialization(guards = "bufferLib.isBuffer(value)", limit = "3")
-        PNone doSliceBuffer(PByteArray self, PSlice slice, Object value,
+        PNone doSliceBuffer(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @CachedLibrary("value") PythonObjectLibrary bufferLib,
                         @Cached ConditionProfile differentLenProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -228,14 +228,14 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
             try {
                 PBytes bytes = factory().createBytes(bufferLib.getBufferBytes(value));
-                return doSliceSequence(self, slice, bytes, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
+                return doSliceSequence(frame, self, slice, bytes, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
         @Specialization(replaces = {"doSliceSequence", "doSliceBuffer"})
-        PNone doSliceGeneric(PByteArray self, PSlice slice, Object value,
+        PNone doSliceGeneric(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
                         @Cached ConditionProfile differentLenProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
@@ -244,8 +244,8 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SliceLiteralNode.SliceUnpack unpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices,
                         @Cached ListNodes.ConstructListNode constructListNode) {
-            PList values = constructListNode.execute(value);
-            return doSliceSequence(self, slice, values, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
+            PList values = constructListNode.execute(frame, value);
+            return doSliceSequence(frame, self, slice, values, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
         }
 
         @Fallback

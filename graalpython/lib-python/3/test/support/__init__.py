@@ -783,10 +783,9 @@ def bind_port(sock, host=HOST):
         if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
 
-    # XXX GraalVM change: bind to a specific port
-    # Our bind with port 0 doesn't know the real port until listen() is called
-    # sock.bind((host, 0))
-    sock.bind((host, 8756))
+    sock.bind((host, 0))
+    # XXX GraalVM change: our bind with port 0 doesn't know the real port until listen() is called
+    sock.listen()
     port = sock.getsockname()[1]
     return port
 
@@ -2257,7 +2256,7 @@ def threading_setup():
 def threading_cleanup(*original_values):
     global environment_altered
 
-    _MAX_COUNT = 100
+    _MAX_COUNT = 10
 
     for count in range(_MAX_COUNT):
         values = _thread._count(), threading._dangling
@@ -2298,7 +2297,7 @@ def reap_threads(func):
 
 
 @contextlib.contextmanager
-def wait_threads_exit(timeout=60.0):
+def wait_threads_exit(timeout=6.0):
     """
     bpo-31234: Context manager to wait until all threads created in the with
     statement exit.
@@ -2332,7 +2331,7 @@ def wait_threads_exit(timeout=60.0):
             gc_collect()
 
 
-def join_thread(thread, timeout=30.0):
+def join_thread(thread, timeout=3.0):
     """Join a thread. Raise an AssertionError if the thread is still alive
     after timeout seconds.
     """
@@ -2895,13 +2894,14 @@ class SuppressCrashReport:
                     self.old_modes[report_type] = old_mode, old_file
 
         else:
-            if resource is not None:
-                try:
-                    self.old_value = resource.getrlimit(resource.RLIMIT_CORE)
-                    resource.setrlimit(resource.RLIMIT_CORE,
-                                       (0, self.old_value[1]))
-                except (ValueError, OSError):
-                    pass
+            # Graalpython does not support getrlimit/setrlimit yet
+            # if resource is not None:
+            #     try:
+            #         self.old_value = resource.getrlimit(resource.RLIMIT_CORE)
+            #         resource.setrlimit(resource.RLIMIT_CORE,
+            #                            (0, self.old_value[1]))
+            #     except (ValueError, OSError):
+            #         pass
 
             if sys.platform == 'darwin':
                 # Check if the 'Crash Reporter' on OSX was configured
@@ -2937,11 +2937,13 @@ class SuppressCrashReport:
                     msvcrt.CrtSetReportMode(report_type, old_mode)
                     msvcrt.CrtSetReportFile(report_type, old_file)
         else:
-            if resource is not None:
-                try:
-                    resource.setrlimit(resource.RLIMIT_CORE, self.old_value)
-                except (ValueError, OSError):
-                    pass
+            # Graalpython does not support getrlimit/setrlimit yet
+            # if resource is not None:
+            #     try:
+            #         resource.setrlimit(resource.RLIMIT_CORE, self.old_value)
+            #     except (ValueError, OSError):
+            #         pass
+            pass
 
 
 def patch(test_instance, object_to_patch, attr_name, new_value):
@@ -2994,6 +2996,7 @@ def run_in_subinterp(code):
             raise unittest.SkipTest("run_in_subinterp() cannot be used "
                                      "if tracemalloc module is tracing "
                                      "memory allocations")
+    assert sys.implementation.name != "graalpython", "Truffle change - we do not support subinterp yet"
     import _testcapi
     return _testcapi.run_in_subinterp(code)
 

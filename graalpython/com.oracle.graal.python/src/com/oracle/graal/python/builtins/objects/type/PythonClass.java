@@ -36,7 +36,10 @@ import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -103,18 +106,34 @@ public final class PythonClass extends PythonManagedClass {
     boolean isMetaInstance(Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+                    @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    String getMetaSimpleName() {
-        return getName();
+    String getMetaSimpleName(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getName();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
-    String getMetaQualifiedName() {
-        return getQualName();
+    String getMetaQualifiedName(@Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return getQualName();
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     /*
@@ -145,18 +164,30 @@ public final class PythonClass extends PythonManagedClass {
     @ExportMessage
     @SuppressWarnings("static-method")
     protected SourceSection getSourceLocation(
+                    @Exclusive @Cached GilNode gil,
+                    @Bind("gil.acquire()") boolean mustRelease,
                     @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true) SourceSection section) throws UnsupportedMessageException {
-        if (section != null) {
-            return section;
-        } else {
-            throw UnsupportedMessageException.create();
+        try {
+            if (section != null) {
+                return section;
+            } else {
+                throw UnsupportedMessageException.create();
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     protected boolean hasSourceLocation(
+                    @Exclusive @Cached GilNode gil,
+                    @Bind("gil.acquire()") boolean mustRelease,
                     @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true) SourceSection section) {
-        return section != null;
+        try {
+            return section != null;
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 }

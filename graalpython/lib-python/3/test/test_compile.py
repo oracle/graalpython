@@ -7,7 +7,7 @@ import _ast
 import tempfile
 import types
 from test import support
-from test.support import script_helper, FakePath
+from test.support import script_helper, FakePath, impl_detail
 
 class TestSpecifics(unittest.TestCase):
 
@@ -421,6 +421,7 @@ if 1:
         self.assertIn("_A__mangled_mod", A.f.__code__.co_varnames)
         self.assertIn("__package__", A.f.__code__.co_varnames)
 
+    @impl_detail("ast module", graalvm=False)
     def test_compile_ast(self):
         fname = __file__
         if fname.lower().endswith('pyc'):

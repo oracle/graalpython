@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -85,6 +87,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.time.format.TextStyle;
+import java.util.Locale;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
@@ -180,7 +184,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[TM_WDAY] = zonedDateTime.getDayOfWeek().getValue() - 1; /* Want Monday == 0 */
         timeStruct[TM_YDAY] = zonedDateTime.getDayOfYear(); /* Want January, 1 == 1 */
         timeStruct[TM_ISDST] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
-        timeStruct[9] = zone.getId();
+        timeStruct[9] = zone.getDisplayName(TextStyle.SHORT, Locale.ROOT);
         timeStruct[10] = zonedDateTime.getOffset().getTotalSeconds();
 
         return timeStruct;
@@ -408,9 +412,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
         @Specialization(guards = "isPositive(seconds)")
-        Object sleep(VirtualFrame frame, long seconds) {
+        Object sleep(VirtualFrame frame, long seconds,
+                        @Cached GilNode gil) {
             long deadline = (long) timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            gil.release(true);
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                gil.acquire();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
@@ -422,9 +432,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPositive(seconds)")
-        Object sleep(VirtualFrame frame, double seconds) {
+        Object sleep(VirtualFrame frame, double seconds,
+                        @Cached GilNode gil) {
             double deadline = timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            gil.release(true);
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                gil.acquire();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
@@ -438,13 +454,19 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.canBeJavaDouble(secondsObj)")
         Object sleepObj(VirtualFrame frame, Object secondsObj,
                         @Cached ConditionProfile negErr,
+                        @Cached GilNode gil,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             double seconds = lib.asJavaDouble(secondsObj);
             if (negErr.profile(seconds < 0)) {
                 throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
             }
             double deadline = timeSeconds() + seconds;
-            doSleep(seconds, deadline);
+            gil.release(true);
+            try {
+                doSleep(seconds, deadline);
+            } finally {
+                gil.acquire();
+            }
             getContext().triggerAsyncActions(frame);
             return PNone.NONE;
         }
@@ -461,8 +483,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     Thread.sleep(secs * 1000);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
+                    return;
                 }
-
                 secs = deadline - (long) timeSeconds();
             } while (secs >= 0);
         }
@@ -479,6 +501,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     Thread.sleep(millis, nanos);
                 } catch (InterruptedException ignored) {
                     Thread.currentThread().interrupt();
+                    return;
                 }
                 secs = deadline - timeSeconds();
             } while (secs >= 0);
@@ -521,8 +544,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         CastToJavaIntExactNode toJavaIntExact,
                         PRaiseNode raise) {
             Object[] otime = getInternalObjectArrayNode.execute(time.getSequenceStorage());
-            if (lenNode.execute(time.getSequenceStorage()) < 9) {
-                throw raise.raise(TypeError, ErrorMessages.FUNC_TAKES_AT_LEAST_D_ARGS, 9, otime.length);
+            if (lenNode.execute(time.getSequenceStorage()) != 9) {
+                throw raise.raise(TypeError, ErrorMessages.S_ILLEGAL_TIME_TUPLE_ARG, "asctime()");
             }
             int[] date = new int[9];
             for (int i = 0; i < 9; i++) {
@@ -531,7 +554,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
             // This is specific to java
             if (date[TM_YEAR] < Year.MIN_VALUE || date[TM_YEAR] > Year.MAX_VALUE) {
-                throw raise.raise(ValueError, "year out of range");
+                throw raise.raise(OverflowError, "year out of range");
             }
 
             if (date[TM_MON] == 0) {
@@ -817,6 +840,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public String formatTime(String format, @SuppressWarnings("unused") PNone time) {
+            if (format.indexOf(0) > -1) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
+            }
             return format(format, getIntLocalTimeStruct((long) timeSeconds()));
         }
 
@@ -826,6 +852,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached CastToJavaIntExactNode castToInt) {
+            if (format.indexOf(0) > -1) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
+            }
             int[] date = checkStructtime(time, getArray, lenNode, lib, castToInt, getRaiseNode());
             return format(format, date);
         }
@@ -919,6 +948,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonObjectLibrary asPIntLib,
                         @Cached CastToJavaIntExactNode toJavaIntExact) {
             return format(StrfTimeNode.checkStructtime(time, getArray, lenNode, asPIntLib, toJavaIntExact, getRaiseNode()));
+        }
+
+        @Fallback
+        public Object localtime(@SuppressWarnings("unused") Object time) {
+            throw raise(TypeError, ErrorMessages.TUPLE_OR_STRUCT_TIME_ARG_REQUIRED);
         }
 
         protected static String format(int[] tm) {

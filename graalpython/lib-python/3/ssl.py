@@ -262,7 +262,8 @@ import warnings
 
 socket_error = OSError  # keep that public name in module namespace
 
-CHANNEL_BINDING_TYPES = ['tls-unique']
+# XXX GraalVM change: we don't support any channel binding types
+CHANNEL_BINDING_TYPES = []
 
 HAS_NEVER_CHECK_COMMON_NAME = hasattr(_ssl, 'HOSTFLAG_NEVER_CHECK_SUBJECT')
 

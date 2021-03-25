@@ -45,10 +45,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -129,8 +131,14 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     int getBufferLength(
-                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode) {
-        return castToIntNode.execute(length);
+                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return castToIntNode.execute(length);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage
@@ -139,17 +147,22 @@ public final class PMMap extends PythonObject {
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Cached BranchProfile gotException,
-                    @Cached PConstructAndRaiseNode raiseNode) {
-
+                    @Cached PConstructAndRaiseNode raiseNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
         try {
-            int len = castToIntNode.execute(length);
-            byte[] buffer = new byte[len];
-            posixLib.mmapReadBytes(ctx.getPosixSupport(), getPosixSupportHandle(), getPos(), buffer, buffer.length);
-            return buffer;
-        } catch (PosixException e) {
-            // TODO(fa) how to handle?
-            gotException.enter();
-            throw raiseNode.raiseOSError(null, e.getErrorCode(), e.getMessage(), null, null);
+            try {
+                int len = castToIntNode.execute(length);
+                byte[] buffer = new byte[len];
+                posixLib.mmapReadBytes(ctx.getPosixSupport(), getPosixSupportHandle(), getPos(), buffer, buffer.length);
+                return buffer;
+            } catch (PosixException e) {
+                // TODO(fa) how to handle?
+                gotException.enter();
+                throw raiseNode.raiseOSError(null, e.getErrorCode(), e.getMessage(), null, null);
+            }
+        } finally {
+            gil.release(mustRelease);
         }
     }
 }

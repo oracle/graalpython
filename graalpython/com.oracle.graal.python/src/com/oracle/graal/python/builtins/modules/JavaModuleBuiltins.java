@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropByteArray;
@@ -335,17 +336,23 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @ExportMessage
         Object readArrayElement(long index,
                         @CachedLibrary("this.delegate") InteropLibrary delegateLib,
-                        @CachedLibrary(limit = "1") InteropLibrary elementLib) throws InvalidArrayIndexException, UnsupportedMessageException {
-            Object element = delegateLib.readArrayElement(delegate, index);
-            if (elementLib.fitsInLong(element)) {
-                long i = elementLib.asLong(element);
-                if (compareUnsigned(i, Byte.MAX_VALUE) <= 0) {
-                    return (byte) i;
-                } else if (compareUnsigned(i, 0xFF) <= 0) {
-                    return (byte) -(-i & 0xFF);
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib,
+                        @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
+            boolean mustRelease = gil.acquire();
+            try {
+                Object element = delegateLib.readArrayElement(delegate, index);
+                if (elementLib.fitsInLong(element)) {
+                    long i = elementLib.asLong(element);
+                    if (compareUnsigned(i, Byte.MAX_VALUE) <= 0) {
+                        return (byte) i;
+                    } else if (compareUnsigned(i, 0xFF) <= 0) {
+                        return (byte) -(-i & 0xFF);
+                    }
                 }
+                throw CompilerDirectives.shouldNotReachHere("bytes object contains non-byte values");
+            } finally {
+                gil.release(mustRelease);
             }
-            throw CompilerDirectives.shouldNotReachHere("bytes object contains non-byte values");
         }
 
         /**

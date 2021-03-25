@@ -117,14 +117,17 @@ class Dialect(object):
         self = object.__new__(cls)
 
 
+        # equivalent of '_csv.c: _set_char'
         def set_char(x):
-            if x is None:
-                return None
-            if not isinstance(x, str):
-                raise TypeError('"%s" must be string, not %s' % (name, type(x).__name__))
-            if len(x) == 1:
-                return x
-            raise TypeError('"%s" must be a 1-character string' % (name,))
+            if x is not None:
+                if not isinstance(x, str):
+                    raise TypeError('"%s" must be string, not %s' % (name, type(x).__name__))
+                n = len(x)
+                if n > 1:
+                    raise TypeError('"%s" must be a 1-character string' % (name,))
+                if n > 0:
+                    return x
+            return ""
         def set_str(x):
             if isinstance(x, str):
                 return x
@@ -167,7 +170,7 @@ class Dialect(object):
             setattr(self, '_' + name, value)
 
         if not self.delimiter:
-            raise TypeError("delimiter must be set")
+            raise TypeError('"delimiter" must be a 1-character string')
 
         if self.quoting != QUOTE_NONE and not self.quotechar:
             raise TypeError("quotechar must be set if quoting enabled")

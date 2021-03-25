@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                           CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [202,209]`os.path`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: path
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -170,7 +170,9 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                  GetNextNode SourceSection: None
+                                  GetNextCached SourceSection: None
+                                    LookupAndCallUnaryNodeGen SourceSection: None
+                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
@@ -203,7 +205,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 CallBinaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [544,551]`os.path`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -254,7 +256,9 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                       Frame: [7,factory,Illegal]
                                     ReadGeneratorFrameVariableNodeGen SourceSection: [658,666]`fullpath`
                                       Frame: [6,fullpath,Illegal]
-                                GetNextNode SourceSection: None
+                                GetNextCached SourceSection: None
+                                  LookupAndCallUnaryNodeGen SourceSection: None
+                                    Op: __next__
                                 GeneratorAccessNode SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
@@ -266,7 +270,9 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           GetIteratorExpressionNodeGen SourceSection: [506,523]`path_item_entries`
                             ReadGeneratorFrameVariableNodeGen SourceSection: [506,523]`path_item_entries`
                               Frame: [5,path_item_entries,Illegal]
-                          GetNextNode SourceSection: None
+                          GetNextCached SourceSection: None
+                            LookupAndCallUnaryNodeGen SourceSection: None
+                              Op: __next__
                           GeneratorAccessNode SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
