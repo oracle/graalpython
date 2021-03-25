@@ -912,29 +912,7 @@ def PyInstanceMethod_New(func):
     return instancemethod(func)
 
 
-def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
-    # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
-    # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    pclass = to_java_type(primary)
-    getter = ReadMemberFunctions[memberType]
-    offset_converted = to_long(int(offset))
-    def member_getter(self):
-        return to_java(getter(to_sulong(self), offset_converted))
-    member_fget = member_getter
-    member_fset = None
-    if canSet:
-        setter = WriteMemberFunctions[memberType]
-        def member_setter(self, value):
-            setter(to_sulong(self), offset_converted, to_sulong(value))
-        member_fset = member_setter
-    name_str = to_java(name)
-    member = PyTruffle_MemberDescriptor(member_fget, member_fset, name_str, pclass)
-    PyTruffle_SetAttr(member, "__doc__", charptr_to_java(doc))
-    type_dict = to_java(tpDict)
-    type_dict[name_str] = member
-
-
-getset_descriptor = type(type(AddMember).__code__)
+getset_descriptor = type(type(PyInstanceMethod_New).__code__)
 def AddGetSet(primary, name, getter, setter, doc, closure):
     pclass = to_java_type(primary)
     fset = fget = None
@@ -1303,8 +1281,6 @@ def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
     capi = capi_library
-
-    initialize_member_accessors()
     initialize_datetime_capi()
 
 
@@ -1364,33 +1340,6 @@ def initialize_datetime_capi():
     datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize")()
     datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize")()
     datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize")()
-
-
-ReadMemberFunctions = []
-WriteMemberFunctions = []
-def initialize_member_accessors():
-    # order must correspond to member type definitions in structmember.h
-    for memberFunc in ["ReadShortMember", "ReadIntMember", "ReadLongMember",
-                       "ReadFloatMember", "ReadDoubleMember",
-                       "ReadStringMember", "ReadObjectMember", "ReadCharMember",
-                       "ReadByteMember", "ReadUByteMember", "ReadUShortMember",
-                       "ReadUIntMember", "ReadULongMember", "ReadStringMember",
-                       "ReadBoolMember", "ReadObjectExMember",
-                       "ReadObjectExMember", "ReadLongLongMember",
-                       "ReadULongLongMember", "ReadPySSizeT"]:
-        ReadMemberFunctions.append(capi[memberFunc])
-    ReadMemberFunctions.append(lambda x: None)
-    for memberFunc in ["WriteShortMember", "WriteIntMember", "WriteLongMember",
-                       "WriteFloatMember", "WriteDoubleMember",
-                       "WriteStringMember", "WriteObjectMember",
-                       "WriteCharMember", "WriteByteMember", "WriteUByteMember",
-                       "WriteUShortMember", "WriteUIntMember",
-                       "WriteULongMember", "WriteStringMember",
-                       "WriteBoolMember", "WriteObjectExMember",
-                       "WriteObjectExMember", "WriteLongLongMember",
-                       "WriteULongLongMember", "WritePySSizeT"]:
-        WriteMemberFunctions.append(capi[memberFunc])
-    WriteMemberFunctions.append(lambda x,v: None)
 
 
 @may_raise

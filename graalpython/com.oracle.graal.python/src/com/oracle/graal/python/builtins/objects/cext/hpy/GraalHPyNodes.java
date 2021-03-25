@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -1200,12 +1201,12 @@ public class GraalHPyNodes {
     public abstract static class HPyUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
 
         @Specialization(guards = "n >= 0")
-        static int doUnsignedIntPositive(@SuppressWarnings("unused") GraalHPyContext hpyContext, int n) {
+        static int doUnsignedIntPositive(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
             return n;
         }
 
         @Specialization(replaces = "doUnsignedIntPositive")
-        static long doUnsignedInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int n) {
+        static long doUnsignedInt(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
             if (n < 0) {
                 return n & 0xffffffffL;
             }
@@ -1213,18 +1214,18 @@ public class GraalHPyNodes {
         }
 
         @Specialization(guards = "n >= 0")
-        static long doUnsignedLongPositive(@SuppressWarnings("unused") GraalHPyContext hpyContext, long n) {
+        static long doUnsignedLongPositive(@SuppressWarnings("unused") CExtContext hpyContext, long n) {
             return n;
         }
 
         @Specialization(guards = "n < 0")
-        static Object doUnsignedLongNegative(@SuppressWarnings("unused") GraalHPyContext hpyContext, long n,
+        static Object doUnsignedLongNegative(@SuppressWarnings("unused") CExtContext hpyContext, long n,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createInt(PInt.longToUnsignedBigInteger(n));
         }
 
         @Specialization(replaces = {"doUnsignedIntPositive", "doUnsignedInt", "doUnsignedLongPositive", "doUnsignedLongNegative"})
-        static Object doGeneric(GraalHPyContext hpyContext, Object n,
+        static Object doGeneric(CExtContext hpyContext, Object n,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             if (n instanceof Integer) {
                 int i = (int) n;
@@ -1253,24 +1254,24 @@ public class GraalHPyNodes {
     public abstract static class HPyPrimitiveAsPythonCharNode extends CExtToJavaNode {
 
         @Specialization
-        static Object doByte(@SuppressWarnings("unused") GraalHPyContext hpyContext, byte b) {
+        static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
             return PythonUtils.newString(new char[]{(char) b});
         }
 
         @Specialization
-        static Object doShort(@SuppressWarnings("unused") GraalHPyContext hpyContext, short i) {
+        static Object doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i) {
             return createString((char) i);
         }
 
         @Specialization
-        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long l) {
+        static Object doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l) {
             // If the integer is out of byte range, we just to a lossy cast since that's the same
             // sematics as we should just read a single byte.
             return createString((char) l);
         }
 
         @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n,
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
                         @CachedLibrary("n") InteropLibrary lib) {
             if (lib.fitsInShort(n)) {
                 try {
@@ -1295,24 +1296,24 @@ public class GraalHPyNodes {
     public abstract static class HPyPrimitiveAsPythonBooleanNode extends CExtToJavaNode {
 
         @Specialization
-        static Object doByte(@SuppressWarnings("unused") GraalHPyContext hpyContext, byte b) {
+        static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
             return b != 0;
         }
 
         @Specialization
-        static Object doShort(@SuppressWarnings("unused") GraalHPyContext hpyContext, short i) {
+        static Object doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i) {
             return i != 0;
         }
 
         @Specialization
-        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long l) {
+        static Object doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l) {
             // If the integer is out of byte range, we just to a lossy cast since that's the same
             // sematics as we should just read a single byte.
             return l != 0;
         }
 
         @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n,
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
                         @CachedLibrary("n") InteropLibrary lib) {
             if (lib.fitsInLong(n)) {
                 try {
@@ -1334,12 +1335,12 @@ public class GraalHPyNodes {
     public abstract static class HPyStringAsPythonStringNode extends CExtToJavaNode {
 
         @Specialization
-        static String doString(@SuppressWarnings("unused") GraalHPyContext hpyContext, String value) {
+        static String doString(@SuppressWarnings("unused") CExtContext hpyContext, String value) {
             return value;
         }
 
         @Specialization(replaces = "doString", limit = "3")
-        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object value,
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
                         @CachedLibrary("value") InteropLibrary interopLib) {
             if (interopLib.isNull(value)) {
                 return PNone.NONE;
@@ -1380,19 +1381,19 @@ public class GraalHPyNodes {
     public abstract static class HPyAsNativePrimitiveNode extends CExtToNativeNode {
 
         private final int targetTypeSize;
-        private final boolean signed;
+        private final int signed;
 
         protected HPyAsNativePrimitiveNode(int targetTypeSize, boolean signed) {
             this.targetTypeSize = targetTypeSize;
-            this.signed = signed;
+            this.signed = PInt.intValue(signed);
         }
 
         // Adding specializations for primitives does not make a lot of sense just to avoid
         // un-/boxing in the interpreter since interop will force un-/boxing anyway.
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
-                        @Cached ConvertPIntToPrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(null, value, PInt.intValue(signed), targetTypeSize);
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
         }
     }
 

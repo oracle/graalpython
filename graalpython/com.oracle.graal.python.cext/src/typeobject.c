@@ -368,18 +368,11 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
      */
 }
 
-// TODO support member flags other than READONLY
-static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
-	polyglot_invoke(PY_TRUFFLE_CEXT,
-			"AddMember",
-			cls,
-		    native_to_java(type_dict),
-		    native_to_java(mname),
-		    mtype,
-		    moffset,
-		    native_to_java(((mflags & READONLY) == 0) ? Py_True : Py_False),
-		    mdoc
-	);
+typedef int (*add_member_fun_t)(void *, void *, void *, int32_t, Py_ssize_t, int32_t, char *);
+UPCALL_TYPED_ID(AddMember, add_member_fun_t);
+static int add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, int mtype, Py_ssize_t moffset, int mflags, char* mdoc) {
+    // TODO support member flags other than READONLY
+	return _jls_AddMember( cls, native_to_java(type_dict), native_to_java(mname), mtype, moffset, (mflags & READONLY) == 0, mdoc);
 }
 
 void add_getset(PyTypeObject* cls, char* name, getter getter_fun, setter setter_fun, char* doc, void* closure) {

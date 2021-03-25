@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -88,6 +87,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
@@ -112,7 +113,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
@@ -148,6 +151,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -161,6 +165,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -186,6 +191,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -3851,5 +3857,89 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
+    }
+
+    // directly called without landing function
+    @Builtin(name = "AddMember", takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class AddMemberNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            return execute(frame, self, arguments, keywords);
+        }
+
+        @Specialization
+        int doWithPrimitives(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                if (arguments.length < 7) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "AddMember", 7, arguments.length);
+                }
+                addMember(language, arguments[0], arguments[1], arguments[2], castInt(arguments[3]), castInt(arguments[4]), castInt(arguments[5]), arguments[6],
+                                AsPythonObjectNodeGen.getUncached(), CastToJavaStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
+                                PythonObjectFactory.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @TruffleBoundary
+        private static void addMember(PythonLanguage language, Object clsPtr, Object tpDictPtr, Object namePtr, int memberType, int offset, int canSet, Object docPtr,
+                        AsPythonObjectNode asPythonObjectNode,
+                        CastToJavaStringNode castToJavaStringNode,
+                        FromCharPointerNode fromCharPointerNode,
+                        InteropLibrary docPtrLib,
+                        PythonObjectFactory factory,
+                        WriteAttributeToDynamicObjectNode writeDocNode,
+                        HashingStorageLibrary dictStorageLib) {
+
+            Object clazz = asPythonObjectNode.execute(clsPtr);
+            PDict tpDict = castPDict(asPythonObjectNode.execute(tpDictPtr));
+            String memberName;
+            try {
+                memberName = castToJavaStringNode.execute(asPythonObjectNode.execute(namePtr));
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
+            }
+            // note: 'doc' may be NULL; in this case, we would store 'None'
+            Object memberDoc = CharPtrToJavaObjectNode.run(docPtr, fromCharPointerNode, docPtrLib);
+            PBuiltinFunction getterObject = ReadMemberNode.createBuiltinFunction(language, clazz, memberName, memberType, offset);
+
+            Object setterObject = null;
+            if (canSet != 0) {
+                setterObject = WriteMemberNode.createBuiltinFunction(language, clazz, memberName, memberType, offset);
+            }
+
+            // create member descriptor
+            GetSetDescriptor memberDescriptor = factory.createMemberDescriptor(getterObject, setterObject, memberName, clazz);
+            writeDocNode.execute(memberDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+
+            // add member descriptor to tp_dict
+            dictStorageLib.setItem(tpDict.getDictStorage(), memberName, memberDescriptor);
+        }
+
+        private static PDict castPDict(Object tpDictObj) {
+            if (tpDictObj instanceof PDict) {
+                return (PDict) tpDictObj;
+            }
+            throw CompilerDirectives.shouldNotReachHere("tp_dict object must be a Python dict");
+        }
+
+        private static int castInt(Object object) {
+            if (object instanceof Integer) {
+                return (int) object;
+            } else if (object instanceof Long) {
+                long lval = (long) object;
+                if (PInt.isIntRange(lval)) {
+                    return (int) lval;
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere("expected Java int");
+        }
     }
 }

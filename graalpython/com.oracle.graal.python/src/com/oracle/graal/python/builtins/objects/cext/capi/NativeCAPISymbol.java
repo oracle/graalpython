@@ -54,6 +54,45 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_RESOLVE_HANDLE("_graalvm_llvm_resolve_handle"),
     FUN_POLYGLOT_FROM_TYPED("polyglot_from_typed"),
 
+    /* C functions for reading native members by offset */
+
+    FUN_READ_SHORT_MEMBER("ReadShortMember"),
+    FUN_READ_INT_MEMBER("ReadIntMember"),
+    FUN_READ_LONG_MEMBER("ReadLongMember"),
+    FUN_READ_FLOAT_MEMBER("ReadFloatMember"),
+    FUN_READ_DOUBLE_MEMBER("ReadDoubleMember"),
+    FUN_READ_STRING_MEMBER("ReadStringMember"),
+    GRAAL_HPY_READ_STRING_IN_PLACE("graal_hpy_read_string_in_place"),
+    FUN_READ_OBJECT_MEMBER("ReadObjectMember"),
+    FUN_READ_CHAR_MEMBER("ReadCharMember"),
+    FUN_READ_UBYTE_MEMBER("ReadUByteMember"),
+    FUN_READ_USHORT_MEMBER("ReadUShortMember"),
+    FUN_READ_UINT_MEMBER("ReadUIntMember"),
+    FUN_READ_ULONG_MEMBER("ReadULongMember"),
+    FUN_READ_LONGLONG_MEMBER("ReadLongLongMember"),
+    FUN_READ_ULONGLONG_MEMBER("ReadULongLongMember"),
+    FUN_READ_PYSSIZET_MEMBER("ReadPySSizeT"),
+
+    /* C functions for writing native members by offset */
+
+    FUN_WRITE_SHORT_MEMBER("WriteShortMember"),
+    FUN_WRITE_INT_MEMBER("WriteIntMember"),
+    FUN_WRITE_LONG_MEMBER("WriteLongMember"),
+    FUN_WRITE_FLOAT_MEMBER("WriteFloatMember"),
+    FUN_WRITE_DOUBLE_MEMBER("WriteDoubleMember"),
+    FUN_WRITE_STRING_MEMBER("WriteStringMember"),
+    GRAAL_HPY_WRITE_STRING_IN_PLACE("graal_hpy_write_string_in_place"),
+    FUN_WRITE_OBJECT_MEMBER("WriteObjectMember"),
+    FUN_WRITE_OBJECT_EX_MEMBER("WriteObjectExMember"),
+    FUN_WRITE_CHAR_MEMBER("WriteCharMember"),
+    FUN_WRITE_UBYTE_MEMBER("WriteUByteMember"),
+    FUN_WRITE_USHORT_MEMBER("WriteUShortMember"),
+    FUN_WRITE_UINT_MEMBER("WriteUIntMember"),
+    FUN_WRITE_ULONG_MEMBER("WriteULongMember"),
+    FUN_WRITE_LONGLONG_MEMBER("WriteLongLongMember"),
+    FUN_WRITE_ULONGLONG_MEMBER("WriteULongLongMember"),
+    FUN_WRITE_PYSSIZET_MEMBER("WritePySSizeT"),
+
     /* Python C API functions */
 
     FUN_NATIVE_LONG_TO_JAVA("native_long_to_java"),
