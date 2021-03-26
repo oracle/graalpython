@@ -143,7 +143,7 @@ public class CApiMemberAccessNodes {
             case T_ULONG:
                 return NativeCAPISymbol.FUN_READ_ULONG_MEMBER;
             case T_STRING_INPLACE:
-                return NativeCAPISymbol.GRAAL_HPY_READ_STRING_IN_PLACE;
+                return NativeCAPISymbol.FUN_READ_STRING_IN_PLACE_MEMBER;
             case T_LONGLONG:
                 return NativeCAPISymbol.FUN_READ_LONGLONG_MEMBER;
             case T_ULONGLONG:

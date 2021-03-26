@@ -564,6 +564,12 @@ void* ReadStringMember(PyObject* object, Py_ssize_t offset) {
     return NULL;
 }
 
+void* ReadStringInPlaceMember(PyObject* object, Py_ssize_t offset) {
+    char *addr = (char*) (((char*)object) + offset);
+    return polyglot_from_string(addr, "utf-8");
+}
+
+
 PyObject* ReadObjectMember(PyObject* object, Py_ssize_t offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
@@ -648,7 +654,7 @@ int WriteStringMember(PyObject* object, Py_ssize_t offset, char* value) {
     return 0;
 }
 
-int WriteStringInPlaceMember(void* object, Py_ssize_t offset, char* value) {
+int WriteStringInPlaceMember(PyObject* object, Py_ssize_t offset, char* value) {
 	char *addr = (char*) (((char*)object) + offset);
 	size_t n;
 	if (polyglot_has_array_elements(value)) {
