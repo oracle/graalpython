@@ -1454,33 +1454,36 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"obj.isBool()", "!lib.isNative(obj)"}, limit = "1")
         long doBoolNotNative(PrimitiveNativeWrapper obj,
+                        @Shared("longProfile") @Cached ConditionProfile isLongProfile,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached MaterializeDelegateNode materializeNode,
                         @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
             // special case for True and False singletons
             PInt boxed = (PInt) materializeNode.execute(obj);
             assert lib.getNativePointer(obj) == lib.getNativePointer(boxed.getNativeWrapper());
-            return ensureLong(interopLib, lib.getNativePointer(obj));
+            return ensureLong(interopLib, lib.getNativePointer(obj), isLongProfile);
         }
 
         @Specialization(guards = {"obj.isBool()", "lib.isNative(obj)"}, limit = "1")
         long doBoolNative(PrimitiveNativeWrapper obj,
+                        @Shared("longProfile") @Cached ConditionProfile isLongProfile,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-            return ensureLong(interopLib, lib.getNativePointer(obj));
+            return ensureLong(interopLib, lib.getNativePointer(obj), isLongProfile);
         }
 
         @Specialization(guards = "!isBoolNativeWrapper(obj)", limit = "1")
         long doFast(PythonNativeWrapper obj,
+                        @Shared("longProfile") @Cached ConditionProfile isLongProfile,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
             // the native pointer object must either be a TruffleObject or a primitive
             Object nativePointer = lib.getNativePointer(obj);
-            return ensureLong(interopLib, nativePointer);
+            return ensureLong(interopLib, nativePointer, isLongProfile);
         }
 
-        private static long ensureLong(InteropLibrary interopLib, Object nativePointer) {
-            if (nativePointer instanceof Long) {
+        private static long ensureLong(InteropLibrary interopLib, Object nativePointer, ConditionProfile isLongProfile) {
+            if (isLongProfile.profile(nativePointer instanceof Long)) {
                 return (long) nativePointer;
             } else {
                 try {

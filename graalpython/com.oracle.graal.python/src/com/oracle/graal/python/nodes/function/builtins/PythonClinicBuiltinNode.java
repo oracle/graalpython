@@ -52,7 +52,7 @@ public abstract class PythonClinicBuiltinNode extends PythonBuiltinNode {
     protected abstract ArgumentClinicProvider getArgumentClinic();
 
     @CreateCast("arguments")
-    protected ReadArgumentNode[] createCasts(ReadArgumentNode[] reads) {
+    protected final ReadArgumentNode[] createCasts(ReadArgumentNode[] reads) {
         ReadArgumentNode[] result = new ReadArgumentNode[reads.length];
         ArgumentClinicProvider clinic = getArgumentClinic();
         for (int i = 0; i < reads.length; i++) {
