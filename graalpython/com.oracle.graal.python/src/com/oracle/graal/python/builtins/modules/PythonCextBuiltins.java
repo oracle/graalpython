@@ -151,6 +151,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -3981,7 +3982,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
             writeDocNode.execute(memberDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
 
             // add member descriptor to tp_dict
-            dictStorageLib.setItem(tpDict.getDictStorage(), memberName, memberDescriptor);
+            HashingStorage dictStorage = tpDict.getDictStorage();
+            HashingStorage updatedStorage = dictStorageLib.setItem(dictStorage, memberName, memberDescriptor);
+            if (dictStorage != updatedStorage) {
+                tpDict.setDictStorage(updatedStorage);
+            }
         }
 
         private static PDict castPDict(Object tpDictObj) {
