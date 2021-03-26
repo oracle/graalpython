@@ -140,6 +140,127 @@ public abstract class SocketLibrary extends Library {
 
     // endregion
 
+    // region Name resolution messages
+
+    /**
+     * Corresponds to POSIX {@code getaddrinfo(3)}, except it always passes a non-null value for the
+     * {@code hints} parameter.
+     *
+     * @param node is the host name converted using
+     *            {@link PosixSupportLibrary#createPathFromBytes(Object, byte[])} or
+     *            {@link PosixSupportLibrary#createPathFromString(Object, String)}
+     * @param service is the service name converted using
+     *            {@link PosixSupportLibrary#createPathFromBytes(Object, byte[])} or
+     *            {@link PosixSupportLibrary#createPathFromString(Object, String)}
+     * @param family one of the {@code AF_xxx} constants, or {@link PosixConstants#AF_UNSPEC} to get
+     *            addresses of any family
+     * @param sockType one of the {@code SOCK_xxx} constants, or 0 to get addresses of any type
+     * @param protocol 0 to get addresses with any protocol
+     * @param flags bitwise OR of {@code AI_xxx} constants
+     * @return an object representing one or more {@code struct addrinfo}s, which must be explicitly
+     *         released by the caller
+     * @throws GetAddrInfoException when an error occurs (PosixException is not thrown because
+     *             getaddrinfo uses its own error codes and gai_strerror instead of the usual errno
+     *             and strerror)
+     */
+    public abstract AddrInfoCursor getaddrinfo(Object receiver, Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException;
+
+    /**
+     * Represents one or more addrinfos returned by {@code getaddrinfo()}.
+     *
+     * Must be explicitly released using {@link AddrInfoCursorLibrary#release(AddrInfoCursor)}.
+     * Behaves like a cursor which points to a {@code struct addrinfo} structure (initially pointing
+     * at the first address info). The cursor can only move forward using the
+     * {@link AddrInfoCursorLibrary#next(AddrInfoCursor)} message.
+     * 
+     * @see AddrInfoCursorLibrary
+     */
+    public interface AddrInfoCursor {
+    }
+
+    /**
+     * Provides messages for manipulating {@link AddrInfoCursor}.
+     */
+    @GenerateLibrary
+    public static abstract class AddrInfoCursorLibrary extends Library {
+
+        protected AddrInfoCursorLibrary() {
+        }
+
+        /**
+         * Releases resources associated with the results of {@code getaddrinfo()}.
+         *
+         * This must be called exactly once on all instances returned from
+         * {@link #getaddrinfo(Object, Object, Object, int, int, int, int)}. Released instances can
+         * no longer be used for any purpose.
+         */
+        public abstract void release(AddrInfoCursor receiver);
+
+        /**
+         * Moves the cursor to the next address info.
+         *
+         * @return false if there are no more address infos in which case the cursor keeps pointing
+         *         to the last item
+         */
+        public abstract boolean next(AddrInfoCursor receiver);
+
+        public abstract int getFlags(AddrInfoCursor receiver);
+
+        public abstract int getFamily(AddrInfoCursor receiver);
+
+        public abstract int getSockType(AddrInfoCursor receiver);
+
+        public abstract int getProtocol(AddrInfoCursor receiver);
+
+        /**
+         * @return {@code null} or opaque name to be converted using
+         *         {@link PosixSupportLibrary#getPathAsString(Object, Object)} or
+         *         {@link PosixSupportLibrary#getPathAsBytes(Object, Object)}
+         */
+        public abstract Object getCanonName(AddrInfoCursor receiver);
+
+        // addr is an output parameter
+        public abstract void getSockAddr(AddrInfoCursor receiver, SockAddr addr);
+
+        static final LibraryFactory<AddrInfoCursorLibrary> FACTORY = LibraryFactory.resolve(AddrInfoCursorLibrary.class);
+
+        public static LibraryFactory<AddrInfoCursorLibrary> getFactory() {
+            return FACTORY;
+        }
+
+        public static AddrInfoCursorLibrary getUncached() {
+            return FACTORY.getUncached();
+        }
+    }
+
+    /**
+     * Exception that indicates and error while executing
+     * {@link #getaddrinfo(Object, Object, Object, int, int, int, int)}.
+     */
+    public static class GetAddrInfoException extends Exception {
+
+        private static final long serialVersionUID = 3013253817849329391L;
+
+        private final int errorCode;
+
+        public GetAddrInfoException(int errorCode, String message) {
+            super(message);
+            this.errorCode = errorCode;
+        }
+
+        public int getErrorCode() {
+            return errorCode;
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    // endregion
+
     /**
      * Allocates a new {@link UniversalSockAddr} and sets its family to
      * {@link PosixConstants#AF_UNSPEC}. It can be either filled by
@@ -156,6 +277,9 @@ public abstract class SocketLibrary extends Library {
      */
     @GenerateLibrary
     public static abstract class UniversalSockAddrLibrary extends Library {
+
+        protected UniversalSockAddrLibrary() {
+        }
 
         /**
          * Releases resources associated with the address.
@@ -180,13 +304,27 @@ public abstract class SocketLibrary extends Library {
         public abstract void fill(UniversalSockAddr receiver, SockAddr src);
 
         /**
+         * Converts the address represented by the receiver to {@code dst}. Note that {@code dst}
+         * can itself be an instance of {@link UniversalSockAddr} (provided by the same backend), in
+         * which case a direct copy is made.
+         *
+         * @throws IllegalArgumentException if the socket family of the address does not match the
+         *             type of {@code dst}
+         */
+        public abstract void convert(UniversalSockAddr receiver, SockAddr dest);
+
+        /**
          * Converts the address represented by the receiver (which must be of the
          * {@link PosixConstants#AF_INET} family) into a {@link Inet4SockAddr} instance.
          *
          * @throws IllegalArgumentException if the socket family of the address is not
          *             {@link PosixConstants#AF_INET}
          */
-        public abstract Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver);
+        public Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver) {
+            Inet4SockAddr addr = new Inet4SockAddr();
+            convert(receiver, addr);
+            return addr;
+        }
 
         static final LibraryFactory<UniversalSockAddrLibrary> FACTORY = LibraryFactory.resolve(UniversalSockAddrLibrary.class);
 

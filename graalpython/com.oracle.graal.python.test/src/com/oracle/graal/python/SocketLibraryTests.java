@@ -41,22 +41,40 @@
 package com.oracle.graal.python;
 
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
+import static com.oracle.graal.python.runtime.PosixConstants.AI_CANONNAME;
+import static com.oracle.graal.python.runtime.PosixConstants.AI_PASSIVE;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_BADFLAGS;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_NONAME;
+import static com.oracle.graal.python.runtime.PosixConstants.INADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_LOOPBACK;
+import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
+import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_UDP;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
+import static com.oracle.graal.python.runtime.PosixConstants.SOCK_STREAM;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import com.oracle.graal.python.runtime.PosixConstants.MandatoryIntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.SocketLibrary;
+import com.oracle.graal.python.runtime.SocketLibrary.AddrInfoCursor;
+import com.oracle.graal.python.runtime.SocketLibrary.AddrInfoCursorLibrary;
+import com.oracle.graal.python.runtime.SocketLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.SocketLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddr;
 
@@ -65,6 +83,7 @@ public class SocketLibraryTests {
     @Rule public WithPythonContextRule withPythonContextRule = new WithPythonContextRule(Collections.singletonMap("python.PosixModuleBackend", "native"));
 
     @Rule public CleanupRule cleanup = new CleanupRule();
+    @Rule public ExpectedException expectedException = ExpectedException.none();
 
     private Object posixSupport;
     private SocketLibrary lib;
@@ -181,6 +200,151 @@ public class SocketLibraryTests {
 
         assertEquals(INADDR_LOOPBACK.value, srcAddr.getAddress());
         assertEquals(cliAddr.getPort(), srcAddr.getPort());
+    }
+
+    @Test
+    public void getaddrinfoNoInput() throws GetAddrInfoException {
+        expectGetAddrInfoException(EAI_NONAME);
+        lib.getaddrinfo(posixSupport, null, null, AF_UNSPEC.value, 0, 0, 0);
+    }
+
+    private void dump(String description, AddrInfoCursor aic) {
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        AddrInfoCursorLibrary aicLib = AddrInfoCursorLibrary.getUncached();
+
+        UniversalSockAddr usa = createUsa();
+
+        System.out.println(description);
+        do {
+            int flags = aicLib.getFlags(aic);
+            int family = aicLib.getFamily(aic);
+            int sockType = aicLib.getSockType(aic);
+            int protocol = aicLib.getProtocol(aic);
+            Object opaqueName = aicLib.getCanonName(aic);
+            String name = opaqueName == null ? "null" : '"' + posixLib.getPathAsString(posixSupport, opaqueName) + '"';
+            aicLib.getSockAddr(aic, usa);
+            int addrFamily = usaLib.getFamily(usa);
+            String address;
+            if (addrFamily == AF_INET.value) {
+                Inet4SockAddr addr = usaLib.asInet4SockAddr(usa);
+                address = String.format("%08X:%d", addr.getAddress(), addr.getPort());
+            } else {
+                address = "<unsupported>";
+            }
+            System.out.printf("flags: %x, family: %d, sockType: %d, protocol: %d, name: %s, addrFamily: %d, address: %s\n", flags, family, sockType, protocol, name, addrFamily, address);
+        } while (aicLib.next(aic));
+    }
+
+    @Test
+    public void getaddrinfoServiceOnly() throws GetAddrInfoException {
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        AddrInfoCursorLibrary aicLib = AddrInfoCursorLibrary.getUncached();
+
+        Object service = posixLib.createPathFromString(posixSupport, "https");
+        AddrInfoCursor aic = lib.getaddrinfo(posixSupport, null, service, AF_UNSPEC.value, SOCK_STREAM.value, 0, 0);
+        cleanup.add(() -> aicLib.release(aic));
+        do {
+            int family = aicLib.getFamily(aic);
+
+            assertEquals(SOCK_STREAM.value, aicLib.getSockType(aic));
+            assertNull(aicLib.getCanonName(aic));
+
+            UniversalSockAddr usa = createUsa();
+            aicLib.getSockAddr(aic, usa);
+            assertEquals(family, usaLib.getFamily(usa));
+            if (family == AF_INET.value) {
+                Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
+                assertEquals(INADDR_LOOPBACK.value, addr2.getAddress());
+                assertEquals(443, addr2.getPort());
+            }
+        } while (aicLib.next(aic));
+    }
+
+    @Test
+    public void getaddrinfoPassive() throws GetAddrInfoException {
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        AddrInfoCursorLibrary aicLib = AddrInfoCursorLibrary.getUncached();
+
+        Object service = posixLib.createPathFromString(posixSupport, "https");
+        AddrInfoCursor aic = lib.getaddrinfo(posixSupport, null, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_PASSIVE.value);
+        cleanup.add(() -> aicLib.release(aic));
+        assertEquals(AF_INET.value, aicLib.getFamily(aic));
+        assertEquals(SOCK_STREAM.value, aicLib.getSockType(aic));
+        assertEquals(IPPROTO_TCP.value, aicLib.getProtocol(aic));
+        assertNull(aicLib.getCanonName(aic));
+
+        Inet4SockAddr addr = new Inet4SockAddr();
+        aicLib.getSockAddr(aic, addr);
+        assertEquals(INADDR_ANY.value, addr.getAddress());
+        assertEquals(443, addr.getPort());
+    }
+
+    @Test
+    public void getaddrinfoServerOnlyNoCanon() throws GetAddrInfoException {
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        AddrInfoCursorLibrary aicLib = AddrInfoCursorLibrary.getUncached();
+
+        Object node = posixLib.createPathFromString(posixSupport, "localhost");
+        AddrInfoCursor aic = lib.getaddrinfo(posixSupport, node, null, AF_UNSPEC.value, SOCK_DGRAM.value, 0, 0);
+        cleanup.add(() -> aicLib.release(aic));
+        do {
+            assertEquals(SOCK_DGRAM.value, aicLib.getSockType(aic));
+            assertEquals(IPPROTO_UDP.value, aicLib.getProtocol(aic));
+            assertNull(aicLib.getCanonName(aic));
+
+            if (aicLib.getFamily(aic) == AF_INET.value) {
+                Inet4SockAddr addr = new Inet4SockAddr();
+                aicLib.getSockAddr(aic, addr);
+                assertEquals(INADDR_LOOPBACK.value, addr.getAddress());
+                assertEquals(0, addr.getPort());
+            }
+        } while (aicLib.next(aic));
+    }
+
+    @Test
+    public void getaddrinfo() throws GetAddrInfoException {
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        AddrInfoCursorLibrary aicLib = AddrInfoCursorLibrary.getUncached();
+
+        Object node = posixLib.createPathFromString(posixSupport, "localhost");
+        Object service = posixLib.createPathFromString(posixSupport, "https");
+        AddrInfoCursor aic = lib.getaddrinfo(posixSupport, node, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_CANONNAME.value);
+        cleanup.add(() -> aicLib.release(aic));
+        assertEquals(AF_INET.value, aicLib.getFamily(aic));
+        assertEquals(SOCK_STREAM.value, aicLib.getSockType(aic));
+        assertEquals(IPPROTO_TCP.value, aicLib.getProtocol(aic));
+        assertEquals("localhost", posixLib.getPathAsString(posixSupport, aicLib.getCanonName(aic)));
+
+        Inet4SockAddr addr = new Inet4SockAddr();
+        aicLib.getSockAddr(aic, addr);
+        assertEquals(INADDR_LOOPBACK.value, addr.getAddress());
+        assertEquals(443, addr.getPort());
+
+        UniversalSockAddr usa = createUsa();
+        aicLib.getSockAddr(aic, usa);
+        assertEquals(AF_INET.value, usaLib.getFamily(usa));
+        Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
+        assertEquals(INADDR_LOOPBACK.value, addr2.getAddress());
+        assertEquals(443, addr2.getPort());
+    }
+
+    private void expectGetAddrInfoException(MandatoryIntConstant expectedErrorCode) {
+        expectedException.expect(new TypeSafeMatcher<GetAddrInfoException>() {
+            @Override
+            protected boolean matchesSafely(GetAddrInfoException item) {
+                return item.getErrorCode() == expectedErrorCode.value;
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("GetAddrInfoException with error code ").appendValue(expectedErrorCode.name);
+            }
+
+            @Override
+            protected void describeMismatchSafely(GetAddrInfoException item, Description mismatchDescription) {
+                mismatchDescription.appendText("the actual error code was ").appendValue(item.getErrorCode()).appendText(" (").appendValue(item).appendText(")");
+            }
+        });
     }
 
     private int createSocket(int family, int type, int protocol) throws PosixException {

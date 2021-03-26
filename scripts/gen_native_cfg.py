@@ -67,6 +67,7 @@ includes = '''
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -184,6 +185,7 @@ constant_defs = '''
 [socketFamily]
   i AF_UNSPEC
   i AF_INET
+  i AF_INET6
 
 [socketType]
   i SOCK_DGRAM
@@ -197,6 +199,59 @@ constant_defs = '''
   x INADDR_ALLHOSTS_GROUP
   x INADDR_MAX_LOCAL_GROUP
   x INADDR_UNSPEC_GROUP
+
+[gaiFlags]
+  x AI_PASSIVE
+  x AI_CANONNAME
+  x AI_NUMERICHOST
+  x AI_V4MAPPED 
+  x AI_ALL
+  x AI_ADDRCONFIG
+* x AI_IDN
+* x AI_CANONIDN
+  x AI_NUMERICSERV
+
+[gaiErrors]
+  i EAI_BADFLAGS
+  i EAI_NONAME
+  i EAI_AGAIN
+  i EAI_FAIL
+  i EAI_FAMILY
+  i EAI_SOCKTYPE
+  i EAI_SERVICE
+  i EAI_MEMORY
+  i EAI_SYSTEM
+  i EAI_OVERFLOW 
+  i EAI_NODATA
+  i EAI_ADDRFAMILY
+* i EAI_INPROGRESS
+* i EAI_CANCELED
+* i EAI_NOTCANCELED
+* i EAI_ALLDONE
+* i EAI_INTR
+* i EAI_IDN_ENCODE
+
+[ipProto]
+  i IPPROTO_IP
+  i IPPROTO_ICMP
+  i IPPROTO_IGMP
+  i IPPROTO_IPIP
+  i IPPROTO_TCP
+  i IPPROTO_EGP
+  i IPPROTO_PUP
+  i IPPROTO_UDP
+  i IPPROTO_IDP
+  i IPPROTO_TP
+  i IPPROTO_IPV6
+  i IPPROTO_RSVP
+  i IPPROTO_GRE
+  i IPPROTO_ESP
+  i IPPROTO_AH
+  i IPPROTO_MTP
+  i IPPROTO_ENCAP
+  i IPPROTO_PIM
+  i IPPROTO_SCTP
+  i IPPROTO_RAW
 '''
 
 layout_defs = '''

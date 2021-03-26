@@ -52,6 +52,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
@@ -633,6 +634,54 @@ int32_t call_recvfrom_inet(int32_t sockfd, void *buf, int32_t len, int32_t flags
     members[0] = ntohs(sa.sin_port);
     members[1] = ntohl(sa.sin_addr.s_addr);
     return res;
+}
+
+int32_t call_getaddrinfo(const char *node, const char *service, int32_t family, int32_t sockType, int32_t protocol, int32_t flags, int64_t *ptr) {
+    struct addrinfo hints;
+    struct addrinfo *res;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_flags = flags;
+    hints.ai_family = family;
+    hints.ai_socktype = sockType;
+    hints.ai_protocol = protocol;
+    int ret = getaddrinfo(node, service, &hints, &res);
+    if (ret == 0) {
+        *ptr = (int64_t) res;
+    }
+    return ret;
+}
+
+void call_freeaddrinfo(int64_t ptr) {
+    freeaddrinfo((struct addrinfo *) ptr);
+}
+
+void call_gai_strerror(int32_t error, char *buf, int32_t buflen) {
+    snprintf(buf, buflen, "%s", gai_strerror(error));
+}
+
+int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData) {
+    // see NFIPosixSupport.AddrInfo for description of the way data is transferred
+    struct addrinfo *ai = (struct addrinfo *) ptr;
+
+    longData[0] = (int64_t) ai->ai_addr;
+    longData[1] = (int64_t) ai->ai_canonname;
+    longData[2] = (int64_t) ai->ai_next;
+
+    intData[0] = ai->ai_flags;
+    intData[1] = ai->ai_family;
+    intData[2] = ai->ai_socktype;
+    intData[3] = ai->ai_protocol;
+    assert(ai->ai_addr_len <= sizeof(sockaddr_storage));
+    intData[4] = ai->ai_addrlen;
+    intData[5] = ai->ai_addr->sa_family;
+    if (ai->ai_canonname != NULL) {
+        size_t len = strlen(ai->ai_canonname);
+        if (len >= 0x7fffffff) {
+            return -1;
+        }
+        intData[6] = len;
+    }
+    return 0;
 }
 
 void get_sockaddr_in_members(int64_t addr, int32_t *members) {

@@ -56,7 +56,6 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddrLibrary;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -67,8 +66,13 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.SocketLibrary.AddrInfoCursor;
+import com.oracle.graal.python.runtime.SocketLibrary.AddrInfoCursorLibrary;
+import com.oracle.graal.python.runtime.SocketLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.SocketLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.SocketLibrary.SockAddr;
 import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddr;
+import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -79,6 +83,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -205,6 +210,11 @@ public final class NFIPosixSupport extends PosixSupport {
         call_recvfrom("(sint32, [sint8], sint32, sint32, sint64, [sint32]):sint32"),
         call_recvfrom_inet("(sint32, [sint8], sint32, sint32, [sint32]):sint32"),
 
+        call_getaddrinfo("([sint8], [sint8], sint32, sint32, sint32, sint32, [sint64]):sint32"),
+        call_freeaddrinfo("(sint64):void"),
+        call_gai_strerror("(sint32, [sint8], sint32):void"),
+        get_addrinfo_members("(sint64, [sint32], [sint64]):sint32"),
+
         get_sockaddr_in_members("(sint64, [sint32]):void"),
         set_sockaddr_in_members("(sint64, sint32, sint32):void");
 
@@ -296,7 +306,6 @@ public final class NFIPosixSupport extends PosixSupport {
             String libPythonName = NFIPosixSupport.SUPPORTING_NATIVE_LIB_NAME + "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
             TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
             TruffleFile file = homePath.resolve(libPythonName);
-            System.out.println("LOADING " + file.getPath());
             return file.getPath();
         }
 
@@ -1427,6 +1436,193 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws GetAddrInfoException {
+        long[] ptr = new long[1];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getaddrinfo, pathToCStringOrNull(node), pathToCStringOrNull(service), family, sockType, protocol, flags, wrap(ptr));
+        if (res != 0) {
+            throw new GetAddrInfoException(res, gai_strerror(res, invokeNode));
+        }
+        assert ptr[0] != 0;     // getaddrinfo should return at least one result
+        return new AddrInfoCursorImpl(this, ptr[0], invokeNode);
+    }
+
+    private String gai_strerror(int errorCode,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        byte[] buf = new byte[1024];
+        invokeNode.call(this, PosixNativeFunction.call_gai_strerror, errorCode, wrap(buf), buf.length);
+        // TODO PyUnicode_DecodeLocale
+        return cStringToJavaString(buf);
+    }
+
+    /**
+     * Provides access to {@code struct addrinfo}.
+     *
+     * The layout of native {@code struct addrinfo} is as follows:
+     * 
+     * <pre>
+     * {@code
+     *     struct addrinfo {
+     *         int              ai_flags;           // intData[0]
+     *         int              ai_family;          // intData[1]
+     *         int              ai_socktype;        // intData[2]
+     *         int              ai_protocol;        // intData[3]
+     *         socklen_t        ai_addrlen;         // intData[4]
+     *         struct sockaddr *ai_addr;            // longData[0]
+     *         char            *ai_canonname;       // longData[1]
+     *         struct addrinfo *ai_next;            // longData[2]
+     *     };
+     * }
+     * </pre>
+     * 
+     * To avoid multiple NFI calls, we transfer the data in batch using arrays of {@code int}s and
+     * {@code long}s - int values are stored in {@code intData}, pointers in {@code longData}. We
+     * also cache two additional ints:
+     * <ul>
+     * <li>{@code intData[5]} contains {@code ai_addr->sa_family},</li>
+     * <li>{@code intData[6]} contains the length of {@code ai_canonname} if it is not {@code null}
+     * </ul>
+     *
+     * It is not clear whether it is guaranteed that {@code ai_family} and
+     * {@code ai_addr->sa_family} are always the same. We provide both and use the later when
+     * decoding the socket address.
+     */
+    private static class AddrInfo {
+        private final int[] intData = new int[7];
+        private final long[] longData = new long[3];
+
+        private void update(long ptr, NFIPosixSupport nfiPosixSupport, InvokeNativeFunction invokeNode) {
+            int res = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_addrinfo_members, ptr, nfiPosixSupport.wrap(intData), nfiPosixSupport.wrap(longData));
+            if (res != 0) {
+                throw shouldNotReachHere("the length of ai_canonname does not fit into an int");
+            }
+        }
+
+        int getFlags() {
+            return intData[0];
+        }
+
+        int getFamily() {
+            return intData[1];
+        }
+
+        int getSockType() {
+            return intData[2];
+        }
+
+        int getProtocol() {
+            return intData[3];
+        }
+
+        int getAddrLen() {
+            return intData[4];
+        }
+
+        int getAddrFamily() {
+            return intData[5];
+        }
+
+        int getCanonNameLen() {
+            assert getCanonNamePtr() != 0;
+            return intData[6];
+        }
+
+        long getAddrPtr() {
+            return longData[0];
+        }
+
+        long getCanonNamePtr() {
+            return longData[1];
+        }
+
+        long getNextPtr() {
+            return longData[2];
+        }
+    }
+
+    @ExportLibrary(AddrInfoCursorLibrary.class)
+    protected static class AddrInfoCursorImpl implements AddrInfoCursor {
+
+        private final NFIPosixSupport nfiPosixSupport;
+        private long head;
+        private AddrInfo info;
+
+        AddrInfoCursorImpl(NFIPosixSupport nfiPosixSupport, long head, InvokeNativeFunction invokeNode) {
+            this.nfiPosixSupport = nfiPosixSupport;
+            this.head = head;
+            info = new AddrInfo();
+            info.update(head, nfiPosixSupport, invokeNode);
+        }
+
+        @ExportMessage
+        void release(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            checkReleased();
+            invokeNode.call(nfiPosixSupport, PosixNativeFunction.call_freeaddrinfo, head);
+            head = 0;
+        }
+
+        @ExportMessage
+        boolean next(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            checkReleased();
+            long nextPtr = info.getNextPtr();
+            if (nextPtr == 0) {
+                return false;
+            }
+            info.update(nextPtr, nfiPosixSupport, invokeNode);
+            return true;
+        }
+
+        @ExportMessage
+        int getFlags() {
+            checkReleased();
+            return info.getFlags();
+        }
+
+        @ExportMessage
+        int getFamily() {
+            checkReleased();
+            return info.getFamily();
+        }
+
+        @ExportMessage
+        int getSockType() {
+            checkReleased();
+            return info.getSockType();
+        }
+
+        @ExportMessage
+        int getProtocol() {
+            checkReleased();
+            return info.getProtocol();
+        }
+
+        @ExportMessage
+        Object getCanonName() {
+            checkReleased();
+            long namePtr = info.getCanonNamePtr();
+            if (namePtr == 0) {
+                return null;
+            }
+            int nameLen = info.getCanonNameLen();
+            byte[] buf = new byte[nameLen];
+            UNSAFE.copyMemory(null, namePtr, buf, Unsafe.ARRAY_BYTE_BASE_OFFSET, nameLen);
+            return Buffer.wrap(buf);
+        }
+
+        @ExportMessage
+        void getSockAddr(SockAddr addr,
+                        @Cached ConvertSockAddrNode convertSockAddrNode) {
+            convertSockAddrNode.execute(nfiPosixSupport, info.getAddrFamily(), info.getAddrLen(), info.getAddrPtr(), addr);
+        }
+
+        private void checkReleased() {
+            if (head == 0) {
+                throw shouldNotReachHere("AddrInfoCursor has already been released");
+            }
+        }
+    }
+
+    @ExportMessage
     public UniversalSockAddr allocUniversalSockAddr() {
         return new UniversalSockAddrImpl(this);
     }
@@ -1462,7 +1658,7 @@ public final class NFIPosixSupport extends PosixSupport {
         static class Fill {
             @Specialization
             static void inet4(UniversalSockAddrImpl receiver, Inet4SockAddr src,
-                              @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+                            @Cached InvokeNativeFunction invokeNode) {
                 invokeNode.call(receiver.nfiPosixSupport, PosixNativeFunction.set_sockaddr_in_members, receiver.getPtr(), src.getPort(), src.getAddress());
                 receiver.setLenAndFamily(SIZEOF_STRUCT_SOCKADDR_IN.value, AF_INET.value);
             }
@@ -1476,14 +1672,9 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @ExportMessage
-        Inet4SockAddr asInet4SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-            if (getFamily() != AF_INET.value) {
-                throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
-            }
-            assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
-            int[] members = new int[2];
-            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in_members, getPtr(), nfiPosixSupport.wrap(members));
-            return new Inet4SockAddr(members[0], members[1]);
+        void convert(SockAddr dest,
+                        @Cached ConvertSockAddrNode convertSockAddrNode) {
+            convertSockAddrNode.execute(nfiPosixSupport, getFamily(), getLen(), getPtr(), dest);
         }
 
         long getPtr() {
@@ -1506,6 +1697,41 @@ public final class NFIPosixSupport extends PosixSupport {
             if (ptr == 0) {
                 throw shouldNotReachHere("UniversalSockAddr has already been released");
             }
+        }
+    }
+
+    /**
+     * Helper node for conversion of a {@code struct sockaddr} to an instance of {@link SockAddr} of given type.
+     *
+     * The input is represented by (family, len, ptr), where {@code ptr} is native pointer to
+     * {@code struct sockaddr}, {@code len} is the length of the address in bytes and {@code family}
+     * is the (cached) content of {@code ((struct sockaddr *) ptr)->sa_family}.
+     *
+     * @see UniversalSockAddrLibrary#convert(UniversalSockAddr, SockAddr)
+     * @see AddrInfoCursorLibrary#getSockAddr(AddrInfoCursor, SockAddr) 
+     */
+    @GenerateUncached
+    static abstract class ConvertSockAddrNode extends Node {
+        abstract void execute(NFIPosixSupport nfiPosixSupport, int family, int addrLen, long ptr, SockAddr dest);
+
+        @Specialization
+        void inet4(NFIPosixSupport nfiPosixSupport, int family, int addrLen, long ptr, Inet4SockAddr dest,
+                        @Cached InvokeNativeFunction invokeNode) {
+            if (family != AF_INET.value) {
+                throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
+            }
+            assert addrLen == SIZEOF_STRUCT_SOCKADDR_IN.value;
+            int[] members = new int[2];
+            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in_members, ptr, nfiPosixSupport.wrap(members));
+            dest.setPort(members[0]);
+            dest.setAddress(members[1]);
+        }
+
+        @Specialization
+        void generic(@SuppressWarnings("unused") NFIPosixSupport nfiPosixSupport, int family, int addrLen, long ptr, UniversalSockAddrImpl dest) {
+            UNSAFE.copyMemory(ptr, dest.ptr, addrLen);
+            dest.lenAndFamily[0] = addrLen;
+            dest.lenAndFamily[1] = family;
         }
     }
 
@@ -1657,6 +1883,10 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
         return buf.length;
+    }
+
+    private Object pathToCStringOrNull(Object path) {
+        return path == null ? context.getEnv().asGuestValue(null) : bufferToCString((Buffer) path);
     }
 
     private Object pathToCString(Object path) {
