@@ -56,7 +56,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           GetAttributeNode SourceSection: [2050,2071]`FunctionType.__code_...`
-            GetFixedAttributeNodeGen SourceSection: None
+            GetFixedAttributeNode SourceSection: None
               Key: __code__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__

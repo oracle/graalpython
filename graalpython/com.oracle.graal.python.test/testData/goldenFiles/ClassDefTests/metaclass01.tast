@@ -7,7 +7,7 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
   InnerRootNode SourceSection: [0,35]`class A:↵    class B...`
     PrintExpressionNode SourceSection: [0,35]`class A:↵    class B...`
       GetAttributeNode SourceSection: None
-        GetFixedAttributeNodeGen SourceSection: None
+        GetFixedAttributeNode SourceSection: None
           Key: displayhook
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__

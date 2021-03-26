@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
       WriteNameNodeGen SourceSection: [954,996]`iskeyword = frozense...`
         Identifier: iskeyword
         GetAttributeNode SourceSection: [966,996]`frozenset(kwlist).__...`
-          GetFixedAttributeNodeGen SourceSection: None
+          GetFixedAttributeNode SourceSection: None
             Key: __contains__
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
@@ -114,7 +114,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       Frame: [2,args,Illegal]
                       GetItemNodeGen SourceSection: [1041,1053]`sys.argv[1:]`
                         GetAttributeNode SourceSection: None
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: argv
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -390,7 +390,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [2019,2029]`sys.stderr`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: stderr
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__

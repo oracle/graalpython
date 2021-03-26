@@ -15,14 +15,14 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
             CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNode SourceSection: None
-                GetFixedAttributeNodeGen SourceSection: None
+                GetFixedAttributeNode SourceSection: None
                   Key: to
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None
                     CachedDispatchFirst SourceSection: None
                 GetAttributeNode SourceSection: None
-                  GetFixedAttributeNodeGen SourceSection: None
+                  GetFixedAttributeNode SourceSection: None
                     Key: path
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__

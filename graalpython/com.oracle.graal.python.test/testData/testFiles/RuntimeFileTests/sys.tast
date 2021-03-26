@@ -110,7 +110,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
       WriteNameNodeGen SourceSection: [2497,2534]`version_info = imple...`
         Identifier: version_info
         GetAttributeNode SourceSection: [2512,2534]`implementation.versi...`
-          GetFixedAttributeNodeGen SourceSection: None
+          GetFixedAttributeNode SourceSection: None
             Key: version
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
@@ -166,7 +166,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           Identifier: type
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetAttributeNode SourceSection: [2642,2673]`type(make_flags_clas...`
-                          GetFixedAttributeNodeGen SourceSection: None
+                          GetFixedAttributeNode SourceSection: None
                             Key: __code__
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -715,7 +715,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     Identifier: tb
                                     Frame: [1,tb,Illegal]
                                     GetAttributeNode SourceSection: [4701,4716]`e.__traceback__`
-                                      GetFixedAttributeNodeGen SourceSection: None
+                                      GetFixedAttributeNode SourceSection: None
                                         Key: __traceback__
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -741,21 +741,21 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                 StringLiteralNode SourceSection: [4765,4794]`'  File "%s", line %...`
                                                 TupleLiteralNode SourceSection: [4797,4933]`(↵                tb...`
                                                   GetAttributeNode SourceSection: [4815,4845]`tb.tb_frame.f_code.c...`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: co_filename
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
                                                     GetAttributeNode SourceSection: [4815,4833]`tb.tb_frame.f_code`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: f_code
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
                                                       GetAttributeNode SourceSection: [4815,4826]`tb.tb_frame`
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: tb_frame
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
@@ -764,7 +764,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                         ReadLocalVariableNodeGen SourceSection: [4815,4817]`tb`
                                                           Frame: [1,tb,Illegal]
                                                   GetAttributeNode SourceSection: [4863,4875]`tb.tb_lineno`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: tb_lineno
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -773,21 +773,21 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                     ReadLocalVariableNodeGen SourceSection: [4863,4865]`tb`
                                                       Frame: [1,tb,Illegal]
                                                   GetAttributeNode SourceSection: [4893,4919]`tb.tb_frame.f_code.c...`
-                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                    GetFixedAttributeNode SourceSection: None
                                                       Key: co_name
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
                                                     GetAttributeNode SourceSection: [4893,4911]`tb.tb_frame.f_code`
-                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                      GetFixedAttributeNode SourceSection: None
                                                         Key: f_code
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
                                                           CachedDispatchFirst SourceSection: None
                                                       GetAttributeNode SourceSection: [4893,4904]`tb.tb_frame`
-                                                        GetFixedAttributeNodeGen SourceSection: None
+                                                        GetFixedAttributeNode SourceSection: None
                                                           Key: tb_frame
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
@@ -810,7 +810,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                             Identifier: tb
                                             Frame: [1,tb,Illegal]
                                             GetAttributeNode SourceSection: [4965,4975]`tb.tb_next`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: tb_next
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -842,7 +842,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                           StringLiteralNode SourceSection: [5031,5039]`"%s: %s"`
                                           TupleLiteralNode SourceSection: [5042,5069]`(type(e).__qualname_...`
                                             GetAttributeNode SourceSection: [5043,5063]`type(e).__qualname__...`
-                                              GetFixedAttributeNodeGen SourceSection: None
+                                              GetFixedAttributeNode SourceSection: None
                                                 Key: __qualname__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -872,7 +872,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                       PythonCallNodeGen SourceSection: [5110,5150]`print(type(e).__qual...`
                                         CallNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [5116,5136]`type(e).__qualname__...`
-                                          GetFixedAttributeNodeGen SourceSection: None
+                                          GetFixedAttributeNode SourceSection: None
                                             Key: __qualname__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -1402,7 +1402,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     ReadLocalVariableNodeGen SourceSection: [6827,6831]`text`
                                       Frame: [2,text,Illegal]
                                   GetAttributeNode SourceSection: [6839,6854]`stdout.encoding`
-                                    GetFixedAttributeNodeGen SourceSection: None
+                                    GetFixedAttributeNode SourceSection: None
                                       Key: encoding
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -1428,7 +1428,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       GetAttributeNode SourceSection: [6926,6939]`stdout.buffer`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: buffer
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1449,7 +1449,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                         ReadLocalVariableNodeGen SourceSection: [6986,6991]`bytes`
                                           Frame: [3,bytes,Illegal]
                                       GetAttributeNode SourceSection: [6999,7014]`stdout.encoding`
-                                        GetFixedAttributeNodeGen SourceSection: None
+                                        GetFixedAttributeNode SourceSection: None
                                           Key: encoding
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__

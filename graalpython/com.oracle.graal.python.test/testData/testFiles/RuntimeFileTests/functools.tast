@@ -5563,8 +5563,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [26,lock,Illegal]
                                           ReadFromCellNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        LookupSpecialMethodNode SourceSection: None
+                                          LookupAttributeInMRONodeGen SourceSection: None
+                                        LookupSpecialMethodNode SourceSection: None
+                                          LookupAttributeInMRONodeGen SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                         CallUnaryMethodNodeGen SourceSection: None
                                         CallQuaternaryMethodNodeGen SourceSection: None
@@ -5807,8 +5809,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [26,lock,Illegal]
                                           ReadFromCellNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        LookupSpecialMethodNode SourceSection: None
+                                          LookupAttributeInMRONodeGen SourceSection: None
+                                        LookupSpecialMethodNode SourceSection: None
+                                          LookupAttributeInMRONodeGen SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                         CallUnaryMethodNodeGen SourceSection: None
                                         CallQuaternaryMethodNodeGen SourceSection: None
@@ -5881,8 +5885,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [5,lock,Illegal]
                                       ReadFromCellNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    LookupSpecialMethodNode SourceSection: None
+                                      LookupAttributeInMRONodeGen SourceSection: None
+                                    LookupSpecialMethodNode SourceSection: None
+                                      LookupAttributeInMRONodeGen SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                     CallUnaryMethodNodeGen SourceSection: None
                                     CallQuaternaryMethodNodeGen SourceSection: None
@@ -5977,8 +5983,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [4,lock,Illegal]
                                       ReadFromCellNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    LookupSpecialMethodNode SourceSection: None
+                                      LookupAttributeInMRONodeGen SourceSection: None
+                                    LookupSpecialMethodNode SourceSection: None
+                                      LookupAttributeInMRONodeGen SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                     CallUnaryMethodNodeGen SourceSection: None
                                     CallQuaternaryMethodNodeGen SourceSection: None

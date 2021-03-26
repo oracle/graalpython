@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __add__
               GetAttributeNode SourceSection: [45,48]`p.x`
-                GetFixedAttributeNodeGen SourceSection: None
+                GetFixedAttributeNode SourceSection: None
                   Key: x
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
                   IsBuiltinClassProfile SourceSection: None
                     CachedDispatchFirst SourceSection: None
               GetAttributeNode SourceSection: [51,54]`p.y`
-                GetFixedAttributeNodeGen SourceSection: None
+                GetFixedAttributeNode SourceSection: None
                   Key: y
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
