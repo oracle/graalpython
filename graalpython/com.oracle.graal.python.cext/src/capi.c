@@ -603,16 +603,16 @@ PyObject* ReadObjectExMember(PyObject* object, Py_ssize_t offset) {
     }
 }
 
-PyObject* ReadLongLongMember(PyObject* object, Py_ssize_t offset) {
-    return PyLong_FromLongLong(ReadMember(object, offset, long long));
+long long ReadLongLongMember(PyObject* object, Py_ssize_t offset) {
+    return ReadMember(object, offset, long long);
 }
 
-PyObject* ReadULongLongMember(PyObject* object, Py_ssize_t offset) {
-    return PyLong_FromUnsignedLongLong(ReadMember(object, offset, unsigned long long));
+unsigned long long ReadULongLongMember(PyObject* object, Py_ssize_t offset) {
+    return ReadMember(object, offset, unsigned long long);
 }
 
-PyObject* ReadPySSizeT(PyObject* object, Py_ssize_t offset) {
-    return PyLong_FromSsize_t(ReadMember(object, offset, Py_ssize_t));
+Py_ssize_t ReadPySSizeT(PyObject* object, Py_ssize_t offset) {
+    return ReadMember(object, offset, Py_ssize_t);
 }
 
 
