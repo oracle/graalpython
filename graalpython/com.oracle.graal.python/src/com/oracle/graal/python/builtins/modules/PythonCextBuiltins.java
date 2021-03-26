@@ -2341,28 +2341,27 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyFloat_AsDouble extends PythonUnaryBuiltinNode {
+    abstract static class PyFloatAsDouble extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "!object.isDouble()")
-        double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
 
         @Specialization(rewriteOn = PException.class)
         double doGeneric(VirtualFrame frame, Object object,
                         @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Shared("asDoubleNode") @Cached AsNativeDoubleNode asDoubleNode,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            Object state = IndirectCallContext.enter(frame, context, this);
+                        @Shared("asDoubleNode") @Cached AsNativeDoubleNode asDoubleNode) {
+            Object state = IndirectCallContext.enter(frame, getContext(), this);
             try {
-                return asDoubleNode.execute(asPythonObjectNode.execute(object));
+                return asDoubleNode.executeDouble(asPythonObjectNode.execute(object));
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, getContext(), state);
             }
         }
 
@@ -2370,10 +2369,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         double doGenericErr(VirtualFrame frame, Object object,
                         @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode,
                         @Shared("asDoubleNode") @Cached AsNativeDoubleNode asDoubleNode,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return doGeneric(frame, object, asPythonObjectNode, asDoubleNode, context);
+                return doGeneric(frame, object, asPythonObjectNode, asDoubleNode);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1.0;

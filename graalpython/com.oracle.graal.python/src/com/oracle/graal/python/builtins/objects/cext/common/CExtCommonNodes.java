@@ -496,59 +496,63 @@ public abstract class CExtCommonNodes {
      */
     @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
-    public abstract static class AsNativeDoubleNode extends PNodeWithContext {
-        public abstract double execute(boolean arg);
+    public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
+        public abstract double execute(CExtContext cExtContext, boolean arg);
 
-        public abstract double execute(int arg);
+        public abstract double execute(CExtContext cExtContext, int arg);
 
-        public abstract double execute(long arg);
+        public abstract double execute(CExtContext cExtContext, long arg);
 
-        public abstract double execute(double arg);
-
-        public abstract double execute(Object arg);
+        public abstract double execute(CExtContext cExtContext, double arg);
+        
+        public abstract double executeDouble(CExtContext cExtContext, Object arg);
+        
+        public final double executeDouble(Object arg) {
+            return executeDouble(CExtContext.LAZY_CONTEXT, arg);
+        }
 
         @Specialization
-        static double doBooleam(boolean value) {
+        static double doBoolean(@SuppressWarnings("unused") CExtContext cExtContext, boolean value) {
             return value ? 1.0 : 0.0;
         }
 
         @Specialization
-        static double doInt(int value) {
+        static double doInt(@SuppressWarnings("unused") CExtContext cExtContext, int value) {
             return value;
         }
 
         @Specialization
-        static double doLong(long value) {
+        static double doLong(@SuppressWarnings("unused") CExtContext cExtContext, long value) {
             return value;
         }
 
         @Specialization
-        static double doDouble(double value) {
+        static double doDouble(@SuppressWarnings("unused") CExtContext cExtContext, double value) {
             return value;
         }
 
         @Specialization
-        static double doPInt(PInt value) {
+        static double doPInt(@SuppressWarnings("unused") CExtContext cExtContext, PInt value) {
             return value.doubleValue();
         }
 
         @Specialization
-        static double doPFloat(PFloat value) {
+        static double doPFloat(@SuppressWarnings("unused") CExtContext cExtContext, PFloat value) {
             return value.getValue();
         }
 
         @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
 
         @Specialization(limit = "3")
-        static double runGeneric(Object value,
+        static double runGeneric(@SuppressWarnings("unused") CExtContext cExtContext, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
             // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
             // is a float object, use the value and do *NOT* call '__float__'.
@@ -1052,18 +1056,6 @@ public abstract class CExtCommonNodes {
             } catch (CannotCastException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
             }
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class HPyAsNativeDoubleNode extends CExtToNativeNode {
-
-        // Adding specializations for primitives does not make a lot of sense just to avoid
-        // un-/boxing in the interpreter since interop will force un-/boxing anyway.
-        @Specialization(limit = "3")
-        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            return lib.asJavaDouble(value);
         }
     }
 

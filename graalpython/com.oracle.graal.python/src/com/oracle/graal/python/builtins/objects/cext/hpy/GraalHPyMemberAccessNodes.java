@@ -79,7 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsFixedNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeBooleanNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeCharNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativeDoubleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonBooleanNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativeUnsignedPrimitiveAsPythonObjectNodeGen;
@@ -281,7 +281,7 @@ public class GraalHPyMemberAccessNodes {
                 return AsFixedNativePrimitiveNodeGen.create(Long.BYTES, true);
             case HPY_MEMBER_FLOAT:
             case HPY_MEMBER_DOUBLE:
-                return HPyAsNativeDoubleNodeGen.create();
+                return AsNativeDoubleNodeGen.create();
             case HPY_MEMBER_USHORT:
             case HPY_MEMBER_UINT:
             case HPY_MEMBER_UBYTE:
