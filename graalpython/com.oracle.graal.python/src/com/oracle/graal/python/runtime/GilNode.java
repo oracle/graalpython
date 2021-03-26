@@ -262,10 +262,15 @@ public abstract class GilNode extends Node {
         ts.isInCriticalSection = nesting;
         assert currentNesting == nesting + 1 || currentNesting == nesting + 2;
         if (mustYield.profile(currentNesting == nesting + 2)) {
-            release(true);
-            Thread.yield();
-            acquire();
+            yieldGil();
         }
+    }
+
+    @TruffleBoundary
+    private final void yieldGil() {
+        release(true);
+        Thread.yield();
+        acquire();
     }
 
     private static final boolean checkCriticalSectionAndRecordReleaseAttempt(PythonContext context) {
