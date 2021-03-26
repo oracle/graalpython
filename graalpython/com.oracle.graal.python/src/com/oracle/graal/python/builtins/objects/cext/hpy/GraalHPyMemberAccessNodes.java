@@ -76,14 +76,14 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins.GetRefNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativeBooleanNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativeCharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsFixedNativePrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeBooleanNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativeDoubleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativePrimitiveNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyPrimitiveAsPythonBooleanNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyPrimitiveAsPythonCharNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyStringAsPythonStringNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyUnsignedPrimitiveAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonBooleanNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonCharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativeUnsignedPrimitiveAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.StringAsPythonStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyBadMemberDescrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
@@ -206,16 +206,16 @@ public class GraalHPyMemberAccessNodes {
                 // no conversion needed
                 return null;
             case HPY_MEMBER_STRING:
-                return HPyStringAsPythonStringNodeGen.create();
+                return StringAsPythonStringNodeGen.create();
             case HPY_MEMBER_BOOL:
-                return HPyPrimitiveAsPythonBooleanNodeGen.create();
+                return NativePrimitiveAsPythonBooleanNodeGen.create();
             case HPY_MEMBER_CHAR:
-                return HPyPrimitiveAsPythonCharNodeGen.create();
+                return NativePrimitiveAsPythonCharNodeGen.create();
             case HPY_MEMBER_UINT:
             case HPY_MEMBER_ULONG:
             case HPY_MEMBER_LONGLONG:
             case HPY_MEMBER_ULONGLONG:
-                return HPyUnsignedPrimitiveAsPythonObjectNodeGen.create();
+                return NativeUnsignedPrimitiveAsPythonObjectNodeGen.create();
             case HPY_MEMBER_OBJECT:
             case HPY_MEMBER_OBJECT_EX:
                 return HPyAsPythonObjectNodeGen.create();
@@ -267,18 +267,18 @@ public class GraalHPyMemberAccessNodes {
     static CExtToNativeNode getWriteConverterNode(int type) {
         switch (type) {
             case HPY_MEMBER_CHAR:
-                return HPyAsNativeCharNodeGen.create();
+                return AsNativeCharNodeGen.create();
             case HPY_MEMBER_BOOL:
-                return HPyAsNativeBooleanNodeGen.create();
+                return AsNativeBooleanNodeGen.create();
             case HPY_MEMBER_SHORT:
             case HPY_MEMBER_INT:
             case HPY_MEMBER_BYTE:
                 // TODO(fa): use appropriate native type sizes
-                return HPyAsNativePrimitiveNodeGen.create(Integer.BYTES, true);
+                return AsFixedNativePrimitiveNodeGen.create(Integer.BYTES, true);
             case HPY_MEMBER_LONG:
             case HPY_MEMBER_HPYSSIZET:
                 // TODO(fa): use appropriate native type sizes
-                return HPyAsNativePrimitiveNodeGen.create(Long.BYTES, true);
+                return AsFixedNativePrimitiveNodeGen.create(Long.BYTES, true);
             case HPY_MEMBER_FLOAT:
             case HPY_MEMBER_DOUBLE:
                 return HPyAsNativeDoubleNodeGen.create();
@@ -286,12 +286,12 @@ public class GraalHPyMemberAccessNodes {
             case HPY_MEMBER_UINT:
             case HPY_MEMBER_UBYTE:
                 // TODO(fa): use appropriate native type sizes
-                return HPyAsNativePrimitiveNodeGen.create(Integer.BYTES, false);
+                return AsFixedNativePrimitiveNodeGen.create(Integer.BYTES, false);
             case HPY_MEMBER_ULONG:
             case HPY_MEMBER_LONGLONG:
             case HPY_MEMBER_ULONGLONG:
                 // TODO(fa): use appropriate native type sizes
-                return HPyAsNativePrimitiveNodeGen.create(Long.BYTES, false);
+                return AsFixedNativePrimitiveNodeGen.create(Long.BYTES, false);
             case HPY_MEMBER_OBJECT:
             case HPY_MEMBER_OBJECT_EX:
             case HPY_MEMBER_NONE:

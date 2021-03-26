@@ -865,7 +865,7 @@ public abstract class CExtCommonNodes {
      * {@link com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes#T_STRING}.
      */
     @GenerateUncached
-    public abstract static class HPyStringAsPythonStringNode extends CExtToJavaNode {
+    public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
 
         @Specialization
         static String doString(@SuppressWarnings("unused") CExtContext hpyContext, String value) {
@@ -887,7 +887,7 @@ public abstract class CExtCommonNodes {
      * This node converts a C Boolean value to Python Boolean.
      */
     @GenerateUncached
-    public abstract static class HPyPrimitiveAsPythonBooleanNode extends CExtToJavaNode {
+    public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
 
         @Specialization
         static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
@@ -925,7 +925,7 @@ public abstract class CExtCommonNodes {
      * single-char Python string).
      */
     @GenerateUncached
-    public abstract static class HPyPrimitiveAsPythonCharNode extends CExtToJavaNode {
+    public abstract static class NativePrimitiveAsPythonCharNode extends CExtToJavaNode {
 
         @Specialization
         static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
@@ -968,7 +968,7 @@ public abstract class CExtCommonNodes {
      * positive {@code long} value.
      */
     @GenerateUncached
-    public abstract static class HPyUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
+    public abstract static class NativeUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
 
         @Specialization(guards = "n >= 0")
         static int doUnsignedIntPositive(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
@@ -1022,7 +1022,7 @@ public abstract class CExtCommonNodes {
      * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
      */
     @GenerateUncached
-    public abstract static class HPyAsNativeCharNode extends CExtToNativeNode {
+    public abstract static class AsNativeCharNode extends CExtToNativeNode {
 
         @Specialization
         static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
@@ -1041,7 +1041,7 @@ public abstract class CExtCommonNodes {
      * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
      */
     @GenerateUncached
-    public abstract static class HPyAsNativeBooleanNode extends CExtToNativeNode {
+    public abstract static class AsNativeBooleanNode extends CExtToNativeNode {
 
         @Specialization
         static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
@@ -1072,12 +1072,12 @@ public abstract class CExtCommonNodes {
      * 
      * @see AsNativePrimitiveNode
      */
-    public abstract static class HPyAsNativePrimitiveNode extends CExtToNativeNode {
+    public abstract static class AsFixedNativePrimitiveNode extends CExtToNativeNode {
 
         private final int targetTypeSize;
         private final int signed;
 
-        protected HPyAsNativePrimitiveNode(int targetTypeSize, boolean signed) {
+        protected AsFixedNativePrimitiveNode(int targetTypeSize, boolean signed) {
             this.targetTypeSize = targetTypeSize;
             this.signed = PInt.intValue(signed);
         }

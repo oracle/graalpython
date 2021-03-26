@@ -56,14 +56,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPyt
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PCallCapiFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativeBooleanNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativeCharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsFixedNativePrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeBooleanNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativeCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativeDoubleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyAsNativePrimitiveNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyPrimitiveAsPythonBooleanNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyPrimitiveAsPythonCharNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyStringAsPythonStringNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.HPyUnsignedPrimitiveAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonBooleanNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonCharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativeUnsignedPrimitiveAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.StringAsPythonStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
@@ -172,16 +172,16 @@ public class CApiMemberAccessNodes {
                 // no conversion needed
                 return null;
             case T_STRING:
-                return HPyStringAsPythonStringNodeGen.create();
+                return StringAsPythonStringNodeGen.create();
             case T_BOOL:
-                return HPyPrimitiveAsPythonBooleanNodeGen.create();
+                return NativePrimitiveAsPythonBooleanNodeGen.create();
             case T_CHAR:
-                return HPyPrimitiveAsPythonCharNodeGen.create();
+                return NativePrimitiveAsPythonCharNodeGen.create();
             case T_UINT:
             case T_ULONG:
             case T_LONGLONG:
             case T_ULONGLONG:
-                return HPyUnsignedPrimitiveAsPythonObjectNodeGen.create();
+                return NativeUnsignedPrimitiveAsPythonObjectNodeGen.create();
             case T_OBJECT:
             case T_OBJECT_EX:
                 return AsPythonObjectNodeGen.create();
@@ -234,25 +234,25 @@ public class CApiMemberAccessNodes {
     static CExtToNativeNode getWriteConverterNode(int type) {
         switch (type) {
             case T_CHAR:
-                return HPyAsNativeCharNodeGen.create();
+                return AsNativeCharNodeGen.create();
             case T_BOOL:
-                return HPyAsNativeBooleanNodeGen.create();
+                return AsNativeBooleanNodeGen.create();
             case T_SHORT:
             case T_INT:
             case T_BYTE:
                 // TODO(fa): use appropriate native type sizes
-                return HPyAsNativePrimitiveNodeGen.create(Integer.BYTES, true);
+                return AsFixedNativePrimitiveNodeGen.create(Integer.BYTES, true);
             case T_LONG:
             case T_PYSSIZET:
                 // TODO(fa): use appropriate native type sizes
-                return HPyAsNativePrimitiveNodeGen.create(Long.BYTES, true);
+                return AsFixedNativePrimitiveNodeGen.create(Long.BYTES, true);
             case T_FLOAT:
             case T_DOUBLE:
                 return HPyAsNativeDoubleNodeGen.create();
             case T_USHORT:
             case T_UBYTE:
                 // TODO(fa): use appropriate native type sizes
-                return HPyAsNativePrimitiveNodeGen.create(Integer.BYTES, false);
+                return AsFixedNativePrimitiveNodeGen.create(Integer.BYTES, false);
             case T_UINT:
                 /*
                  * CPython converts to a unsigned long and just truncates to an unsigned int. For
@@ -262,7 +262,7 @@ public class CApiMemberAccessNodes {
             case T_LONGLONG:
             case T_ULONGLONG:
                 // TODO(fa): use appropriate native type sizes
-                return HPyAsNativePrimitiveNodeGen.create(Long.BYTES, false);
+                return AsFixedNativePrimitiveNodeGen.create(Long.BYTES, false);
             case T_OBJECT:
             case T_OBJECT_EX:
                 return ToNewRefNodeGen.create();
