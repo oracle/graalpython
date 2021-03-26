@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -117,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPyt
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
@@ -247,8 +247,8 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -1160,79 +1160,142 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     abstract static class PyLongAsPrimitive extends PythonTernaryBuiltinNode {
+        @Child private ResolveHandleNode resolveHandleNode;
+        @Child private ToJavaNode toJavaNode;
+        @CompilationFinal private ValueProfile pointerClassProfile;
+        @Child private ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode;
+        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
+        @Child private CastToNativeLongNode castToNativeLongNode;
+        @Child private PythonObjectLibrary lib;
+        @Child private IsSubtypeNode isSubtypeNode;
 
-        public abstract Object executeWith(VirtualFrame frame, Object object, int signed, long targetTypeSize);
+        public abstract Object executeWith(VirtualFrame frame, Object object, int mode, long targetTypeSize);
 
-        public abstract long executeLong(VirtualFrame frame, Object object, int signed, long targetTypeSize);
+        public abstract long executeLong(VirtualFrame frame, Object object, int mode, long targetTypeSize);
 
-        public abstract int executeInt(VirtualFrame frame, Object object, int signed, long targetTypeSize);
+        public abstract int executeInt(VirtualFrame frame, Object object, int mode, long targetTypeSize);
 
         @Specialization(rewriteOn = {UnexpectedWrapperException.class, UnexpectedResultException.class})
-        static long doPrimitiveNativeWrapperToLong(VirtualFrame frame, Object object, int signed, long targetTypeSize,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("converPIntToPrimitiveNode") @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
-                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws UnexpectedWrapperException, UnexpectedResultException {
-            Object resolvedPointer = resolveHandleNode.execute(object);
+        long doPrimitiveNativeWrapperToLong(VirtualFrame frame, Object object, int mode, long targetTypeSize) throws UnexpectedWrapperException, UnexpectedResultException {
+            Object resolvedPointer = ensureResolveHandleNode().execute(object);
             try {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    return convertPIntToPrimitiveNode.executeLong(frame, resolvedPointer, signed, PInt.intValueExact(targetTypeSize));
+                    PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
+                    if (requiredPInt(mode) && !wrapper.isIntLike()) {
+                        throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    }
+                    return ensureConvertPIntToPrimitiveNode().executeLong(frame, wrapper, signed(mode), PInt.intValueExact(targetTypeSize));
                 }
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw UnexpectedWrapperException.INSTANCE;
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
+                ensureTransformExceptionToNativeNode().execute(frame, e);
                 return -1;
             }
         }
 
-        @Specialization(replaces = "doPrimitiveNativeWrapperToLong", rewriteOn = UnexpectedResultException.class)
-        static long doGenericToLong(VirtualFrame frame, Object object, int signed, long targetTypeSize,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
-                        @Cached("createClassProfile()") ValueProfile pointerClassProfile,
-                        @Shared("converPIntToPrimitiveNode") @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
-                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws UnexpectedResultException {
-            Object resolvedPointer = pointerClassProfile.profile(resolveHandleNode.execute(object));
+        @Specialization(replaces = "doPrimitiveNativeWrapperToLong")
+        Object doGeneric(VirtualFrame frame, Object object, int mode, long targetTypeSize) {
+            Object resolvedPointer = ensurePointerClassProfile().profile(ensureResolveHandleNode().execute(object));
             try {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    return convertPIntToPrimitiveNode.executeLong(frame, resolvedPointer, signed, PInt.intValueExact(targetTypeSize));
+                    PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
+                    if (requiredPInt(mode) && !wrapper.isIntLike()) {
+                        throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    }
+                    return ensureConvertPIntToPrimitiveNode().execute(frame, wrapper, mode, PInt.intValueExact(targetTypeSize));
                 }
-                return convertPIntToPrimitiveNode.executeLong(frame, toJavaNode.execute(resolvedPointer), signed, PInt.intValueExact(targetTypeSize));
-            } catch (UnexpectedResultException e) {
-                CompilerAsserts.neverPartOfCompilation();
-                throw new UnexpectedResultException(CastToNativeLongNodeGen.getUncached().execute(e.getResult()));
+                /*
+                 * The 'mode' parameter is usually a constant since this function is primarily used
+                 * in 'PyLong_As*' API functions that pass a fixed mode. So, there is not need to
+                 * profile the value and even if it is not constant, it is profiled implicitly.
+                 */
+                if (requiredPInt(mode) && !ensureIsSubtypeNode().execute(ensureLib().getLazyPythonClass(object), PythonBuiltinClassType.PInt)) {
+                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+                }
+                // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
+                Object coerced = ensureConvertPIntToPrimitiveNode().execute(frame, ensureToJavaNode().execute(resolvedPointer), signed(mode), PInt.intValueExact(targetTypeSize));
+                return ensureCastToNativeLongNode().execute(coerced);
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
+                ensureTransformExceptionToNativeNode().execute(frame, e);
                 return -1;
             }
         }
 
-        @Specialization(replaces = {"doPrimitiveNativeWrapperToLong", "doGenericToLong"})
-        static Object doGeneric(VirtualFrame frame, Object object, int signed, long targetTypeSize,
-                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
-                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
-                        @Cached CastToNativeLongNode castToNativeLongNode,
-                        @Cached("createClassProfile()") ValueProfile pointerClassProfile,
-                        @Cached IntNode constructIntNode,
-                        @Shared("converPIntToPrimitiveNode") @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
-                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            Object resolvedPointer = pointerClassProfile.profile(resolveHandleNode.execute(object));
-            try {
-                if (resolvedPointer instanceof PrimitiveNativeWrapper) {
-                    return convertPIntToPrimitiveNode.execute(frame, resolvedPointer, signed, PInt.intValueExact(targetTypeSize));
-                }
-                Object coerced = constructIntNode.call(frame, PythonBuiltinClassType.PInt, toJavaNode.execute(resolvedPointer), PNone.NO_VALUE);
-                return castToNativeLongNode.execute(convertPIntToPrimitiveNode.execute(frame, coerced, signed, PInt.intValueExact(targetTypeSize)));
-            } catch (OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return -1;
+        private static int signed(int mode) {
+            return mode & 0x1;
+        }
+
+        private static boolean requiredPInt(int mode) {
+            return (mode & 0x2) != 0;
+        }
+
+        private ResolveHandleNode ensureResolveHandleNode() {
+            if (resolveHandleNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                resolveHandleNode = insert(ResolveHandleNodeGen.create());
             }
+            return resolveHandleNode;
+        }
+
+        private ToJavaNode ensureToJavaNode() {
+            if (toJavaNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaNode = insert(ToJavaNodeGen.create());
+            }
+            return toJavaNode;
+        }
+
+        private ValueProfile ensurePointerClassProfile() {
+            if (pointerClassProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                pointerClassProfile = ValueProfile.createClassProfile();
+            }
+            return pointerClassProfile;
+        }
+
+        private ConvertPIntToPrimitiveNode ensureConvertPIntToPrimitiveNode() {
+            if (convertPIntToPrimitiveNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                convertPIntToPrimitiveNode = insert(ConvertPIntToPrimitiveNodeGen.create());
+            }
+            return convertPIntToPrimitiveNode;
+        }
+
+        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
+            if (transformExceptionToNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
+            }
+            return transformExceptionToNativeNode;
+        }
+
+        private CastToNativeLongNode ensureCastToNativeLongNode() {
+            if (castToNativeLongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToNativeLongNode = insert(CastToNativeLongNodeGen.create());
+            }
+            return castToNativeLongNode;
+        }
+
+        private PythonObjectLibrary ensureLib() {
+            if (lib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+            }
+            return lib;
+        }
+
+        private IsSubtypeNode ensureIsSubtypeNode() {
+            if (isSubtypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSubtypeNode = insert(IsSubtypeNode.create());
+            }
+            return isSubtypeNode;
         }
 
         static final class UnexpectedWrapperException extends ControlFlowException {
