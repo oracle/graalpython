@@ -140,7 +140,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -1368,16 +1367,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class NextNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(defaultObject)")
         public Object next(VirtualFrame frame, Object iterator, PNone defaultObject,
-                        @Cached("create(createNextCall())") GetNextNode getNextNode) {
-            return getNextNode.execute(frame, iterator);
+                        @Cached("createNextCall()") LookupAndCallUnaryNode callNode) {
+            return callNode.executeObject(frame, iterator);
         }
 
         @Specialization(guards = "!isNoValue(defaultObject)")
         public Object next(VirtualFrame frame, Object iterator, Object defaultObject,
-                        @Cached("create(createNextCall())") GetNextNode getNextNode,
+                        @Cached("createNextCall()") LookupAndCallUnaryNode callNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile) {
             try {
-                return getNextNode.execute(frame, iterator);
+                return callNode.executeObject(frame, iterator);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 return defaultObject;
@@ -1385,25 +1384,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected LookupAndCallUnaryNode createNextCall() {
-            return LookupAndCallUnaryNode.create(__NEXT__, NoAttrHandlerSupplier.INSTANCE);
-        }
-
-        private static final class NoAttrHandlerSupplier implements Supplier<LookupAndCallUnaryNode.NoAttributeHandler> {
-            private static final NoAttrHandlerSupplier INSTANCE = new NoAttrHandlerSupplier();
-
-            @Override
-            public NoAttributeHandler get() {
-                return new NoAttrHandler();
-            }
-        }
-
-        private static final class NoAttrHandler extends LookupAndCallUnaryNode.NoAttributeHandler {
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
-
-            @Override
-            public Object execute(Object iterator) {
-                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
-            }
+            return LookupAndCallUnaryNode.create(__NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
+                @Override
+                public Object execute(Object iterator) {
+                    throw raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
+                }
+            });
         }
     }
 

@@ -42,26 +42,15 @@ package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.TernaryBuiltinInfo;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @NodeChild(value = "object", type = ExpressionNode.class)
 @NodeChild(value = "rhs", type = ExpressionNode.class)
@@ -87,7 +76,6 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
 
     protected abstract ExpressionNode getObject();
 
-    @Override
     public abstract ExpressionNode getRhs();
 
     public static SetAttributeNode create(String key) {
@@ -109,37 +97,11 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
         return key;
     }
 
-    protected static boolean isSetAttrFactory(PythonBuiltinClassType klassType, NodeFactory<? extends PythonBuiltinBaseNode> factory) {
-        Object slot = SpecialMethodSlot.SetAttr.getValue(klassType);
-        return slot instanceof TernaryBuiltinInfo && ((TernaryBuiltinInfo) slot).getFactory() == factory;
+    public ExpressionNode getPrimaryNode() {
+        return getObject();
     }
 
-    protected static boolean isSetAttrFactory(PythonManagedClass klass, NodeFactory<? extends PythonBuiltinBaseNode> factory) {
-        Object slot = SpecialMethodSlot.SetAttr.getValue(klass);
-        return slot instanceof PBuiltinFunction && ((PBuiltinFunction) slot).getBuiltinNodeFactory() == factory;
-    }
-
-    protected static boolean isSetAttrFactory(Object lazyClass, NodeFactory<? extends PythonBuiltinBaseNode> factory) {
-        if (lazyClass instanceof PythonBuiltinClassType) {
-            return isSetAttrFactory((PythonBuiltinClassType) lazyClass, factory);
-        } else if (lazyClass instanceof PythonManagedClass) {
-            return isSetAttrFactory((PythonManagedClass) lazyClass, factory);
-        }
-        return false;
-    }
-
-    protected static boolean isObjectSetAttr(Object lazyClass) {
-        return isSetAttrFactory(lazyClass, ObjectBuiltinsFactory.SetattrNodeFactory.getInstance());
-    }
-
-    @Specialization(guards = "isObjectSetAttr(pol.getLazyPythonClass(object))", limit = "getCallSiteInlineCacheMaxDepth()")
-    void doBuiltinObject(VirtualFrame frame, Object object, Object value,
-                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary pol,
-                    @Cached ObjectBuiltins.SetattrNode setattrNode) {
-        setattrNode.executeWithString(frame, object, key, value);
-    }
-
-    @Specialization(replaces = "doBuiltinObject")
+    @Specialization
     protected void doIt(VirtualFrame frame, Object object, Object value,
                     @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
         call.execute(frame, object, key, value);

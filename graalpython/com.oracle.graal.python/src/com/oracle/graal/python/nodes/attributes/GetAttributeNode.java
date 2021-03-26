@@ -44,34 +44,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.BinaryBuiltinInfo;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNodeFactory.GetFixedAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -131,17 +115,9 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             return ensureCallGetattrNode().executeObject(frame, lookupGetattrOrRethrow(frame, object, pe), object, key);
         }
 
-        Object dispatchGetAttrOrRethrowObject(VirtualFrame frame, Object object, Object objectLazyClass, Object key, PException pe) {
-            return ensureCallGetattrNode().executeObject(frame, lookupGetattrOrRethrow(frame, object, objectLazyClass, pe), object, key);
-        }
-
-        private Object lookupGetattrOrRethrow(VirtualFrame frame, Object object, PException pe) {
-            return lookupGetattrOrRethrow(frame, object, ensurePythonObjLib().getLazyPythonClass(object), pe);
-        }
-
         /** Lookup {@code __getattr__} or rethrow {@code pe} if it does not exist. */
-        private Object lookupGetattrOrRethrow(VirtualFrame frame, Object object, Object objectLazyClass, PException pe) {
-            Object getattrAttribute = ensureLookupGetattrNode().execute(frame, objectLazyClass, object);
+        private Object lookupGetattrOrRethrow(VirtualFrame frame, Object object, PException pe) {
+            Object getattrAttribute = ensureLookupGetattrNode().execute(frame, ensurePythonObjLib().getLazyPythonClass(object), object);
             if (ensureHasGetattrProfile().profile(getattrAttribute == PNone.NO_VALUE)) {
                 throw pe;
             }
@@ -181,7 +157,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
         }
     }
 
-    public abstract static class GetFixedAttributeNode extends GetAttributeBaseNode {
+    public static final class GetFixedAttributeNode extends GetAttributeBaseNode {
         private final String key;
 
         public GetFixedAttributeNode(String key) {
@@ -192,89 +168,17 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             return key;
         }
 
-        public final Object executeObject(VirtualFrame frame, Object object) {
-            Object klass = ensurePythonObjLib().getLazyPythonClass(object);
-            return execute(frame, object, klass);
-        }
-
-        public abstract Object execute(VirtualFrame frame, Object object, Object klass);
-
-        protected static boolean isObjectGetAttribute(PythonBuiltinClassType klassType, NodeFactory<? extends PythonBinaryBuiltinNode> factory) {
-            Object slot = SpecialMethodSlot.GetAttribute.getValue(klassType);
-            return slot instanceof BinaryBuiltinInfo && ((BinaryBuiltinInfo) slot).getFactory() == factory;
-        }
-
-        protected static boolean isObjectGetAttribute(PythonManagedClass klass, NodeFactory<? extends PythonBinaryBuiltinNode> factory) {
-            Object slot = SpecialMethodSlot.GetAttribute.getValue(klass);
-            return slot instanceof PBuiltinFunction && ((PBuiltinFunction) slot).getBuiltinNodeFactory() == factory;
-        }
-
-        protected static boolean getAttributeIs(Object lazyClass, NodeFactory<? extends PythonBinaryBuiltinNode> factory) {
-            if (lazyClass instanceof PythonBuiltinClassType) {
-                return isObjectGetAttribute((PythonBuiltinClassType) lazyClass, factory);
-            } else if (lazyClass instanceof PythonManagedClass) {
-                return isObjectGetAttribute((PythonManagedClass) lazyClass, factory);
-            }
-            return false;
-        }
-
-        protected static boolean isObjectGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance());
-        }
-
-        protected static boolean isModuleGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance());
-        }
-
-        protected static boolean isTypeGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, TypeBuiltinsFactory.GetattributeNodeFactory.getInstance());
-        }
-
-        @Specialization(guards = "isObjectGetAttribute(lazyClass)")
-        final Object doBuiltinObject(VirtualFrame frame, Object object, @SuppressWarnings("unused") Object lazyClass,
-                        @Cached ObjectBuiltins.GetAttributeNode getAttributeNode) {
-            try {
-                return getAttributeNode.execute(frame, object, key);
-            } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
-                return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
-            }
-        }
-
-        @Specialization(guards = "isTypeGetAttribute(lazyClass)")
-        final Object doBuiltinType(VirtualFrame frame, Object object, @SuppressWarnings("unused") Object lazyClass,
-                        @Cached TypeBuiltins.GetattributeNode getAttributeNode) {
-            try {
-                return getAttributeNode.execute(frame, object, key);
-            } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
-                return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
-            }
-        }
-
-        @Specialization(guards = "isModuleGetAttribute(lazyClass)")
-        final Object doBuiltinModule(VirtualFrame frame, Object object, @SuppressWarnings("unused") Object lazyClass,
-                        @Cached ModuleBuiltins.ModuleGetattritbuteNode getAttributeNode) {
-            try {
-                return getAttributeNode.execute(frame, object, key);
-            } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
-                return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
-            }
-        }
-
-        @Specialization(replaces = {"doBuiltinObject", "doBuiltinType", "doBuiltinModule"})
-        final Object doGeneric(VirtualFrame frame, Object object, Object lazyKlass) {
+        public Object executeObject(VirtualFrame frame, Object object) {
             try {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return dispatchGetAttrOrRethrowObject(frame, object, lazyKlass, key, pe);
+                return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }
 
         public static GetFixedAttributeNode create(String key) {
-            return GetFixedAttributeNodeGen.create(key);
+            return new GetFixedAttributeNode(key);
         }
     }
 

@@ -43,36 +43,17 @@ package com.oracle.graal.python.nodes.control;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
-import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.UnaryBuiltinInfo;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
-import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
-import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
-import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextCachedNodeGen;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
@@ -88,125 +69,56 @@ public abstract class GetNextNode extends PNodeWithContext {
     public abstract double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 
     @NodeInfo(cost = NONE)
-    protected abstract static class GetNextCached extends GetNextNode {
+    private static final class GetNextCached extends GetNextNode {
 
-        @Child private LookupAndCallUnaryNode nextCall;
+        @Child private LookupAndCallUnaryNode nextCall = LookupAndCallUnaryNode.create(__NEXT__, () -> new NoAttributeHandler() {
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
-        protected GetNextCached(LookupAndCallUnaryNode nextCall) {
-            this.nextCall = nextCall;
-        }
-
-        private LookupAndCallUnaryNode ensureNextCall() {
-            if (nextCall == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nextCall = insert(LookupAndCallUnaryNode.create(__NEXT__, NoAttrHandlerSupplier.INSTANCE));
+            @Override
+            public Object execute(Object receiver) {
+                throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, __NEXT__);
             }
-            return nextCall;
-        }
-
-        // Only the generic execute dispatches to the specializations, return type specialization
-        // does not help in case of builtin nodes, they always return Object
-        @Override
-        public final Object execute(Frame frame, Object iterator) {
-            return executeWithFrame((VirtualFrame) frame, iterator);
-        }
-
-        // Only the generic execute dispatches to the specializations, return type specialization
-        // does not help in case of builtin nodes, they always return Object
-        protected abstract Object executeWithFrame(VirtualFrame frame, Object iterator);
+        });
 
         @Override
-        public final boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+        public Object execute(Frame frame, Object iterator) {
+            return nextCall.executeObject((VirtualFrame) frame, iterator);
+        }
+
+        @Override
+        public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
             try {
-                return ensureNextCall().executeBoolean(frame, iterator);
+                return nextCall.executeBoolean(frame, iterator);
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(e.getResult());
             }
         }
 
         @Override
-        public final int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+        public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
             try {
-                return ensureNextCall().executeInt(frame, iterator);
+                return nextCall.executeInt(frame, iterator);
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(e.getResult());
             }
         }
 
         @Override
-        public final long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+        public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
             try {
-                return ensureNextCall().executeLong(frame, iterator);
+                return nextCall.executeLong(frame, iterator);
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(e.getResult());
             }
         }
 
         @Override
-        public final double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
+        public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
             try {
-                return ensureNextCall().executeDouble(frame, iterator);
+                return nextCall.executeDouble(frame, iterator);
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(e.getResult());
             }
-        }
-
-        protected static boolean isNext(PythonBuiltinClassType klassType, NodeFactory<? extends PythonUnaryBuiltinNode> factory) {
-            Object slot = SpecialMethodSlot.Next.getValue(klassType);
-            return slot instanceof UnaryBuiltinInfo && ((UnaryBuiltinInfo) slot).getUnaryFactory() == factory;
-        }
-
-        protected static boolean isNext(PythonManagedClass klass, NodeFactory<? extends PythonUnaryBuiltinNode> factory) {
-            Object slot = SpecialMethodSlot.Next.getValue(klass);
-            return slot instanceof PBuiltinFunction && ((PBuiltinFunction) slot).getBuiltinNodeFactory() == factory;
-        }
-
-        protected static boolean isNext(Object lazyClass, NodeFactory<? extends PythonUnaryBuiltinNode> factory) {
-            if (lazyClass instanceof PythonBuiltinClassType) {
-                return isNext((PythonBuiltinClassType) lazyClass, factory);
-            } else if (lazyClass instanceof PythonManagedClass) {
-                return isNext((PythonManagedClass) lazyClass, factory);
-            }
-            return false;
-        }
-
-        protected static boolean isIteratorNext(Object lazyClass) {
-            return isNext(lazyClass, IteratorBuiltinsFactory.NextNodeFactory.getInstance());
-        }
-
-        protected static boolean isGeneratorNext(Object lazyClass) {
-            return isNext(lazyClass, GeneratorBuiltinsFactory.NextNodeFactory.getInstance());
-        }
-
-        protected static boolean isEnumerateNext(Object lazyClass) {
-            return isNext(lazyClass, EnumerateBuiltinsFactory.NextNodeFactory.getInstance());
-        }
-
-        // TODO: share the lib...
-        @Specialization(guards = "isIteratorNext(lib.getLazyPythonClass(object))")
-        Object doIterator(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @Cached IteratorBuiltins.NextNode nextNode) {
-            return nextNode.call(frame, object);
-        }
-
-        @Specialization(guards = "isGeneratorNext(lib.getLazyPythonClass(object))")
-        Object doGenerator(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @Cached GeneratorBuiltins.NextNode nextNode) {
-            return nextNode.call(frame, object);
-        }
-
-        @Specialization(guards = "isEnumerateNext(lib.getLazyPythonClass(object))")
-        Object doEnumerate(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @Cached EnumerateBuiltins.NextNode nextNode) {
-            return nextNode.call(frame, object);
-        }
-
-        @Specialization(replaces = {"doEnumerate", "doIterator", "doGenerator"})
-        Object doGeneric(VirtualFrame frame, Object iterator) {
-            return ensureNextCall().executeObject(frame, iterator);
         }
     }
 
@@ -261,31 +173,11 @@ public abstract class GetNextNode extends PNodeWithContext {
         }
     }
 
-    protected static final class NoAttrHandlerSupplier implements Supplier<NoAttributeHandler> {
-        private static final NoAttrHandlerSupplier INSTANCE = new NoAttrHandlerSupplier();
-
-        @Override
-        public NoAttributeHandler get() {
-            return new NoAttributeHandler() {
-                @Child private PRaiseNode raiseNode = PRaiseNode.create();
-
-                @Override
-                public Object execute(Object receiver) {
-                    throw raiseNode.raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, __NEXT__);
-                }
-            };
-        }
+    public static GetNextNode create() {
+        return new GetNextCached();
     }
 
-    public static GetNextCached create() {
-        return GetNextCachedNodeGen.create(null);
-    }
-
-    public static GetNextCached create(LookupAndCallUnaryNode nextCall) {
-        return GetNextCachedNodeGen.create(nextCall);
-    }
-
-    public static GetNextUncached getUncached() {
+    public static GetNextNode getUncached() {
         return GetNextUncached.INSTANCE;
     }
 }
