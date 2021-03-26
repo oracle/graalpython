@@ -55,8 +55,10 @@ import java.nio.ByteOrder;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -78,6 +80,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -85,6 +88,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -608,7 +612,9 @@ public abstract class CExtCommonNodes {
      * Converts a Python object (i.e. {@code PyObject*}) to a C integer value ({@code int} or
      * {@code long}).<br/>
      * This node is used to implement {@code PyLong_AsLong} or similar C API functions and does
-     * coercion and may raise a Python exception if coercion fails.
+     * coercion and may raise a Python exception if coercion fails. <br/>
+     * Allowed {@code targetTypeSize} values are {@code 4} and {@code 8}. <br/>
+     * If {@code exact} is {@code false}, then casting can be lossy without raising an error.
      */
     @GenerateUncached
     @ImportStatic(PGuards.class)
@@ -849,5 +855,239 @@ public abstract class CExtCommonNodes {
             throw raiseNativeNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
         }
 
+    }
+
+    /**
+     * This node either passes a {@link String} object through or it converts a {@code NULL} pointer
+     * to {@link PNone#NONE}. This is a very special use case and certainly only good for reading a
+     * member of type
+     * {@link com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef#HPY_MEMBER_STRING} or
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes#T_STRING}.
+     */
+    @GenerateUncached
+    public abstract static class HPyStringAsPythonStringNode extends CExtToJavaNode {
+
+        @Specialization
+        static String doString(@SuppressWarnings("unused") CExtContext hpyContext, String value) {
+            return value;
+        }
+
+        @Specialization(replaces = "doString", limit = "3")
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @CachedLibrary("value") InteropLibrary interopLib) {
+            if (interopLib.isNull(value)) {
+                return PNone.NONE;
+            }
+            assert value instanceof String;
+            return value;
+        }
+    }
+
+    /**
+     * This node converts a C Boolean value to Python Boolean.
+     */
+    @GenerateUncached
+    public abstract static class HPyPrimitiveAsPythonBooleanNode extends CExtToJavaNode {
+
+        @Specialization
+        static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
+            return b != 0;
+        }
+
+        @Specialization
+        static Object doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i) {
+            return i != 0;
+        }
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l) {
+            // If the integer is out of byte range, we just to a lossy cast since that's the same
+            // sematics as we should just read a single byte.
+            return l != 0;
+        }
+
+        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
+                        @CachedLibrary("n") InteropLibrary lib) {
+            if (lib.fitsInLong(n)) {
+                try {
+                    return lib.asLong(n) != 0;
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     * This node converts a native primitive value to an appropriate Python char value (a
+     * single-char Python string).
+     */
+    @GenerateUncached
+    public abstract static class HPyPrimitiveAsPythonCharNode extends CExtToJavaNode {
+
+        @Specialization
+        static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
+            return PythonUtils.newString(new char[]{(char) b});
+        }
+
+        @Specialization
+        static Object doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i) {
+            return createString((char) i);
+        }
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l) {
+            // If the integer is out of byte range, we just to a lossy cast since that's the same
+            // sematics as we should just read a single byte.
+            return createString((char) l);
+        }
+
+        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
+                        @CachedLibrary("n") InteropLibrary lib) {
+            if (lib.fitsInShort(n)) {
+                try {
+                    return createString((char) lib.asShort(n));
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private static String createString(char c) {
+            return PythonUtils.newString(new char[]{c});
+        }
+    }
+
+    /**
+     * This node converts a native primitive value to an appropriate Python value considering the
+     * native value as unsigned. For example, a negative {@code int} value will be converted to a
+     * positive {@code long} value.
+     */
+    @GenerateUncached
+    public abstract static class HPyUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
+
+        @Specialization(guards = "n >= 0")
+        static int doUnsignedIntPositive(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
+            return n;
+        }
+
+        @Specialization(replaces = "doUnsignedIntPositive")
+        static long doUnsignedInt(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
+            if (n < 0) {
+                return n & 0xffffffffL;
+            }
+            return n;
+        }
+
+        @Specialization(guards = "n >= 0")
+        static long doUnsignedLongPositive(@SuppressWarnings("unused") CExtContext hpyContext, long n) {
+            return n;
+        }
+
+        @Specialization(guards = "n < 0")
+        static Object doUnsignedLongNegative(@SuppressWarnings("unused") CExtContext hpyContext, long n,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createInt(PInt.longToUnsignedBigInteger(n));
+        }
+
+        @Specialization(replaces = {"doUnsignedIntPositive", "doUnsignedInt", "doUnsignedLongPositive", "doUnsignedLongNegative"})
+        static Object doGeneric(CExtContext hpyContext, Object n,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            if (n instanceof Integer) {
+                int i = (int) n;
+                if (i >= 0) {
+                    return i;
+                } else {
+                    return doUnsignedInt(hpyContext, i);
+                }
+            } else if (n instanceof Long) {
+                long l = (long) n;
+                if (l >= 0) {
+                    return l;
+                } else {
+                    return doUnsignedLongNegative(hpyContext, l, factory);
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     * Converts a Python character (1-element Python string) into a UTF-8 encoded C {@code char}.
+     * According to CPython, we need to encode the whole Python string before we access the first
+     * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
+     */
+    @GenerateUncached
+    public abstract static class HPyAsNativeCharNode extends CExtToNativeNode {
+
+        @Specialization
+        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, CodecsModuleBuiltins.STRICT);
+            if (encoded.length != 1) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            }
+            return encoded[0];
+        }
+    }
+
+    /**
+     * Converts a Python Boolean into a C Boolean {@code char} (see also:
+     * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
+     */
+    @GenerateUncached
+    public abstract static class HPyAsNativeBooleanNode extends CExtToNativeNode {
+
+        @Specialization
+        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return (byte) PInt.intValue(castToJavaBooleanNode.execute(value));
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+            }
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HPyAsNativeDoubleNode extends CExtToNativeNode {
+
+        // Adding specializations for primitives does not make a lot of sense just to avoid
+        // un-/boxing in the interpreter since interop will force un-/boxing anyway.
+        @Specialization(limit = "3")
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            return lib.asJavaDouble(value);
+        }
+    }
+
+    /**
+     * Converts a Python object to a C primitive value with a fixed size and sign.
+     * 
+     * @see AsNativePrimitiveNode
+     */
+    public abstract static class HPyAsNativePrimitiveNode extends CExtToNativeNode {
+
+        private final int targetTypeSize;
+        private final int signed;
+
+        protected HPyAsNativePrimitiveNode(int targetTypeSize, boolean signed) {
+            this.targetTypeSize = targetTypeSize;
+            this.signed = PInt.intValue(signed);
+        }
+
+        // Adding specializations for primitives does not make a lot of sense just to avoid
+        // un-/boxing in the interpreter since interop will force un-/boxing anyway.
+        @Specialization
+        Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
+        }
     }
 }
