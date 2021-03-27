@@ -62,17 +62,17 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.SocketLibrary.AddrInfoCursor;
-import com.oracle.graal.python.runtime.SocketLibrary.AddrInfoCursorLibrary;
-import com.oracle.graal.python.runtime.SocketLibrary.GetAddrInfoException;
-import com.oracle.graal.python.runtime.SocketLibrary.Inet4SockAddr;
-import com.oracle.graal.python.runtime.SocketLibrary.SockAddr;
-import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddr;
-import com.oracle.graal.python.runtime.SocketLibrary.UniversalSockAddrLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -104,7 +104,6 @@ import sun.misc.Unsafe;
  * that the native access is allowed or to configure managed LLVM backend for NFI.
  */
 @ExportLibrary(PosixSupportLibrary.class)
-@ExportLibrary(SocketLibrary.class)
 public final class NFIPosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
@@ -1701,14 +1700,15 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     /**
-     * Helper node for conversion of a {@code struct sockaddr} to an instance of {@link SockAddr} of given type.
+     * Helper node for conversion of a {@code struct sockaddr} to an instance of {@link SockAddr} of
+     * given type.
      *
      * The input is represented by (family, len, ptr), where {@code ptr} is native pointer to
      * {@code struct sockaddr}, {@code len} is the length of the address in bytes and {@code family}
      * is the (cached) content of {@code ((struct sockaddr *) ptr)->sa_family}.
      *
      * @see UniversalSockAddrLibrary#convert(UniversalSockAddr, SockAddr)
-     * @see AddrInfoCursorLibrary#getSockAddr(AddrInfoCursor, SockAddr) 
+     * @see AddrInfoCursorLibrary#getSockAddr(AddrInfoCursor, SockAddr)
      */
     @GenerateUncached
     static abstract class ConvertSockAddrNode extends Node {

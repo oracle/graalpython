@@ -42,6 +42,7 @@ package com.oracle.graal.python;
 
 import static com.oracle.graal.python.PythonLanguage.getContext;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.rules.MethodRule;
@@ -50,6 +51,7 @@ import org.junit.runners.model.Statement;
 
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.graal.python.util.Consumer;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -57,21 +59,38 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 public class WithPythonContextRule implements MethodRule {
 
-    private final Map<String, String> options;
+    private Map<String, String> options;
+    private Consumer<Map<String, String>> optionsProvider;
     private PythonContext pythonContext;
 
     public WithPythonContextRule(Map<String, String> options) {
         this.options = options;
     }
 
+    public WithPythonContextRule(Consumer<Map<String, String>> optionsProvider) {
+        this.optionsProvider = optionsProvider;
+    }
+
     public PythonContext getPythonContext() {
         return pythonContext;
     }
 
+    private Map<String, String> getOptions() {
+        if (options != null) {
+            return options;
+        }
+        Map<String, String> opt = new HashMap<>();
+        if (optionsProvider != null) {
+            optionsProvider.accept(opt);
+        }
+        return opt;
+    }
+
     public Statement apply(final Statement base, FrameworkMethod method, Object target) {
         return new Statement() {
+            @Override
             public void evaluate() throws Throwable {
-                PythonTests.enterContext(options, new String[0]);
+                PythonTests.enterContext(getOptions(), new String[0]);
 
                 RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new RootNode(null) {
                     @Override

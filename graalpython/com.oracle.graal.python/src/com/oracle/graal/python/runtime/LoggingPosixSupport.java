@@ -46,10 +46,14 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -841,6 +845,78 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int socket(int domain, int type, int protocol,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("socket", "%d, %d, %d", domain, type, protocol);
+        try {
+            return logExit("socket", "%d", lib.socket(delegate, domain, type, protocol));
+        } catch (PosixException e) {
+            throw logException("socket", e);
+        }
+    }
+
+    @ExportMessage
+    final void bind(int sockfd, SockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("bind", "%d, %s", sockfd, addr);
+        try {
+            lib.bind(delegate, sockfd, addr);
+        } catch (PosixException e) {
+            throw logException("bind", e);
+        }
+    }
+
+    @ExportMessage
+    final void getsockname(int sockfd, SockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getsockname", "%d, %s", sockfd, addr);
+        try {
+            lib.getsockname(delegate, sockfd, addr);
+        } catch (PosixException e) {
+            throw logException("getsockname", e);
+        }
+    }
+
+    @ExportMessage
+    final int sendto(int sockfd, byte[] buf, int len, int flags, SockAddr destAddr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("sendto", "%d, %d, %d, %s", sockfd, len, flags, destAddr);
+        try {
+            return logExit("sendto", "%d", lib.sendto(delegate, sockfd, buf, len, flags, destAddr));
+        } catch (PosixException e) {
+            throw logException("sendto", e);
+        }
+    }
+
+    @ExportMessage
+    final int recvfrom(int sockfd, byte[] buf, int len, int flags, SockAddr srcAddr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("recvfrom", "%d, %d, %d, %s", sockfd, len, flags, srcAddr);
+        try {
+            return logExit("recvfrom", "%d", lib.recvfrom(delegate, sockfd, buf, len, flags, srcAddr));
+        } catch (PosixException e) {
+            throw logException("recvfrom", e);
+        }
+    }
+
+    @ExportMessage
+    final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws GetAddrInfoException {
+        logEnter("getaddrinfo", "%s, %s, %d, %d, %d, %d", node, service, family, sockType, protocol, flags);
+        try {
+            return logExit("getaddrinfo", "%s", lib.getaddrinfo(delegate, node, service, family, sockType, protocol, flags));
+        } catch (GetAddrInfoException e) {
+            throw logException("getaddrinfo", e);
+        }
+    }
+
+    @ExportMessage
+    final UniversalSockAddr allocUniversalSockAddr(@CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("allocUniversalSockAddr", "");
+        return logExit("allocUniversalSockAddr", "%s", lib.allocUniversalSockAddr(delegate));
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "createPathFromString", "%s", path);
@@ -902,7 +978,19 @@ public class LoggingPosixSupport extends PosixSupport {
         throw e;
     }
 
+    @TruffleBoundary
+    private static GetAddrInfoException logException(Level level, String msg, GetAddrInfoException e) throws GetAddrInfoException {
+        if (LOGGER.isLoggable(level)) {
+            LOGGER.log(level, msg + String.format(" -> throw error code=%d, msg=%s", fixLogArgs(e.getErrorCode(), e.getMessage())));
+        }
+        throw e;
+    }
+
     private static PosixException logException(String msg, PosixException e) throws PosixException {
+        throw logException(DEFAULT_LEVEL, msg, e);
+    }
+
+    private static GetAddrInfoException logException(String msg, GetAddrInfoException e) throws GetAddrInfoException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
 
