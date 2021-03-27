@@ -651,7 +651,7 @@ public final class CApiContext extends CExtContext {
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
-            getContext().triggerAsyncActions(null);
+            getContext().triggerAsyncActions();
             if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
                 return;

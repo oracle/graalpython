@@ -180,7 +180,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
-            contextRef.get().triggerAsyncActions(frame);
+            contextRef.get().triggerAsyncActions();
         }
         try {
             return body.execute(frame);

@@ -412,7 +412,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
         @Specialization(guards = "isPositive(seconds)")
-        Object sleep(VirtualFrame frame, long seconds,
+        Object sleep(long seconds,
                         @Cached GilNode gil) {
             long deadline = (long) timeSeconds() + seconds;
             gil.release(true);
@@ -421,18 +421,18 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            getContext().triggerAsyncActions(frame);
+            getContext().triggerAsyncActions();
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPositive(seconds)")
-        Object err(VirtualFrame frame, long seconds) {
+        Object err(long seconds) {
             throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
         @Specialization(guards = "isPositive(seconds)")
-        Object sleep(VirtualFrame frame, double seconds,
+        Object sleep(double seconds,
                         @Cached GilNode gil) {
             double deadline = timeSeconds() + seconds;
             gil.release(true);
@@ -441,18 +441,18 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            getContext().triggerAsyncActions(frame);
+            getContext().triggerAsyncActions();
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPositive(seconds)")
-        Object err(VirtualFrame frame, double seconds) {
+        Object err(double seconds) {
             throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
         @Specialization(guards = "lib.canBeJavaDouble(secondsObj)")
-        Object sleepObj(VirtualFrame frame, Object secondsObj,
+        Object sleepObj(Object secondsObj,
                         @Cached ConditionProfile negErr,
                         @Cached GilNode gil,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
@@ -467,7 +467,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            getContext().triggerAsyncActions(frame);
+            getContext().triggerAsyncActions();
             return PNone.NONE;
         }
 
