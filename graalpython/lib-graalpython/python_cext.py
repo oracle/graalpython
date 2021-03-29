@@ -932,7 +932,7 @@ def AddGetSet(primary, name, getter, setter, doc, closure):
     if setter:
         setter_w = CreateFunction(name, setter, pclass)
         def member_setter(self, value):
-            result = setter_w(self, value, closure)
+            result = setter_w(self, value, closure_converted)
             if result != 0:
                 raise
             return None
