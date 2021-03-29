@@ -84,9 +84,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                 Frame: [1,value,Illegal]
                               GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [73,83]`len(h) > 1`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __gt__
+                            GtNodeGen SourceSection: [73,83]`len(h) > 1`
                               PythonCallUnary SourceSection: [73,79]`len(h)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [73,76]`len`

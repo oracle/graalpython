@@ -255,7 +255,7 @@ public abstract class ExecutionContext {
                 PFrame.Reference callerInfo = PArguments.getCallerFrameInfo(frame);
                 if (callerInfo == null) {
                     // we didn't request the caller frame reference. now we need it.
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    CompilerDirectives.transferToInterpreter();
 
                     // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
                     // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip

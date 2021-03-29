@@ -51,7 +51,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @ClinicBuiltinBaseClass
 public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNode {
-    @Child ArgumentCastNode castNode;
+    @Child private ArgumentCastNode castNode;
 
     /**
      * Returns the provider of argument clinic logic. It should be singleton instance of a class

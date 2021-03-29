@@ -1344,9 +1344,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           YesNodeGen SourceSection: None
                       IfNode SourceSection: [8099,8159]`if os.geteuid() != o...`
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [8102,8129]`os.geteuid() != os.g...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [8102,8129]`os.geteuid() != os.g...`
                             PythonCallNodeGen SourceSection: [8102,8114]`os.geteuid()`
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
@@ -1390,9 +1388,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           YesNodeGen SourceSection: None
                       IfNode SourceSection: [8265,8326]`if os.getegid() != o...`
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [8268,8295]`os.getegid() != os.g...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [8268,8295]`os.getegid() != os.g...`
                             PythonCallNodeGen SourceSection: [8268,8280]`os.getegid()`
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
@@ -1542,9 +1538,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Frame: [1,<return_val>,Illegal]
                     IfNode SourceSection: [8781,8894]`if os.name == "nt":↵...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [8784,8799]`os.name == "nt"`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [8784,8799]`os.name == "nt"`
                           GetAttributeNode SourceSection: [8784,8791]`os.name`
                             GetFixedAttributeNode SourceSection: None
                               Key: name
@@ -1592,9 +1586,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                     IfNode SourceSection: [8894,9059]`if sys.platform == "...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [8897,8940]`sys.platform == "dar...`
-                          BinaryComparisonNodeGen SourceSection: [8897,8921]`sys.platform == "dar...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [8897,8921]`sys.platform == "dar...`
                             GetAttributeNode SourceSection: [8897,8909]`sys.platform`
                               GetFixedAttributeNode SourceSection: None
                                 Key: platform
@@ -1717,9 +1709,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [9210,9319]`if os.name == 'nt':↵...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [9213,9228]`os.name == 'nt'`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [9213,9228]`os.name == 'nt'`
                           GetAttributeNode SourceSection: [9213,9220]`os.name`
                             GetFixedAttributeNode SourceSection: None
                               Key: name
@@ -1757,9 +1747,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                     IfNode SourceSection: [9319,9427]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [9322,9365]`sys.platform == 'dar...`
-                          BinaryComparisonNodeGen SourceSection: [9322,9346]`sys.platform == 'dar...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [9322,9346]`sys.platform == 'dar...`
                             GetAttributeNode SourceSection: [9322,9334]`sys.platform`
                               GetFixedAttributeNode SourceSection: None
                                 Key: platform
@@ -2107,9 +2095,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Frame: [3,prefix,Illegal]
                               IfNode SourceSection: [11219,11841]`if os.sep == '/':↵  ...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [11222,11235]`os.sep == '/'`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [11222,11235]`os.sep == '/'`
                                     GetAttributeNode SourceSection: [11222,11228]`os.sep`
                                       GetFixedAttributeNode SourceSection: None
                                         Key: sep
@@ -2368,9 +2354,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                   FunctionBodyNode SourceSection: [12305,12513]`if os.sep == '\\':↵ ...`
                     IfNode SourceSection: [12305,12408]`if os.sep == '\\':↵ ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [12308,12322]`os.sep == '\\'`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [12308,12322]`os.sep == '\\'`
                           GetAttributeNode SourceSection: [12308,12314]`os.sep`
                             GetFixedAttributeNode SourceSection: None
                               Key: sep
@@ -2469,9 +2453,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [12668,13095]`if sys.platform[:4] ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [12671,12697]`sys.platform[:4] == ...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [12671,12697]`sys.platform[:4] == ...`
                           GetItemNodeGen SourceSection: [12671,12687]`sys.platform[:4]`
                             GetAttributeNode SourceSection: None
                               GetFixedAttributeNode SourceSection: None
@@ -2827,9 +2809,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       BlockNode SourceSection: None
                                   IfNode SourceSection: [14962,15630]`if readline.get_curr...`
                                     YesNodeGen SourceSection: None
-                                      BinaryComparisonNodeGen SourceSection: [14965,15007]`readline.get_current...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __eq__
+                                      EqNodeGen SourceSection: [14965,15007]`readline.get_current...`
                                         PythonCallNodeGen SourceSection: [14965,15002]`readline.get_current...`
                                           CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
@@ -2964,9 +2944,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                     IfNode SourceSection: [15762,15929]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [15765,15822]`sys.platform == 'dar...`
-                          BinaryComparisonNodeGen SourceSection: [15765,15789]`sys.platform == 'dar...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [15765,15789]`sys.platform == 'dar...`
                             GetAttributeNode SourceSection: [15765,15777]`sys.platform`
                               GetFixedAttributeNode SourceSection: None
                                 Key: platform
@@ -3285,9 +3263,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Frame: [11,value,Illegal]
                                     IfNode SourceSection: [16782,16967]`if key == 'include-s...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [16785,16822]`key == 'include-syst...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __eq__
+                                        EqNodeGen SourceSection: [16785,16822]`key == 'include-syst...`
                                           ReadLocalVariableNodeGen SourceSection: [16785,16788]`key`
                                             Frame: [10,key,Illegal]
                                           StringLiteralNode SourceSection: [16792,16822]`'include-system-site...`
@@ -3301,9 +3277,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Frame: [11,value,Illegal]
                                       IfNode SourceSection: [16896,16967]`elif key == 'home':↵...`
                                         YesNodeGen SourceSection: None
-                                          BinaryComparisonNodeGen SourceSection: [16901,16914]`key == 'home'`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __eq__
+                                          EqNodeGen SourceSection: [16901,16914]`key == 'home'`
                                             ReadLocalVariableNodeGen SourceSection: [16901,16904]`key`
                                               Frame: [10,key,Illegal]
                                             StringLiteralNode SourceSection: [16908,16914]`'home'`
@@ -3384,9 +3358,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [17296,17457]`if system_site == "t...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [17299,17320]`system_site == "true...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [17299,17320]`system_site == "true...`
                               ReadLocalVariableNodeGen SourceSection: [17299,17310]`system_site`
                                 Frame: [9,system_site,Illegal]
                               StringLiteralNode SourceSection: [17314,17320]`"true"`
@@ -3478,9 +3450,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ExceptNode SourceSection: None
                               IfNode SourceSection: [17660,17757]`if exc.name == 'site...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [17663,17690]`exc.name == 'sitecus...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [17663,17690]`exc.name == 'sitecus...`
                                     GetAttributeNode SourceSection: [17663,17671]`exc.name`
                                       GetFixedAttributeNode SourceSection: None
                                         Key: name
@@ -3623,9 +3593,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ExceptNode SourceSection: None
                               IfNode SourceSection: [18237,18334]`if exc.name == 'user...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [18240,18267]`exc.name == 'usercus...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [18240,18267]`exc.name == 'usercus...`
                                     GetAttributeNode SourceSection: [18240,18248]`exc.name`
                                       GetFixedAttributeNode SourceSection: None
                                         Key: name
@@ -3786,9 +3754,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [18958,19137]`if orig_path != sys....`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [18961,18982]`orig_path != sys.pat...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __ne__
+                        NeNodeGen SourceSection: [18961,18982]`orig_path != sys.pat...`
                           ReadLocalVariableNodeGen SourceSection: [18961,18970]`orig_path`
                             Frame: [0,orig_path,Illegal]
                           GetAttributeNode SourceSection: [18974,18982]`sys.path`
@@ -4342,9 +4308,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         SideEffect:
           IfNode SourceSection: [21228,21269]`if __name__ == '__ma...`
             YesNodeGen SourceSection: None
-              BinaryComparisonNodeGen SourceSection: [21231,21253]`__name__ == '__main_...`
-                LookupAndCallBinaryNodeGen SourceSection: None
-                  Op: __eq__
+              EqNodeGen SourceSection: [21231,21253]`__name__ == '__main_...`
                 ReadNameNodeGen SourceSection: [21231,21239]`__name__`
                   Identifier: __name__
                   IsBuiltinClassProfile SourceSection: None

@@ -268,20 +268,26 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(AnnAssignmentSSTNode node) {
         PNode assignmentNode = createAssignment(node);
-        if (!scopeEnvironment.isInFunctionScope() && node.type != null && node.lhs.length == 1 && node.lhs[0] instanceof VarLookupSSTNode) {
-            // annotations in a function we ignore at all. Even there are not evalueated, whether
-            // the type is wrong
+        if (!scopeEnvironment.isInFunctionScope() && node.lhs.length == 1 && node.lhs[0] instanceof VarLookupSSTNode) {
+            return BlockNode.create(new StatementNode[]{(StatementNode) assignmentNode, (StatementNode) node.annotation.accept(this)});
+        }
+        return assignmentNode;
+    }
+
+    @Override
+    public PNode visit(AnnotationSSTNode node) {
+        // annotations in a function we ignore at all. Even there are not evalueated, whether
+        // the type is wrong
+        if (!scopeEnvironment.isInFunctionScope() && node.type != null && node.lhs instanceof VarLookupSSTNode) {
             // create simple SST tree for : __annotations__['var_name'] = type
-            VarLookupSSTNode varLookupNode = (VarLookupSSTNode) node.lhs[0];
+            VarLookupSSTNode varLookupNode = (VarLookupSSTNode) node.lhs;
             SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new VarLookupSSTNode(__ANNOTATIONS__, -1, -1), new StringLiteralSSTNode.RawStringLiteralSSTNode(varLookupNode.name, -1, -1), -1,
                             -1);
             AssignmentSSTNode assignAnnotationSST = new AssignmentSSTNode(new SSTNode[]{getAnnotationSST}, node.type, -1, -1);
             PNode assignAnnotationNode = visit(assignAnnotationSST);
-            // return block with statements[the assignment, add variable name, type to
-            // __annotations__]
-            return BlockNode.create(new StatementNode[]{(StatementNode) assignmentNode, (StatementNode) assignAnnotationNode});
+            return assignAnnotationNode;
         }
-        return assignmentNode;
+        return EmptyNode.create().asStatement();
     }
 
     @Override

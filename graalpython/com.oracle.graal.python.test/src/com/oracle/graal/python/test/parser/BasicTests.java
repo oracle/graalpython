@@ -100,6 +100,11 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void annAssign02() throws Exception {
+        checkTreeResult("a: 1");
+    }
+
+    @Test
     public void assert01() throws Exception {
         checkTreeResult("assert True");
     }

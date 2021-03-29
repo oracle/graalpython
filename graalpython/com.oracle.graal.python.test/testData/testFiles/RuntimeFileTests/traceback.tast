@@ -1810,9 +1810,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           AndNode SourceSection: [9561,9744]`self.filename == oth...`
                                             AndNode SourceSection: None
                                               AndNode SourceSection: None
-                                                BinaryComparisonNodeGen SourceSection: [9561,9592]`self.filename == oth...`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __eq__
+                                                EqNodeGen SourceSection: [9561,9592]`self.filename == oth...`
                                                   GetAttributeNode SourceSection: [9561,9574]`self.filename`
                                                     GetFixedAttributeNode SourceSection: None
                                                       Key: filename
@@ -1831,9 +1829,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         CachedDispatchFirst SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [9578,9583]`other`
                                                       Frame: [1,other,Illegal]
-                                                BinaryComparisonNodeGen SourceSection: [9617,9644]`self.lineno == other...`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __eq__
+                                                EqNodeGen SourceSection: [9617,9644]`self.lineno == other...`
                                                   GetAttributeNode SourceSection: [9617,9628]`self.lineno`
                                                     GetFixedAttributeNode SourceSection: None
                                                       Key: lineno
@@ -1853,9 +1849,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadLocalVariableNodeGen SourceSection: [9632,9637]`other`
                                                       Frame: [1,other,Illegal]
                                                 YesNodeGen SourceSection: None
-                                              BinaryComparisonNodeGen SourceSection: [9669,9692]`self.name == other.n...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __eq__
+                                              EqNodeGen SourceSection: [9669,9692]`self.name == other.n...`
                                                 GetAttributeNode SourceSection: [9669,9678]`self.name`
                                                   GetFixedAttributeNode SourceSection: None
                                                     Key: name
@@ -1875,9 +1869,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNodeGen SourceSection: [9682,9687]`other`
                                                     Frame: [1,other,Illegal]
                                               YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [9717,9744]`self.locals == other...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __eq__
+                                            EqNodeGen SourceSection: [9717,9744]`self.locals == other...`
                                               GetAttributeNode SourceSection: [9717,9728]`self.locals`
                                                 GetFixedAttributeNode SourceSection: None
                                                   Key: locals
@@ -1914,9 +1906,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           Frame: [2,<return_val>,Illegal]
-                                          BinaryComparisonNodeGen SourceSection: [9802,9861]`(self.filename, self...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __eq__
+                                          EqNodeGen SourceSection: [9802,9861]`(self.filename, self...`
                                             TupleLiteralNode SourceSection: [9802,9852]`(self.filename, self...`
                                               GetAttributeNode SourceSection: [9803,9816]`self.filename`
                                                 GetFixedAttributeNode SourceSection: None
@@ -2671,9 +2661,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadLocalVariableNodeGen SourceSection: [12008,12013]`limit`
                                                       Frame: [3,limit,Illegal]
                                                     ObjectLiteralNode SourceSection: [12021,12025]`None`
-                                                BinaryComparisonNodeGen SourceSection: [12030,12039]`limit < 0`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __lt__
+                                                LtNodeGen SourceSection: [12030,12039]`limit < 0`
                                                   ReadLocalVariableNodeGen SourceSection: [12030,12035]`limit`
                                                     Frame: [3,limit,Illegal]
                                                   IntegerLiteralNode SourceSection: [12038,12039]`0`
@@ -2694,9 +2682,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             ObjectLiteralNode SourceSection: [12091,12095]`None`
                                         IfNode SourceSection: [12109,12286]`if limit >= 0:↵     ...`
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [12112,12122]`limit >= 0`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __ge__
+                                            GeNodeGen SourceSection: [12112,12122]`limit >= 0`
                                               ReadLocalVariableNodeGen SourceSection: [12112,12117]`limit`
                                                 Frame: [3,limit,Illegal]
                                               IntegerLiteralNode SourceSection: [12121,12122]`0`
@@ -3172,9 +3158,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                                 ReadLocalVariableNodeGen SourceSection: [14655,14664]`last_file`
                                                                   Frame: [2,last_file,Illegal]
                                                                 ObjectLiteralNode SourceSection: [14672,14676]`None`
-                                                            BinaryComparisonNodeGen SourceSection: [14681,14708]`last_file == frame.f...`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __eq__
+                                                            EqNodeGen SourceSection: [14681,14708]`last_file == frame.f...`
                                                               ReadLocalVariableNodeGen SourceSection: [14681,14690]`last_file`
                                                                 Frame: [2,last_file,Illegal]
                                                               GetAttributeNode SourceSection: [14694,14708]`frame.filename`
@@ -3193,9 +3177,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                                 Frame: [3,last_line,Illegal]
                                                               ObjectLiteralNode SourceSection: [14746,14750]`None`
                                                           YesNodeGen SourceSection: None
-                                                        BinaryComparisonNodeGen SourceSection: [14755,14780]`last_line == frame.l...`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __eq__
+                                                        EqNodeGen SourceSection: [14755,14780]`last_line == frame.l...`
                                                           ReadLocalVariableNodeGen SourceSection: [14755,14764]`last_line`
                                                             Frame: [3,last_line,Illegal]
                                                           GetAttributeNode SourceSection: [14768,14780]`frame.lineno`
@@ -3214,9 +3196,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                             Frame: [4,last_name,Illegal]
                                                           ObjectLiteralNode SourceSection: [14818,14822]`None`
                                                       YesNodeGen SourceSection: None
-                                                    BinaryComparisonNodeGen SourceSection: [14827,14850]`last_name == frame.n...`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __eq__
+                                                    EqNodeGen SourceSection: [14827,14850]`last_name == frame.n...`
                                                       ReadLocalVariableNodeGen SourceSection: [14827,14836]`last_name`
                                                         Frame: [4,last_name,Illegal]
                                                       GetAttributeNode SourceSection: [14840,14850]`frame.name`
@@ -3241,9 +3221,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 BlockNode SourceSection: None
                                                   IfNode SourceSection: [14914,15032]`if count > 3:↵      ...`
                                                     YesNodeGen SourceSection: None
-                                                      BinaryComparisonNodeGen SourceSection: [14917,14926]`count > 3`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __gt__
+                                                      GtNodeGen SourceSection: [14917,14926]`count > 3`
                                                         ReadLocalVariableNodeGen SourceSection: [14917,14922]`count`
                                                           Frame: [5,count,Illegal]
                                                         IntegerLiteralNode SourceSection: [14925,14926]`3`
@@ -3300,9 +3278,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Value: 0
                                               IfNode SourceSection: [15177,15229]`if count >= 3:↵     ...`
                                                 YesNodeGen SourceSection: None
-                                                  BinaryComparisonNodeGen SourceSection: [15180,15190]`count >= 3`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __ge__
+                                                  GeNodeGen SourceSection: [15180,15190]`count >= 3`
                                                     ReadLocalVariableNodeGen SourceSection: [15180,15185]`count`
                                                       Frame: [5,count,Illegal]
                                                     IntegerLiteralNode SourceSection: [15189,15190]`3`
@@ -3474,9 +3450,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [15683,15785]`if count > 3:↵      ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [15686,15695]`count > 3`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __gt__
+                                        GtNodeGen SourceSection: [15686,15695]`count > 3`
                                           ReadLocalVariableNodeGen SourceSection: [15686,15691]`count`
                                             Frame: [5,count,Illegal]
                                           IntegerLiteralNode SourceSection: [15694,15695]`3`
@@ -4325,9 +4299,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [2,<return_val>,Illegal]
-                                            BinaryComparisonNodeGen SourceSection: [20148,20179]`self.__dict__ == oth...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __eq__
+                                            EqNodeGen SourceSection: [20148,20179]`self.__dict__ == oth...`
                                               GetAttributeNode SourceSection: [20148,20161]`self.__dict__`
                                                 GetFixedAttributeNode SourceSection: None
                                                   Key: __dict__

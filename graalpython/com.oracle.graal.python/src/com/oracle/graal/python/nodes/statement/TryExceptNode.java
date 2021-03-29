@@ -46,6 +46,7 @@ import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -280,6 +281,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         }
 
         @ExportMessage(name = "execute")
+        @TruffleBoundary
         boolean catches(Object[] arguments,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();

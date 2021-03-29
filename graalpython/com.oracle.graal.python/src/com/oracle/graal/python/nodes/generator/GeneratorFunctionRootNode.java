@@ -84,6 +84,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     public Object execute(VirtualFrame frame) {
         // TODO 'materialize' generator frame and create locals dict eagerly
         if (callTargets == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             callTargets = createYieldTargets(callTarget);
         }
         CompilerAsserts.partialEvaluationConstant(cellSlots);
@@ -98,7 +99,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     }
 
     public static RootCallTarget[] createYieldTargets(RootCallTarget callTarget) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
+        CompilerAsserts.neverPartOfCompilation();
         int numYields = NodeUtil.countNodes(callTarget.getRootNode(), (node) -> node instanceof AbstractYieldNode);
         RootCallTarget[] callTargets = new RootCallTarget[numYields + 1];
         callTargets[0] = callTarget;

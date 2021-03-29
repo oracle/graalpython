@@ -410,9 +410,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NotNodeGen SourceSection: [3934,3947]`not op_result`
                             ReadLocalVariableNodeGen SourceSection: [3938,3947]`op_result`
                               Frame: [3,op_result,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [3952,3965]`self != other`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [3952,3965]`self != other`
                             ReadLocalVariableNodeGen SourceSection: [3952,3956]`self`
                               Frame: [0,self,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [3960,3965]`other`
@@ -485,9 +483,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         OrNode SourceSection: [4150,4176]`op_result or self ==...`
                           ReadLocalVariableNodeGen SourceSection: [4150,4159]`op_result`
                             Frame: [3,op_result,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [4163,4176]`self == other`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [4163,4176]`self == other`
                             ReadLocalVariableNodeGen SourceSection: [4163,4167]`self`
                               Frame: [0,self,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [4171,4176]`other`
@@ -656,9 +652,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NotNodeGen SourceSection: [4678,4691]`not op_result`
                             ReadLocalVariableNodeGen SourceSection: [4682,4691]`op_result`
                               Frame: [3,op_result,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [4695,4708]`self == other`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [4695,4708]`self == other`
                             ReadLocalVariableNodeGen SourceSection: [4695,4699]`self`
                               Frame: [0,self,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [4703,4708]`other`
@@ -745,9 +739,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         AndNode SourceSection: [4955,4982]`op_result and self !...`
                           ReadLocalVariableNodeGen SourceSection: [4955,4964]`op_result`
                             Frame: [3,op_result,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [4969,4982]`self != other`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [4969,4982]`self != other`
                             ReadLocalVariableNodeGen SourceSection: [4969,4973]`self`
                               Frame: [0,self,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [4977,4982]`other`
@@ -916,9 +908,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NotNodeGen SourceSection: [5483,5496]`not op_result`
                             ReadLocalVariableNodeGen SourceSection: [5487,5496]`op_result`
                               Frame: [3,op_result,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [5501,5514]`self != other`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [5501,5514]`self != other`
                             ReadLocalVariableNodeGen SourceSection: [5501,5505]`self`
                               Frame: [0,self,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [5509,5514]`other`
@@ -991,9 +981,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         OrNode SourceSection: [5699,5725]`op_result or self ==...`
                           ReadLocalVariableNodeGen SourceSection: [5699,5708]`op_result`
                             Frame: [3,op_result,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [5712,5725]`self == other`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [5712,5725]`self == other`
                             ReadLocalVariableNodeGen SourceSection: [5712,5716]`self`
                               Frame: [0,self,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [5720,5725]`other`
@@ -1162,9 +1150,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           NotNodeGen SourceSection: [6227,6240]`not op_result`
                             ReadLocalVariableNodeGen SourceSection: [6231,6240]`op_result`
                               Frame: [3,op_result,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [6244,6257]`self == other`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [6244,6257]`self == other`
                             ReadLocalVariableNodeGen SourceSection: [6244,6248]`self`
                               Frame: [0,self,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [6252,6257]`other`
@@ -1251,9 +1237,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         AndNode SourceSection: [6504,6531]`op_result and self !...`
                           ReadLocalVariableNodeGen SourceSection: [6504,6513]`op_result`
                             Frame: [3,op_result,Illegal]
-                          BinaryComparisonNodeGen SourceSection: [6518,6531]`self != other`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __ne__
+                          NeNodeGen SourceSection: [6518,6531]`self != other`
                             ReadLocalVariableNodeGen SourceSection: [6518,6522]`self`
                               Frame: [0,self,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [6526,6531]`other`
@@ -1825,9 +1809,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       Frame: [3,<return_val>,Illegal]
-                                                      BinaryComparisonNodeGen SourceSection: [8321,8351]`mycmp(self.obj, othe...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __lt__
+                                                      LtNodeGen SourceSection: [8321,8351]`mycmp(self.obj, othe...`
                                                         PythonCallBinary SourceSection: [8321,8347]`mycmp(self.obj, othe...`
                                                           CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8321,8326]`mycmp`
@@ -1901,9 +1883,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       Frame: [3,<return_val>,Illegal]
-                                                      BinaryComparisonNodeGen SourceSection: [8404,8434]`mycmp(self.obj, othe...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __gt__
+                                                      GtNodeGen SourceSection: [8404,8434]`mycmp(self.obj, othe...`
                                                         PythonCallBinary SourceSection: [8404,8430]`mycmp(self.obj, othe...`
                                                           CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8404,8409]`mycmp`
@@ -1977,9 +1957,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       Frame: [3,<return_val>,Illegal]
-                                                      BinaryComparisonNodeGen SourceSection: [8487,8518]`mycmp(self.obj, othe...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __eq__
+                                                      EqNodeGen SourceSection: [8487,8518]`mycmp(self.obj, othe...`
                                                         PythonCallBinary SourceSection: [8487,8513]`mycmp(self.obj, othe...`
                                                           CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8487,8492]`mycmp`
@@ -2053,9 +2031,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       Frame: [3,<return_val>,Illegal]
-                                                      BinaryComparisonNodeGen SourceSection: [8571,8602]`mycmp(self.obj, othe...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __le__
+                                                      LeNodeGen SourceSection: [8571,8602]`mycmp(self.obj, othe...`
                                                         PythonCallBinary SourceSection: [8571,8597]`mycmp(self.obj, othe...`
                                                           CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8571,8576]`mycmp`
@@ -2129,9 +2105,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       Frame: [3,<return_val>,Illegal]
-                                                      BinaryComparisonNodeGen SourceSection: [8655,8686]`mycmp(self.obj, othe...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __ge__
+                                                      GeNodeGen SourceSection: [8655,8686]`mycmp(self.obj, othe...`
                                                         PythonCallBinary SourceSection: [8655,8681]`mycmp(self.obj, othe...`
                                                           CallBinaryMethodNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [8655,8660]`mycmp`
@@ -2312,9 +2286,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [9369,9469]`if len(args) < 2:↵  ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [9372,9385]`len(args) < 2`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __lt__
+                                        LtNodeGen SourceSection: [9372,9385]`len(args) < 2`
                                           PythonCallUnary SourceSection: [9372,9381]`len(args)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9372,9375]`len`
@@ -2870,9 +2842,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             PythonObjectFactoryNodeGen SourceSection: None
                                       IfNode SourceSection: [10554,10665]`if type(self).__modu...`
                                         YesNodeGen SourceSection: None
-                                          BinaryComparisonNodeGen SourceSection: [10557,10593]`type(self).__module_...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __eq__
+                                          EqNodeGen SourceSection: [10557,10593]`type(self).__module_...`
                                             GetAttributeNode SourceSection: [10557,10578]`type(self).__module_...`
                                               GetFixedAttributeNode SourceSection: None
                                                 Key: __module__
@@ -3071,9 +3041,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11014,11118]`if len(state) != 4:↵...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [11017,11032]`len(state) != 4`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __ne__
+                                        NeNodeGen SourceSection: [11017,11032]`len(state) != 4`
                                           PythonCallUnary SourceSection: [11017,11027]`len(state)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11017,11020]`len`
@@ -4725,9 +4693,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       IfNode SourceSection: [16735,16811]`elif len(key) == 1 a...`
                         YesNodeGen SourceSection: None
                           AndNode SourceSection: [16740,16783]`len(key) == 1 and ty...`
-                            BinaryComparisonNodeGen SourceSection: [16740,16753]`len(key) == 1`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [16740,16753]`len(key) == 1`
                               PythonCallUnary SourceSection: [16740,16748]`len(key)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [16740,16743]`len`
@@ -5144,9 +5110,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [19123,22710]`if maxsize == 0:↵↵  ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [19126,19138]`maxsize == 0`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [19126,19138]`maxsize == 0`
                           ReadLocalCellNodeGen SourceSection: [19126,19133]`maxsize`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [1,maxsize,Illegal]
@@ -5816,9 +5780,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   Identifier: full
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [23,full,Illegal]
-                                                  BinaryComparisonNodeGen SourceSection: [22627,22649]`cache_len() >= maxsi...`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __ge__
+                                                  GeNodeGen SourceSection: [22627,22649]`cache_len() >= maxsi...`
                                                     PythonCallNodeGen SourceSection: [22627,22638]`cache_len()`
                                                       CallNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [22627,22636]`cache_len`
@@ -6269,9 +6231,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       Frame: [5,seq,Illegal]
                                   IfNode SourceSection: [24376,24428]`if seq[0] == candida...`
                                     YesNodeGen SourceSection: None
-                                      BinaryComparisonNodeGen SourceSection: [24379,24398]`seq[0] == candidate`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __eq__
+                                      EqNodeGen SourceSection: [24379,24398]`seq[0] == candidate`
                                         GetItemNodeGen SourceSection: [24379,24385]`seq[0]`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [5,seq,Illegal]
@@ -7141,9 +7101,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         IfNode SourceSection: [27286,27364]`if typ != other and ...`
                                           YesNodeGen SourceSection: None
                                             AndNode SourceSection: [27289,27326]`typ != other and typ...`
-                                              BinaryComparisonNodeGen SourceSection: [27289,27301]`typ != other`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __ne__
+                                              NeNodeGen SourceSection: [27289,27301]`typ != other`
                                                 ReadLocalVariableNodeGen SourceSection: [27289,27292]`typ`
                                                   Frame: [0,typ,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [27296,27301]`other`
@@ -7812,9 +7770,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           IfNode SourceSection: [30284,30408]`if cache_token != cu...`
                                             YesNodeGen SourceSection: None
-                                              BinaryComparisonNodeGen SourceSection: [30287,30315]`cache_token != curre...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __ne__
+                                              NeNodeGen SourceSection: [30287,30315]`cache_token != curre...`
                                                 ReadLocalCellNodeGen SourceSection: [30287,30298]`cache_token`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [5,cache_token,Illegal]

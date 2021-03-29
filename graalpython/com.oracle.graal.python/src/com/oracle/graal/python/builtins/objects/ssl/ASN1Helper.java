@@ -98,6 +98,7 @@ public class ASN1Helper {
         javaToName.put("SERIALNUMBER", JAVA_X509_SERIAL_NUMBER);
 
         // X509 OIDs
+        javaToName.put("OID.1.2.840.113549.1.9.1", "emailAddress");
         javaToName.put("OID.2.5.4.3", JAVA_X509_COMMON_NAME);
         javaToName.put("OID.2.5.4.4", "surname");
         javaToName.put("OID.2.5.4.5", JAVA_X509_SERIAL_NUMBER);

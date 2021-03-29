@@ -45,52 +45,7 @@ import com.oracle.graal.python.test.PythonTests;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.parser.sst.AndSSTNode;
-import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
-import com.oracle.graal.python.parser.sst.AssertSSTNode;
-import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
-import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
-import com.oracle.graal.python.parser.sst.BinaryArithmeticSSTNode;
-import com.oracle.graal.python.parser.sst.BlockSSTNode;
-import com.oracle.graal.python.parser.sst.BooleanLiteralSSTNode;
-import com.oracle.graal.python.parser.sst.CallSSTNode;
-import com.oracle.graal.python.parser.sst.ClassSSTNode;
-import com.oracle.graal.python.parser.sst.CollectionSSTNode;
-import com.oracle.graal.python.parser.sst.ComparisonSSTNode;
-import com.oracle.graal.python.parser.sst.DecoratedSSTNode;
-import com.oracle.graal.python.parser.sst.DecoratorSSTNode;
-import com.oracle.graal.python.parser.sst.DelSSTNode;
-import com.oracle.graal.python.parser.sst.ExceptSSTNode;
-import com.oracle.graal.python.parser.sst.ExpressionStatementSSTNode;
-import com.oracle.graal.python.parser.sst.FloatLiteralSSTNode;
-import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
-import com.oracle.graal.python.parser.sst.ForSSTNode;
-import com.oracle.graal.python.parser.sst.FormatStringParser;
-import com.oracle.graal.python.parser.sst.FunctionDefSSTNode;
-import com.oracle.graal.python.parser.sst.GetAttributeSSTNode;
-import com.oracle.graal.python.parser.sst.IfSSTNode;
-import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
-import com.oracle.graal.python.parser.sst.ImportSSTNode;
-import com.oracle.graal.python.parser.sst.LambdaSSTNode;
-import com.oracle.graal.python.parser.sst.NotSSTNode;
-import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode;
-import com.oracle.graal.python.parser.sst.OrSSTNode;
-import com.oracle.graal.python.parser.sst.RaiseSSTNode;
-import com.oracle.graal.python.parser.sst.ReturnSSTNode;
-import com.oracle.graal.python.parser.sst.SSTNode;
-import com.oracle.graal.python.parser.sst.SSTreeVisitor;
-import com.oracle.graal.python.parser.sst.SimpleSSTNode;
-import com.oracle.graal.python.parser.sst.SliceSSTNode;
-import com.oracle.graal.python.parser.sst.StarSSTNode;
-import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
-import com.oracle.graal.python.parser.sst.SubscriptSSTNode;
-import com.oracle.graal.python.parser.sst.TernaryIfSSTNode;
-import com.oracle.graal.python.parser.sst.TrySSTNode;
-import com.oracle.graal.python.parser.sst.UnarySSTNode;
-import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
-import com.oracle.graal.python.parser.sst.WhileSSTNode;
-import com.oracle.graal.python.parser.sst.WithSSTNode;
-import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
+import com.oracle.graal.python.parser.sst.*;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.parser.ParserTestBase;
@@ -430,6 +385,11 @@ public class FormatStringTests extends ParserTestBase {
 
         @Override
         public Object visit(AnnAssignmentSSTNode node) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Object visit(AnnotationSSTNode node) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 

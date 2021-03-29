@@ -62,7 +62,6 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -179,7 +178,6 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     protected static void convertToSideEffectMap(EconomicMapStorage self) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
         self.map.setSideEffectFlag();
     }
 

@@ -71,32 +71,28 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     }
 
     @Override
-    public void writeBoolean(VirtualFrame frame, boolean value) {
+    public final void executeBoolean(VirtualFrame frame, boolean value) {
         executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
-    public void writeInt(VirtualFrame frame, int value) {
+    public final void executeInt(VirtualFrame frame, int value) {
         executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
-    public void writeLong(VirtualFrame frame, long value) {
+    public final void executeLong(VirtualFrame frame, long value) {
         executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
-    public void writeDouble(VirtualFrame frame, double value) {
+    public final void executeDouble(VirtualFrame frame, double value) {
         executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
-    public void writeObject(VirtualFrame frame, Object value) {
+    public final void executeObject(VirtualFrame frame, Object value) {
         executeWith(frame, getPrimary().execute(frame), getSlice().execute(frame), value);
-    }
-
-    public void executeWith(VirtualFrame frame, Object value) {
-        writeObject(frame, value);
     }
 
     public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, boolean value);
