@@ -70,7 +70,7 @@ import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooMa
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeMRONode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -470,7 +470,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         static void doEnclosingTypeCheck(@SuppressWarnings("unused") Signature signature, PBuiltinFunction callable, @SuppressWarnings("unused") Object[] scope_w,
                         @Bind("getSelf(scope_w)") Object self,
                         @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Cached IsSubtypeMRONode isSubtypeMRONode,
+                        @Cached IsSubtypeNode isSubtypeMRONode,
                         @Cached PRaiseNode raiseNode) {
             if (!isSubtypeMRONode.execute(lib.getLazyPythonClass(self), callable.getEnclosingType())) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
