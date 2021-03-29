@@ -510,17 +510,7 @@ public final class ScopeInfo {
         out.writeInt(scope.getSerializetionId());
         out.writeBoolean(scope.hasAnnotations());
         // for recreating frame descriptor
-        Set<Object> identifiers = scope.getFrameDescriptor().getIdentifiers();
-        List<String> names = new ArrayList<>();
-        for (Object identifier : identifiers) {
-            if (identifier instanceof String) {
-                names.add((String) identifier);
-            }
-        }
-        out.writeInt(names.size());
-        for (String name : names) {
-            out.writeUTF(name);
-        }
+        writeIdentifiers(out, scope.getFrameDescriptor().getIdentifiers());
 
         if (scope.explicitGlobalVariables == null) {
             out.writeInt(0);
@@ -574,6 +564,44 @@ public final class ScopeInfo {
         }
     }
 
+    private static void writeIdentifiers(DataOutput out, Set<Object> identifiers) throws IOException {
+        for (Object identifier : identifiers) {
+            if (identifier instanceof String) {
+                out.writeByte(1);
+                out.writeUTF((String) identifier);
+            } else if (identifier == FrameSlotIDs.RETURN_SLOT_ID) {
+                out.writeByte(2);
+            } else if (identifier == FrameSlotIDs.FREEVAR__CLASS__) {
+                out.writeByte(3);
+            }
+            // we don't have to serialize temp slots, they will be recreated during
+            // execution tree creation.
+        }
+        out.writeByte(0);
+    }
+
+    private static void readIdentifiersAndCreateSlots(DataInput input, ScopeInfo scope) throws IOException {
+        byte kind = input.readByte();
+        while (kind != 0) {
+            Object identifier = null;
+            switch (kind) {
+                case 1:
+                    identifier = input.readUTF();
+                    break;
+                case 2:
+                    identifier = FrameSlotIDs.RETURN_SLOT_ID;
+                    break;
+                case 3:
+                    identifier = FrameSlotIDs.FREEVAR__CLASS__;
+                    break;
+            }
+            if (identifier != null) {
+                scope.createSlotIfNotPresent(identifier);
+            }
+            kind = input.readByte();
+        }
+    }
+
     public static ScopeInfo read(DataInput input, ScopeInfo parent) throws IOException {
         byte kindByte = input.readByte();
         if (kindByte == -1) {
@@ -588,12 +616,9 @@ public final class ScopeInfo {
 
         ScopeInfo scope = new ScopeInfo(id, serializationId, kind, null, parent);
         scope.annotationsField = hasAnnotations;
-        int len = input.readInt();
-        for (int i = 0; i < len; i++) {
-            scope.createSlotIfNotPresent(input.readUTF());
-        }
+        readIdentifiersAndCreateSlots(input, scope);
 
-        len = input.readInt();
+        int len = input.readInt();
         for (int i = 0; i < len; i++) {
             scope.addExplicitGlobalVariable(input.readUTF());
         }

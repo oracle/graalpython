@@ -292,7 +292,11 @@ public class ParserTestBase {
     }
 
     protected String printTreeToString(Node node) {
-        ParserTreePrinter visitor = new ParserTreePrinter();
+        return printTreeToString(node, true);
+    }
+
+    protected String printTreeToString(Node node, boolean printTmpSlots) {
+        ParserTreePrinter visitor = new ParserTreePrinter(printTmpSlots);
         visitor.printFormatStringLiteralDetail = printFormatStringLiteralValues;
         node.accept(visitor);
         return visitor.getTree();
