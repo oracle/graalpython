@@ -183,8 +183,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[TM_SEC] = zonedDateTime.getSecond();
         timeStruct[TM_WDAY] = zonedDateTime.getDayOfWeek().getValue() - 1; /* Want Monday == 0 */
         timeStruct[TM_YDAY] = zonedDateTime.getDayOfYear(); /* Want January, 1 == 1 */
-        timeStruct[TM_ISDST] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
-        timeStruct[9] = zone.getDisplayName(TextStyle.SHORT, Locale.ROOT);
+	boolean isDaylightSavings = zonedDateTime.getZone().getRules().isDaylightSavings(instant);
+        timeStruct[TM_ISDST] = (isDaylightSavings) ? 1 : 0;
+        timeStruct[9] = TimeZone.getTimeZone(zone.getId()).getDisplayName(isDaylightSavings, TimeZone.SHORT);
         timeStruct[10] = zonedDateTime.getOffset().getTotalSeconds();
 
         return timeStruct;
