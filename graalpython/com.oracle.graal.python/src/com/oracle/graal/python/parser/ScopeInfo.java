@@ -605,7 +605,16 @@ public final class ScopeInfo {
 
         len = input.readInt();
         for (int i = 0; i < len; i++) {
-            scope.addCellVar(input.readUTF());
+            final String cellVarIdentifier = input.readUTF();
+            scope.addCellVar(cellVarIdentifier);
+            if (scope.getScopeKind() == ScopeKind.Class && __CLASS__.equals(cellVarIdentifier)) {
+                // This is preventing corner situation, when body of class has two variables with
+                // the same name __class__. The first one is __class__ freevar comming from outer
+                // scope and the second one is __class__ (implicit) closure for inner methods, where
+                // __class__ or super is used. Both of them can have different values. So the first
+                // one is stored in slot with different identifier.
+                scope.createSlotIfNotPresent(FrameSlotIDs.FREEVAR__CLASS__);
+            }
         }
 
         len = input.readInt();
