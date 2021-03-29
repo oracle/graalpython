@@ -652,6 +652,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__mul__", NULL, sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
         ADD_SLOT_CONV("__getitem__", NULL, sequences->sq_item, -2, JWRAPPER_SSIZE_ARG);
         ADD_SLOT_CONV("__setitem__", NULL, sequences->sq_ass_item, -3, JWRAPPER_SSIZE_OBJ_ARG);
+        ADD_SLOT_CONV("__delitem__", NULL, sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
         ADD_SLOT_PRIMITIVE("__contains__", sequences->sq_contains, -2);
         ADD_SLOT("__iadd__", sequences->sq_inplace_concat, -2);
         ADD_SLOT_CONV("__imul__", NULL, sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);

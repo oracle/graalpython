@@ -167,25 +167,31 @@ public abstract class ExternalFunctionNodes {
         NE(20, TernaryFirstSecondToSulongNode::create),
         GT(21, TernaryFirstSecondToSulongNode::create),
         GE(22, TernaryFirstSecondToSulongNode::create),
-        ITERNEXT(23, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
-        INQUIRY(24, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
-        GETTER(25, BinaryFirstToSulongNode::create),
-        SETTER(26, TernaryFirstSecondToSulongNode::create);
+        ITERNEXT(23, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
+        INQUIRY(24, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
+        DELITEM(25, 1, TernaryFirstThirdToSulongNode::create),
+        GETTER(26, BinaryFirstToSulongNode::create),
+        SETTER(27, TernaryFirstSecondToSulongNode::create);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
 
-        PExternalFunctionWrapper(int value, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier, Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier) {
+        PExternalFunctionWrapper(int value, int numDefaults, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier, Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier) {
             this.value = value;
+            this.numDefaults = numDefaults;
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
             this.checkFunctionResultNodeSupplier = checkFunctionResultNodeSupplier;
         }
 
         PExternalFunctionWrapper(int value, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
-            this(value, convertArgsNodeSupplier, DefaultCheckFunctionResultNodeGen::create);
+            this(value, 0, convertArgsNodeSupplier, DefaultCheckFunctionResultNodeGen::create);
+        }
+
+        PExternalFunctionWrapper(int value, int numDefaults, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
+            this(value, numDefaults, convertArgsNodeSupplier, DefaultCheckFunctionResultNodeGen::create);
         }
 
         PExternalFunctionWrapper(int value) {
-            this(value, AllToSulongNode::create, DefaultCheckFunctionResultNodeGen::create);
+            this(value, 0, AllToSulongNode::create, DefaultCheckFunctionResultNodeGen::create);
         }
 
         @ExplodeLoop
@@ -198,21 +204,13 @@ public abstract class ExternalFunctionNodes {
             return null;
         }
 
-        static boolean isValid(int value) {
-            return fromValue(value) != null;
-        }
-
         private final int value;
+        private final int numDefaults;
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
         private final Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier;
 
         @TruffleBoundary
-        static RootCallTarget getOrCreateCallTarget(int methodFlags, PythonLanguage language, String name, boolean doArgAndResultConversion) {
-            return getOrCreateCallTarget(PExternalFunctionWrapper.fromValue(methodFlags), language, name, doArgAndResultConversion);
-        }
-
-        @TruffleBoundary
-        public static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, String name, boolean doArgAndResultConversion) {
+        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, String name, boolean doArgAndResultConversion) {
             Class<?> nodeKlass = null;
             Supplier<RootNode> rootNodeFunction = null;
             switch (sig) {
@@ -269,6 +267,7 @@ public abstract class ExternalFunctionNodes {
                     rootNodeFunction = doArgAndResultConversion ? () -> new RichCmpFuncRootNode(language, name, sig) : () -> new RichCmpFuncRootNode(language, name);
                     break;
                 case SSIZE_OBJ_ARG:
+                case DELITEM:
                     nodeKlass = SSizeObjArgProcRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? () -> new SSizeObjArgProcRootNode(language, name, sig) : () -> new SSizeObjArgProcRootNode(language, name);
                     break;
@@ -322,6 +321,45 @@ public abstract class ExternalFunctionNodes {
                     break;
             }
             return language.getOrComputeBuiltinCallTarget(nodeKlass.getCanonicalName() + sig.name() + name + doArgAndResultConversion, rootNodeFunction);
+        }
+
+        public static PBuiltinFunction createWrapperFunction(int sig, PythonObjectFactory factory, PythonLanguage language, String name, Object callable, Object enclosingType,
+                        boolean doArgAndResultConversion) {
+            return createWrapperFunction(PExternalFunctionWrapper.fromValue(sig), factory, language, name, callable, enclosingType, doArgAndResultConversion);
+        }
+
+        /**
+         * Creates a built-in function for a specific signature. This built-in function also does
+         * appropriate argument and result conversion and calls the provided callable.
+         *
+         * @param language The Python language object.
+         * @param sig The wrapper/signature ID as defined in {@link PExternalFunctionWrapper}.
+         * @param name The name of the method.
+         * @param callable The native function pointer.
+         * @param enclosingType The type the function belongs to (needed for checking of
+         *            {@code self}).
+         * @param factory Just an instance of {@link PythonObjectFactory} to create the function
+         *            object.
+         * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot
+         *         wrapper.
+         */
+        @TruffleBoundary
+        public static PBuiltinFunction createWrapperFunction(PExternalFunctionWrapper sig, PythonObjectFactory factory, PythonLanguage language, String name, Object callable, Object enclosingType,
+                        boolean doArgAndResultConversion) {
+            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion);
+            if (callTarget == null) {
+                return null;
+            }
+            Object[] defaults;
+            int numDefaults = sig.numDefaults;
+            if (numDefaults > 0) {
+                defaults = new Object[numDefaults];
+                Arrays.fill(defaults, PNone.NO_VALUE);
+            } else {
+                defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
+            }
+            Object type = SpecialMethodNames.__NEW__.equals(name) ? null : enclosingType;
+            return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), callTarget);
         }
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {

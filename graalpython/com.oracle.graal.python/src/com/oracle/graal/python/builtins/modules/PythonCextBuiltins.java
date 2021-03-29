@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetterRoot;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -533,14 +532,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
-
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
-            RootCallTarget wrappedCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(signature, lang, name, false);
-            if (wrappedCallTarget != null) {
-                Object enclosingType = SpecialMethodNames.__NEW__.equals(name) ? null : type;
-                return factory().createBuiltinFunction(name, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(managedCallable), wrappedCallTarget);
-            }
-            return managedCallable;
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(signature, factory(), lang, name, managedCallable, type, false);
+            return function != null ? function : managedCallable;
         }
 
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"})
@@ -567,10 +561,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
-            RootCallTarget wrappedCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(signature, lang, name, false);
-            if (wrappedCallTarget != null) {
-                Object enclosingType = SpecialMethodNames.__NEW__.equals(name) ? null : type;
-                return factory().createBuiltinFunction(name, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(managedCallable), wrappedCallTarget);
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(signature, factory(), lang, name, managedCallable, type, false);
+            if (function != null) {
+                return function;
             }
 
             // Special case: if the returned 'wrappedCallTarget' is null, this indicates we want to
@@ -584,9 +577,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PBuiltinFunction doNativeCallableWithType(String name, Object callable, int signature, Object type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            RootCallTarget wrappedCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(signature, lang, name, true);
-            Object enclosingType = SpecialMethodNames.__NEW__.equals(name) ? null : type;
-            return factory().createBuiltinFunction(name, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(callable), wrappedCallTarget);
+            return PExternalFunctionWrapper.createWrapperFunction(signature, factory(), lang, name, callable, type, true);
         }
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -601,9 +592,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, name));
-            Object enclosingType = SpecialMethodNames.__NEW__.equals(name) ? null : type;
-            return factory().createBuiltinFunction(name, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(callable), callTarget);
+            return PExternalFunctionWrapper.createWrapperFunction(PExternalFunctionWrapper.DIRECT, factory(), lang, name, callable, type, true);
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
