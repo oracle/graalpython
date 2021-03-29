@@ -98,7 +98,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
-@SuppressWarnings("unused")
 public class SocketBuiltins extends PythonBuiltins {
 
     @Override
@@ -342,7 +341,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object listen(PSocket socket, PNone backlog) {
+        Object listen(PSocket socket, @SuppressWarnings("unused") PNone backlog) {
             return listen(socket, 50);
         }
     }
@@ -354,7 +353,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RecvNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
-        Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags,
+        Object recv(VirtualFrame frame, PSocket socket, int bufsize, @SuppressWarnings("unused") int flags,
                         @Cached GilNode gil) {
             if (socket.getSocket() == null) {
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
@@ -385,11 +384,13 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "recvfrom", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RecvFromNode extends PythonTernaryBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         Object recvFrom(PSocket socket, int bufsize, int flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @SuppressWarnings("unused")
         @Specialization
         Object recvFrom(PSocket socket, int bufsize, PNone flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -405,8 +406,7 @@ public class SocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object recvInto(VirtualFrame frame, PSocket socket, PMemoryView buffer, Object flags,
-                        @Cached ConditionProfile byteStorage,
+        Object recvInto(VirtualFrame frame, PSocket socket, PMemoryView buffer, @SuppressWarnings("unused") Object flags,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__SETITEM__)") LookupAndCallTernaryNode setItem) {
@@ -435,7 +435,7 @@ public class SocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object recvInto(VirtualFrame frame, PSocket socket, PByteArray buffer, Object flags,
+        Object recvInto(VirtualFrame frame, PSocket socket, PByteArray buffer, @SuppressWarnings("unused") Object flags,
                         @Cached GilNode gil,
                         @Cached ConditionProfile byteStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
@@ -488,16 +488,19 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "recvmsg", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class RecvMsgNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         Object recvFrom(PSocket socket, int bufsize, int ancbufsize, int flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @SuppressWarnings("unused")
         @Specialization
         Object recvFrom(PSocket socket, int bufsize, int ancbufsize, PNone flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @SuppressWarnings("unused")
         @Specialization
         Object recvFrom(PSocket socket, int bufsize, PNone ancbufsize, PNone flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -509,7 +512,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object send(VirtualFrame frame, PSocket socket, PBytes bytes, Object flags,
+        Object send(VirtualFrame frame, PSocket socket, PBytes bytes, @SuppressWarnings("unused") Object flags,
                         @Cached GilNode gil,
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
             // TODO: do not ignore flags
@@ -542,7 +545,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendAllNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object sendAll(VirtualFrame frame, PSocket socket, PBytesLike bytes, Object flags,
+        Object sendAll(VirtualFrame frame, PSocket socket, PBytesLike bytes, @SuppressWarnings("unused") Object flags,
                         @Cached GilNode gil,
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes,
                         @Cached ConditionProfile hasTimeoutProfile) {
@@ -586,11 +589,13 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "sendto", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class SendToNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         Object sendTo(PSocket socket, Object bytes, int flags, Object address) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @SuppressWarnings("unused")
         @Specialization
         Object sendTo(PSocket socket, Object bytes, PNone flags, Object address) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -601,6 +606,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "sendmsg", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 5)
     @GenerateNodeFactory
     abstract static class SendMsgNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         Object sendMsg(PSocket socket, Object buffers, Object ancdata, int flags, Object address) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -743,6 +749,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "_setsockopt", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class SetSockOptNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         Object setSockOpt(PSocket socket, Object level, Object optname, Object value, Object optlen) {
             return PNone.NONE;
