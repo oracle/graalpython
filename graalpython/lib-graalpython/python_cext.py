@@ -1030,13 +1030,16 @@ def PyObject_Bytes(obj):
 ## EXCEPTIONS
 
 @may_raise(None)
-def PyErr_CreateAndSetException(exception_type, msg):
+def PyErr_CreateAndSetException(exception_type, value):
     if not _is_exception_class(exception_type):
         raise SystemError("exception %r not a BaseException subclass" % exception_type)
-    if msg is None:
+    if value is None:
         raise exception_type()
     else:
-        raise exception_type(msg)
+        # If value is already an exception object then raise it
+        if isinstance(value, BaseException):
+            raise value
+        raise exception_type(value)
 
 
 @may_raise(None)
