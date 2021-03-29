@@ -184,14 +184,14 @@ public abstract class GraalHPyLegacyDef {
         Py_nb_inplace_matrix_multiply(76, __IMATMUL__),
 
         // PySequenceMethods
-        Py_sq_ass_item(39, __SETITEM__, PExternalFunctionWrapper.SSIZE_OBJ_ARG),
+        Py_sq_ass_item(39, __SETITEM__, PExternalFunctionWrapper.SETITEM),
         Py_sq_concat(40, __ADD__),
         Py_sq_contains(41, __CONTAINS__),
         Py_sq_inplace_concat(42, __IADD__),
         Py_sq_inplace_repeat(43, __IMUL__, PExternalFunctionWrapper.ALLOC),
         Py_sq_item(44, __GETITEM__, PExternalFunctionWrapper.ALLOC),
         Py_sq_length(45, __LEN__),
-        Py_sq_repeat(46, __MUL__, PExternalFunctionWrapper.SSIZE_OBJ_ARG),
+        Py_sq_repeat(46, __MUL__, PExternalFunctionWrapper.SETITEM),
 
         // PyAsyncMethods
         Py_am_await(77),

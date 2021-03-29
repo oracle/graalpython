@@ -48,7 +48,9 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
@@ -64,13 +66,11 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArr
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -694,7 +694,7 @@ public abstract class HPyExternalFunctionNodes {
         private int getIndex(Object self, Object index) {
             if (getIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getIndexNode = insert(GetIndexNode.create());
+                getIndexNode = insert(CExtCommonNodes.GetIndexNode.create());
             }
             return getIndexNode.execute(self, index);
         }
@@ -720,7 +720,7 @@ public abstract class HPyExternalFunctionNodes {
         private int getIndex(Object self, Object index) {
             if (getIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getIndexNode = insert(GetIndexNode.create());
+                getIndexNode = insert(CExtCommonNodes.GetIndexNode.create());
             }
             return getIndexNode.execute(self, index);
         }
@@ -1094,34 +1094,4 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    /**
-     * Implements semantics of function {@code typeobject.c: getindex}.
-     */
-    static final class GetIndexNode extends Node {
-
-        @Child private PythonObjectLibrary indexLib = PythonObjectLibrary.getFactory().createDispatched(3);
-        @Child private PythonObjectLibrary selfLib;
-        @Child private NormalizeIndexNode normalizeIndexNode;
-
-        public int execute(Object self, Object indexObj) {
-            int index = indexLib.asSize(indexObj);
-            if (index < 0) {
-                // 'selfLib' acts as an implicit profile for 'index < 0'
-                if (selfLib == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    selfLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
-                }
-                if (normalizeIndexNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    normalizeIndexNode = insert(NormalizeIndexNode.create(false));
-                }
-                return normalizeIndexNode.execute(index, selfLib.length(self));
-            }
-            return index;
-        }
-
-        public static GetIndexNode create() {
-            return new GetIndexNode();
-        }
-    }
 }

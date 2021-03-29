@@ -1218,7 +1218,7 @@ public class GraalHPyNodes {
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
                         @Cached ConvertPIntToPrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(null, value, 1, Long.BYTES);
+            return asNativePrimitiveNode.execute(value, 1, Long.BYTES);
         }
     }
 
@@ -1461,31 +1461,31 @@ public class GraalHPyNodes {
     public abstract static class HPySSizeArgFuncToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 2)"})
-        static void doHandleSsizeT(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doHandleSsizeT(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
         }
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 3)"})
-        static void doHandleSsizeTSsizeT(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doHandleSsizeTSsizeT(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
-            dest[destOffset + 2] = asSsizeTNode.execute(frame, args[argsOffset + 2], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 2] = asSsizeTNode.execute(args[argsOffset + 2], 1, Long.BYTES);
         }
 
         @Specialization(replaces = {"doHandleSsizeT", "doHandleSsizeTSsizeT"})
-        static void doGeneric(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
             for (int i = 1; i < args.length - argsOffset; i++) {
-                dest[destOffset + i] = asSsizeTNode.execute(frame, args[argsOffset + i], 1, Long.BYTES);
+                dest[destOffset + i] = asSsizeTNode.execute(args[argsOffset + i], 1, Long.BYTES);
             }
         }
 
@@ -1506,12 +1506,12 @@ public class GraalHPyNodes {
     public abstract static class HPySSizeObjArgProcToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConvert(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
             dest[destOffset + 2] = asHandleNode.execute(hpyContext, args[argsOffset + 2]);
         }
 

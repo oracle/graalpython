@@ -308,7 +308,7 @@ void initialize_hashes();
 #define JWRAPPER_GETATTR                     10
 #define JWRAPPER_SETATTR                     11
 #define JWRAPPER_RICHCMP                     12
-#define JWRAPPER_SSIZE_OBJ_ARG               13
+#define JWRAPPER_SETITEM                     13
 #define JWRAPPER_REVERSE                     14
 #define JWRAPPER_POW                         15
 #define JWRAPPER_REVERSE_POW                 16
@@ -321,6 +321,7 @@ void initialize_hashes();
 #define JWRAPPER_ITERNEXT                    23
 #define JWRAPPER_INQUIRY                     24
 #define JWRAPPER_DELITEM                     25
+#define JWRAPPER_GETITEM                     26
 
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                                  \

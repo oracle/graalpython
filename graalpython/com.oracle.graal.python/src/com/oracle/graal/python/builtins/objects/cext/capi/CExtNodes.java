@@ -83,6 +83,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNa
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ObjectUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.SSizeArgProcToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.SSizeObjArgProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TernaryFirstSecondToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
@@ -94,12 +96,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.R
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -1905,6 +1909,48 @@ public abstract class CExtNodes {
 
         public static TernaryFirstThirdToSulongNode create() {
             return TernaryFirstThirdToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts arguments for C function signature
+     * {@code int (*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *)}.
+     */
+    public abstract static class SSizeObjArgProcToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode,
+                        @Cached ToBorrowedRefNode toSulongNode3) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = toSulongNode1.execute(args[argsOffset]);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 2] = toSulongNode3.execute(args[argsOffset + 2]);
+        }
+
+        public static SSizeObjArgProcToSulongNode create() {
+            return SSizeObjArgProcToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts arguments for C function signature
+     * {@code int (*ssizeargproc)(PyObject *, Py_ssize_t)}.
+     */
+    public abstract static class SSizeArgProcToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = toSulongNode1.execute(args[argsOffset]);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
+        }
+
+        public static SSizeArgProcToSulongNode create() {
+            return SSizeArgProcToSulongNodeGen.create();
         }
     }
 

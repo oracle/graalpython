@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteAr
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -102,7 +103,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -410,14 +410,14 @@ public abstract class CExtCommonNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
 
-        public abstract Object execute(Frame frame, Object o, int signed, int targetTypeSize);
+        public abstract Object execute(Object o, int signed, int targetTypeSize);
 
-        public final long executeLong(Frame frame, Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(frame, o, signed, targetTypeSize));
+        public final long executeLong(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(o, signed, targetTypeSize));
         }
 
-        public final int executeInt(Frame frame, Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(frame, o, signed, targetTypeSize));
+        public final int executeInt(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(o, signed, targetTypeSize));
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
@@ -1080,6 +1080,37 @@ public abstract class CExtCommonNodes {
         Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
+        }
+    }
+
+    /**
+     * Implements semantics of function {@code typeobject.c: getindex}.
+     */
+    public static final class GetIndexNode extends Node {
+
+        @Child private PythonObjectLibrary indexLib = PythonObjectLibrary.getFactory().createDispatched(3);
+        @Child private PythonObjectLibrary selfLib;
+        @Child private NormalizeIndexNode normalizeIndexNode;
+
+        public int execute(Object self, Object indexObj) {
+            int index = indexLib.asSize(indexObj);
+            if (index < 0) {
+                // 'selfLib' acts as an implicit profile for 'index < 0'
+                if (selfLib == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    selfLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+                }
+                if (normalizeIndexNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    normalizeIndexNode = insert(NormalizeIndexNode.create(false));
+                }
+                return normalizeIndexNode.execute(index, selfLib.length(self));
+            }
+            return index;
+        }
+
+        public static GetIndexNode create() {
+            return new GetIndexNode();
         }
     }
 }

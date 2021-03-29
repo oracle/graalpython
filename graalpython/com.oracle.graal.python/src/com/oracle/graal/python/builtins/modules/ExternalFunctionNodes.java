@@ -59,6 +59,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsT
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeArgProcToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeObjArgProcToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstSecondToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstThirdToSulongNode;
@@ -71,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -157,7 +160,7 @@ public abstract class ExternalFunctionNodes {
         GETATTR(10, BinaryFirstToSulongNode::create),
         SETATTR(11, TernaryFirstThirdToSulongNode::create),
         RICHCMP(12, TernaryFirstSecondToSulongNode::create),
-        SSIZE_OBJ_ARG(13, TernaryFirstThirdToSulongNode::create),
+        SETITEM(13, SSizeObjArgProcToSulongNode::create),
         REVERSE(14),
         POW(15),
         REVERSE_POW(16),
@@ -169,9 +172,10 @@ public abstract class ExternalFunctionNodes {
         GE(22, TernaryFirstSecondToSulongNode::create),
         ITERNEXT(23, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
         INQUIRY(24, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
-        DELITEM(25, 1, TernaryFirstThirdToSulongNode::create),
-        GETTER(26, BinaryFirstToSulongNode::create),
-        SETTER(27, TernaryFirstSecondToSulongNode::create);
+        DELITEM(25, 1, SSizeObjArgProcToSulongNode::create),
+        GETITEM(26, 0, SSizeArgProcToSulongNode::create),
+        GETTER(27, BinaryFirstToSulongNode::create),
+        SETTER(28, TernaryFirstSecondToSulongNode::create);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
 
@@ -266,10 +270,14 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = RichCmpFuncRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? () -> new RichCmpFuncRootNode(language, name, sig) : () -> new RichCmpFuncRootNode(language, name);
                     break;
-                case SSIZE_OBJ_ARG:
+                case SETITEM:
                 case DELITEM:
-                    nodeKlass = SSizeObjArgProcRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new SSizeObjArgProcRootNode(language, name, sig) : () -> new SSizeObjArgProcRootNode(language, name);
+                    nodeKlass = SetItemRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new SetItemRootNode(language, name, sig) : () -> new SetItemRootNode(language, name);
+                    break;
+                case GETITEM:
+                    nodeKlass = GetItemRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new GetItemRootNode(language, name, sig) : () -> new GetItemRootNode(language, name);
                     break;
                 case REVERSE:
                     nodeKlass = MethReverseRootNode.class;
@@ -1008,7 +1016,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelfNode.execute(frame);
             Object arg = readArgNode.execute(frame);
             try {
-                return new Object[]{self, asSsizeTNode.executeLong(frame, arg, 1, Long.BYTES)};
+                return new Object[]{self, asSsizeTNode.executeLong(arg, 1, Long.BYTES)};
             } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -1152,7 +1160,7 @@ public abstract class ExternalFunctionNodes {
                 Object self = readSelfNode.execute(frame);
                 Object arg1 = readArg1Node.execute(frame);
                 Object arg2 = readArg2Node.execute(frame);
-                return new Object[]{self, arg1, asSsizeTNode.executeInt(frame, arg2, 1, Integer.BYTES)};
+                return new Object[]{self, arg1, asSsizeTNode.executeInt(arg2, 1, Integer.BYTES)};
             } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -1172,35 +1180,67 @@ public abstract class ExternalFunctionNodes {
     }
 
     /**
-     * Wrapper root node for C function type {@code ssizeobjargproc}.
+     * Implements semantics of {@code typeobject.c: wrap_sq_item}.
      */
-    static final class SSizeObjArgProcRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "i", "value"}, KEYWORDS_HIDDEN_CALLABLE, true);
+    static final class GetItemRootNode extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "i"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArg1Node;
-        @Child private ReadIndexedArgumentNode readArg2Node;
-        @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
+        @Child private GetIndexNode getIndexNode;
 
-        SSizeObjArgProcRootNode(PythonLanguage language, String name) {
+        GetItemRootNode(PythonLanguage language, String name) {
             super(language, name);
         }
 
-        SSizeObjArgProcRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+        GetItemRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
-            this.readArg2Node = ReadIndexedArgumentNode.create(2);
-            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
+            this.getIndexNode = GetIndexNode.create();
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object arg1 = readArg1Node.execute(frame);
-                Object arg2 = readArg2Node.execute(frame);
-                return new Object[]{self, asSsizeTNode.executeLong(frame, arg1, 1, Long.BYTES), arg2};
-            } catch (UnexpectedResultException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+            Object self = readSelfNode.execute(frame);
+            Object arg1 = readArg1Node.execute(frame);
+            return new Object[]{self, getIndexNode.execute(self, arg1)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c: wrap_sq_setitem}.
+     */
+    static final class SetItemRootNode extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "i", "value"}, KEYWORDS_HIDDEN_CALLABLE, true);
+        @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private ReadIndexedArgumentNode readArg2Node;
+        @Child private GetIndexNode getIndexNode;
+
+        SetItemRootNode(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        SetItemRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+            super(language, name, provider);
+            this.readArg1Node = ReadIndexedArgumentNode.create(1);
+            this.readArg2Node = ReadIndexedArgumentNode.create(2);
+            this.getIndexNode = GetIndexNode.create();
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object arg1 = readArg1Node.execute(frame);
+            Object arg2 = readArg2Node.execute(frame);
+            return new Object[]{self, getIndexNode.execute(self, arg1), arg2};
         }
 
         @Override
