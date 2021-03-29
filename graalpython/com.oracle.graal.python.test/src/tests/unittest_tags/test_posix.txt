@@ -94,6 +94,7 @@
 *graalpython.lib-python.3.test.test_posix.PosixTester.test_waitid
 *graalpython.lib-python.3.test.test_posix.PosixTester.test_writev
 *graalpython.lib-python.3.test.test_posix.PosixTester.test_writev_overflow_32bits
+*graalpython.lib-python.3.test.test_posix.TestMain.test_main
 *graalpython.lib-python.3.test.test_posix.TestPosixSpawn.test_bad_file_actions
 *graalpython.lib-python.3.test.test_posix.TestPosixSpawn.test_close_file
 *graalpython.lib-python.3.test.test_posix.TestPosixSpawn.test_dup2

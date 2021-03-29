@@ -38,6 +38,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_chown
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copy
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copy2
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_copy2_symlinks
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copy2_xattr
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copy_return_value
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copy_symlinks
@@ -49,6 +50,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copymode_symlink_to_symlink
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copymode_symlink_to_symlink_wo_lchmod
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copystat_handles_harmless_chflags_errors
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_copystat_symlinks
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_arg_types_of_ignore
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_custom_copy_function
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_dangling_symlinks

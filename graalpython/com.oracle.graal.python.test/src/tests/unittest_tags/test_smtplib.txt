@@ -14,3 +14,4 @@
 *graalpython.lib-python.3.test.test_smtplib.NonConnectingTests.testNonnumericPort
 *graalpython.lib-python.3.test.test_smtplib.NonConnectingTests.testNotConnected
 *graalpython.lib-python.3.test.test_smtplib.NonConnectingTests.testSockAttributeExists
+*graalpython.lib-python.3.test.test_smtplib.TooLongLineTests.testLineTooLong

@@ -71,6 +71,7 @@
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_get_ca_certs_capath
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_get_server_certificate
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_get_server_certificate_fail
+*graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_makefile_close
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_handshake
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_bpo37428_pha_cert_none
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_pha_no_pha_client
@@ -118,6 +119,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_rude_shutdown
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_selected_npn_protocol
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sendfile
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_server_accept
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_shared_ciphers
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_alert
