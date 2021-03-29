@@ -1003,8 +1003,13 @@ def PyObject_GenericSetAttr(obj, attr, value):
     return 0
 
 
+# Note: Any exception that occurs during getting the attribute will cause this function to return 0.
+# This is intended and correct (see 'object.c: PyObject_HasAttr').
 def PyObject_HasAttr(obj, attr):
-    return 1 if hasattr(obj, attr) else 0
+    try:
+        return 1 if hasattr(obj, attr) else 0
+    except Exception:
+        return 0
 
 
 @may_raise(-1)
@@ -1012,6 +1017,7 @@ def PyObject_HashNotImplemented(obj):
     raise TypeError("unhashable type: '%s'" % type(obj).__name__)
 
 
+@may_raise(-1)
 def PyObject_IsTrue(obj):
     return 1 if obj else 0
 
