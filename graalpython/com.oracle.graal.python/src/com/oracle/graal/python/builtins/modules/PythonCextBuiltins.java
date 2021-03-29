@@ -3895,6 +3895,64 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
+    @Builtin(name = "PyNumber_InPlacePower", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyNumberInPlacePower extends PythonTernaryBuiltinNode {
+        @Child private LookupAndCallInplaceNode callNode;
+
+        @Specialization(guards = {"o1.isIntLike()", "o2.isIntLike()", "o3.isIntLike()"})
+        Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper o1, PrimitiveNativeWrapper o2, PrimitiveNativeWrapper o3,
+                        @Cached ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return toSulongNode.execute(ensureCallNode().executeTernary(frame, o1.getLong(), o2.getLong(), o3.getLong()));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return toSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        @Specialization(replaces = "doIntLikePrimitiveWrapper")
+        Object doGeneric(VirtualFrame frame, Object o1, Object o2, Object o3,
+                        @Cached AsPythonObjectNode o1ToJava,
+                        @Cached AsPythonObjectNode o2ToJava,
+                        @Cached AsPythonObjectNode o3ToJava,
+                        @Cached ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            // still try to avoid expensive materialization of primitives
+            Object result;
+            try {
+                Object o1Value = unwrap(o1, o1ToJava);
+                Object o2Value = unwrap(o2, o2ToJava);
+                Object o3Value = unwrap(o3, o3ToJava);
+                result = ensureCallNode().executeTernary(frame, o1Value, o2Value, o3Value);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                result = getNativeNullNode.execute();
+            }
+            return toSulongNode.execute(result);
+        }
+
+        private static Object unwrap(Object left, AsPythonObjectNode toJavaNode) {
+            if (left instanceof PrimitiveNativeWrapper) {
+                return PyNumberBinOp.extract((PrimitiveNativeWrapper) left);
+            } else {
+                return toJavaNode.execute(left);
+            }
+        }
+
+        private LookupAndCallInplaceNode ensureCallNode() {
+            if (callNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNode = insert(InplaceArithmetic.IPow.create());
+            }
+            return callNode;
+        }
+    }
+
+    // directly called without landing function
     @Builtin(name = "AddMember", takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class AddMemberNode extends PythonVarargsBuiltinNode {
