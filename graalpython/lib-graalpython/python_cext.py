@@ -913,41 +913,6 @@ def PyInstanceMethod_New(func):
 
 
 getset_descriptor = type(type(PyInstanceMethod_New).__code__)
-def AddGetSet(primary, name, getter, setter, doc, closure):
-    pclass = to_java_type(primary)
-    fset = fget = None
-
-    # We need to use 'voidptr_to_java' because the 'closure' is of type 'void *' and will be
-    # passed to the C getter function.
-    closure_converted = voidptr_to_java(closure)
-    if getter:
-        getter_w = CreateFunction(name, getter, pclass)
-        def member_getter(self):
-            # NOTE: The 'to_java' is intended and correct because this call will do a downcall an
-            # all args will go through 'to_sulong' then. So, if we don't convert the pointer
-            # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
-            return to_java(getter_w(self, closure_converted))
-
-        fget = member_getter
-    if setter:
-        setter_w = CreateFunction(name, setter, pclass)
-        def member_setter(self, value):
-            result = setter_w(self, value, closure_converted)
-            if result != 0:
-                raise
-            return None
-
-        fset = member_setter
-    else:
-        fset = lambda self, value: GetSet_SetNotWritable(self, value, name)
-
-    getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
-    PyTruffle_SetAttr(getset, "__doc__", charptr_to_java(doc))
-    PyTruffle_SetAttr(pclass, name, getset)
-
-
-def GetSet_SetNotWritable(self, value, attr):
-    raise AttributeError("attribute '%s' of '%s' objects is not writable" % (attr, type(self).__name__))
 
 
 def PyObject_Str(o):

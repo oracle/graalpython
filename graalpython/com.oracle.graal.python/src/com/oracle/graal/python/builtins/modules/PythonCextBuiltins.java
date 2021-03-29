@@ -72,8 +72,10 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethDirectRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -1727,39 +1729,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
             // does not require a 'to_sulong' since it is already a native wrapper type
             return nativeWrapper;
-        }
-    }
-
-    @Builtin(name = "PyTruffle_GetSetDescriptor", parameterNames = {"fget", "fset", "name", "owner"})
-    @GenerateNodeFactory
-    public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
-        @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
-        Object call(Object get, Object set, String name, Object owner) {
-            return factory().createGetSetDescriptor(get, set, name, owner, true);
-        }
-
-        @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
-        Object call(Object get, @SuppressWarnings("unused") PNone set, String name, Object owner) {
-            return factory().createGetSetDescriptor(get, null, name, owner);
-        }
-
-        @Specialization(guards = {"isNoValue(get)", "!isNoValue(set)"})
-        Object call(@SuppressWarnings("unused") PNone get, Object set, String name, Object owner) {
-            return factory().createGetSetDescriptor(null, set, name, owner, true);
-        }
-    }
-
-    @Builtin(name = "PyTruffle_MemberDescriptor", minNumOfPositionalArgs = 4, parameterNames = {"fget", "fset", "name", "owner"})
-    @GenerateNodeFactory
-    public abstract static class PyTruffleMemberDescriptorNode extends PythonQuaternaryBuiltinNode {
-        @Specialization(guards = "isPythonClass(owner)")
-        @TruffleBoundary
-        Object doGeneric(Object get, Object set, String name, Object owner) {
-            return factory().createMemberDescriptor(ensure(get), ensure(set), name, owner);
-        }
-
-        private static Object ensure(Object attr) {
-            return attr instanceof PNone ? null : attr;
         }
     }
 
@@ -4010,6 +3979,82 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
             }
             throw CompilerDirectives.shouldNotReachHere("expected Java int");
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "AddGetSet", takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class AddGetSetNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            return execute(frame, self, arguments, keywords);
+        }
+
+        @Specialization
+        int doGeneric(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                if (arguments.length < 7) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "AddGetSet", 7, arguments.length);
+                }
+                InteropLibrary lib = InteropLibrary.getUncached();
+                addMember(language, factory(), arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6],
+                                AsPythonObjectNodeGen.getUncached(), CastToJavaStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), lib, lib,
+                                WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @TruffleBoundary
+        private static void addMember(PythonLanguage language, PythonObjectFactory factory, Object clsPtr, Object tpDictPtr, Object namePtr, Object getter, Object setter,
+                        Object docPtr, Object closure,
+                        AsPythonObjectNode asPythonObjectNode,
+                        CastToJavaStringNode castToJavaStringNode,
+                        FromCharPointerNode fromCharPointerNode,
+                        InteropLibrary docPtrLib,
+                        InteropLibrary funLib,
+                        WriteAttributeToDynamicObjectNode writeDocNode,
+                        HashingStorageLibrary dictStorageLib) {
+
+            Object clazz = asPythonObjectNode.execute(clsPtr);
+            PDict tpDict = AddMemberNode.castPDict(asPythonObjectNode.execute(tpDictPtr));
+            String memberName;
+            try {
+                memberName = castToJavaStringNode.execute(asPythonObjectNode.execute(namePtr));
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
+            }
+            // note: 'doc' may be NULL; in this case, we would store 'None'
+            Object memberDoc = CharPtrToJavaObjectNode.run(docPtr, fromCharPointerNode, docPtrLib);
+
+            PBuiltinFunction get = null;
+            if (!funLib.isNull(getter)) {
+                get = GetterRoot.createFunction(language, clazz, memberName, getter, closure);
+            }
+
+            PBuiltinFunction set = null;
+            boolean hasSetter = !funLib.isNull(setter);
+            if (hasSetter) {
+                set = SetterRoot.createFunction(language, clazz, memberName, setter, closure);
+            }
+
+            // create get-set descriptor
+            Object descriptor = factory.createGetSetDescriptor(get, set, memberName, clazz, hasSetter);
+            writeDocNode.execute(descriptor, SpecialAttributeNames.__DOC__, memberDoc);
+
+            // add member descriptor to tp_dict
+            HashingStorage dictStorage = tpDict.getDictStorage();
+            HashingStorage updatedStorage = dictStorageLib.setItem(dictStorage, memberName, descriptor);
+            if (dictStorage != updatedStorage) {
+                tpDict.setDictStorage(updatedStorage);
+            }
         }
     }
 }

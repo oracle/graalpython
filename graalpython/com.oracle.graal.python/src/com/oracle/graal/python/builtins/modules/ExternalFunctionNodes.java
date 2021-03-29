@@ -44,12 +44,12 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckInquiryResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckInquiryResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -1419,8 +1420,14 @@ public abstract class ExternalFunctionNodes {
             return SIGNATURE;
         }
 
-        public static RootCallTarget getOrCreateCallTarget(PythonLanguage lang, String name) {
-            return PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.GETTER, lang, name, true);
+        @TruffleBoundary
+        public static PBuiltinFunction createFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
+            RootCallTarget rootCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.GETTER, lang, propertyName, true);
+            if (rootCallTarget == null) {
+                throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support");
+            }
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
         }
     }
 
@@ -1463,8 +1470,14 @@ public abstract class ExternalFunctionNodes {
             return readArgNode;
         }
 
-        public static RootCallTarget getOrCreateCallTarget(PythonLanguage lang, String name) {
-            return PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.SETTER, lang, name, true);
+        @TruffleBoundary
+        public static PBuiltinFunction createFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
+            RootCallTarget rootCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.SETTER, lang, propertyName, true);
+            if (rootCallTarget == null) {
+                throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support");
+            }
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
         }
     }
 
