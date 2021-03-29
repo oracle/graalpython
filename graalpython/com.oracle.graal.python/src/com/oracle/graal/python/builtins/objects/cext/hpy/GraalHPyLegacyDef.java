@@ -189,9 +189,9 @@ public abstract class GraalHPyLegacyDef {
         Py_sq_contains(41, __CONTAINS__),
         Py_sq_inplace_concat(42, __IADD__),
         Py_sq_inplace_repeat(43, __IMUL__, PExternalFunctionWrapper.ALLOC),
-        Py_sq_item(44, __GETITEM__, PExternalFunctionWrapper.ALLOC),
+        Py_sq_item(44, __GETITEM__, PExternalFunctionWrapper.GETITEM),
         Py_sq_length(45, __LEN__),
-        Py_sq_repeat(46, __MUL__, PExternalFunctionWrapper.SETITEM),
+        Py_sq_repeat(46, __MUL__, PExternalFunctionWrapper.ALLOC),
 
         // PyAsyncMethods
         Py_am_await(77),
