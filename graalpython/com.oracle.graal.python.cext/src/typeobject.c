@@ -626,7 +626,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__iadd__", numbers->nb_inplace_add, -2);
         ADD_SLOT("__isub__", numbers->nb_inplace_subtract, -2);
         ADD_SLOT("__imul__", numbers->nb_inplace_multiply, -2);
-        ADD_SLOT("__irem__", numbers->nb_inplace_remainder, -2);
+        ADD_SLOT("__imod__", numbers->nb_inplace_remainder, -2);
         ADD_SLOT_CONV("__ipow__", NULL, numbers->nb_inplace_power, -3, JWRAPPER_POW);
         ADD_SLOT("__ilshift__", numbers->nb_inplace_lshift, -2);
         ADD_SLOT("__irshift__", numbers->nb_inplace_rshift, -2);
