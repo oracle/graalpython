@@ -1193,8 +1193,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doPrimitiveNativeWrapperToLong")
-        Object doGeneric(VirtualFrame frame, Object object, int mode, long targetTypeSize) {
-            Object resolvedPointer = ensurePointerClassProfile().profile(ensureResolveHandleNode().execute(object));
+        Object doGeneric(VirtualFrame frame, Object objectPtr, int mode, long targetTypeSize) {
+            Object resolvedPointer = ensurePointerClassProfile().profile(ensureResolveHandleNode().execute(objectPtr));
             try {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
                     PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
@@ -1208,11 +1208,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                  * in 'PyLong_As*' API functions that pass a fixed mode. So, there is not need to
                  * profile the value and even if it is not constant, it is profiled implicitly.
                  */
+                Object object = ensureToJavaNode().execute(resolvedPointer);
                 if (requiredPInt(mode) && !ensureIsSubtypeNode().execute(ensureLib().getLazyPythonClass(object), PythonBuiltinClassType.PInt)) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
-                Object coerced = ensureConvertPIntToPrimitiveNode().execute(ensureToJavaNode().execute(resolvedPointer), signed(mode), PInt.intValueExact(targetTypeSize));
+                Object coerced = ensureConvertPIntToPrimitiveNode().execute(object, signed(mode), PInt.intValueExact(targetTypeSize));
                 return ensureCastToNativeLongNode().execute(coerced);
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere();
