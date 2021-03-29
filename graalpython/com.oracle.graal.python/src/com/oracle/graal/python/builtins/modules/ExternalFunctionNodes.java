@@ -517,7 +517,12 @@ public abstract class ExternalFunctionNodes {
         public Object execute(VirtualFrame frame, String name, Object callable, Object[] frameArgs, int argsOffset) {
             if (lib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(InteropLibrary.getFactory().create(callable));
+                /*
+                 * We must use a dispatched library because we cannot be sure that we always see the
+                 * same type of callable. For example, in multi-context mode you could see an LLVM
+                 * native pointer and an LLVM managed pointer.
+                 */
+                lib = insert(InteropLibrary.getFactory().createDispatched(2));
             }
 
             Object[] cArguments = new Object[frameArgs.length - argsOffset];
