@@ -48,12 +48,18 @@ public class SerializationUtils {
     // version 7 - mangle names of private properties in classes
     // version 8 - rework starargs handling
     // version 9 - refactoring of parsing fstring
+    // version 10 - adding AnnotationSSTNode
+    // version 11 - the identifiers of frame slots for return, temp and free__class_ slots, were
+    // changed from string to objectsand we serialized only string frame slots. This version is able
+    // serialized the return and free__class__ slots again. The tmp slots are not serialized, we
+    // don't need them.
 
-    public static byte VERSION = 9;
+    public static byte VERSION = 11;
 
     public static enum SSTId {
         AndID,
         AnnAssignmentID,
+        AnnotationID,
         AssertID,
         AssignmentID,
         AugAssignmentID,
