@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
@@ -86,15 +87,20 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.time.format.TextStyle;
-import java.util.Locale;
+import java.lang.management.ManagementFactory;
+import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int DELAY_NANOS = 10;
     private static final long PERF_COUNTER_START = TruffleOptions.AOT ? 0 : System.nanoTime();
     private static final String CTIME_FORMAT = "%s %s %2d %02d:%02d:%02d %d";
+
+    private static final HiddenKey TIME_SLEPT = new HiddenKey("timeSlept");
 
     private static final StructSequence.Descriptor STRUCT_TIME_DESC = new StructSequence.Descriptor(
                     PythonBuiltinClassType.PStructTime,
@@ -183,7 +189,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         timeStruct[TM_SEC] = zonedDateTime.getSecond();
         timeStruct[TM_WDAY] = zonedDateTime.getDayOfWeek().getValue() - 1; /* Want Monday == 0 */
         timeStruct[TM_YDAY] = zonedDateTime.getDayOfYear(); /* Want January, 1 == 1 */
-	boolean isDaylightSavings = zonedDateTime.getZone().getRules().isDaylightSavings(instant);
+        boolean isDaylightSavings = zonedDateTime.getZone().getRules().isDaylightSavings(instant);
         timeStruct[TM_ISDST] = (isDaylightSavings) ? 1 : 0;
         timeStruct[9] = TimeZone.getTimeZone(zone.getId()).getDisplayName(isDaylightSavings, TimeZone.SHORT);
         timeStruct[10] = zonedDateTime.getOffset().getTotalSeconds();
@@ -406,20 +412,75 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sleep", minNumOfPositionalArgs = 1)
+    @Builtin(name = "process_time", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ProcessTimeNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getProcesTime(PythonModule self) {
+            return (System.nanoTime() - PERF_COUNTER_START - timeSlept(self)) / 1000_000_000.0;
+        }
+    }
+
+    @Builtin(name = "process_time_ns", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ProcessTimeNsNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getProcesNsTime(PythonModule self) {
+            return (System.nanoTime() - PERF_COUNTER_START - timeSlept(self));
+        }
+    }
+
+    private static long timeSlept(PythonModule self) {
+        try {
+            return DynamicObjectLibrary.getUncached().getLongOrDefault(self, TIME_SLEPT, 0L);
+        } catch (UnexpectedResultException ex) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @Builtin(name = "thread_time")
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ThreadTimeNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getProcesTime() {
+            return !ImageInfo.inImageCode() ? (ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime()) / 1000_000_000.0 : 0;
+        }
+    }
+
+    @Builtin(name = "thread_time_ns")
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ThreadTimeNsNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getProcesNsTime() {
+            return !ImageInfo.inImageCode() ? ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() : 0;
+        }
+    }
+
+    @Builtin(name = "sleep", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SleepNode extends PythonBuiltinNode {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
-        @Specialization(guards = "isPositive(seconds)")
-        Object sleep(long seconds,
-                        @Cached GilNode gil) {
+        @Specialization(guards = "isPositive(seconds)", limit = "1")
+        Object sleep(PythonModule self, long seconds,
+                        @Cached GilNode gil,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            long t = nanoTime();
             long deadline = (long) timeSeconds() + seconds;
             gil.release(true);
             try {
                 doSleep(seconds, deadline);
             } finally {
+                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
                 gil.acquire();
             }
             getContext().triggerAsyncActions();
@@ -428,19 +489,22 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPositive(seconds)")
-        Object err(long seconds) {
+        Object err(PythonModule self, long seconds) {
             throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
-        @Specialization(guards = "isPositive(seconds)")
-        Object sleep(double seconds,
-                        @Cached GilNode gil) {
+        @Specialization(guards = "isPositive(seconds)", limit = "1")
+        Object sleep(PythonModule self, double seconds,
+                        @Cached GilNode gil,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            long t = nanoTime();
             double deadline = timeSeconds() + seconds;
             gil.release(true);
             try {
                 doSleep(seconds, deadline);
             } finally {
                 gil.acquire();
+                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
             }
             getContext().triggerAsyncActions();
             return PNone.NONE;
@@ -448,15 +512,18 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPositive(seconds)")
-        Object err(double seconds) {
+        Object err(PythonModule self, double seconds) {
             throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
-        @Specialization(guards = "lib.canBeJavaDouble(secondsObj)")
-        Object sleepObj(Object secondsObj,
+        @Specialization(guards = "lib.canBeJavaDouble(secondsObj)", limit = "1")
+        Object sleepObj(PythonModule self, Object secondsObj,
                         @Cached ConditionProfile negErr,
                         @Cached GilNode gil,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+
+            long t = nanoTime();
             double seconds = lib.asJavaDouble(secondsObj);
             if (negErr.profile(seconds < 0)) {
                 throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
@@ -467,6 +534,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 doSleep(seconds, deadline);
             } finally {
                 gil.acquire();
+                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
             }
             getContext().triggerAsyncActions();
             return PNone.NONE;
@@ -506,6 +574,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 }
                 secs = deadline - timeSeconds();
             } while (secs >= 0);
+        }
+
+        @TruffleBoundary
+        public static long nanoTime() {
+            return System.nanoTime();
         }
     }
 
