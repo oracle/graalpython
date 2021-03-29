@@ -218,6 +218,7 @@ class ProcessTestCase(BaseTestCase):
         self.assertIn('stdin', c.exception.args[0])
         self.assertIn('input', c.exception.args[0])
 
+    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalvm=False)
     def test_check_output_timeout(self):
         # check_output() function with timeout arg
         with self.assertRaises(subprocess.TimeoutExpired) as c:
@@ -1118,6 +1119,7 @@ class ProcessTestCase(BaseTestCase):
         # Subsequent invocations should just return the returncode
         self.assertEqual(p.wait(), 0)
 
+    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalvm=False)
     def test_wait_timeout(self):
         p = subprocess.Popen([sys.executable,
                               "-c", "import time; time.sleep(0.3)"])
@@ -1490,6 +1492,7 @@ class RunFuncTestCase(BaseTestCase):
         self.assertIn('stdin', c.exception.args[0])
         self.assertIn('input', c.exception.args[0])
 
+    @support.impl_detail("GR-30439 graalpython jvm launcher startup time", graalvm=False)
     def test_check_output_timeout(self):
         with self.assertRaises(subprocess.TimeoutExpired) as c:
             cp = self.run_python((
