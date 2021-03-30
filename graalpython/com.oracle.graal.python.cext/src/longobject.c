@@ -58,11 +58,14 @@ PyObject * _PyLong_One;
  *     Requires the object to be a Python integer and returns it as unsigned primitive.
  * - MODE_PINT_SIGNED 3
  *     Requires the object to be a Python integer and returns it as signed primitive.
+ * - MODE_COERCE_MASK 4
+ *     Will coerce the object to a Python integer and does a lossy cast to an unsigned primitive.
  */
 #define MODE_COERCE_UNSIGNED 0
 #define MODE_COERCE_SIGNED 1
 #define MODE_PINT_UNSIGNED 2
 #define MODE_PINT_SIGNED 3
+#define MODE_COERCE_MASK 4
 
 typedef uint64_t (*as_primitive_t)(PyObject*, int32_t, size_t);
 UPCALL_TYPED_ID(PyLong_AsPrimitive, as_primitive_t);
@@ -102,6 +105,14 @@ unsigned long long PyLong_AsUnsignedLongLong(PyObject *obj) {
     return (unsigned long long) _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long long));
 }
 
+unsigned long long PyLong_AsUnsignedLongLongMask(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long long) -1;
+    }
+    return (unsigned long long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long long));
+}
+
 unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
     if (obj == NULL) {
         PyErr_BadInternalCall();
@@ -109,6 +120,15 @@ unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
     }
     return (unsigned long) _jls_PyLong_AsPrimitive(obj, MODE_PINT_UNSIGNED, sizeof(unsigned long));
 }
+
+unsigned long PyLong_AsUnsignedLongMask(PyObject *obj) {
+    if (obj == NULL) {
+        PyErr_BadInternalCall();
+        return (unsigned long) -1;
+    }
+    return (unsigned long) _jls_PyLong_AsPrimitive(obj, MODE_COERCE_MASK, sizeof(unsigned long));
+}
+
 PyObject * PyLong_FromSsize_t(Py_ssize_t n) {
 	return PyLong_FromLongLong(n);
 }

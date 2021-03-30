@@ -1180,7 +1180,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     if (requiredPInt(mode) && !wrapper.isIntLike()) {
                         throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                     }
-                    return ensureConvertPIntToPrimitiveNode().executeLong(wrapper, signed(mode), PInt.intValueExact(targetTypeSize));
+                    return ensureConvertPIntToPrimitiveNode().executeLong(wrapper, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
                 }
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw UnexpectedWrapperException.INSTANCE;
@@ -1201,7 +1201,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     if (requiredPInt(mode) && !wrapper.isIntLike()) {
                         throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                     }
-                    return ensureConvertPIntToPrimitiveNode().execute(wrapper, mode, PInt.intValueExact(targetTypeSize));
+                    return ensureConvertPIntToPrimitiveNode().execute(wrapper, mode, PInt.intValueExact(targetTypeSize), exact(mode));
                 }
                 /*
                  * The 'mode' parameter is usually a constant since this function is primarily used
@@ -1213,7 +1213,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
-                Object coerced = ensureConvertPIntToPrimitiveNode().execute(object, signed(mode), PInt.intValueExact(targetTypeSize));
+                Object coerced = ensureConvertPIntToPrimitiveNode().execute(object, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
                 return ensureCastToNativeLongNode().execute(coerced);
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere();
@@ -1229,6 +1229,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         private static boolean requiredPInt(int mode) {
             return (mode & 0x2) != 0;
+        }
+
+        private static boolean exact(int mode) {
+            return (mode & 0x4) == 0;
         }
 
         private ResolveHandleNode ensureResolveHandleNode() {

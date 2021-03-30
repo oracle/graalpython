@@ -410,63 +410,75 @@ public abstract class CExtCommonNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
 
-        public abstract Object execute(Object o, int signed, int targetTypeSize);
+        public abstract Object execute(Object o, int signed, int targetTypeSize, boolean exact);
+
+        public final Object execute(Object o, int signed, int targetTypeSize) {
+            return execute(o, signed, targetTypeSize, true);
+        }
+
+        public final long executeLong(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(o, signed, targetTypeSize, exact));
+        }
+
+        public final int executeInt(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(o, signed, targetTypeSize, exact));
+        }
 
         public final long executeLong(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(o, signed, targetTypeSize));
+            return PGuards.expectLong(execute(o, signed, targetTypeSize, true));
         }
 
         public final int executeInt(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(o, signed, targetTypeSize));
+            return PGuards.expectInteger(execute(o, signed, targetTypeSize, true));
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
             return nativeWrapper.getInt();
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInUInt32(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
             return nativeWrapper.getInt();
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed != 0", "fitsInInt64(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
             return nativeWrapper.getLong();
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInUInt64(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
             return nativeWrapper.getLong();
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize,
+        static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact,
                         @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, true);
+            return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, exact);
         }
 
         @Specialization
-        static Object doInt(int value, int signed, int targetTypeSize,
+        static Object doInt(int value, int signed, int targetTypeSize, boolean exact,
                         @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization
-        static Object doLong(long value, int signed, int targetTypeSize,
+        static Object doLong(long value, int signed, int targetTypeSize, boolean exact,
                         @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)"}, replaces = {"doInt", "doLong"})
-        static Object doOther(Object obj, int signed, int targetTypeSize,
+        static Object doOther(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, true);
+            return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, exact);
         }
 
         static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
