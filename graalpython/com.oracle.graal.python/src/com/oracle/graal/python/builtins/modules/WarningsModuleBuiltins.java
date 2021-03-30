@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -161,6 +162,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child CastToJavaStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PythonObjectLibrary pylib;
+        @Child PyNumberAsSizeNode asSizeNode;
         @Child PythonObjectFactory factory;
         @Child IsSubtypeNode isSubtype;
         @Child GetDictNode getDictNode;
@@ -202,6 +204,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 pylib = insert(PythonObjectLibrary.getFactory().createDispatched(7));
             }
             return pylib;
+        }
+
+        private PyNumberAsSizeNode getAsSizeNode() {
+            if (asSizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asSizeNode = insert(PyNumberAsSizeNode.create());
+            }
+            return asSizeNode;
         }
 
         private CastToJavaStringNode getCastStr() {
@@ -437,7 +447,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 boolean goodMsg = checkMatched(frame, msg, text);
                 boolean goodMod = checkMatched(frame, mod, module);
                 boolean isSubclass = getIsSubtype().execute(category, cat);
-                int ln = getPyLib().asSize(lnObj);
+                int ln = getAsSizeNode().executeExact(frame, lnObj);
                 if (goodMsg && isSubclass && goodMod && (ln == 0 || lineno == ln)) {
                     // if we're ignoring warnings, the first action will match all and the loop
                     // count would always be 1, so let's report here and hope that Graal will unroll

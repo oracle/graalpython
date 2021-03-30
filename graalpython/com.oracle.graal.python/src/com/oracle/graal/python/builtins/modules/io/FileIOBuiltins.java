@@ -103,6 +103,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -242,7 +244,8 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary("opener") PythonObjectLibrary libOpener,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @CachedLibrary("nameobj") PythonObjectLibrary asInt,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
                         @Cached SetAttributeNode.Dynamic setAttr,
@@ -259,8 +262,8 @@ public class FileIOBuiltins extends PythonBuiltins {
 
             int fd = -1;
             String name = null;
-            if (asInt.canBePInt(nameobj)) {
-                fd = asInt.asSize(nameobj);
+            if (indexCheckNode.execute(nameobj)) {
+                fd = asSizeNode.executeExact(frame, nameobj);
                 if (errorProfile.profile(fd < 0)) {
                     throw raise(ValueError, OPENER_RETURNED_D);
                 }
@@ -349,7 +352,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         throw raise(TypeError, EXPECTED_INT_FROM_OPENER);
                     }
 
-                    self.setFD(lib.asSize(fdobj), ctxt);
+                    self.setFD(asSizeNode.executeExact(frame, fdobj), ctxt);
                     if (self.getFD() < 0) {
                         /*
                          * The opener returned a negative but didn't set an exception. See issue
@@ -903,10 +906,10 @@ public class FileIOBuiltins extends PythonBuiltins {
             return self.getBlksize();
         }
 
-        @Specialization(guards = "!isNoValue(v)", limit = "1")
-        Object doit(PFileIO self, Object v,
-                        @CachedLibrary("v") PythonObjectLibrary toInt) {
-            self.setBlksize(toInt.asSize(v));
+        @Specialization(guards = "!isNoValue(v)")
+        Object doit(VirtualFrame frame, PFileIO self, Object v,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            self.setBlksize(asSizeNode.executeExact(frame, v));
             return PNone.NONE;
         }
     }

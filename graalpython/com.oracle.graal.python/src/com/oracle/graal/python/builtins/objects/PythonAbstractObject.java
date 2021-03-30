@@ -76,7 +76,6 @@ import java.util.HashSet;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
@@ -126,6 +125,8 @@ import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToL
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -794,7 +795,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached ConditionProfile ltZero,
                     @Shared("raise") @Cached PRaiseNode raiseNode,
-                    @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached CastToJavaLongLossyNode toLong,
                     @Exclusive @Cached ConditionProfile ignoreOverflow,
                     @Exclusive @Cached BranchProfile overflow) {
@@ -805,7 +807,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             // - PyNumber_Index is called first
             // - checked if negative
             // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
-            lenResult = lib.asIndexWithState(lenResult, state);
+            lenResult = indexNode.execute(gotState.profile(state != null) ? PArguments.frameForCall(state) : null, lenResult);
             long longResult;
             try {
                 longResult = toLong.execute(lenResult); // this is a lossy cast
@@ -914,42 +916,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object asIndexWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @CachedLibrary(limit = "5") PythonObjectLibrary resultLib,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
-                    @Exclusive @Cached ConditionProfile noIndex,
-                    @Exclusive @Cached ConditionProfile resultProfile,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("intProfile") @Cached IsBuiltinClassProfile isInt,
-                    @Cached WarnNode warnNode) {
-        // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
-        // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
-        // and PythonAbstractNativeObject and dispatched polymorphically
-        Object indexMethod = lib.lookupAttributeOnType(this, __INDEX__);
-        if (noIndex.profile(indexMethod == PNone.NO_VALUE)) {
-            throw raise.raiseIntegerInterpretationError(this);
-        }
-
-        Object result = methodLib.callUnboundMethodWithState(indexMethod, state, this);
-        if (resultProfile.profile(!isSubtype.execute(resultLib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
-        }
-        if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
-            VirtualFrame frame = null;
-            if (gotState.profile(state != null)) {
-                frame = PArguments.frameForCall(state);
-            }
-            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                            ErrorMessages.P_RETURNED_NON_P,
-                            this, "__index__", "int", result, "int");
-        }
-        return result;
-    }
-
-    @ExportMessage
     public String asPathWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
@@ -971,7 +937,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object asPStringWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
+                    @Cached IsSubtypeNode isSubtypeNode,
                     @Shared("raise") @Cached PRaiseNode raise) {
         return asPString(lib, this, state, isSubtypeNode, resultLib, raise);
     }
@@ -993,7 +959,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
-                    @Shared("intProfile") @Cached IsBuiltinClassProfile isIntProfile,
+                    @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
         Object filenoFunc = lib.lookupAttributeWithState(this, state, FILENO);
@@ -1162,11 +1128,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached ConditionProfile hasIndexFunc,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("indexCheckNode") @Cached PyIndexCheckNode indexCheckNode,
+                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
                     @Exclusive @Cached ConditionProfile hasIntFunc) {
         Object result = PNone.NO_VALUE;
-        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
-            result = lib.asIndex(this);
+        if (indexCheckNode.execute(this)) {
+            result = indexNode.execute(gotState.profile(state != null) ? PArguments.frameForCall(state) : null, this);
         }
         if (result == PNone.NO_VALUE) {
             Object func = lib.lookupAttributeOnType(this, __INT__);
@@ -1181,24 +1149,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
         }
         return result;
-    }
-
-    @ExportMessage
-    public int asSizeWithState(Object type, ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Exclusive @Cached BranchProfile overflow,
-                    @Exclusive @Cached ConditionProfile ignoreOverflow,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastToJavaLongLossyNode castToLong) {
-        Object result = lib.asIndexWithState(this, state);
-        long longResult;
-        try {
-            longResult = castToLong.execute(result); // this is a lossy cast
-        } catch (CannotCastException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
-        }
-        return longToInt(longResult, overflow, ignoreOverflow, type, raise, result);
     }
 
     private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, Object type, PRaiseNode raise, Object result) throws PException {
@@ -1223,9 +1173,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public double asJavaDoubleWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Exclusive @Cached ConditionProfile hasIndexFunc,
                     @Exclusive @Cached CastToJavaDoubleNode castToDouble,
                     @Exclusive @Cached ConditionProfile hasFloatFunc,
+                    @Shared("indexCheckNode") @Cached PyIndexCheckNode indexCheckNode,
+                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("raise") @Cached PRaiseNode raise) {
         assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
 
@@ -1241,8 +1193,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
         }
 
-        if (hasIndexFunc.profile(lib.canBeIndex(this))) {
-            return castToDouble.execute(lib.asIndex(this));
+        if (indexCheckNode.execute(this)) {
+            return castToDouble.execute(indexNode.execute(gotState.profile(state != null) ? PArguments.frameForCall(state) : null, this));
         }
 
         throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);

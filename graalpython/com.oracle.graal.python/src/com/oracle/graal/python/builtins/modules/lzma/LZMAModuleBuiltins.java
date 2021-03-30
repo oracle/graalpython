@@ -86,11 +86,11 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
@@ -103,7 +103,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = LZMAModuleBuiltins._LZMA)
 public class LZMAModuleBuiltins extends PythonBuiltins {
@@ -286,11 +285,11 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsCheckSupportedNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "2")
+        @Specialization
         static boolean doInt(VirtualFrame frame, Object checkID,
-                        @CachedLibrary("checkID") PythonObjectLibrary toInt,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached LZMANodes.IsCheckSupported isCheckSupported) {
-            return isCheckSupported.execute(toInt.asSizeWithFrame(checkID, ValueError, frame));
+            return isCheckSupported.execute(asSizeNode.executeExact(frame, checkID, ValueError));
         }
     }
 

@@ -30,7 +30,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
-import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
@@ -222,11 +221,15 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.Standalone
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
@@ -996,6 +999,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(objectLib, obj)"}, limit = "1")
         double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @CachedLibrary("obj") PythonObjectLibrary objectLib,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached WarnNode warnNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary indexLib) {
@@ -1021,8 +1026,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, obj, "__float__", result);
                 }
             }
-            if (objectLib.canBeIndex(obj)) {
-                return indexLib.asJavaDouble(objectLib.asIndex(obj));
+            if (indexCheckNode.execute(obj)) {
+                return indexLib.asJavaDouble(indexNode.execute(frame, obj));
             }
             // Follows logic from PyFloat_FromString:
             // These types are handled only if the object doesn't implement __float__/__index__
@@ -1410,11 +1415,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return stringToInt(frame, cls, number, base, number);
         }
 
-        @Specialization(guards = "!isNoValue(base)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isNoValue(base)")
         @Megamorphic
         Object createIntError(VirtualFrame frame, Object cls, String number, Object base,
-                        @CachedLibrary("base") PythonObjectLibrary lib) {
-            int intBase = lib.asSizeWithState(base, null, PArguments.getThreadState(frame));
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int intBase = asSizeNode.executeLossy(frame, base);
             checkBase(intBase);
             return stringToInt(frame, cls, number, intBase, number);
         }
@@ -1845,14 +1850,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isStop(start, stop, step)")
-        Object doGenericStop(Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
+        Object doGenericStop(VirtualFrame frame, Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
                         @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return doGeneric(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, pol, lib);
+            return doGeneric(frame, cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, asSizeNode, indexNode, lib);
         }
 
         // start stop
@@ -1873,14 +1879,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isStartStop(start, stop, step)")
-        Object doGenericStartStop(Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
+        Object doGenericStartStop(VirtualFrame frame, Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
                         @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return doGeneric(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, pol, lib);
+            return doGeneric(frame, cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, asSizeNode, indexNode, lib);
         }
 
         // start stop step
@@ -1914,27 +1921,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isStartStopStep(start, stop, step)")
-        Object doGeneric(@SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
+        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
                         @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            if (canBeInt(start, stop, step, lib)) {
-                return doInt(cls, pol.asSize(start), pol.asSize(stop), pol.asSize(step), stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
-            } else if (canBePint(start, stop, step, pol)) {
-                return createBigRangeNode.execute(start, stop, step, factory());
-            } else {
-                Object lstart = pol.asIndex(start);
-                Object lstop = pol.asIndex(stop);
-                Object lstep = pol.asIndex(step);
+            Object lstart = indexNode.execute(frame, start);
+            Object lstop = indexNode.execute(frame, stop);
+            Object lstep = indexNode.execute(frame, step);
 
-                if (canBeInt(start, stop, step, lib)) {
-                    return doInt(cls, pol.asSize(start), pol.asSize(stop), pol.asSize(step), stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
-                } else {
-                    return createBigRangeNode.execute(lstart, lstop, lstep, factory());
-                }
+            if (canBeInt(lstart, lstop, lstep, lib)) {
+                int istart = asSizeNode.executeExact(frame, lstart);
+                int istop = asSizeNode.executeExact(frame, lstop);
+                int istep = asSizeNode.executeExact(frame, lstep);
+                return doInt(cls, istart, istop, istep, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
+            } else {
+                return createBigRangeNode.execute(lstart, lstop, lstep, factory());
             }
         }
 
@@ -3158,22 +3163,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "TracebackType", constructsClass = PythonBuiltinClassType.PTraceback, isPublic = false, minNumOfPositionalArgs = 5, parameterNames = {"$cls", "tb_next", "tb_frame", "tb_lasti",
                     "tb_lineno"})
+    @ArgumentClinic(name = "tb_lasti", conversion = ArgumentClinic.ClinicConversion.Index)
+    @ArgumentClinic(name = "tb_lineno", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
-    public abstract static class TracebackTypeNode extends PythonBuiltinNode {
-        @Specialization(limit = "1")
-        static Object createTraceback(@SuppressWarnings("unused") Object cls, PTraceback next, PFrame frame, Object lasti, Object lineno,
-                        @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
-                        @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
+    public abstract static class TracebackTypeNode extends PythonClinicBuiltinNode {
+        @Specialization
+        static Object createTraceback(@SuppressWarnings("unused") Object cls, PTraceback next, PFrame pframe, int lasti, int lineno,
                         @Cached PythonObjectFactory factory) {
-            return factory.createTraceback(frame, linenoLib.asSize(lineno), lastiLib.asSize(lasti), next);
+            return factory.createTraceback(pframe, lineno, lasti, next);
         }
 
-        @Specialization(limit = "1")
-        static Object createTraceback(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone next, PFrame frame, Object lasti, Object lineno,
-                        @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
-                        @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
+        @Specialization
+        static Object createTraceback(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone next, PFrame pframe, int lasti, int lineno,
                         @Cached PythonObjectFactory factory) {
-            return factory.createTraceback(frame, linenoLib.asSize(lineno), lastiLib.asSize(lasti), null);
+            return factory.createTraceback(pframe, lineno, lasti, null);
         }
 
         @Specialization(guards = {"!isPTraceback(next)", "!isNone(next)"})
@@ -3190,6 +3193,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         protected static boolean isPFrame(Object obj) {
             return obj instanceof PFrame;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinConstructorsClinicProviders.TracebackTypeNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -3242,7 +3250,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object firstlineno, Object lnotab,
                         PTuple freevars, PTuple cellvars,
                         @CachedLibrary(limit = "2") PythonObjectLibrary bufferLib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary objectLibrary,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
             byte[] codeBytes = bufferLib.getBufferBytes(codestring);
@@ -3254,12 +3262,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object[] freevarsArr = getObjectArrayNode.execute(freevars);
             Object[] cellcarsArr = getObjectArrayNode.execute(cellvars);
 
-            return createCodeNode.execute(frame, cls, objectLibrary.asSize(posonlyargcount),
-                            objectLibrary.asSize(argcount), objectLibrary.asSize(kwonlyargcount),
-                            objectLibrary.asSize(nlocals), objectLibrary.asSize(stacksize), objectLibrary.asSize(flags),
-                            codeBytes, constantsArr, namesArr,
+            return createCodeNode.execute(frame, cls, asSizeNode.executeExact(frame, posonlyargcount),
+                            asSizeNode.executeExact(frame, argcount), asSizeNode.executeExact(frame, kwonlyargcount),
+                            asSizeNode.executeExact(frame, nlocals), asSizeNode.executeExact(frame, stacksize),
+                            asSizeNode.executeExact(frame, flags), codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
-                            getStringArg(filename), getStringArg(name), objectLibrary.asSize(firstlineno),
+                            getStringArg(filename), getStringArg(name), asSizeNode.executeExact(frame, firstlineno),
                             lnotabBytes);
         }
 

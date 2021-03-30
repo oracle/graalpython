@@ -45,15 +45,14 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGet
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
@@ -137,7 +136,7 @@ public abstract class PyDateTimeMRNode extends Node {
                     @Cached PInteropGetAttributeNode getMinNode,
                     @Cached PInteropGetAttributeNode getSecNode,
                     @Cached PInteropGetAttributeNode getUSecNode,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                    @Cached PyNumberAsSizeNode asSizeNode) {
 
         // passing null here should be ok, since we should be in an interop situation
         int year = -1;
@@ -148,18 +147,18 @@ public abstract class PyDateTimeMRNode extends Node {
         int sec = -1;
         int usec = -1;
         if (cachedMode == DateTimeMode.DATE || cachedMode == DateTimeMode.DATE_TIME) {
-            year = lib.asSize(getYearNode.execute(object, YEAR));
-            month = lib.asSize(getMonthNode.execute(object, MONTH));
-            day = lib.asSize(getDayNode.execute(object, DAY));
+            year = asSizeNode.executeExact(null, getYearNode.execute(object, YEAR));
+            month = asSizeNode.executeExact(null, getMonthNode.execute(object, MONTH));
+            day = asSizeNode.executeExact(null, getDayNode.execute(object, DAY));
             assert year >= 0 && year < 0x10000;
             assert month >= 0 && month < 0x100;
             assert day >= 0 && day < 0x100;
         }
         if (cachedMode == DateTimeMode.TIME || cachedMode == DateTimeMode.DATE_TIME) {
-            hour = lib.asSize(getHourNode.execute(object, HOUR));
-            min = lib.asSize(getMinNode.execute(object, MIN));
-            sec = lib.asSize(getSecNode.execute(object, SEC));
-            usec = lib.asSize(getUSecNode.execute(object, USEC));
+            hour = asSizeNode.executeExact(null, getHourNode.execute(object, HOUR));
+            min = asSizeNode.executeExact(null, getMinNode.execute(object, MIN));
+            sec = asSizeNode.executeExact(null, getSecNode.execute(object, SEC));
+            usec = asSizeNode.executeExact(null, getUSecNode.execute(object, USEC));
             assert hour >= 0 && hour < 0x100;
             assert min >= 0 && min < 0x100;
             assert sec >= 0 && sec < 0x100;

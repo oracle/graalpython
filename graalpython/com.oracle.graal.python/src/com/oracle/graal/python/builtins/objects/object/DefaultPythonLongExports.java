@@ -85,39 +85,6 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static Object asIndexWithState(Long value, @SuppressWarnings("unused") ThreadState state) {
-        return value;
-    }
-
-    @ExportMessage
-    static class AsSizeWithState {
-        @Specialization(rewriteOn = OverflowException.class)
-        static int noOverflow(Long self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") ThreadState state) throws OverflowException {
-            return PInt.intValueExact(self);
-        }
-
-        @Specialization(replaces = "noOverflow")
-        static int withOverflow(Long self, Object type, @SuppressWarnings("unused") ThreadState state,
-                        @Exclusive @Cached PRaiseNode raise,
-                        @Shared("gil") @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                try {
-                    return PInt.intValueExact(self);
-                } catch (OverflowException e) {
-                    if (type != null) {
-                        throw raise.raiseNumberTooLarge(type, self);
-                    } else {
-                        return self > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-                    }
-                }
-            } finally {
-                gil.release(mustRelease);
-            }
-        }
-    }
-
-    @ExportMessage
     static Object getLazyPythonClass(@SuppressWarnings("unused") Long value) {
         return PythonBuiltinClassType.PInt;
     }

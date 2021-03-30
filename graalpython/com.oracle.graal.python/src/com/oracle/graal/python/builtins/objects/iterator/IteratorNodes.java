@@ -56,6 +56,8 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -99,7 +101,8 @@ public abstract class IteratorNodes {
         int length(VirtualFrame frame, Object iterable,
                         @CachedLibrary("iterable") InteropLibrary iLib,
                         @CachedLibrary("iterable") PythonObjectLibrary plib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary toInt,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("create(__LEN__)") LookupAttributeInMRONode lenNode,
                         @Cached("create(__LENGTH_HINT__)") LookupSpecialMethodNode lenHintNode,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
@@ -124,8 +127,8 @@ public abstract class IteratorNodes {
                     e.expect(TypeError, errorProfile);
                 }
                 if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
-                    if (toInt.canBeIndex(len)) {
-                        int intLen = toInt.asSize(len);
+                    if (indexCheckNode.execute(len)) {
+                        int intLen = asSizeNode.executeExact(frame, len);
                         if (intLen < 0) {
                             throw raiseNode.raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
                         }
@@ -144,8 +147,8 @@ public abstract class IteratorNodes {
                     e.expect(TypeError, errorProfile);
                 }
                 if (len != null && len != PNotImplemented.NOT_IMPLEMENTED) {
-                    if (toInt.canBeIndex(len)) {
-                        int intLen = toInt.asSize(len);
+                    if (indexCheckNode.execute(len)) {
+                        int intLen = asSizeNode.executeExact(frame, len);
                         if (intLen < 0) {
                             throw raiseNode.raise(TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
                         }

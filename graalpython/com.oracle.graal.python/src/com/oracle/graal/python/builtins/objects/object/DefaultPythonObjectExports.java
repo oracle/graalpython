@@ -89,58 +89,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static Object asIndexWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
-                    @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary("receiver") InteropLibrary interopLib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (interopLib.fitsInLong(receiver)) {
-                try {
-                    return interopLib.asLong(receiver);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
-            } else if (interopLib.isBoolean(receiver)) {
-                try {
-                    return interopLib.asBoolean(receiver) ? 1 : 0;
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
-            } else {
-                throw raise.raiseIntegerInterpretationError(receiver);
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    static int asSizeWithState(Object receiver, Object type, ThreadState state,
-                    @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "2") InteropLibrary interopLib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            Object index = asIndexWithState(receiver, state, raise, interopLib, gil);
-            if (interopLib.fitsInInt(index)) {
-                try {
-                    return interopLib.asInt(index);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
-            } else {
-                throw raise.raiseNumberTooLarge(type, index);
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
     static Object getLazyPythonClass(@SuppressWarnings("unused") Object value) {
         return PythonBuiltinClassType.ForeignObject;
     }

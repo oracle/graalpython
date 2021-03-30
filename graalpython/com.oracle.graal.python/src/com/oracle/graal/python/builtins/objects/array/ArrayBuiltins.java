@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -463,12 +464,12 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "!isPSlice(idx)", limit = "3")
-        static Object getitem(PArray self, Object idx,
-                        @CachedLibrary("idx") PythonObjectLibrary lib,
+        @Specialization(guards = "!isPSlice(idx)")
+        static Object getitem(VirtualFrame frame, PArray self, Object idx,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached("forArray()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
-            int index = normalizeIndexNode.execute(lib.asIndex(idx), self.getLength());
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, idx), self.getLength());
             return getValueNode.execute(self, index);
         }
 
@@ -502,18 +503,18 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!isPSlice(idx)", limit = "3")
+        @Specialization(guards = "!isPSlice(idx)")
         static Object setitem(VirtualFrame frame, PArray self, Object idx, Object value,
-                        @CachedLibrary("idx") PythonObjectLibrary lib,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
-            int index = normalizeIndexNode.execute(lib.asIndex(idx), self.getLength());
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, idx), self.getLength());
             putValueNode.execute(frame, self, index, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "self.getFormat() == other.getFormat()")
-        Object setitem(PArray self, PSlice slice, PArray other,
+        Object setitem(VirtualFrame frame, PArray self, PSlice slice, PArray other,
                         @Cached ConditionProfile sameArrayProfile,
                         @Cached ConditionProfile simpleStepProfile,
                         @Cached ConditionProfile complexDeleteProfile,
@@ -554,7 +555,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 }
                 PythonUtils.arraycopy(sourceBuffer, 0, self.getBuffer(), start * itemsize, needed * itemsize);
             } else if (complexDeleteProfile.profile(needed == 0)) {
-                delItemNode.executeSlice(self, slice);
+                delItemNode.executeSlice(frame, self, slice);
             } else if (stepAssignProfile.profile(needed == sliceLength)) {
                 for (int cur = start, i = 0; i < sliceLength; cur += step, i++) {
                     PythonUtils.arraycopy(sourceBuffer, i * itemsize, self.getBuffer(), cur * itemsize, itemsize);
@@ -581,14 +582,14 @@ public class ArrayBuiltins extends PythonBuiltins {
     @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        public abstract Object executeSlice(PArray self, PSlice slice);
+        public abstract Object executeSlice(VirtualFrame frame, PArray self, PSlice slice);
 
-        @Specialization(guards = "!isPSlice(idx)", limit = "3")
-        Object delitem(PArray self, Object idx,
-                        @CachedLibrary("idx") PythonObjectLibrary lib,
+        @Specialization(guards = "!isPSlice(idx)")
+        Object delitem(VirtualFrame frame, PArray self, Object idx,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode) {
             self.checkCanResize(this);
-            int index = normalizeIndexNode.execute(lib.asIndex(idx), self.getLength());
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, idx), self.getLength());
             self.delSlice(index, 1);
             return PNone.NONE;
         }

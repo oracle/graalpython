@@ -122,6 +122,8 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
@@ -399,33 +401,15 @@ public abstract class SequenceStorageNodes {
     abstract static class NormalizingNode extends PNodeWithContext {
 
         @Child private NormalizeIndexNode normalizeIndexNode;
-        @Child private PythonObjectLibrary lib;
+        @Child private PyNumberAsSizeNode asSizeNode;
         @Child private LenNode lenNode;
-        @CompilationFinal private ConditionProfile gotFrameProfile;
 
         protected NormalizingNode(NormalizeIndexNode normalizeIndexNode) {
             this.normalizeIndexNode = normalizeIndexNode;
         }
 
-        private PythonObjectLibrary getLibrary() {
-            if (lib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
-            }
-            return lib;
-        }
-
         protected final int normalizeIndex(VirtualFrame frame, Object idx, SequenceStorage store) {
-            if (gotFrameProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                gotFrameProfile = ConditionProfile.createBinaryProfile();
-            }
-            int intIdx;
-            if (gotFrameProfile.profile(frame != null)) {
-                intIdx = getLibrary().asSizeWithState(idx, PythonBuiltinClassType.IndexError, PArguments.getThreadState(frame));
-            } else {
-                intIdx = getLibrary().asSize(idx, PythonBuiltinClassType.IndexError);
-            }
+            int intIdx = getAsSizeNode().executeExact(frame, idx, IndexError);
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreLength(store));
             }
@@ -439,8 +423,8 @@ public abstract class SequenceStorageNodes {
             return idx;
         }
 
-        protected final int normalizeIndex(@SuppressWarnings("unused") VirtualFrame frame, long idx, SequenceStorage store) {
-            int intIdx = getLibrary().asSize(idx, PythonBuiltinClassType.IndexError);
+        protected final int normalizeIndex(VirtualFrame frame, long idx, SequenceStorage store) {
+            int intIdx = getAsSizeNode().executeExact(frame, idx, IndexError);
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreLength(store));
             }
@@ -453,6 +437,14 @@ public abstract class SequenceStorageNodes {
                 lenNode = insert(LenNode.create());
             }
             return lenNode.execute(store);
+        }
+
+        private PyNumberAsSizeNode getAsSizeNode() {
+            if (asSizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asSizeNode = insert(PyNumberAsSizeNode.create());
+            }
+            return asSizeNode;
         }
 
         protected static boolean isPSlice(Object obj) {
@@ -506,13 +498,13 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected Object doSlice(SequenceStorage storage, PSlice slice,
+        protected Object doSlice(VirtualFrame frame, SequenceStorage storage, PSlice slice,
                         @Cached LenNode lenNode,
                         @Cached PythonObjectFactory factory,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {
-            SliceInfo info = compute.execute(sliceCast.execute(slice), lenNode.execute(storage));
+            SliceInfo info = compute.execute(frame, sliceCast.execute(slice), lenNode.execute(storage));
             if (factoryMethod != null) {
                 return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, sliceLen.len(info)), factory);
             }
@@ -969,7 +961,7 @@ public abstract class SequenceStorageNodes {
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute) {
-            SliceInfo info = compute.execute(sliceCast.execute(slice), storage.length());
+            SliceInfo info = compute.execute(frame, sliceCast.execute(slice), storage.length());
             // We need to construct the list eagerly because if a SequenceStoreException occurs, we
             // must not use iterable again. It could have side-effects.
             PList values = constructListNode.execute(frame, iterable);
@@ -2638,11 +2630,15 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!isInt(times)", limit = "1")
+        @Specialization(guards = "!isInt(times)")
         SequenceStorage doNonInt(VirtualFrame frame, SequenceStorage s, Object times,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("times") PythonObjectLibrary lib) {
-            int i = toIndex(frame, times, raiseNode, lib);
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (!indexCheckNode.execute(times)) {
+                throw raiseNode.raise(TypeError, ERROR_MSG, times);
+            }
+            int i = asSizeNode.executeExact(frame, times);
             if (recursive == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursive = insert(RepeatNodeGen.create(errorForOverflow));
@@ -2666,13 +2662,6 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isInt(Object times) {
             return times instanceof Integer;
-        }
-
-        private static int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonObjectLibrary lib) {
-            if (lib.canBeIndex(times)) {
-                return lib.asSizeWithFrame(times, PythonBuiltinClassType.OverflowError, frame);
-            }
-            throw raiseNode.raise(TypeError, ERROR_MSG, times);
         }
 
         public static RepeatNode create() {

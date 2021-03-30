@@ -51,12 +51,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -396,7 +397,8 @@ public class MemoryViewNodes {
     @ImportStatic(PGuards.class)
     abstract static class PointerLookupNode extends PNodeWithRaise {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
-        @Child private PythonObjectLibrary indexLib;
+        @Child private PyIndexCheckNode indexCheckNode;
+        @Child private PyNumberAsSizeNode asSizeNode;
         @CompilationFinal private ConditionProfile hasSuboffsetsProfile;
 
         // index can be a tuple, int or int-convertible
@@ -444,7 +446,7 @@ public class MemoryViewNodes {
 
         @Specialization(guards = {"cachedDimensions == self.getDimensions()", "cachedDimensions <= 8"})
         @ExplodeLoop
-        MemoryPointer resolveTupleCached(PMemoryView self, PTuple indices,
+        MemoryPointer resolveTupleCached(VirtualFrame frame, PMemoryView self, PTuple indices,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
@@ -454,14 +456,14 @@ public class MemoryViewNodes {
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < cachedDimensions; dim++) {
                 Object indexObj = getItemNode.execute(indicesStorage, dim);
-                int index = convertIndex(indexObj);
+                int index = convertIndex(frame, indexObj);
                 lookupDimension(self, ptr, dim, index);
             }
             return ptr;
         }
 
         @Specialization(replaces = "resolveTupleCached")
-        MemoryPointer resolveTupleGeneric(PMemoryView self, PTuple indices,
+        MemoryPointer resolveTupleGeneric(VirtualFrame frame, PMemoryView self, PTuple indices,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
@@ -471,15 +473,15 @@ public class MemoryViewNodes {
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < ndim; dim++) {
                 Object indexObj = getItemNode.execute(indicesStorage, dim);
-                int index = convertIndex(indexObj);
+                int index = convertIndex(frame, indexObj);
                 lookupDimension(self, ptr, dim, index);
             }
             return ptr;
         }
 
         @Specialization(guards = "!isPTuple(indexObj)")
-        MemoryPointer resolveIntObj(PMemoryView self, Object indexObj) {
-            final int index = convertIndex(indexObj);
+        MemoryPointer resolveIntObj(VirtualFrame frame, PMemoryView self, Object indexObj) {
+            final int index = convertIndex(frame, indexObj);
             if (self.getDimensions() == 1) {
                 return resolveInt(self, index);
             } else {
@@ -503,19 +505,27 @@ public class MemoryViewNodes {
             }
         }
 
-        private int convertIndex(Object indexObj) {
-            if (!getIndexLib().canBeIndex(indexObj)) {
+        private int convertIndex(VirtualFrame frame, Object indexObj) {
+            if (!getIndexCheckNode().execute(indexObj)) {
                 throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
             }
-            return getIndexLib().asSize(indexObj, IndexError);
+            return getAsSizeNode().executeExact(frame, indexObj, IndexError);
         }
 
-        private PythonObjectLibrary getIndexLib() {
-            if (indexLib == null) {
+        private PyIndexCheckNode getIndexCheckNode() {
+            if (indexCheckNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                indexLib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+                indexCheckNode = insert(PyIndexCheckNode.create());
             }
-            return indexLib;
+            return indexCheckNode;
+        }
+
+        private PyNumberAsSizeNode getAsSizeNode() {
+            if (asSizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asSizeNode = insert(PyNumberAsSizeNode.create());
+            }
+            return asSizeNode;
         }
 
         private ConditionProfile getHasSuboffsetsProfile() {

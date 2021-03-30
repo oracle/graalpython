@@ -51,8 +51,4 @@ public final class RangeUtils {
     public static boolean canBePint(Object start, Object stop, Object step, PythonObjectLibrary lib) {
         return lib.canBePInt(start) && lib.canBePInt(stop) && lib.canBePInt(step);
     }
-
-    public static boolean canBeIndex(Object start, Object stop, Object step, PythonObjectLibrary lib) {
-        return lib.canBeIndex(start) && lib.canBeIndex(stop) && lib.canBeIndex(step);
-    }
 }

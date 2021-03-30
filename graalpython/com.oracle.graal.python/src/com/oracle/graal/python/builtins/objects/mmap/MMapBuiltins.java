@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
@@ -79,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FindNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FlushNodeClinicProviderGen;
@@ -103,6 +101,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverterNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -238,7 +238,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLenNode) {
             try {
-                SliceInfo info = compute.execute(sliceCast.execute(idx), PInt.intValueExact(self.getLength()));
+                SliceInfo info = compute.execute(frame, sliceCast.execute(idx), PInt.intValueExact(self.getLength()));
                 int len = sliceLenNode.len(info);
                 if (emptyProfile.profile(len == 0)) {
                     return createEmptyBytes(factory());
@@ -283,7 +283,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached LenOfRangeNode sliceLen) {
             try {
                 long len = self.getLength();
-                SliceInfo info = compute.execute(sliceCast.execute(idx), PInt.intValueExact(len));
+                SliceInfo info = compute.execute(frame, sliceCast.execute(idx), PInt.intValueExact(len));
                 if (invalidStepProfile.profile(info.step != 1)) {
                     throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.STEP_1_NOT_SUPPORTED);
                 }
@@ -429,17 +429,18 @@ public class MMapBuiltins extends PythonBuiltins {
             return readBytes(frame, self, posixLib, self.getRemaining(), emptyProfile);
         }
 
-        @Specialization(guards = "!isNoValue(n)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isNoValue(n)")
         PBytes read(VirtualFrame frame, PMMap self, Object n,
                         @Cached ConditionProfile emptyProfile,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary("n") PythonObjectLibrary lib,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createBinaryProfile()") ConditionProfile negativeProfile) {
             // _Py_convert_optional_to_ssize_t:
-            if (lib.lookupAttribute(n, frame, __INDEX__) == PNone.NO_VALUE) {
+            if (!indexCheckNode.execute(n)) {
                 throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);
             }
-            long nread = lib.asSizeWithState(n, PArguments.getThreadState(frame));
+            long nread = asSizeNode.executeExact(frame, n);
 
             if (negativeProfile.profile(nread < 0)) {
                 return readUnlimited(frame, self, PNone.NO_VALUE, emptyProfile, posixLib);

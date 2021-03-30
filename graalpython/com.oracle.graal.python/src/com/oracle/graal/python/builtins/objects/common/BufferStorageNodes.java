@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -250,11 +251,11 @@ public abstract class BufferStorageNodes {
             PythonUtils.arrayAccessor.putLong(bytes, offset, lib.asJavaLong(object, frame));
         }
 
-        @Specialization(guards = "format == UINT_64", limit = "2")
+        @Specialization(guards = "format == UINT_64")
         static void packUnsignedLong(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached CastToJavaUnsignedLongNode cast,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, cast.execute(lib.asIndexWithFrame(object, frame)));
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaUnsignedLongNode cast) {
+            PythonUtils.arrayAccessor.putLong(bytes, offset, cast.execute(indexNode.execute(frame, object)));
         }
 
         @Specialization(guards = "format == FLOAT", limit = "2")

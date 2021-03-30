@@ -46,17 +46,20 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class PBigRange extends PRange {
@@ -134,10 +137,13 @@ public class PBigRange extends PRange {
     }
 
     @ExportMessage
-    public int lengthWithState(@SuppressWarnings("unused") ThreadState state, @CachedLibrary("this.length") PythonObjectLibrary pol,
+    public int lengthWithState(@SuppressWarnings("unused") ThreadState state,
+                    @Cached ConditionProfile gotState,
+                    @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PyNumberAsSizeNode asSizeNode,
                     @Cached PRaiseNode raiseNode) {
-        if (pol.canBeIndex(length)) {
-            return pol.asSizeWithState(length, state);
+        if (indexCheckNode.execute(length)) {
+            return asSizeNode.executeExact(gotState.profile(state != null) ? PArguments.frameForCall(state) : null, length);
         }
         throw raiseNode.raiseNumberTooLarge(OverflowError, length);
     }

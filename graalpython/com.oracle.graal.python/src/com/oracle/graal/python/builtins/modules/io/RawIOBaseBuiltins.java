@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -110,11 +111,11 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
         @Specialization(limit = "2", guards = "size >= 0")
         Object read(VirtualFrame frame, Object self, int size,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary asSize,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary("self") PythonObjectLibrary libSelf) {
             PByteArray b = factory().createByteArray(new byte[size]);
             Object res = libSelf.lookupAndCallRegularMethod(self, frame, READINTO, b);
-            int n = asSize.asSize(res, ValueError);
+            int n = asSizeNode.executeExact(frame, res, ValueError);
             if (n == 0) {
                 return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             }

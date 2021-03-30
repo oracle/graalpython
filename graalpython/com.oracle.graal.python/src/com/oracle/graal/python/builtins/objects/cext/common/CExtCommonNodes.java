@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
@@ -1100,12 +1101,12 @@ public abstract class CExtCommonNodes {
      */
     public static final class GetIndexNode extends Node {
 
-        @Child private PythonObjectLibrary indexLib = PythonObjectLibrary.getFactory().createDispatched(3);
+        @Child PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNode.create();
         @Child private PythonObjectLibrary selfLib;
         @Child private NormalizeIndexNode normalizeIndexNode;
 
         public int execute(Object self, Object indexObj) {
-            int index = indexLib.asSize(indexObj);
+            int index = asSizeNode.executeExact(null, indexObj);
             if (index < 0) {
                 // 'selfLib' acts as an implicit profile for 'index < 0'
                 if (selfLib == null) {

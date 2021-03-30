@@ -46,13 +46,12 @@ import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
 
@@ -60,12 +59,12 @@ public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
         super(defaultValue, useDefaultForNone);
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
+    @Specialization(guards = "!isHandledPNone(value)")
     int doOthers(VirtualFrame frame, Object value,
-                    @Cached CastToJavaIntLossyNode castToInt,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (lib.canBeIndex(value)) {
-            return castToInt.execute(lib.asIndexWithFrame(value, frame));
+                    @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PyNumberAsSizeNode asSizeNode) {
+        if (indexCheckNode.execute(value)) {
+            return asSizeNode.executeLossy(frame, value);
         }
         throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
     }

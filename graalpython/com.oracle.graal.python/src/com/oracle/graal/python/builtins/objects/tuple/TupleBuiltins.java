@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -89,6 +90,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public class TupleBuiltins extends PythonBuiltins {
@@ -390,24 +392,18 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
-        protected static boolean isSingleRepeat(PTuple left, PythonObjectLibrary tuplelib, Object right, PythonObjectLibrary lib) {
-            return PGuards.isPythonBuiltinClassType(tuplelib.getLazyPythonClass(left)) && lib.canBeIndex(right) && lib.asSize(right) == 1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isSingleRepeat(left, tuplelib, right, lib)")
-        PTuple doPTupleSingleRepeat(VirtualFrame frame, PTuple left, Object right,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary tuplelib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return left;
-        }
-
-        @Specialization(guards = "!isSingleRepeat(left, tuplelib, right, lib)")
+        @Specialization
         PTuple mul(VirtualFrame frame, PTuple left, Object right,
-                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary tuplelib,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), right));
+                        @CachedLibrary(limit = "3") PythonObjectLibrary tuplelib,
+                        @Cached ConditionProfile isSingleRepeat,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode) {
+            int repeats = asSizeNode.executeExact(frame, right);
+            if (isSingleRepeat.profile(PGuards.isPythonBuiltinClassType(tuplelib.getLazyPythonClass(left)) && repeats == 1)) {
+                return left;
+            } else {
+                return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), repeats));
+            }
         }
     }
 

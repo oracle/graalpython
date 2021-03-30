@@ -156,6 +156,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -310,33 +312,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = {"doL", "doD", "doPI"})
         String doO(VirtualFrame frame, Object x,
                         @Cached ConditionProfile isMinLong,
-                        @Cached IsSubtypeNode isSubtype,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached BranchProfile isInt,
                         @Cached BranchProfile isLong,
                         @Cached BranchProfile isPInt) {
-            Object index = lib.asIndexWithFrame(x, frame);
-            if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
-                if (index instanceof Boolean || index instanceof Integer) {
-                    isInt.enter();
-                    return doL(lib.asSize(index), isMinLong);
-                } else if (index instanceof Long) {
-                    isLong.enter();
-                    return doL((long) index, isMinLong);
-                } else if (index instanceof PInt) {
-                    isPInt.enter();
-                    return doPI((PInt) index);
-                } else {
-                    CompilerDirectives.transferToInterpreter();
-                    throw raise(PythonBuiltinClassType.NotImplementedError, "bin/oct/hex with native integer subclasses");
-                }
+            Object index = indexNode.execute(frame, x);
+            if (index instanceof Boolean || index instanceof Integer) {
+                isInt.enter();
+                return doL(asSizeNode.executeExact(frame, index), isMinLong);
+            } else if (index instanceof Long) {
+                isLong.enter();
+                return doL((long) index, isMinLong);
+            } else if (index instanceof PInt) {
+                isPInt.enter();
+                return doPI((PInt) index);
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                throw raise(PythonBuiltinClassType.NotImplementedError, "bin/oct/hex with native integer subclasses");
             }
-            CompilerDirectives.transferToInterpreter();
-            /*
-             * It should not be possible to get here, as PyNumber_Index already has a check for the
-             * same condition
-             */
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INDEX_NOT_INT, "PyNumber_ToBase");
         }
     }
 

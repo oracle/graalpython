@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -197,10 +198,10 @@ public class ReversedBuiltins extends PythonBuiltins {
     @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public Object reduce(PBuiltinIterator self, Object index,
-                        @CachedLibrary(value = "index") PythonObjectLibrary pol) {
-            int idx = pol.asSize(index);
+        @Specialization
+        public static Object setState(VirtualFrame frame, PBuiltinIterator self, Object index,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int idx = asSizeNode.executeExact(frame, index);
             if (idx < -1) {
                 idx = -1;
             }

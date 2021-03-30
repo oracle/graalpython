@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
@@ -501,11 +502,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return factory().createInt(factorialPart(1, (long) pfValue));
         }
 
-        @Specialization(guards = "!isNumber(value)", limit = "1")
+        @Specialization(guards = "!isNumber(value)")
         public Object factorialObject(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached("create()") FactorialNode recursiveNode) {
-            return recursiveNode.call(frame, lib.asIndex(value));
+            return recursiveNode.call(frame, indexNode.execute(frame, value));
         }
 
         protected boolean isInteger(double value) {
@@ -588,11 +589,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object comb(VirtualFrame frame, Object n, Object k,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+        static Object comb(VirtualFrame frame, Object n, Object k,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached CombNode recursiveNode) {
-            Object nValue = lib.asIndexWithFrame(n, frame);
-            Object kValue = lib.asIndexWithFrame(k, frame);
+            Object nValue = indexNode.execute(frame, n);
+            Object kValue = indexNode.execute(frame, k);
             return recursiveNode.execute(frame, nValue, kValue);
         }
 
@@ -664,10 +665,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(k)")
         Object perm(VirtualFrame frame, Object n, Object k,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached PermNode recursiveNode) {
-            Object nValue = lib.asIndexWithFrame(n, frame);
-            Object kValue = lib.asIndexWithFrame(k, frame);
+            Object nValue = indexNode.execute(frame, n);
+            Object kValue = indexNode.execute(frame, k);
             return recursiveNode.execute(frame, nValue, kValue);
         }
 
@@ -1428,11 +1429,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
-        Object gcd(VirtualFrame frame, Object x, Object y,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+        static Object gcd(VirtualFrame frame, Object x, Object y,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached("create()") GcdNode recursiveNode) {
-            Object xValue = lib.asIndexWithFrame(x, frame);
-            Object yValue = lib.asIndexWithFrame(y, frame);
+            Object xValue = indexNode.execute(frame, x);
+            Object yValue = indexNode.execute(frame, y);
             return recursiveNode.execute(frame, xValue, yValue);
         }
 
@@ -2609,10 +2610,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isInteger(x)")
-        Object doGeneral(VirtualFrame frame, Object x,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+        static Object doGeneral(VirtualFrame frame, Object x,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached IsqrtNode recursiveNode) {
-            return recursiveNode.call(frame, lib.asIndexWithFrame(x, frame));
+            return recursiveNode.call(frame, indexNode.execute(frame, x));
         }
 
         @TruffleBoundary

@@ -106,11 +106,6 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
         return PythonBuiltinClassType.PInt;
     }
 
-    @ExportMessage
-    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
-    }
-
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();

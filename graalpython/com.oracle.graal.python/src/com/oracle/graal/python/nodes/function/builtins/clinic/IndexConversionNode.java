@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -65,14 +66,13 @@ public abstract class IndexConversionNode extends IntConversionBaseNode {
     int doOthers(VirtualFrame frame, Object value,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached BranchProfile isFloatProfile,
-                    @CachedLibrary("value") PythonObjectLibrary lib,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary indexLib) {
+                    @Cached PyNumberAsSizeNode asSizeNode,
+                    @CachedLibrary("value") PythonObjectLibrary lib) {
         if (isSubtypeNode.execute(lib.getLazyPythonClass(value), PythonBuiltinClassType.PFloat)) {
             isFloatProfile.enter();
             throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
         }
-        Object result = lib.asIndexWithFrame(value, frame);
-        return indexLib.asSizeWithFrame(result, TypeError, frame);
+        return asSizeNode.executeExact(frame, value, TypeError);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)

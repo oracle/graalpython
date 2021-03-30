@@ -52,14 +52,12 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 @ImportStatic(MathGuards.class)
 abstract class CastToJavaIntNode extends PNodeWithContext {
 
-    public abstract int execute(int x);
-
     public abstract int execute(long x);
 
     public abstract int execute(Object x);
 
     @Specialization
-    public int toInt(int x) {
+    static int toInt(int x) {
         return x;
     }
 

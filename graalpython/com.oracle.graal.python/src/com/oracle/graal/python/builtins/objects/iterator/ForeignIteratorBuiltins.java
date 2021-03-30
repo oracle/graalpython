@@ -35,10 +35,10 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -63,9 +63,9 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
         @Specialization
         public Object next(PForeignArrayIterator foreignIter,
                         @Cached PForeignToPTypeNode fromForeignNode,
-                        @CachedLibrary(limit = "3") InteropLibrary interop,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary pyObjLib) {
-            if (foreignIter.getCursor() >= foreignIter.getSize(interop, pyObjLib)) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @CachedLibrary(limit = "3") InteropLibrary interop) {
+            if (foreignIter.getCursor() >= foreignIter.getSize(interop, asSizeNode)) {
                 throw raise(StopIteration);
             }
 

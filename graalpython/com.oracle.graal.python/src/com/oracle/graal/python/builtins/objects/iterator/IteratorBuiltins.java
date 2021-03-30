@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -276,10 +277,10 @@ public class IteratorBuiltins extends PythonBuiltins {
             return self.getLength();
         }
 
-        @Specialization(guards = "!self.isExhausted()", limit = "1")
-        public static int lengthHint(PBigRangeIterator self,
-                        @CachedLibrary("self.getLen()") PythonObjectLibrary lib) {
-            return lib.asSize(self.getLen());
+        @Specialization(guards = "!self.isExhausted()")
+        public static int lengthHint(VirtualFrame frame, PBigRangeIterator self,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            return asSizeNode.executeExact(frame, self.getLen());
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -480,10 +481,10 @@ public class IteratorBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public static Object reduce(PBuiltinIterator self, Object index,
-                        @CachedLibrary(value = "index") PythonObjectLibrary pol) {
-            int idx = pol.asSize(index);
+        @Specialization
+        public static Object reduce(VirtualFrame frame, PBuiltinIterator self, Object index,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int idx = asSizeNode.executeExact(frame, index);
             if (idx < 0) {
                 idx = 0;
             }

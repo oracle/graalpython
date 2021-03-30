@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -133,12 +134,13 @@ public final class PDict extends PHashingCollection {
                         @Exclusive @Cached ConditionProfile hasLen,
                         @Exclusive @Cached ConditionProfile ltZero,
                         @Shared("raise") @Cached PRaiseNode raiseNode,
-                        @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
                         @Exclusive @Cached CastToJavaLongLossyNode toLong,
                         @Exclusive @Cached ConditionProfile ignoreOverflow,
                         @Exclusive @Cached BranchProfile overflow) {
             // call the generic implementation in the superclass
-            return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, lib, toLong, ignoreOverflow, overflow);
+            return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, indexNode, gotState, toLong, ignoreOverflow, overflow);
         }
     }
 

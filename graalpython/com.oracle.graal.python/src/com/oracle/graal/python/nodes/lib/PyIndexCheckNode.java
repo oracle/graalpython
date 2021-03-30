@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.nodes.lib;
 
-import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
-import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class LongIndexConverterNode extends LongConversionBaseNode {
-    protected LongIndexConverterNode(long defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
+/**
+ * Check if the object supports conversion to index (integer). Equivalent of CPython's
+ * {@code PyIndex_Check}. Profiles the return value.
+ */
+@ImportStatic(SpecialMethodNames.class)
+@GenerateUncached
+public abstract class PyIndexCheckNode extends PNodeWithContext {
+    public abstract boolean execute(Object object);
+
+    @Specialization
+    static boolean doInt(@SuppressWarnings("unused") int object) {
+        return true;
     }
 
-    @Specialization(guards = "!isHandledPNone(value)")
-    static long doOthers(VirtualFrame frame, Object value,
-                    @Cached PyNumberIndexNode indexNode,
-                    @Cached CastToJavaLongExactNode cast) {
-        return cast.execute(indexNode.execute(frame, value));
+    @Specialization
+    static boolean doLong(@SuppressWarnings("unused") long object) {
+        return true;
     }
 
-    @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
-    public static LongIndexConverterNode create(@DefaultValue long defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
-        return LongIndexConverterNodeGen.create(defaultValue, useDefaultForNone);
+    @Specialization
+    static boolean doBoolean(@SuppressWarnings("unused") boolean object) {
+        return true;
     }
 
-    @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
-    public static LongIndexConverterNode create(@UseDefaultForNone boolean useDefaultForNone) {
-        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
-        return LongIndexConverterNodeGen.create(0L, false);
+    @Specialization
+    static boolean doDouble(@SuppressWarnings("unused") double object) {
+        return false;
     }
 
-    public static LongIndexConverterNode create() {
-        return LongIndexConverterNode.create(false);
+    @Specialization(limit = "3")
+    static boolean doObject(Object object,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @Cached LookupAttributeInMRONode.Dynamic lookup,
+                    @Cached ConditionProfile profile) {
+        return profile.profile(lookup.execute(lib.getLazyPythonClass(object), __INDEX__) != PNone.NO_VALUE);
+    }
+
+    public static PyIndexCheckNode create() {
+        return PyIndexCheckNodeGen.create();
     }
 }

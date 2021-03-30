@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesN
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
@@ -85,6 +84,9 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
@@ -320,18 +322,23 @@ public abstract class BytesNodes {
             return findElement(haystack, cast.execute(sub), start, end > len1 ? len1 : end);
         }
 
-        @Specialization(guards = "lib.canBeIndex(sub)")
+        @Specialization(guards = "!isBytes(sub)")
         int useIndex(SequenceStorage self, int len1, Object sub, int start, int end,
                         @Cached ConditionProfile earlyExit,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaByteNode cast,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
             if (earlyExit.profile(start >= len1)) {
                 return -1;
             }
-            byte[] haystack = getBytes.execute(self);
-            byte subByte = cast.execute(lib.asIndex(sub));
-            return findElement(haystack, subByte, start, end > len1 ? len1 : end);
+            if (indexCheckNode.execute(sub)) {
+                byte[] haystack = getBytes.execute(self);
+                byte subByte = cast.execute(indexNode.execute(null, sub));
+                return findElement(haystack, subByte, start, end > len1 ? len1 : end);
+            } else {
+                throw raise(TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "a bytes-like object", sub);
+            }
         }
 
         // Overridden in RFind
@@ -369,12 +376,6 @@ public abstract class BytesNodes {
                 }
             }
             return -1;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        int doError(Object bytes, int len1, Object sub, int start, int end) {
-            throw raise(TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "a bytes-like object", sub);
         }
 
         public static FindNode create() {
@@ -601,28 +602,24 @@ public abstract class BytesNodes {
             return (byte[]) ((ByteSequenceStorage) source.getSequenceStorage()).getCopyOfInternalArrayObject();
         }
 
-        @Specialization(guards = "lib.canBeIndex(source)", limit = "3")
-        static byte[] fromIndex(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @CachedLibrary("source") PythonObjectLibrary lib) {
-            int cap = lib.asSizeWithState(source, PArguments.getThreadState(frame));
-            return BytesUtils.fromSize(getCore(), cap);
-        }
-
-        @Specialization(guards = {"lib.isBuffer(source)", "!lib.canBeIndex(source)"}, limit = "3")
-        static byte[] fromBuffer(Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @CachedLibrary("source") PythonObjectLibrary lib) {
-            try {
-                return lib.getBufferBytes(source);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        @Specialization(guards = {"!isString(source)", "!isNoValue(source)", "!lib.canBeIndex(source)", "!lib.isBuffer(source)"}, limit = "3")
-        static byte[] fromIterable(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        @Specialization(guards = {"!isString(source)", "!isNoValue(source)"}, limit = "3")
+        static byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createCast()") IterableToByteNode toByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary("source") PythonObjectLibrary lib) {
+                        @CachedLibrary("source") PythonObjectLibrary lib) {
+            if (indexCheckNode.execute(source)) {
+                int cap = asSizeNode.executeExact(frame, source);
+                return BytesUtils.fromSize(getCore(), cap);
+            }
+            if (lib.isBuffer(source)) {
+                try {
+                    return lib.getBufferBytes(source);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
             return toByteNode.execute(frame, source, lenNode.execute(frame, source));
         }
 

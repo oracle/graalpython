@@ -166,7 +166,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -232,6 +231,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -443,17 +443,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTuple_New", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTuple_New extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         PTuple doGeneric(VirtualFrame frame, Object size,
-                        @Cached("createBinaryProfile()") ConditionProfile gotFrame,
-                        @CachedLibrary("size") PythonObjectLibrary lib) {
-            int index;
-            if (gotFrame.profile(frame != null)) {
-                index = lib.asSizeWithState(size, PArguments.getThreadState(frame));
-            } else {
-                index = lib.asSize(size);
-            }
-            return factory().createTuple(new Object[index]);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            return factory().createTuple(new Object[asSizeNode.executeExact(frame, size)]);
         }
     }
 
@@ -2488,15 +2481,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         int resize(VirtualFrame frame, PBytes self, long newSizeL,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @CachedLibrary("newSizeL") PythonObjectLibrary lib,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CastToByteNode castToByteNode) {
 
             SequenceStorage storage = self.getSequenceStorage();
-            int newSize = lib.asSize(newSizeL);
+            int newSize = asSizeNode.executeExact(frame, newSizeL);
             int len = lenNode.execute(storage);
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {

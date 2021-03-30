@@ -50,11 +50,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.lib.PyIndexCheckNode;
+import com.oracle.graal.python.nodes.lib.PyNumberIndexNode;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -154,33 +155,34 @@ public abstract class CastToByteNode extends Node {
         if (coerce) {
             return doIntOvf(getItemNode.executeInt(frame, value.getSequenceStorage(), 0));
         } else {
-            return doGeneric(value);
+            return doError(value);
         }
     }
 
-    @Specialization(guards = "plib.isForeignObject(value)", limit = "1")
-    protected byte doForeign(Object value,
-                    @SuppressWarnings("unused") @CachedLibrary("value") PythonObjectLibrary plib,
-                    @CachedLibrary("value") InteropLibrary lib) {
-        if (lib.fitsInByte(value)) {
-            try {
-                return lib.asByte(value);
-            } catch (UnsupportedMessageException e) {
-                // fall through
+    @Specialization
+    protected byte doObject(VirtualFrame frame, Object value,
+                    @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PyNumberIndexNode indexNode,
+                    @Cached CastToByteNode recursive,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @CachedLibrary(limit = "2") InteropLibrary lib) {
+        if (plib.isForeignObject(value)) {
+            if (lib.fitsInByte(value)) {
+                try {
+                    return lib.asByte(value);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+        } else {
+            if (indexCheckNode.execute(value)) {
+                return recursive.execute(frame, indexNode.execute(frame, value));
             }
         }
-        return doGeneric(value);
+        return doError(value);
     }
 
-    @Specialization(guards = "lib.canBeIndex(value)")
-    protected byte doObject(VirtualFrame frame, Object value,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                    @Cached CastToByteNode recursive) {
-        return recursive.execute(frame, lib.asIndexWithFrame(value, frame));
-    }
-
-    @Fallback
-    protected byte doGeneric(@SuppressWarnings("unused") Object val) {
+    private byte doError(@SuppressWarnings("unused") Object val) {
         if (typeErrorHandler != null) {
             return typeErrorHandler.apply(val);
         } else {
