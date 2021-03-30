@@ -83,7 +83,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return executeObject(null, callable, arg1, arg2);
     }
 
-    @Specialization(guards = "cachedInfo.isSameFactory(info)", limit = "5")
+    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinInfo info, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("info") BinaryBuiltinInfo cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
@@ -92,10 +92,9 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BinaryBuiltinInfo info, Object arg1, Object arg2,
-                    @Cached CallNode callNode,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        Object func = info.getBuiltinMethod(context.getCore());
-        return callNode.execute(frame, func, new Object[]{arg1, arg2}, PKeyword.EMPTY_KEYWORDS);
+                    @CachedContext(PythonLanguage.class) PythonContext ctx,
+                    @Cached TruffleBoundaryCallNode.Binary boundaryCallNode) {
+        return boundaryCallNode.execute(frame, ctx, info, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc",

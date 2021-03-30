@@ -102,7 +102,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return executeObject(null, callable, receiver);
     }
 
-    @Specialization(guards = "cachedInfo.isSameFactory(info)", limit = "5")
+    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") UnaryBuiltinInfo info, Object receiver,
                     @SuppressWarnings("unused") @Cached("info") UnaryBuiltinInfo cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonUnaryBuiltinNode node) {
@@ -111,10 +111,9 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, UnaryBuiltinInfo info, Object receiver,
-                    @Cached CallNode callNode,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        Object func = info.getBuiltinMethod(context.getCore());
-        return callNode.execute(frame, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);
+                    @CachedContext(PythonLanguage.class) PythonContext ctx,
+                    @Cached TruffleBoundaryCallNode.Unary callNode) {
+        return callNode.execute(frame, ctx, info, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc",

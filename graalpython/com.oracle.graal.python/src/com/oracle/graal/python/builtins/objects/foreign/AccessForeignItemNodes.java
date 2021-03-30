@@ -167,7 +167,7 @@ abstract class AccessForeignItemNodes {
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx,
                         @CachedLibrary("idx") PythonObjectLibrary pythonLib,
                         @CachedLibrary("object") InteropLibrary lib) {
-            return readForeignValue(object, pythonLib.asSizeWithState(idx, PArguments.getThreadState(frame)), lib);
+            return readForeignValue(object, pythonLib.asSizeWithFrame(idx, PythonBuiltinClassType.OverflowError, frame), lib);
         }
 
         private PException raiseAttributeErrorDisambiguated(Object object, String key, InteropLibrary lib) {

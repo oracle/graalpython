@@ -382,6 +382,9 @@ public final class PArguments {
     }
 
     public static ThreadState getThreadState(VirtualFrame frame) {
+        if (frame == null) {
+            new RuntimeException().printStackTrace(System.err);
+        }
         assert frame != null : "cannot get thread state without a frame";
         return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getExceptionUnchecked(frame));
     }

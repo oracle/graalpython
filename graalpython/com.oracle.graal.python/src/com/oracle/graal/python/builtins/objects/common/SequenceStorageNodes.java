@@ -2735,10 +2735,9 @@ public abstract class SequenceStorageNodes {
                         @Cached LenNode lenNode,
                         @Cached GetItemScalarNode getItemNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
-            ThreadState threadState = PArguments.getThreadState(frame);
             for (int i = 0; i < lenNode.execute(left); i++) {
                 Object leftItem = getItemNode.execute(left, i);
-                if (lib.equalsWithState(item, leftItem, lib, threadState)) {
+                if (lib.equalsWithFrame(item, leftItem, lib, frame)) {
                     return i;
                 }
             }

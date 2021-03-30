@@ -2556,7 +2556,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 } finally {
                     IndirectCallContext.exit(frame, context, state);
                 }
-                Object dict = LookupAttributeInMRONode.lookupSlow(pythonClass, __DICT__);
+                Object dict = LookupAttributeInMRONode.lookupSlow(pythonClass, __DICT__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
                 if (!addDict && dict == PNone.NO_VALUE) {
                     pythonClass.setHasSlotsButNoDictFlag();
                 }
@@ -2574,7 +2574,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass) {
             // Note: we need to avoid MRO lookup of __dict__ using slots because they are not
             // initialized yet
-            if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlow(pythonClass, __DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
+            if ((!hasPythonClassBases(basesArray) &&
+                            LookupAttributeInMRONode.lookupSlow(pythonClass, __DICT__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false) == PNone.NO_VALUE) ||
+                            basesHaveSlots(basesArray)) {
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
                 BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true);
                 setAttribute(__DICT__, rootNode, pythonClass);

@@ -55,11 +55,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 /**
  * The same as {@link LookupAttributeInMRONode}, but this may also return an instance of
- * {@link com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.BuiltinNodeFactory}
- * if available. {@link com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode} and similar
- * should accept
- * {@link com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.BuiltinNodeFactory}
- * as a callable.
+ * {@link BuiltinMethodInfo}.
+ * {@link com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode} and similar should accept
+ * such objects as a callable.
  */
 @ImportStatic({PythonOptions.class, PythonLanguage.class})
 public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
@@ -77,7 +75,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     Object doBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @SuppressWarnings("unused") @Cached(value = "klass") PythonBuiltinClassType cachedKlass,
                     @Cached(value = "slot.getValue(klass)") Object result) {
-        assert isCacheable(result);
+        assert isCacheable(result) : result;
         return result;
     }
 
@@ -111,8 +109,15 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
     // Multi-context:
 
-    @Specialization(replaces = "doSlotCachedSingleCtx")
-    Object doBuiltinGenericMultiCtx(PythonClass klass) {
+    @Specialization(replaces = "doSlotCachedSingleCtx", guards = {"slot.getValue(klass) == result", "isCacheable(result)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+    Object doSlotCachedMultiCtx(PythonClass klass,
+                    @Cached("slot.getValue(klass)") Object result) {
+        // in multi-context we can still cache primitives and BuiltinMethodInfo instances
+        return result;
+    }
+
+    @Specialization(replaces = "doSlotCachedMultiCtx")
+    Object doSlotUncachedMultiCtx(PythonClass klass) {
         return slot.getValue(klass);
     }
 

@@ -53,8 +53,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -163,11 +161,10 @@ public final class MapBuiltins extends PythonBuiltins {
                 args = PythonUtils.EMPTY_OBJECT_ARRAY;
             }
             InitNode.doGeneric(frame, iterMap, self.getFunction(), iterator, args, argsLib);
-            ThreadState state = PArguments.getThreadState(frame);
             while (true) {
                 try {
                     Object n = next.execute(frame, iterMap);
-                    if (lib.equalsWithState(n, x, lib, state)) {
+                    if (lib.equalsWithFrame(n, x, lib, frame)) {
                         return true;
                     }
                 } catch (PException e) {

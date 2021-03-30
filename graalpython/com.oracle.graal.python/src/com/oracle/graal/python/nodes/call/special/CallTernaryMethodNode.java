@@ -74,7 +74,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
 
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3);
 
-    @Specialization(guards = "cachedInfo.isSameFactory(info)", limit = "5")
+    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("info") TernaryBuiltinInfo cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
@@ -83,10 +83,9 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3,
-                    @Cached CallNode callNode,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        Object func = info.getBuiltinMethod(context.getCore());
-        return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
+                    @CachedContext(PythonLanguage.class) PythonContext ctx,
+                    @Cached TruffleBoundaryCallNode.Ternary callNode) {
+        return callNode.execute(frame, ctx, info, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!isReverse",

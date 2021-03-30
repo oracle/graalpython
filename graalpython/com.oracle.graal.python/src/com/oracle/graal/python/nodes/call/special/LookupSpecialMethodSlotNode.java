@@ -45,8 +45,8 @@ import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
 /**
  * The same as {@link LookupSpecialMethodNode}, but this searches the special slots first. On top of
  * the possible types of return values of {@link LookupSpecialMethodNode}, this node may also return
- * builtin node factory instance, which all the {@link CallBinaryMethodNode} and similar should
- * handle as well.
+ * {@link com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo}, which all the
+ * {@link CallBinaryMethodNode} and similar should handle as well.
  */
 public final class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
     LookupSpecialMethodSlotNode(String name, boolean ignoreDescriptorException) {

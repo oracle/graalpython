@@ -40,32 +40,78 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 /**
- * Context independent wrapper of a method that can be stored in special method slots of
- * {@link com.oracle.graal.python.builtins.PythonBuiltinClassType}. This wrapper is context and also
- * language instance independent. It provides only builtin node factory and a way to resolve itself
- * to its context specific version using {@link #getBuiltinMethod(PythonCore)}.
+ * Context independent wrapper of a method that can be stored in special method slots. These
+ * wrappers are context and also language instance independent.
  *
  * @see com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot
  */
 public abstract class BuiltinMethodInfo {
+
+    private static final ConcurrentHashMap<BuiltinMethodInfo, BuiltinMethodInfo> CACHE = new ConcurrentHashMap<>();
+
+    public static BuiltinMethodInfo get(PBuiltinFunction function) {
+        NodeFactory<? extends PythonBuiltinBaseNode> factory = function.getBuiltinNodeFactory();
+        if (factory == null || needsFrame(factory)) {
+            return null;
+        }
+
+        PythonBuiltinClassType type = null;
+        Object enclosing = function.getEnclosingType();
+        if (enclosing instanceof PythonBuiltinClassType) {
+            type = (PythonBuiltinClassType) enclosing;
+        } else if (enclosing instanceof PythonBuiltinClass) {
+            type = ((PythonBuiltinClass) enclosing).getType();
+        } else {
+            assert enclosing == null;
+        }
+
+        return get(factory, type);
+    }
+
+    public static BuiltinMethodInfo get(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+        Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
+        BuiltinMethodInfo result = null;
+        if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            result = new UnaryBuiltinInfo(factory, type);
+        } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            result = new BinaryBuiltinInfo(factory, type);
+        } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
+            result = new TernaryBuiltinInfo(factory, type);
+        }
+        if (result != null) {
+            return CACHE.computeIfAbsent(result, x -> x);
+        }
+        return null;
+    }
+
+    private static boolean needsFrame(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
+        for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
+            if (builtin.needsFrame()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
-    private final SpecialMethodSlot slot;
     private final PythonBuiltinClassType type;
 
-    private BuiltinMethodInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, SpecialMethodSlot slot) {
+    private BuiltinMethodInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
         this.factory = factory;
         this.type = type;
-        this.slot = slot;
     }
 
     public final boolean isSameFactory(BuiltinMethodInfo info) {
@@ -76,21 +122,29 @@ public abstract class BuiltinMethodInfo {
         return factory;
     }
 
-    public Object getBuiltinMethod(PythonCore core) {
-        return slot.getValue(core.lookupType(type));
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        BuiltinMethodInfo that = (BuiltinMethodInfo) o;
+        return factory == that.factory && type == that.type;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(factory, type);
     }
 
     // Note: manually written subclass for each builtin works better with Truffle DSL than one
     // generic class that would parametrize the 'factory' field
 
     public static final class UnaryBuiltinInfo extends BuiltinMethodInfo {
-        public UnaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, SpecialMethodSlot slot) {
-            super(factory, type, slot);
-        }
-
-        @SuppressWarnings("unchecked")
-        public NodeFactory<? extends PythonUnaryBuiltinNode> getUnaryFactory() {
-            return (NodeFactory<? extends PythonUnaryBuiltinNode>) getFactory();
+        public UnaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(factory, type);
         }
 
         public PythonUnaryBuiltinNode createNode() {
@@ -99,8 +153,8 @@ public abstract class BuiltinMethodInfo {
     }
 
     public static final class BinaryBuiltinInfo extends BuiltinMethodInfo {
-        public BinaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, SpecialMethodSlot slot) {
-            super(factory, type, slot);
+        public BinaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(factory, type);
         }
 
         public PythonBinaryBuiltinNode createNode() {
@@ -109,8 +163,8 @@ public abstract class BuiltinMethodInfo {
     }
 
     public static final class TernaryBuiltinInfo extends BuiltinMethodInfo {
-        public TernaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, SpecialMethodSlot slot) {
-            super(factory, type, slot);
+        public TernaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(factory, type);
         }
 
         public PythonTernaryBuiltinNode createNode() {

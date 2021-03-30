@@ -85,7 +85,6 @@ import java.util.HashSet;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -94,9 +93,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.BinaryBuiltinInfo;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.TernaryBuiltinInfo;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo.UnaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
@@ -104,10 +100,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -209,7 +201,7 @@ public enum SpecialMethodSlot {
         // For builtin classes, we should see these updates only during initialization
         assert !PythonLanguage.getContext().isInitialized() || !(klass instanceof PythonBuiltinClass) ||
                         ((PythonBuiltinClass) klass).getType().getSpecialMethodSlots() == null;
-        klass.specialMethodSlots[ordinal()] = value;
+        klass.specialMethodSlots[ordinal()] = asSlotValue(value);
         if (klass instanceof PythonClass) {
             ((PythonClass) klass).invalidateSlotsFinalAssumption();
         }
@@ -288,15 +280,9 @@ public enum SpecialMethodSlot {
                 }
                 Object value = slot.getValue(klass);
                 if (value instanceof PBuiltinFunction) {
-                    NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) value).getBuiltinNodeFactory();
-                    assert factory != null && !needsFrame(factory);
-                    Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
-                    if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-                        typeSlots[slot.ordinal()] = new UnaryBuiltinInfo(factory, type, slot);
-                    } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-                        typeSlots[slot.ordinal()] = new BinaryBuiltinInfo(factory, type, slot);
-                    } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-                        typeSlots[slot.ordinal()] = new TernaryBuiltinInfo(factory, type, slot);
+                    BuiltinMethodInfo info = BuiltinMethodInfo.get((PBuiltinFunction) value);
+                    if (info != null) {
+                        typeSlots[slot.ordinal()] = info;
                     }
                 } else if (PythonLanguage.canCache(value)) {
                     typeSlots[slot.ordinal()] = value;
@@ -435,7 +421,7 @@ public enum SpecialMethodSlot {
             for (SpecialMethodSlot slot : VALUES) {
                 final Object value = domLib.getOrDefault(source, slot.getName(), PNone.NO_VALUE);
                 if (value != PNone.NO_VALUE) {
-                    slots[slot.ordinal()] = value;
+                    slots[slot.ordinal()] = asSlotValue(value);
                 }
             }
         } else {
@@ -444,7 +430,7 @@ public enum SpecialMethodSlot {
             for (SpecialMethodSlot slot : VALUES) {
                 final Object value = hlib.getItem(storage, slot.getName());
                 if (value != null) {
-                    slots[slot.ordinal()] = value;
+                    slots[slot.ordinal()] = asSlotValue(value);
                 }
             }
         }
@@ -455,7 +441,7 @@ public enum SpecialMethodSlot {
         for (SpecialMethodSlot slot : VALUES) {
             Object value = readAttNode.execute(base, slot.getName());
             if (value != PNone.NO_VALUE) {
-                slots[slot.ordinal()] = value;
+                slots[slot.ordinal()] = asSlotValue(value);
             }
         }
     }
@@ -466,7 +452,7 @@ public enum SpecialMethodSlot {
         if (value == PNone.NO_VALUE) {
             // We are removing the value: find the new value for the class that is being updated and
             // proceed with that
-            newValue = LookupAttributeInMRONode.lookupSlow(klass, slot.getName());
+            newValue = LookupAttributeInMRONode.lookupSlow(klass, slot.getName(), GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
         }
         fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, null, newValue);
     }
@@ -490,7 +476,7 @@ public enum SpecialMethodSlot {
         if (value == PNone.NO_VALUE) {
             // We are removing the value: find the new value for the class that is being updated and
             // proceed with that
-            newValue = LookupAttributeInMRONode.lookupSlow(klass, slot.getName());
+            newValue = LookupAttributeInMRONode.lookupSlow(klass, slot.getName(), GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
         }
 
         slot.setValue(klass, newValue);
@@ -547,6 +533,16 @@ public enum SpecialMethodSlot {
         for (PythonAbstractClass subClass : subClasses) {
             fixupSpecialMethodSlot(subClass, slot, originalValue, newValue);
         }
+    }
+
+    private static Object asSlotValue(Object value) {
+        if (value instanceof PBuiltinFunction) {
+            BuiltinMethodInfo info = BuiltinMethodInfo.get((PBuiltinFunction) value);
+            if (info != null) {
+                return info;
+            }
+        }
+        return value;
     }
 
     // --------------------------------------------------
@@ -664,15 +660,6 @@ public enum SpecialMethodSlot {
     // Methods for validation, some used in asserts, some unused but left here to aid local
     // debugging
 
-    private static boolean needsFrame(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
-        for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
-            if (builtin.needsFrame()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * Checks that there were no builtins' slots overridden except those explicitly marked so by
      * {@link PythonBuiltinClassType#redefinesSlot}.
@@ -773,7 +760,7 @@ public enum SpecialMethodSlot {
         if (klass instanceof PythonManagedClass) {
             PythonManagedClass managed = (PythonManagedClass) klass;
             for (SpecialMethodSlot slot : VALUES) {
-                Object actual = LookupAttributeInMRONode.lookupSlow(managed, slot.getName());
+                Object actual = LookupAttributeInMRONode.lookupSlow(managed, slot.getName(), GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
                 Object expected = slot.getValue(managed);
                 if (expected instanceof NodeFactory<?>) {
                     assert actual instanceof PBuiltinFunction;
