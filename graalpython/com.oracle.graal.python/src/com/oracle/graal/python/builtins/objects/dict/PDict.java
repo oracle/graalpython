@@ -215,7 +215,7 @@ public final class PDict extends PHashingCollection {
             lib.setItem(self.getDictStorage(), key, value);
         } catch (PException e) {
             e.expect(PythonBuiltinClassType.TypeError, errorProfile);
-            throw UnsupportedTypeException.create(new Object[] { key }, "keys for Python arrays must be hashable");
+            throw UnsupportedTypeException.create(new Object[]{key}, "keys for Python arrays must be hashable");
         }
     }
 

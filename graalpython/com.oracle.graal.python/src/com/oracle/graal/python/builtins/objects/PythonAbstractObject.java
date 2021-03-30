@@ -1461,7 +1461,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                             // can only modify if the object is not immutable
                             return !isImmutable.execute(owner);
                         } else if (getSetNode.execute(attr, __SET__) == PNone.NO_VALUE) {
-                            // an inherited attribute may be overridable unless it's a setter, than we don't know
+                            // an inherited attribute may be overridable unless it's a setter, than
+                            // we don't know
                             return !isImmutable.execute(object);
                         }
                     }
@@ -1475,7 +1476,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                                 return true;
                             }
                             if (getGetNode.execute(attr, __GET__) != PNone.NO_VALUE) {
-                                // is a getter, read may have side effects, we cannot tell if the result will be invocable
+                                // is a getter, read may have side effects, we cannot tell if the
+                                // result will be invocable
                                 return false;
                             }
                         }

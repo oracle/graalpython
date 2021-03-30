@@ -446,7 +446,7 @@ public class PythonProvider implements LanguageProvider {
     }
 
     private static class GetItemVerifier extends PResultVerifier {
-        private static final String[] UNHASHABLE_TYPES = new String[] {"list", "dict", "bytearray", "set"};
+        private static final String[] UNHASHABLE_TYPES = new String[]{"list", "dict", "bytearray", "set"};
 
         public void accept(SnippetRun snippetRun) throws PolyglotException {
             List<? extends Value> parameters = snippetRun.getParameters();
