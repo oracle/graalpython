@@ -1201,7 +1201,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     if (requiredPInt(mode) && !wrapper.isIntLike()) {
                         throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                     }
-                    return ensureConvertPIntToPrimitiveNode().execute(wrapper, mode, PInt.intValueExact(targetTypeSize), exact(mode));
+                    return ensureConvertPIntToPrimitiveNode().execute(wrapper, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
                 }
                 /*
                  * The 'mode' parameter is usually a constant since this function is primarily used
