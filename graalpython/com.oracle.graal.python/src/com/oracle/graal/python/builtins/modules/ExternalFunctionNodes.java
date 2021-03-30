@@ -1312,7 +1312,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for native power function (with an optional third argument).
      */
     static class MethPowRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 0, false, new String[]{"args"}, KEYWORDS_HIDDEN_CALLABLE, true);
+        private static final Signature SIGNATURE = new Signature(false, 0, false, new String[]{"args"}, KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
