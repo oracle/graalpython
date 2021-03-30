@@ -107,7 +107,7 @@ class TestPyCapsule(CPyExtTestCase):
         code='''Py_ssize_t wrap_PyCapsule_SetContext(char * name, Py_ssize_t ptr) {
             PyObject* capsule = PyCapsule_New((void*)ptr, name, NULL);
             PyCapsule_SetContext(capsule, (void*)ptr);
-            return PyCapsule_GetContext(capsule);
+            return (Py_ssize_t) PyCapsule_GetContext(capsule);
         }
         ''',
         resultspec="n",

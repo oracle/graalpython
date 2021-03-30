@@ -215,8 +215,8 @@ public abstract class ExternalFunctionNodes {
 
         @TruffleBoundary
         static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, String name, boolean doArgAndResultConversion) {
-            Class<?> nodeKlass = null;
-            Supplier<RootNode> rootNodeFunction = null;
+            Class<?> nodeKlass;
+            Supplier<RootNode> rootNodeFunction;
             switch (sig) {
                 case ALLOC:
                     nodeKlass = AllocFuncRootNode.class;
@@ -327,6 +327,8 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = SetterRoot.class;
                     rootNodeFunction = () -> new SetterRoot(language, name, sig);
                     break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
             }
             return language.getOrComputeBuiltinCallTarget(nodeKlass.getCanonicalName() + sig.name() + name + doArgAndResultConversion, rootNodeFunction);
         }

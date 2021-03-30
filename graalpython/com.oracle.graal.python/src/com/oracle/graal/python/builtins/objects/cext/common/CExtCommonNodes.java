@@ -516,9 +516,9 @@ public abstract class CExtCommonNodes {
         public abstract double execute(CExtContext cExtContext, long arg);
 
         public abstract double execute(CExtContext cExtContext, double arg);
-        
+
         public abstract double executeDouble(CExtContext cExtContext, Object arg);
-        
+
         public final double executeDouble(Object arg) {
             return executeDouble(CExtContext.LAZY_CONTEXT, arg);
         }
