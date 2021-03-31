@@ -1491,7 +1491,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               Op: __mod__
                             StringLiteralNode SourceSection: [3037,3072]`"'%s' object can't b...`
                             GetAttributeNode SourceSection: [3075,3091]`type(a).__name__`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: __name__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -1957,7 +1957,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               Op: __mod__
                             StringLiteralNode SourceSection: [4162,4211]`"'%s' object cannot ...`
                             GetAttributeNode SourceSection: [4229,4251]`type(default).__name...`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: __name__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -2006,7 +2006,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           Identifier: hint
                           Frame: [3,hint,Illegal]
                           GetAttributeNode SourceSection: [4376,4401]`type(obj).__length_h...`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: __length_hint__
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -2088,7 +2088,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               Op: __mod__
                             StringLiteralNode SourceSection: [4632,4673]`'__length_hint__ mus...`
                             GetAttributeNode SourceSection: [4691,4709]`type(val).__name__`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: __name__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -2388,7 +2388,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Identifier: attrgetter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [5848,5859]`self._attrs`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _attrs
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2604,14 +2604,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           StringLiteralNode SourceSection: [6084,6095]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [6098,6249]`(self.__class__.__mo...`
                                             GetAttributeNode SourceSection: [6099,6124]`self.__class__.__mod...`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __module__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                               GetAttributeNode SourceSection: [6099,6113]`self.__class__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2620,14 +2620,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNodeGen SourceSection: [6099,6103]`self`
                                                   Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [6156,6183]`self.__class__.__qua...`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __qualname__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                               GetAttributeNode SourceSection: [6156,6170]`self.__class__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2648,7 +2648,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Identifier: repr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [6235,6246]`self._attrs`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _attrs
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -2699,7 +2699,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         Frame: [1,<return_val>,Illegal]
                                         TupleLiteralNode SourceSection: [6292,6319]`self.__class__, self...`
                                           GetAttributeNode SourceSection: [6292,6306]`self.__class__`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2708,7 +2708,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadLocalVariableNodeGen SourceSection: [6292,6296]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [6308,6319]`self._attrs`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: _attrs
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3128,14 +3128,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           StringLiteralNode SourceSection: [7061,7072]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [7075,7222]`(self.__class__.__mo...`
                                             GetAttributeNode SourceSection: [7076,7101]`self.__class__.__mod...`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __module__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                               GetAttributeNode SourceSection: [7076,7090]`self.__class__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3144,14 +3144,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNodeGen SourceSection: [7076,7080]`self`
                                                   Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [7133,7156]`self.__class__.__nam...`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                               GetAttributeNode SourceSection: [7133,7147]`self.__class__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3172,7 +3172,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Identifier: repr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [7208,7219]`self._items`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _items
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3223,7 +3223,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         Frame: [1,<return_val>,Illegal]
                                         TupleLiteralNode SourceSection: [7265,7292]`self.__class__, self...`
                                           GetAttributeNode SourceSection: [7265,7279]`self.__class__`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3232,7 +3232,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadLocalVariableNodeGen SourceSection: [7265,7269]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [7281,7292]`self._items`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: _items
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3392,7 +3392,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Identifier: isinstance
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [7868,7878]`self._name`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3482,7 +3482,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           CallNodeGen SourceSection: None
                                           PositionalArgumentsNode SourceSection: None
                                             GetAttributeNode SourceSection: [8077,8087]`self._args`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _args
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3494,7 +3494,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           KeywordArgumentsNodeGen SourceSection: None
                                             ExecuteKeywordArgumentsNode SourceSection: None
                                             GetAttributeNode SourceSection: [8091,8103]`self._kwargs`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _kwargs
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3510,7 +3510,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadLocalVariableNodeGen SourceSection: [8059,8062]`obj`
                                               Frame: [1,obj,Illegal]
                                             GetAttributeNode SourceSection: [8064,8074]`self._name`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3564,7 +3564,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8151,8161]`self._name`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3588,7 +3588,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8194,8204]`self._args`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: _args
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3675,7 +3675,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [8256,8268]`self._kwargs`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _kwargs
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3694,14 +3694,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           StringLiteralNode SourceSection: [8293,8304]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [8307,8436]`(self.__class__.__mo...`
                                             GetAttributeNode SourceSection: [8308,8333]`self.__class__.__mod...`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __module__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                               GetAttributeNode SourceSection: [8308,8322]`self.__class__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3710,14 +3710,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNodeGen SourceSection: [8308,8312]`self`
                                                   Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [8365,8388]`self.__class__.__nam...`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
                                               GetAttributeNode SourceSection: [8365,8379]`self.__class__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3771,7 +3771,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                     IfNode SourceSection: [8472,8778]`if not self._kwargs:...`
                                       NotNodeGen SourceSection: [8475,8491]`not self._kwargs`
                                         GetAttributeNode SourceSection: [8479,8491]`self._kwargs`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: _kwargs
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -3785,7 +3785,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           Frame: [2,<return_val>,Illegal]
                                           TupleLiteralNode SourceSection: [8512,8554]`self.__class__, (sel...`
                                             GetAttributeNode SourceSection: [8512,8526]`self.__class__`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3798,7 +3798,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Op: __add__
                                               TupleLiteralNode SourceSection: [8528,8541]`(self._name,)`
                                                 GetAttributeNode SourceSection: [8529,8539]`self._name`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _name
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3808,7 +3808,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     Frame: [0,self,Illegal]
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [8544,8554]`self._args`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _args
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3838,7 +3838,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               PythonCallNodeGen SourceSection: [8630,8681]`partial(self.__class...`
                                                 CallNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [8638,8652]`self.__class__`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3847,7 +3847,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   ReadLocalVariableNodeGen SourceSection: [8638,8642]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [8654,8664]`self._name`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _name
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3858,7 +3858,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   ExecuteKeywordArgumentsNode SourceSection: None
                                                   GetAttributeNode SourceSection: [8668,8680]`self._kwargs`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: _kwargs
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -3869,7 +3869,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNodeGen SourceSection: [8630,8637]`partial`
                                                   Frame: [1,partial,Illegal]
                                               GetAttributeNode SourceSection: [8683,8693]`self._args`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _args
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -4049,7 +4049,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               Op: __mod__
                             StringLiteralNode SourceSection: [9020,9055]`"'%s' object can't b...`
                             GetAttributeNode SourceSection: [9058,9074]`type(a).__name__`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: __name__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__

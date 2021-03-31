@@ -48,8 +48,10 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           LookupSpecialMethodNode SourceSection: None
                             LookupAttributeInMRONodeGen SourceSection: None
+                              IsSameTypeNodeGen SourceSection: None
                           LookupSpecialMethodNode SourceSection: None
                             LookupAttributeInMRONodeGen SourceSection: None
+                              IsSameTypeNodeGen SourceSection: None
                           CachedDispatchFirst SourceSection: None
                           CallUnaryMethodNodeGen SourceSection: None
                           CallQuaternaryMethodNodeGen SourceSection: None
@@ -65,8 +67,10 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupSpecialMethodNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
                         LookupSpecialMethodNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
                         CachedDispatchFirst SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None

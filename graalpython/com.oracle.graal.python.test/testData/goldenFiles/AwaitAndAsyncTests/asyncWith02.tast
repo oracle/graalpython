@@ -46,8 +46,10 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           LookupSpecialMethodNode SourceSection: None
                             LookupAttributeInMRONodeGen SourceSection: None
+                              IsSameTypeNodeGen SourceSection: None
                           LookupSpecialMethodNode SourceSection: None
                             LookupAttributeInMRONodeGen SourceSection: None
+                              IsSameTypeNodeGen SourceSection: None
                           CachedDispatchFirst SourceSection: None
                           CallUnaryMethodNodeGen SourceSection: None
                           CallQuaternaryMethodNodeGen SourceSection: None
@@ -61,8 +63,10 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupSpecialMethodNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
                         LookupSpecialMethodNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
                         CachedDispatchFirst SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None

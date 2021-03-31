@@ -640,7 +640,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [2257,2273]`self.groupwidths`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: groupwidths
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -696,7 +696,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       Identifier: gid
                                       Frame: [2,gid,Illegal]
                                       GetAttributeNode SourceSection: [2325,2336]`self.groups`
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: groups
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -709,7 +709,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [2345,2361]`self.groupwidths`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: groupwidths
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -722,7 +722,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       YesNodeGen SourceSection: None
                                         GtNodeGen SourceSection: [2386,2409]`self.groups > MAXGRO...`
                                           GetAttributeNode SourceSection: [2386,2397]`self.groups`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: groups
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -756,7 +756,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             CallBinaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [2502,2516]`self.groupdict`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: groupdict
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -795,7 +795,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           BlockNode SourceSection: None
                                         SetItemNodeGen SourceSection: [2717,2743]`self.groupdict[name]...`
                                           GetAttributeNode SourceSection: None
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: groupdict
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -865,7 +865,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   FunctionBodyNode SourceSection: [2805,2841]`self.groupwidths[gid...`
                                     SetItemNodeGen SourceSection: [2805,2841]`self.groupwidths[gid...`
                                       GetAttributeNode SourceSection: None
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: groupwidths
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -932,7 +932,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             ReadLocalVariableNodeGen SourceSection: [2888,2891]`gid`
                                               Frame: [1,gid,Illegal]
                                             GetAttributeNode SourceSection: [2894,2905]`self.groups`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: groups
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -944,7 +944,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             IsExpressionNodeGen SourceSection: None
                                               GetItemNodeGen SourceSection: [2910,2931]`self.groupwidths[gid...`
                                                 GetAttributeNode SourceSection: None
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: groupwidths
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -1009,7 +1009,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       NotNodeGen SourceSection: [3005,3038]`self.lookbehindgroup...`
                                         IsExpressionNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [3005,3026]`self.lookbehindgroup...`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: lookbehindgroups
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1043,7 +1043,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadLocalVariableNodeGen SourceSection: [3164,3167]`gid`
                                                 Frame: [1,gid,Illegal]
                                               GetAttributeNode SourceSection: [3171,3192]`self.lookbehindgroup...`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: lookbehindgroups
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -1659,7 +1659,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           Frame: [10,av,Illegal]
                                         GetIteratorExpressionNodeGen SourceSection: [3670,3679]`self.data`
                                           GetAttributeNode SourceSection: [3670,3679]`self.data`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1714,7 +1714,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [5023,5032]`self.data`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1768,7 +1768,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [5076,5085]`self.data`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1821,7 +1821,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   FunctionBodyNode SourceSection: [5129,5149]`del self.data[index]...`
                                     DeleteItemNodeGen SourceSection: [5129,5149]`del self.data[index]...`
                                       GetAttributeNode SourceSection: None
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1896,7 +1896,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Identifier: SubPattern
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [5251,5263]`self.pattern`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: pattern
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1906,7 +1906,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Frame: [0,self,Illegal]
                                             GetItemNodeGen SourceSection: [5265,5281]`self.data[index]`
                                               GetAttributeNode SourceSection: None
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -1923,7 +1923,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         Frame: [2,<return_val>,Illegal]
                                         GetItemNodeGen SourceSection: [5298,5314]`self.data[index]`
                                           GetAttributeNode SourceSection: None
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1984,7 +1984,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   FunctionBodyNode SourceSection: [5363,5386]`self.data[index] = c...`
                                     SetItemNodeGen SourceSection: [5363,5386]`self.data[index] = c...`
                                       GetAttributeNode SourceSection: None
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -2050,7 +2050,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         CallBinaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [5430,5439]`self.data`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2110,7 +2110,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [5496,5505]`self.data`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2160,7 +2160,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       NotNodeGen SourceSection: [5615,5637]`self.width is not No...`
                                         IsExpressionNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [5615,5625]`self.width`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: width
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2174,7 +2174,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           Identifier: <return_val>
                                           Frame: [9,<return_val>,Illegal]
                                           GetAttributeNode SourceSection: [5658,5668]`self.width`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: width
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2548,14 +2548,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         DestructuringAssignmentNodeGen SourceSection: [6548,6583]`i, j = self.pattern....`
                                                           GetItemNodeGen SourceSection: [6555,6583]`self.pattern.groupwi...`
                                                             GetAttributeNode SourceSection: None
-                                                              GetFixedAttributeNode SourceSection: None
+                                                              GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: groupwidths
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
                                                                   CachedDispatchFirst SourceSection: None
                                                               GetAttributeNode SourceSection: [6555,6567]`self.pattern`
-                                                                GetFixedAttributeNode SourceSection: None
+                                                                GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: pattern
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
@@ -2731,7 +2731,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [5711,5720]`self.data`
                                           GetAttributeNode SourceSection: [5711,5720]`self.data`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2776,7 +2776,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         Identifier: <return_val>
                                         Frame: [9,<return_val>,Illegal]
                                         GetAttributeNode SourceSection: [7107,7117]`self.width`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: width
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -2890,7 +2890,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                     IfNode SourceSection: [7251,7322]`if not self.istext:↵...`
                                       NotNodeGen SourceSection: [7254,7269]`not self.istext`
                                         GetAttributeNode SourceSection: [7258,7269]`self.istext`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: istext
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -2973,7 +2973,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       Identifier: index
                                       Frame: [1,index,Illegal]
                                       GetAttributeNode SourceSection: [7459,7469]`self.index`
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: index
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -2988,7 +2988,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           Frame: [2,char,Illegal]
                                           GetItemNodeGen SourceSection: [7502,7528]`self.decoded_string[...`
                                             GetAttributeNode SourceSection: None
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: decoded_string
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3036,7 +3036,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   Frame: [2,char,Illegal]
                                                 GetItemNodeGen SourceSection: [7693,7719]`self.decoded_string[...`
                                                   GetAttributeNode SourceSection: None
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: decoded_string
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -3056,7 +3056,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [7779,7808]`"bad escape (end of ...`
                                                   GetAttributeNode SourceSection: [7838,7849]`self.string`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: string
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -3073,7 +3073,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         Identifier: len
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       GetAttributeNode SourceSection: [7855,7866]`self.string`
-                                                        GetFixedAttributeNode SourceSection: None
+                                                        GetFixedAttributeNodeGen SourceSection: None
                                                           Key: string
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
@@ -3155,7 +3155,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNodeGen SourceSection: [7977,7981]`char`
                                             Frame: [1,char,Illegal]
                                           GetAttributeNode SourceSection: [7985,7994]`self.next`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: next
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3221,7 +3221,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       Identifier: this
                                       Frame: [1,this,Illegal]
                                       GetAttributeNode SourceSection: [8101,8110]`self.next`
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: next
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -3306,7 +3306,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Identifier: c
                                               Frame: [4,c,Illegal]
                                               GetAttributeNode SourceSection: [8252,8261]`self.next`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: next
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3413,7 +3413,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Identifier: c
                                               Frame: [3,c,Illegal]
                                               GetAttributeNode SourceSection: [8481,8490]`self.next`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: next
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3564,7 +3564,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __sub__
                                             GetAttributeNode SourceSection: [8999,9009]`self.index`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: index
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3579,7 +3579,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               OrNode SourceSection: [9016,9031]`self.next or ''`
                                                 GetAttributeNode SourceSection: [9016,9025]`self.next`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: next
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3633,7 +3633,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __sub__
                                           GetAttributeNode SourceSection: [9068,9078]`self.index`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: index
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3648,7 +3648,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             OrNode SourceSection: [9085,9100]`self.next or ''`
                                               GetAttributeNode SourceSection: [9085,9094]`self.next`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: next
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3776,7 +3776,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadLocalVariableNodeGen SourceSection: [9236,9239]`msg`
                                             Frame: [1,msg,Illegal]
                                           GetAttributeNode SourceSection: [9241,9252]`self.string`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: string
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3997,7 +3997,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       Frame: [3,c,Illegal]
                                     StringLiteralNode SourceSection: [9849,9852]`"u"`
                                   GetAttributeNode SourceSection: [9857,9870]`source.istext`
-                                    GetFixedAttributeNode SourceSection: None
+                                    GetFixedAttributeNodeGen SourceSection: None
                                       Key: istext
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -4090,7 +4090,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         Frame: [3,c,Illegal]
                                       StringLiteralNode SourceSection: [10155,10158]`"U"`
                                     GetAttributeNode SourceSection: [10163,10176]`source.istext`
-                                      GetFixedAttributeNode SourceSection: None
+                                      GetFixedAttributeNodeGen SourceSection: None
                                         Key: istext
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -4580,7 +4580,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       Frame: [4,c,Illegal]
                                     StringLiteralNode SourceSection: [11742,11745]`"u"`
                                   GetAttributeNode SourceSection: [11750,11763]`source.istext`
-                                    GetFixedAttributeNode SourceSection: None
+                                    GetFixedAttributeNodeGen SourceSection: None
                                       Key: istext
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -4673,7 +4673,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         Frame: [4,c,Illegal]
                                       StringLiteralNode SourceSection: [12048,12051]`"U"`
                                     GetAttributeNode SourceSection: [12056,12069]`source.istext`
-                                      GetFixedAttributeNode SourceSection: None
+                                      GetFixedAttributeNodeGen SourceSection: None
                                         Key: istext
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -4839,7 +4839,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Op: __contains__
                                             YesNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [12664,12675]`source.next`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: next
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -4897,7 +4897,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     Op: __contains__
                                                   YesNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [12820,12831]`source.next`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: next
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -5005,7 +5005,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             ReadLocalVariableNodeGen SourceSection: [13394,13399]`group`
                                               Frame: [5,group,Illegal]
                                             GetAttributeNode SourceSection: [13402,13414]`state.groups`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: groups
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -5343,7 +5343,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: itemsappend
                       Frame: [5,itemsappend,Illegal]
                       GetAttributeNode SourceSection: [14372,14384]`items.append`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: append
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -5355,7 +5355,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: sourcematch
                       Frame: [6,sourcematch,Illegal]
                       GetAttributeNode SourceSection: [14403,14415]`source.match`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: match
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -5756,7 +5756,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: subpatternappend
                       Frame: [6,subpatternappend,Illegal]
                       GetAttributeNode SourceSection: [16053,16070]`subpattern.append`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: append
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -5768,7 +5768,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: sourceget
                       Frame: [7,sourceget,Illegal]
                       GetAttributeNode SourceSection: [16087,16097]`source.get`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: get
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -5780,7 +5780,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: sourcematch
                       Frame: [8,sourcematch,Illegal]
                       GetAttributeNode SourceSection: [16116,16128]`source.match`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: match
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -5811,7 +5811,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                 Identifier: this
                                 Frame: [11,this,Illegal]
                                 GetAttributeNode SourceSection: [16192,16203]`source.next`
-                                  GetFixedAttributeNode SourceSection: None
+                                  GetFixedAttributeNodeGen SourceSection: None
                                     Key: next
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
@@ -5986,7 +5986,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         Identifier: setappend
                                         Frame: [15,setappend,Illegal]
                                         GetAttributeNode SourceSection: [17016,17026]`set.append`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: append
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -5998,7 +5998,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         YesNodeGen SourceSection: None
                                           EqNodeGen SourceSection: [17123,17141]`source.next == '['`
                                             GetAttributeNode SourceSection: [17123,17134]`source.next`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: next
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -6139,7 +6139,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             YesNodeGen SourceSection: None
                                                           EqNodeGen SourceSection: [17888,17907]`source.next == this`
                                                             GetAttributeNode SourceSection: [17888,17899]`source.next`
-                                                              GetFixedAttributeNode SourceSection: None
+                                                              GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: next
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
@@ -6812,7 +6812,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     YesNodeGen SourceSection: None
                                                       EqNodeGen SourceSection: [21177,21195]`source.next == "}"`
                                                         GetAttributeNode SourceSection: [21177,21188]`source.next`
-                                                          GetFixedAttributeNode SourceSection: None
+                                                          GetFixedAttributeNodeGen SourceSection: None
                                                             Key: next
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
@@ -6888,7 +6888,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               Op: __contains__
                                                             YesNodeGen SourceSection: None
                                                             GetAttributeNode SourceSection: [21378,21389]`source.next`
-                                                              GetFixedAttributeNode SourceSection: None
+                                                              GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: next
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
@@ -6927,7 +6927,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 Op: __contains__
                                                               YesNodeGen SourceSection: None
                                                               GetAttributeNode SourceSection: [21502,21513]`source.next`
-                                                                GetFixedAttributeNode SourceSection: None
+                                                                GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: next
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
@@ -7542,7 +7542,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             CallUnaryMethodNodeGen SourceSection: None
                                                             GetCallAttributeNodeGen SourceSection: None
                                                               GetAttributeNode SourceSection: [24512,24527]`state.groupdict`
-                                                                GetFixedAttributeNode SourceSection: None
+                                                                GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: groupdict
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
@@ -7718,7 +7718,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   YesNodeGen SourceSection: None
                                                                     IsExpressionNodeGen SourceSection: [25612,25631]`source.next is None`
                                                                       GetAttributeNode SourceSection: [25612,25623]`source.next`
-                                                                        GetFixedAttributeNode SourceSection: None
+                                                                        GetFixedAttributeNodeGen SourceSection: None
                                                                           Key: next
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
@@ -7846,7 +7846,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 Identifier: lookbehindgroups
                                                                 Frame: [36,lookbehindgroups,Illegal]
                                                                 GetAttributeNode SourceSection: [26473,26495]`state.lookbehindgrou...`
-                                                                  GetFixedAttributeNode SourceSection: None
+                                                                  GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: lookbehindgroups
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
@@ -7865,7 +7865,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   ReadLocalVariableNodeGen SourceSection: [26577,26582]`state`
                                                                     Frame: [1,state,Illegal]
                                                                   GetAttributeNode SourceSection: [26602,26614]`state.groups`
-                                                                    GetFixedAttributeNode SourceSection: None
+                                                                    GetFixedAttributeNodeGen SourceSection: None
                                                                       Key: groups
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
@@ -8012,7 +8012,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                     CallUnaryMethodNodeGen SourceSection: None
                                                                     GetCallAttributeNodeGen SourceSection: None
                                                                       GetAttributeNode SourceSection: [27463,27478]`state.groupdict`
-                                                                        GetFixedAttributeNode SourceSection: None
+                                                                        GetFixedAttributeNodeGen SourceSection: None
                                                                           Key: groupdict
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
@@ -8253,7 +8253,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   YesNodeGen SourceSection: None
                                                                     EqNodeGen SourceSection: [28743,28761]`source.next == "|"`
                                                                       GetAttributeNode SourceSection: [28743,28754]`source.next`
-                                                                        GetFixedAttributeNode SourceSection: None
+                                                                        GetFixedAttributeNodeGen SourceSection: None
                                                                           Key: next
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
@@ -8386,7 +8386,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                             TupleLiteralNode SourceSection: [29653,29856]`(↵                  ...`
                                                                               GetItemNodeGen SourceSection: [29691,29709]`source.string[:20]`
                                                                                 GetAttributeNode SourceSection: None
-                                                                                  GetFixedAttributeNode SourceSection: None
+                                                                                  GetFixedAttributeNodeGen SourceSection: None
                                                                                     Key: string
                                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                                       Op: __getattribute__
@@ -8409,7 +8409,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                                         Identifier: len
                                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                                       GetAttributeNode SourceSection: [29794,29807]`source.string`
-                                                                                        GetFixedAttributeNode SourceSection: None
+                                                                                        GetFixedAttributeNodeGen SourceSection: None
                                                                                           Key: string
                                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                                             Op: __getattribute__
@@ -8447,7 +8447,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __and__
                                                                           GetAttributeNode SourceSection: [29990,30001]`state.flags`
-                                                                            GetFixedAttributeNode SourceSection: None
+                                                                            GetFixedAttributeNodeGen SourceSection: None
                                                                               Key: flags
                                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                                 Op: __getattribute__
@@ -8545,7 +8545,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           ReadLocalVariableNodeGen SourceSection: [30546,30552]`source`
                                                             Frame: [0,source,Illegal]
                                                         GetAttributeNode SourceSection: [30559,30566]`err.msg`
-                                                          GetFixedAttributeNode SourceSection: None
+                                                          GetFixedAttributeNodeGen SourceSection: None
                                                             Key: msg
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
@@ -8925,7 +8925,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: sourceget
                       Frame: [3,sourceget,Illegal]
                       GetAttributeNode SourceSection: [31731,31741]`source.get`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: get
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -8967,7 +8967,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               IfNode SourceSection: [31861,32233]`if source.istext:↵  ...`
                                 YesNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [31864,31877]`source.istext`
-                                    GetFixedAttributeNode SourceSection: None
+                                    GetFixedAttributeNodeGen SourceSection: None
                                       Key: istext
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
@@ -9153,7 +9153,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Frame: [1,state,Illegal]
                           LookupAndCallInplaceNodeGen SourceSection: None
                             GetAttributeNode SourceSection: [32807,32818]`state.flags`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: flags
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -9774,7 +9774,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                     SetAttributeNodeGen SourceSection: [35406,35455]`p.pattern.flags = fi...`
                       Attribute: flags
                       GetAttributeNode SourceSection: [35406,35415]`p.pattern`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: pattern
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -9790,14 +9790,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                         ReadLocalVariableNodeGen SourceSection: [35434,35437]`str`
                           Frame: [0,str,Illegal]
                         GetAttributeNode SourceSection: [35439,35454]`p.pattern.flags`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: flags
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
                           GetAttributeNode SourceSection: [35439,35448]`p.pattern`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: pattern
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -9809,7 +9809,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       NotNodeGen SourceSection: [35464,35487]`source.next is not N...`
                         IsExpressionNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [35464,35475]`source.next`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: next
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -9823,7 +9823,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           YesNodeGen SourceSection: None
                             EqNodeGen SourceSection: [35504,35522]`source.next == ")"`
                               GetAttributeNode SourceSection: [35504,35515]`source.next`
-                                GetFixedAttributeNode SourceSection: None
+                                GetFixedAttributeNodeGen SourceSection: None
                                   Key: next
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -9920,7 +9920,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: sget
                       Frame: [3,sget,Illegal]
                       GetAttributeNode SourceSection: [35799,35804]`s.get`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: get
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -9952,7 +9952,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: lappend
                       Frame: [7,lappend,Illegal]
                       GetAttributeNode SourceSection: [35870,35884]`literal.append`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: append
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -10007,7 +10007,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadLocalVariableNodeGen SourceSection: [35926,35931]`index`
                                           Frame: [0,index,Illegal]
                                         GetAttributeNode SourceSection: [35934,35948]`pattern.groups`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: groups
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -10105,7 +10105,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       Identifier: groupindex
                       Frame: [9,groupindex,Illegal]
                       GetAttributeNode SourceSection: [36205,36223]`pattern.groupindex`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: groupindex
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -10360,7 +10360,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Op: __contains__
                                             YesNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [37421,37427]`s.next`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: next
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -10392,7 +10392,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [37500,37506]`s.next`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: next
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -10472,7 +10472,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [37695,37701]`s.next`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: next
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -10528,7 +10528,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       Op: __contains__
                                                     YesNodeGen SourceSection: None
                                                     GetAttributeNode SourceSection: [37840,37846]`s.next`
-                                                      GetFixedAttributeNode SourceSection: None
+                                                      GetFixedAttributeNodeGen SourceSection: None
                                                         Key: next
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
@@ -10901,7 +10901,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           Identifier: g
                           Frame: [2,g,Illegal]
                           GetAttributeNode SourceSection: [38999,39010]`match.group`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: group
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -10914,7 +10914,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           Frame: [3,empty,Illegal]
                           GetItemNodeGen SourceSection: [39023,39039]`match.string[:0]`
                             GetAttributeNode SourceSection: None
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: string
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
