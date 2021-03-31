@@ -147,6 +147,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictGetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictSetItem;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDump;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrClear;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrOccurred;
@@ -449,7 +450,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_TRACKER_NEW("ctx_Tracker_New"),
         CTX_TRACKER_ADD("ctx_Tracker_Add"),
         CTX_TRACKER_FORGET_ALL("ctx_Tracker_ForgetAll"),
-        CTX_TRACKER_CLOSE("ctx_Tracker_Close");
+        CTX_TRACKER_CLOSE("ctx_Tracker_Close"),
+        CTX_DUMP("ctx_Dump");
 
         private final String name;
 
@@ -1001,6 +1003,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_TRACKER_ADD.ordinal()] = new GraalHPyTrackerAdd();
         members[HPyContextMember.CTX_TRACKER_FORGET_ALL.ordinal()] = new GraalHPyTrackerCleanup(true);
         members[HPyContextMember.CTX_TRACKER_CLOSE.ordinal()] = new GraalHPyTrackerCleanup(false);
+
+        members[HPyContextMember.CTX_DUMP.ordinal()] = new GraalHPyDump();
         return members;
     }
 

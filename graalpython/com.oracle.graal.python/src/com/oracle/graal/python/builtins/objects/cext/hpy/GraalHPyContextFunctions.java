@@ -59,6 +59,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
 
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
@@ -99,6 +100,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFr
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -115,7 +118,9 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -141,6 +146,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -196,7 +202,7 @@ public abstract class GraalHPyContextFunctions {
         }
 
         @ExportMessage
-        Object execute(@SuppressWarnings("unused") Object[] arguments) {
+        Object execute(@SuppressWarnings("unused") Object[] arguments) throws ArityException {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("should not reach");
         }
@@ -2169,6 +2175,34 @@ public abstract class GraalHPyContextFunctions {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return nativeContext.getNullHandle();
             }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyDump extends GraalHPyContextFunction {
+
+        @ExportMessage
+        @TruffleBoundary
+        Object execute(Object[] arguments) throws ArityException {
+            checkArity(arguments, 2);
+            GraalHPyContext nativeContext = HPyAsContextNodeGen.getUncached().execute(arguments[0]);
+            PythonContext context = nativeContext.getContext();
+            Object pythonObject = HPyAsPythonObjectNodeGen.getUncached().execute(nativeContext, arguments[1]);
+            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonObject);
+            PrintWriter stderr = new PrintWriter(context.getStandardErr());
+            stderr.println("object type     : " + type);
+            stderr.println("object type name: " + GetNameNode.getUncached().execute(type));
+
+            // the most dangerous part
+            stderr.println("object repr     : ");
+            stderr.flush();
+            try {
+                Object reprObj = PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(context.getBuiltins(), null, BuiltinNames.REPR, pythonObject);
+                stderr.println(CastToJavaStringNode.getUncached().execute(reprObj));
+            } catch (PException | CannotCastException e) {
+                // errors are ignored at this point
+            }
+            return 0;
         }
     }
 }

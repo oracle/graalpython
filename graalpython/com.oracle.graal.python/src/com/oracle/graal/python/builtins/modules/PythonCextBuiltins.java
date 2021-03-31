@@ -46,6 +46,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -116,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJav
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
@@ -125,6 +128,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCacheFactory.ResolveNativeReferenceNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
@@ -190,6 +194,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -4107,6 +4113,86 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (dictStorage != updatedStorage) {
                 tpDict.setDictStorage(updatedStorage);
             }
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "_PyObject_Dump", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyObjectDump extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        int doGeneric(Object ptrObject) {
+            PythonContext context = getContext();
+            PrintWriter stderr = new PrintWriter(context.getStandardErr());
+            CApiContext cApiContext = context.getCApiContext();
+            InteropLibrary lib = InteropLibrary.getUncached(ptrObject);
+            PCallCapiFunction callNode = PCallCapiFunction.getUncached();
+
+            // There are three cases we need to distinguish:
+            // 1) The pointer object is a native pointer and is NOT a handle
+            // 2) The pointer object is a native pointer and is a handle
+            // 3) The pointer object is one of our native wrappers
+
+            boolean isWrapper = CApiGuards.isNativeWrapper(ptrObject);
+            boolean pointsToHandleSpace = !isWrapper && (boolean) callNode.call(NativeCAPISymbol.FUN_POINTS_TO_HANDLE_SPACE, ptrObject);
+            boolean isValidHandle = pointsToHandleSpace && (boolean) callNode.call(NativeCAPISymbol.FUN_IS_HANDLE, ptrObject);
+
+            /*
+             * If the pointer points to the handle space but it's not a valid handle or if we do
+             * memory tracing and we know that the pointer is not allocated (was free'd), we assumed
+             * it's a use-after-free.
+             */
+            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
+            if (pointsToHandleSpace && !isValidHandle || traceNativeMemory && !isWrapper && !cApiContext.isAllocated(ptrObject)) {
+                stderr.println(String.format("<object at %s is freed>", CApiContext.asPointer(ptrObject, lib)));
+                stderr.flush();
+                return 0;
+            }
+
+            /*
+             * At this point we don't know if the pointer is invalid, so we try to resolve it to an
+             * object.
+             */
+            Object resolved = isWrapper ? ptrObject : ResolveHandleNodeGen.getUncached().execute(ptrObject);
+            Object pythonObject;
+            long refCnt;
+            // We need again check if 'resolved' is a wrapper in case we resolved a handle.
+            if (CApiGuards.isNativeWrapper(resolved)) {
+                PythonNativeWrapper wrapper = (PythonNativeWrapper) resolved;
+                refCnt = wrapper.getRefCount();
+                pythonObject = AsPythonObjectNodeGen.getUncached().execute(wrapper);
+            } else {
+                long obRefCnt = GetRefCntNodeGen.getUncached().execute(cApiContext, ptrObject);
+                /*
+                 * The upper 32-bits of the native field 'ob_refcnt' encode an ID into the native
+                 * object reference table. We mask them out to get the real reference count.
+                 */
+                refCnt = obRefCnt & (CApiContext.REFERENCE_COUNT_MARKER - 1);
+                pythonObject = AsPythonObjectNodeGen.getUncached().execute(ResolveNativeReferenceNodeGen.getUncached().execute(resolved, obRefCnt, false));
+            }
+
+            // first, write fields which are the least likely to crash
+            stderr.println("ptrObject address  : " + ptrObject);
+            stderr.println("ptrObject refcount : " + refCnt);
+            stderr.flush();
+
+            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonObject);
+            stderr.println("object type     : " + type);
+            stderr.println("object type name: " + GetNameNode.getUncached().execute(type));
+
+            // the most dangerous part
+            stderr.println("object repr     : ");
+            stderr.flush();
+            try {
+                Object reprObj = PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(context.getBuiltins(), null, BuiltinNames.REPR, pythonObject);
+                stderr.println(CastToJavaStringNode.getUncached().execute(reprObj));
+            } catch (PException | CannotCastException e) {
+                // errors are ignored at this point
+            }
+            stderr.flush();
+            return 0;
         }
     }
 }
