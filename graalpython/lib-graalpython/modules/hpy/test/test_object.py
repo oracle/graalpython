@@ -460,3 +460,20 @@ class TestObject(HPyTest):
         """)
         assert mod.f([5,6,7,8]) == 4
         assert mod.f({"a": 1}) == 1
+
+    def test_dump(self):
+        # _HPy_Dump is supposed to be used e.g. inside a gdb session: it
+        # prints various about the given handle to stdout, and it's
+        # implementation-specific. As such, it's hard to write a meaningful
+        # test: let's just call it an check it doesn't crash.
+        mod = self.make_module("""
+            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            {
+                _HPy_Dump(ctx, arg);
+                return HPy_Dup(ctx, ctx->h_None);
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        mod.f('hello')

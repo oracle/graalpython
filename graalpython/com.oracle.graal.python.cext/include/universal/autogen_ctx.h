@@ -206,4 +206,5 @@ struct _HPyContext_s {
     int (*ctx_Tracker_Add)(HPyContext ctx, HPyTracker ht, HPy h);
     void (*ctx_Tracker_ForgetAll)(HPyContext ctx, HPyTracker ht);
     void (*ctx_Tracker_Close)(HPyContext ctx, HPyTracker ht);
+    void (*ctx_Dump)(HPyContext ctx, HPy h);
 };

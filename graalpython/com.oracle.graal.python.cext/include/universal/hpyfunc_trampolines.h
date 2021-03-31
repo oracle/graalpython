@@ -34,6 +34,13 @@ typedef struct {
     int result;
 } _HPyFunc_args_INITPROC;
 
+typedef struct {
+    cpy_PyObject *arg0;
+    cpy_PyObject *arg1;
+    HPy_RichCmpOp arg2;
+    cpy_PyObject * result;
+} _HPyFunc_args_RICHCMPFUNC;
+
 
 #define _HPyFunc_TRAMPOLINE_HPyFunc_NOARGS(SYM, IMPL)                   \
     static cpy_PyObject *                                               \
@@ -97,5 +104,18 @@ typedef struct {
             _ctx_for_trampolines, IMPL, self);                          \
     }
 
+
+
+/* this needs to be written manually because HPy has a different type for
+   "op": HPy_RichCmpOp instead of int */
+#define _HPyFunc_TRAMPOLINE_HPyFunc_RICHCMPFUNC(SYM, IMPL)              \
+    static cpy_PyObject *                                               \
+    SYM(cpy_PyObject *self, cpy_PyObject *obj, int op)                  \
+    {                                                                   \
+        _HPyFunc_args_RICHCMPFUNC a = { self, obj, op };                \
+        _HPy_CallRealFunctionFromTrampoline(                            \
+           _ctx_for_trampolines, HPyFunc_RICHCMPFUNC, IMPL, &a);        \
+        return a.result;                                                \
+    }
 
 #endif // HPY_UNIVERSAL_HPYFUNC_TRAMPOLINES_H

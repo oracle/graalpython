@@ -451,3 +451,41 @@ class TestSqSlots(HPyTest):
         assert 43 not in p
         with pytest.raises(TypeError):
             'hello' in p
+
+    def test_tp_richcompare(self):
+        import pytest
+        mod = self.make_module("""
+            @DEFINE_PointObject
+            @DEFINE_Point_new
+
+            HPyDef_SLOT(Point_cmp, Point_cmp_impl, HPy_tp_richcompare);
+            static HPy Point_cmp_impl(HPyContext ctx, HPy self, HPy o, HPy_RichCmpOp op)
+            {
+                // XXX we should check the type of o
+                PointObject *p1 = HPy_CAST(ctx, PointObject, self);
+                PointObject *p2 = HPy_CAST(ctx, PointObject, o);
+                HPy_RETURN_RICHCOMPARE(ctx, p1->x, p2->x, op);
+            }
+
+            @EXPORT_POINT_TYPE(&Point_new, &Point_cmp)
+            @INIT
+        """)
+        p1 = mod.Point(10, 10)
+        p2 = mod.Point(20, 20)
+        assert p1 == p1
+        assert not p1 == p2
+        #
+        assert p1 != p2
+        assert not p1 != p1
+        #
+        assert p1 < p2
+        assert not p1 < p1
+        #
+        assert not p1 > p2
+        assert not p1 > p1
+        #
+        assert p1 <= p2
+        assert p1 <= p1
+        #
+        assert not p1 >= p2
+        assert p1 >= p1

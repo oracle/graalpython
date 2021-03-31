@@ -60,4 +60,13 @@
         Py_TYPE(self)->tp_free(self);                                   \
     }
 
+/* this needs to be written manually because HPy has a different type for
+   "op": HPy_RichCmpOp instead of int */
+#define _HPyFunc_TRAMPOLINE_HPyFunc_RICHCMPFUNC(SYM, IMPL)                 \
+    static cpy_PyObject *                                                  \
+    SYM(PyObject *self, PyObject *obj, int op)                             \
+    {                                                                      \
+        return _h2py(IMPL(_HPyGetContext(), _py2h(self), _py2h(obj), op)); \
+    }
+
 #endif // HPY_CPYTHON_HPYFUNC_TRAMPOLINES_H
