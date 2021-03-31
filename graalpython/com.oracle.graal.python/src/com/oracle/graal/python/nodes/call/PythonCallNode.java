@@ -148,7 +148,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         return argumentNodes;
     }
 
-    private static class PythonCallUnary extends ExpressionNode {
+    private static final class PythonCallUnary extends ExpressionNode {
         @Child CallUnaryMethodNode callUnary = CallUnaryMethodNode.create();
         @Child ExpressionNode getCallable;
         @Child ExpressionNode argumentNode;
@@ -175,7 +175,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
-    private static class PythonCallBinary extends ExpressionNode {
+    private static final class PythonCallBinary extends ExpressionNode {
         @Child CallBinaryMethodNode callBinary = CallBinaryMethodNode.create();
         @Child ExpressionNode getCallable;
         @Children final ExpressionNode[] argumentNodes;
@@ -203,7 +203,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
-    private static class PythonCallTernary extends ExpressionNode {
+    private static final class PythonCallTernary extends ExpressionNode {
         @Child CallTernaryMethodNode callTernary = CallTernaryMethodNode.create();
         @Child ExpressionNode getCallable;
         @Children final ExpressionNode[] argumentNodes;
@@ -232,7 +232,7 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
     }
 
-    private static class PythonCallQuaternary extends ExpressionNode {
+    private static final class PythonCallQuaternary extends ExpressionNode {
         @Child CallQuaternaryMethodNode callQuaternary = CallQuaternaryMethodNode.create();
         @Child ExpressionNode getCallable;
         @Children final ExpressionNode[] argumentNodes;
@@ -259,30 +259,6 @@ public abstract class PythonCallNode extends ExpressionNode {
                 return invokeForeign.execute(frame, (ForeignInvoke) callable, new Object[]{argument1, argument2, argument3, argument4}, PKeyword.EMPTY_KEYWORDS);
             }
             return callQuaternary.execute(frame, callable, argument1, argument2, argument3, argument4);
-        }
-    }
-
-    /**
-     * If the argument length is fixed 1, 2, or 3 arguments, returns an expression node that uses
-     * special call semantics, i.e., it can avoid creating a stack frame if the call target is a
-     * builtin python function that takes 1, 2, or 3 arguments exactly. Otherwise, returns itself.
-     */
-    public ExpressionNode asSpecialCall() {
-        if (argumentNodes == null || keywordArguments != null) {
-            return this;
-        } else {
-            switch (argumentNodes.length) {
-                case 1:
-                    return new PythonCallUnary(getCalleeNode(), argumentNodes[0]);
-                case 2:
-                    return new PythonCallBinary(getCalleeNode(), argumentNodes);
-                case 3:
-                    return new PythonCallTernary(getCalleeNode(), argumentNodes);
-                case 4:
-                    return new PythonCallQuaternary(getCalleeNode(), argumentNodes);
-                default:
-                    return this;
-            }
         }
     }
 

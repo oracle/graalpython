@@ -56,6 +56,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
     @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @CompilationFinal private ConditionProfile asyncActionProfile;
 
     private final int iteratorSlot;
 
@@ -118,7 +119,11 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     contextRef = lookupContextReference(PythonLanguage.class);
                 }
-                contextRef.get().triggerAsyncActions(frame);
+                if (asyncActionProfile == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    asyncActionProfile = ConditionProfile.createBinaryProfile();
+                }
+                contextRef.get().triggerAsyncActionsProfiled(asyncActionProfile);
             }
             return;
         } catch (YieldException e) {

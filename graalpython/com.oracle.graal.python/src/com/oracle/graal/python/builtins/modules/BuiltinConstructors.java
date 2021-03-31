@@ -2592,7 +2592,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private void setAttribute(String name, BuiltinFunctionRootNode rootNode, PythonClass pythonClass) {
             RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(rootNode);
-            PBuiltinFunction function = getCore().factory().createBuiltinFunction(name, pythonClass, 1, callTarget);
+            PBuiltinFunction function = factory().createBuiltinFunction(name, pythonClass, 1, callTarget);
             GetSetDescriptor desc = factory().createGetSetDescriptor(function, function, name, pythonClass, true);
             pythonClass.setAttribute(name, desc);
         }

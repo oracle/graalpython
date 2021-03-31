@@ -51,7 +51,6 @@ import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -125,7 +124,7 @@ final class PEMap implements Iterable<DictKey> {
      */
     private byte[] hashArray;
 
-    @CompilationFinal private boolean hasSideEffect;
+    private boolean hasSideEffect;
 
     /**
      * Intercept method for debugging purposes.
@@ -859,7 +858,6 @@ final class PEMap implements Iterable<DictKey> {
     }
 
     protected void setSideEffectFlag() {
-        assert CompilerDirectives.inInterpreter();
         this.hasSideEffect = true;
     }
 

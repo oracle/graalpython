@@ -44,16 +44,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -388,16 +385,10 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         @SuppressWarnings("unused")
         @Specialization(guards = {"self == cachedManagedClass", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
         static PDict getConstant(PythonManagedClass self,
-                        @Exclusive @Cached GilNode gil,
-                        @Bind("gil.acquire()") boolean mustRelease,
                         @Cached(value = "self", weak = true) PythonManagedClass cachedManagedClass,
                         @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
-            try {
-                // type.__dict__ is a read-only attribute
-                return (PDict) dict;
-            } finally {
-                gil.release(mustRelease);
-            }
+            // type.__dict__ is a read-only attribute
+            return (PDict) dict;
         }
 
         @Specialization(replaces = "getConstant")

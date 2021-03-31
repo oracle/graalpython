@@ -53,7 +53,7 @@ public abstract class BuiltinCallNode extends Node {
     protected abstract PythonBuiltinBaseNode getNode();
 
     public static final class BuiltinAnyCallNode extends BuiltinCallNode {
-        @Child PythonBuiltinNode node;
+        @Child private PythonBuiltinNode node;
 
         public BuiltinAnyCallNode(PythonBuiltinNode node) {
             this.node = node;
@@ -71,8 +71,8 @@ public abstract class BuiltinCallNode extends Node {
     }
 
     public static final class BuiltinUnaryCallNode extends BuiltinCallNode {
-        @Child PythonUnaryBuiltinNode node;
-        @Child ReadArgumentNode arg;
+        @Child private PythonUnaryBuiltinNode node;
+        @Child private ReadArgumentNode arg;
 
         public BuiltinUnaryCallNode(PythonUnaryBuiltinNode node, ReadArgumentNode argument) {
             this.node = node;
@@ -91,7 +91,7 @@ public abstract class BuiltinCallNode extends Node {
     }
 
     public static final class BuiltinBinaryCallNode extends BuiltinCallNode {
-        @Child PythonBinaryBuiltinNode node;
+        @Child private PythonBinaryBuiltinNode node;
         @Child ReadArgumentNode arg1;
         @Child ReadArgumentNode arg2;
 
@@ -113,10 +113,10 @@ public abstract class BuiltinCallNode extends Node {
     }
 
     public static final class BuiltinTernaryCallNode extends BuiltinCallNode {
-        @Child PythonTernaryBuiltinNode node;
+        @Child private PythonTernaryBuiltinNode node;
         @Child ReadArgumentNode arg1;
         @Child ReadArgumentNode arg2;
-        @Child ReadArgumentNode arg3;
+        @Child private ReadArgumentNode arg3;
 
         public BuiltinTernaryCallNode(PythonTernaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3) {
             this.node = node;
@@ -137,11 +137,11 @@ public abstract class BuiltinCallNode extends Node {
     }
 
     public static final class BuiltinQuaternaryCallNode extends BuiltinCallNode {
-        @Child PythonQuaternaryBuiltinNode node;
-        @Child ReadArgumentNode arg1;
-        @Child ReadArgumentNode arg2;
-        @Child ReadArgumentNode arg3;
-        @Child ReadArgumentNode arg4;
+        @Child private PythonQuaternaryBuiltinNode node;
+        @Child private ReadArgumentNode arg1;
+        @Child private ReadArgumentNode arg2;
+        @Child private ReadArgumentNode arg3;
+        @Child private ReadArgumentNode arg4;
 
         public BuiltinQuaternaryCallNode(PythonQuaternaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3, ReadArgumentNode arg4) {
             this.node = node;
@@ -163,10 +163,10 @@ public abstract class BuiltinCallNode extends Node {
     }
 
     public static final class BuiltinVarArgsCallNode extends BuiltinCallNode {
-        @Child PythonVarargsBuiltinNode node;
-        @Child ReadArgumentNode arg1;
-        @Child ReadArgumentNode arg2;
-        @Child ReadArgumentNode arg3;
+        @Child private PythonVarargsBuiltinNode node;
+        @Child private ReadArgumentNode arg1;
+        @Child private ReadArgumentNode arg2;
+        @Child private ReadArgumentNode arg3;
 
         public BuiltinVarArgsCallNode(PythonVarargsBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3) {
             this.node = node;

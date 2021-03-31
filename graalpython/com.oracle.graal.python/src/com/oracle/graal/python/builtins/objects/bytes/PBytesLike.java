@@ -42,13 +42,11 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -90,25 +88,13 @@ public abstract class PBytesLike extends PSequence {
 
     @ExportMessage
     int getBufferLength(
-                    @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return lenNode.execute(store);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached SequenceStorageNodes.LenNode lenNode) {
+        return lenNode.execute(store);
     }
 
     @ExportMessage
     byte[] getBufferBytes(
-                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return toByteArrayNode.execute(store);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+        return toByteArrayNode.execute(store);
     }
 }

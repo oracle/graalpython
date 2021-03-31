@@ -760,18 +760,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     public Object lookupAttributeInternal(ThreadState state, String attribName, boolean strict,
                     @Cached ConditionProfile gotState,
-                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,
-                    @Cached.Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            VirtualFrame frame = null;
-            if (gotState.profile(state != null)) {
-                frame = PArguments.frameForCall(state);
-            }
-            return lookup.execute(frame, this, attribName, strict);
-        } finally {
-            gil.release(mustRelease);
+                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
         }
+        return lookup.execute(frame, this, attribName, strict);
     }
 
     @ExportMessage

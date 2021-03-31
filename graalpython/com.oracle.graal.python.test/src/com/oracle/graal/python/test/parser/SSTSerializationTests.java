@@ -41,6 +41,7 @@
 package com.oracle.graal.python.test.parser;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -1263,8 +1264,8 @@ public class SSTSerializationTests extends ParserTestBase {
 
         Assert.assertNotNull("Deserialized result is null", parserResult);
         // compare the tree from parser with the tree from serializer
-        String parserTree = printTreeToString(parserResult);
-        String deserializedTree = printTreeToString(deserialize);
+        String parserTree = printTreeToString(parserResult, false);
+        String deserializedTree = printTreeToString(deserialize, false);
         assertDescriptionMatches(parserTree, deserializedTree, null);
     }
 
@@ -1363,6 +1364,8 @@ public class SSTSerializationTests extends ParserTestBase {
         Set<String> names = new HashSet<>();
         scope.getFrameDescriptor().getIdentifiers().forEach((id) -> {
             if (id instanceof String) {
+                names.add(id.toString());
+            } else if (id == FrameSlotIDs.FREEVAR__CLASS__ || id == FrameSlotIDs.RETURN_SLOT_ID) {
                 names.add(id.toString());
             }
         });

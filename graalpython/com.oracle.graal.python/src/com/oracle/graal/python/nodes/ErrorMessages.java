@@ -329,6 +329,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_NORMALIZATION_FORM = "invalid normalization form";
     public static final String INVALID_NUMBER_OF_ARGUMENTS = "%s: invalid number of arguments";
     public static final String INVALID_OBJ_FROM_NATIVE = "invalid object from native: %s";
+    public static final String INVALID_OPTIMIZE_VALUE = "compile(): invalid optimize value";
     public static final String INVALID_PARAMS = "invalid parameters";
     public static final String INVALID_PTR_OBJ = "invalid pointer object: %s";
     public static final String INVALID_SYNTAX = "invalid syntax";
@@ -467,6 +468,7 @@ public abstract class ErrorMessages {
     public static final String ONLY_ACCEPTS_INTEGRAL_VALUES = "%s only accepts integral values";
     public static final String ONLY_DEFLATED_ALLOWED_AS_METHOD = "only DEFLATED (%d) allowed as method, got %d";
     public static final String ORDER_MUST_BE_C_F_OR_A = "order must be 'C', 'F' or 'A'";
+    public static final String PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P = "path should be string, bytes, or os.PathLike, not %p";
     public static final String PACKED_IP_WRONG_LENGTH = "packed IP wrong length for %s";
     public static final String PACKET_IP_WRONG_LENGTH_FOR = "packed IP wrong length for %s";
     public static final String PATCHED_DATETIME_CLASS = "patched datetime class: %r";
@@ -533,6 +535,7 @@ public abstract class ErrorMessages {
     public static final String SIZE_MUST_BE_D_OR_S = "size must be %d or %s";
     public static final String SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX = "slice indices must be integers or None or have an __index__ method";
     public static final String SLICE_STEP_CANNOT_BE_ZERO = "slice step cannot be zero";
+    public static final String SRC_CODE_CANNOT_CONTAIN_NULL_BYTES = "source code string cannot contain null bytes";
     public static final String DICT_SLOT_DISALLOWED_WE_GOT_ONE = "__dict__ slot disallowed: we already got one";
     public static final String WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = "__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0";
     public static final String STAR_WANTS_INT = "* wants int";
@@ -594,6 +597,7 @@ public abstract class ErrorMessages {
     public static final String UNKNOWN_ERROR_HANDLER = "unknown error handler name '%s'";
     public static final String UNKNOWN_FORMAT_CODE = "Unknown format code '%c' for object of type '%s'";
     public static final String UNKNOWN_S_TYPE = "unknown %s type";
+    public static final String UNRECOGNIZED_FLAGS = "compile(): unrecognised flags";
     public static final String UNRECOGNIZED_FORMAT_CHAR = "unrecognized format char in arguments parsing: %c";
     public static final String UNRECOGNIZED_KIND = "unrecognized kind";
     public static final String UNSIGNED_BYTE_INT_GREATER_THAN_MAX = "unsigned byte integer is greater than maximum";

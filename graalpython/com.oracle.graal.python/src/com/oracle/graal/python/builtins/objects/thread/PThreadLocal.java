@@ -49,11 +49,9 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -83,21 +81,15 @@ public final class PThreadLocal extends PythonBuiltinObject {
     @TruffleBoundary
     PDict getDict(@CachedLibrary("this") PythonObjectLibrary lib,
                     @Cached CallNode callNode,
-                    @Cached PythonObjectFactory factory,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            PDict dict = threadLocalDict.get();
-            if (dict == null) {
-                dict = factory.createDict();
-                threadLocalDict.set(dict);
-                Object initMethod = lib.lookupAttribute(this, null, SpecialMethodNames.__INIT__);
-                callNode.execute(initMethod, args, keywords);
-            }
-            return dict;
-        } finally {
-            gil.release(mustRelease);
+                    @Cached PythonObjectFactory factory) {
+        PDict dict = threadLocalDict.get();
+        if (dict == null) {
+            dict = factory.createDict();
+            threadLocalDict.set(dict);
+            Object initMethod = lib.lookupAttribute(this, null, SpecialMethodNames.__INIT__);
+            callNode.execute(initMethod, args, keywords);
         }
+        return dict;
     }
 
     @ExportMessage

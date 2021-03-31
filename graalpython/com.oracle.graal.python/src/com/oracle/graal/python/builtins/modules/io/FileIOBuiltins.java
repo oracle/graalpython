@@ -224,7 +224,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 } catch (PosixSupportLibrary.PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions(frame);
+                        getContext().triggerAsyncActions();
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e, name);
                     }
@@ -606,7 +606,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached BranchProfile errorProfile,
                         @Cached GilNode gil) {
             try {
-                return posixWrite.write(frame, self.getFD(), toBytes.execute(data), posixLib, errorProfile, gil);
+                return posixWrite.write(self.getFD(), toBytes.execute(data), posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;

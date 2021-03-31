@@ -260,15 +260,9 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     public void lookupChanged() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
+        CompilerAsserts.neverPartOfCompilation();
         attributesInMROFinalAssumptions.values().removeIf(REMOVE_IF_LARGE);
         lookupStableAssumption.invalidate();
-    }
-
-    public void lookupChanged(String msg) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        attributesInMROFinalAssumptions.values().removeIf(REMOVE_IF_LARGE);
-        lookupStableAssumption.invalidate(msg);
     }
 
     private static final Predicate<List<Assumption>> REMOVE_IF_LARGE = new Predicate<List<Assumption>>() {
