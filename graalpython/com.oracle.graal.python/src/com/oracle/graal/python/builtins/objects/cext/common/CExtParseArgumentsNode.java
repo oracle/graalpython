@@ -828,7 +828,7 @@ public abstract class CExtParseArgumentsNode {
 
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
-                writeOutVarNode.writeFloat(varargs, state.outIndex, (float) asDoubleNode.execute(arg));
+                writeOutVarNode.writeFloat(varargs, state.outIndex, (float) asDoubleNode.executeDouble(arg));
             }
             return state.incrementOutIndex();
         }
@@ -1263,7 +1263,7 @@ public abstract class CExtParseArgumentsNode {
                 outVarPtrLib.writeMember(outVarPtr, "real", value.getReal());
                 outVarPtrLib.writeMember(outVarPtr, "img", value.getImag());
             } catch (InteropException e) {
-                CompilerDirectives.shouldNotReachHere(e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -1274,7 +1274,7 @@ public abstract class CExtParseArgumentsNode {
                 // like 'out_var[0] = value'
                 outVarPtrLib.writeArrayElement(outVarPtr, 0, value);
             } catch (InteropException e) {
-                CompilerDirectives.shouldNotReachHere(e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }
