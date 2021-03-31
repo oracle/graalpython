@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConver
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRichcmpFuncArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeArgFuncToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
@@ -80,9 +81,9 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -247,6 +248,14 @@ public abstract class HPyExternalFunctionNodes {
                 rootNode = new HPyMethSqSetitemWrapperRoot(language, name);
                 numDefaults = 1;
                 break;
+            case RICHCMP_LT:
+            case RICHCMP_LE:
+            case RICHCMP_EQ:
+            case RICHCMP_NE:
+            case RICHCMP_GT:
+            case RICHCMP_GE:
+                rootNode = new HPyMethRichcmpOpRootNode(language, name, getCompareOpCode(wrapper));
+                break;
             default:
                 // TODO(fa): support remaining slot wrappers
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy slot wrapper: wrap_" + wrapper.name().toLowerCase());
@@ -254,6 +263,29 @@ public abstract class HPyExternalFunctionNodes {
         Object[] defaults = new Object[numDefaults];
         Arrays.fill(defaults, PNone.NO_VALUE);
         return factory.createBuiltinFunction(name, enclosingType, defaults, new PKeyword[]{new PKeyword(KW_CALLABLE, callable)}, PythonUtils.getOrCreateCallTarget(rootNode));
+    }
+
+    /**
+     * Resolve the requested slot wrapper to the numeric op code as defined by HPy's enum
+     * {@code HPy_RichCmpOp}.
+     */
+    private static int getCompareOpCode(HPySlotWrapper sig) {
+        // op codes for binary comparisons (defined in 'object.h')
+        switch (sig) {
+            case RICHCMP_LT:
+                return 0;
+            case RICHCMP_LE:
+                return 1;
+            case RICHCMP_EQ:
+                return 2;
+            case RICHCMP_NE:
+                return 3;
+            case RICHCMP_GT:
+                return 4;
+            case RICHCMP_GE:
+                return 5;
+        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     /**
@@ -1091,6 +1123,29 @@ public abstract class HPyExternalFunctionNodes {
                 }
             }
             throw raiseNode.raise(SystemError, "function '%s' did not return an integer.", name);
+        }
+    }
+
+    static final class HPyMethRichcmpOpRootNode extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "other"}, KEYWORDS_HIDDEN_CALLABLE, true);
+        @Child private ReadIndexedArgumentNode readArgNode;
+
+        private final int op;
+
+        HPyMethRichcmpOpRootNode(PythonLanguage language, String name, int op) {
+            super(language, name, HPyRichcmpFuncArgsToSulongNodeGen.create());
+            this.readArgNode = ReadIndexedArgumentNode.create(1);
+            this.op = op;
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), readArgNode.execute(frame), op};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 

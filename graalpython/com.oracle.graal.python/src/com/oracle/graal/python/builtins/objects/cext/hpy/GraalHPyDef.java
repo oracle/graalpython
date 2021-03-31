@@ -40,6 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper.RICHCMP_EQ;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper.RICHCMP_GE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper.RICHCMP_GT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper.RICHCMP_LE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper.RICHCMP_LT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper.RICHCMP_NE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
@@ -47,9 +53,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IFLOORDIV__;
@@ -68,12 +77,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
@@ -300,6 +312,7 @@ public abstract class GraalHPyDef {
         HPY_TP_INIT(60, HPySlotWrapper.INIT, __INIT__),
         HPY_TP_NEW(65, HPySlotWrapper.NULL, __NEW__),
         HPY_TP_REPR(66, HPySlotWrapper.UNARYFUNC, __REPR__),
+        HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__)),
         HPY_NB_MATRIX_MULTIPLY(75, HPySlotWrapper.BINARYFUNC_L, __MATMUL__, HPySlotWrapper.BINARYFUNC_R, __RMATMUL__),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPySlotWrapper.BINARYFUNC_L, __IMATMUL__),
         HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC, TYPE_HPY_DESTROY);
@@ -327,8 +340,8 @@ public abstract class GraalHPyDef {
         }
 
         /**
-         * Special case: one slot causes the creation of multiple attributes using the same
-         * signature.
+         * Special case: one slot causes the creation of multiple attributes using the same slot
+         * wrapper.
          */
         HPySlot(int value, HPySlotWrapper signature, Object... attributeKeys) {
             this.value = value;
@@ -340,12 +353,23 @@ public abstract class GraalHPyDef {
         }
 
         /**
-         * Special case: one slot causes the creation of two attributes using different signatures.
+         * Special case: one slot causes the creation of two attributes using different slot
+         * wrappers.
          */
         HPySlot(int value, HPySlotWrapper sig0, Object key0, HPySlotWrapper sig1, Object key1) {
             this.value = value;
             this.attributeKeys = new Object[]{key0, key1};
             this.signatures = new HPySlotWrapper[]{sig0, sig1};
+        }
+
+        /**
+         * Generic case: one slot causes the creation of multiple attributes with each different
+         * slot wrappers.
+         */
+        HPySlot(int value, HPySlotWrapper[] sigs, Object[] keys) {
+            this.value = value;
+            this.attributeKeys = keys;
+            this.signatures = sigs;
         }
 
         int getValue() {
@@ -370,6 +394,14 @@ public abstract class GraalHPyDef {
                 }
             }
             return null;
+        }
+
+        private static HPySlotWrapper[] w(HPySlotWrapper... wrappers) {
+            return wrappers;
+        }
+
+        private static Object[] k(Object... keys) {
+            return keys;
         }
     }
 }
