@@ -68,3 +68,8 @@ graalpython/lib-python/3/test/data
 !graalpython/lib-python/3/test/data/README
 /venv
 *.code-workspace
+graalpython/com.oracle.graal.python.test/src/tests/cpyext/*.c
+graalpython/com.oracle.graal.python.test/src/tests/cpyext/*.sha256
+graalpython/com.oracle.graal.python.test/src/tests/cpyext/As_FileDescriptor_Testfile
+graalpython/lib-python/3/lib2to3/Grammar3.8.5.alpha.0.pickle
+graalpython/lib-python/3/lib2to3/PatternGrammar3.8.5.alpha.0.pickle

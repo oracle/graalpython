@@ -797,10 +797,13 @@ expr_stmt
 		)?
 		{ 
                     rhsStopIndex = getStopIndex($test.stop);
+                    AnnotationSSTNode annotation = factory.createAnnotation($lhs.result, $t.result, getStartIndex($ctx), rhsStopIndex);
+                    // the rhs can be null, then we need to process just the annotation
                     if (rhs == null) {
-                        rhs = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  -1, -1);
+                        push(annotation);
+                    } else {
+                        push(factory.createAnnAssignment(annotation, rhs, getStartIndex($ctx), rhsStopIndex)); 
                     }
-                    push(factory.createAnnAssignment($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); 
                 }
 		|
 		augassign

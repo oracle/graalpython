@@ -94,10 +94,10 @@ public class ModuleRootNode extends PClosureRootNode {
     public void initializeFrame(VirtualFrame frame) {
         addClosureCellsToLocals(frame);
         if (doc != null) {
-            getWriteModuleDoc().writeObject(frame, doc);
+            getWriteModuleDoc().executeObject(frame, doc);
         }
         if (hasAnnotations()) {
-            getWriteAnnotations().writeObject(frame, new PDict(lookupLanguageReference(PythonLanguage.class).get()));
+            getWriteAnnotations().executeObject(frame, new PDict(lookupLanguageReference(PythonLanguage.class).get()));
         }
     }
 

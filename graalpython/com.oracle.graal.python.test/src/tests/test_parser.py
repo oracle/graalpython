@@ -691,6 +691,118 @@ def fn():
     assert "Function Documentation" not in code2.co_consts
     assert exec(code1) == exec(code2)
 
+def test_annotations_in_global():
+    test_globals = {'__annotations__': {}}
+    code = compile ("a:int", "<test>", "exec")
+    exec(code,test_globals)
+    assert test_globals['__annotations__']['a'] == int
+
+    test_globals = {'__annotations__': {}}
+    code = compile ("a:22", "<test>", "exec")
+    exec(code,test_globals)
+    assert test_globals['__annotations__']['a'] == 22
+
+    test_globals = {'__annotations__': {}}
+    code = compile ("a:'hello'", "<test>", "exec")
+    exec(code,test_globals)
+    assert test_globals['__annotations__']['a'] == 'hello'
+
+    test_globals = {'__annotations__': {}}
+    code = compile ("a:'hello'; a+1", "<test>", "exec")
+    try:
+        exec(code,test_globals)
+    except NameError:
+        pass
+    else:
+        assert False, 'NameError was not raised'
+    assert len(test_globals['__annotations__']) == 1
+    assert test_globals['__annotations__']['a'] == 'hello'
+
+    test_globals = {'__annotations__': {}}
+    code = compile ("a: int = 1; a+1", "<test>", "exec")
+    exec(code,test_globals)
+    assert len(test_globals['__annotations__']) == 1
+    assert test_globals['__annotations__']['a'] == int
+    assert test_globals['a'] == 1
+    
+    
+def test_annotations_in_function():
+    test_globals = {'__annotations__': {}}
+    source = '''def fn():
+        a:1
+        '''
+    code = compile (source, "<test>", "exec")
+    exec(code,test_globals)
+    assert len(test_globals['__annotations__']) == 0
+    assert len(test_globals['fn'].__annotations__) == 0
+    assert 1 not in test_globals['fn'].__code__.co_consts   # the annotation is ignored in function
+
+    source = '''def fn():
+        a:int =1
+        '''
+    code = compile (source, "<test>", "exec")
+    exec(code,test_globals)
+    assert len(test_globals['__annotations__']) == 0
+    assert hasattr(test_globals['fn'], '__annotations__')
+    assert len(test_globals['fn'].__annotations__) == 0
+    assert 1 in test_globals['fn'].__code__.co_consts
+
+def test_annotations_in_class():
+
+    test_globals = {'__annotations__': {}}
+    source = '''class Bif:
+        pass
+        '''
+    code = compile (source, "<test>", "exec")
+    exec(code,test_globals)
+    assert hasattr(test_globals['Bif'], '__annotations__') == False
+
+    test_globals = {'__annotations__': {}}
+    source = '''class Baf:
+        a:int
+        '''
+    code = compile (source, "<test>", "exec")
+    exec(code,test_globals)
+    assert len(test_globals['__annotations__']) == 0
+    assert hasattr(test_globals['Baf'], '__annotations__')
+    assert len(test_globals['Baf'].__annotations__) == 1 
+    assert test_globals['Baf'].__annotations__['a'] == int 
+    assert 'a' not in dir(test_globals['Baf'])
+
+    test_globals = {'__annotations__': {}}
+    source = '''class Buf:
+        aa:int = 1
+        '''
+    code = compile (source, "<test>", "exec")
+    exec(code,test_globals)
+    assert len(test_globals['__annotations__']) == 0
+    assert len(test_globals['Buf'].__annotations__) == 1 
+    assert test_globals['Buf'].__annotations__['aa'] == int 
+    assert 'aa' in dir(test_globals['Buf'])
+
+    test_globals = {'__annotations__': {}}
+    source = '''class Buf:
+        aa:int = 1
+        '''
+    code = compile (source, "<test>", "exec")
+    exec(code,test_globals)
+    assert len(test_globals['__annotations__']) == 0
+    assert len(test_globals['Buf'].__annotations__) == 1 
+    assert test_globals['Buf'].__annotations__['aa'] == int 
+    assert 'aa' in dir(test_globals['Buf'])
+
+    # git issue #188
+    test_globals = {'__annotations__': {}}
+    source = '''class Style:
+        _path: str
+        __slots__ = ["_path"]
+        '''
+    code = compile (source, "<test>", "exec")
+    exec(code,test_globals)
+    assert len(test_globals['__annotations__']) == 0
+    assert len(test_globals['Style'].__annotations__) == 1 
+    assert test_globals['Style'].__annotations__['_path'] == str 
+    assert '_path' in dir(test_globals['Style'])
 
 def test_negative_float():
     

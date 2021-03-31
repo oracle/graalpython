@@ -200,7 +200,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 final Node[] fromVisitor = new Node[1];
                 result.accept((Node node) -> {
                     if (node instanceof GeneratorFunctionDefinitionNode) {
-                        fromVisitor[0] = ((GeneratorFunctionDefinitionNode) node).getGeneratorFunctionRootNode(PythonLanguage.getContext());
+                        fromVisitor[0] = ((GeneratorFunctionDefinitionNode) node).getGeneratorFunctionRootNode(PythonLanguage.getCurrent());
                         return false;
                     } else if (node instanceof FunctionDefinitionNode) {
                         fromVisitor[0] = ((FunctionDefinitionNode) node).getFunctionRoot();

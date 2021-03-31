@@ -166,7 +166,8 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("lookupAttrNode") @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                    @Exclusive @Cached ToSulongNode toSulongNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                    @Exclusive @Cached ToSulongNode toSulongNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             Object attr = lookupGetattributeNode.execute(lib.getDelegate(this), member);
@@ -187,7 +188,8 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
                     @Shared("lookupAttrNode") @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached ToSulongNode toSulongNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                    @Cached GetNativeNullNode getNativeNullNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                    @Cached GetNativeNullNode getNativeNullNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             Object attr = lookupGetattributeNode.execute(lib.getDelegate(this), member);
@@ -210,7 +212,8 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached WriteAttributeToDynamicObjectNode writeAttrNode,
-                    @Exclusive @Cached ToJavaNode toJavaNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                    @Exclusive @Cached ToJavaNode toJavaNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             if (isMemberModifiable(member)) {

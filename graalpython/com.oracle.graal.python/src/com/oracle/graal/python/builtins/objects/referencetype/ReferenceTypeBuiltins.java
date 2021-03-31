@@ -182,7 +182,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     public abstract static class RefTypeEqNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
         Object eq(VirtualFrame frame, PReferenceType self, PReferenceType other,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+                        @Cached BinaryComparisonNode.EqNode eqNode) {
             return eqNode.executeWith(frame, self.getObject(), other.getObject());
         }
 
@@ -198,7 +198,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     public abstract static class RefTypeNeNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
         Object ne(VirtualFrame frame, PReferenceType self, PReferenceType other,
-                        @Cached("create(__NE__, __NE__, __NE__)") BinaryComparisonNode neNode) {
+                        @Cached BinaryComparisonNode.NeNode neNode) {
             return neNode.executeWith(frame, self.getObject(), other.getObject());
         }
 

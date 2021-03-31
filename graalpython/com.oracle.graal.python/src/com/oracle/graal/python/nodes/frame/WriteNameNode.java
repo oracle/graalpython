@@ -80,42 +80,12 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
     }
 
     @Specialization(guards = "!hasLocals(frame)")
-    protected void writeGlobal(VirtualFrame frame, Object value,
+    protected static void writeGlobal(VirtualFrame frame, Object value,
                     @Cached("create(attributeId)") WriteGlobalNode setItem) {
-        setItem.executeWithValue(frame, value);
+        setItem.executeObject(frame, value);
     }
 
-    public void writeBoolean(VirtualFrame frame, boolean value) {
-        executeWithValue(frame, value);
-    }
-
-    public void writeInt(VirtualFrame frame, int value) {
-        executeWithValue(frame, value);
-    }
-
-    public void writeLong(VirtualFrame frame, long value) {
-        executeWithValue(frame, value);
-    }
-
-    public void writeDouble(VirtualFrame frame, double value) {
-        executeWithValue(frame, value);
-    }
-
-    public void writeObject(VirtualFrame frame, Object value) {
-        executeWithValue(frame, value);
-    }
-
-    public abstract void executeWithValue(VirtualFrame frame, boolean value);
-
-    public abstract void executeWithValue(VirtualFrame frame, int value);
-
-    public abstract void executeWithValue(VirtualFrame frame, long value);
-
-    public abstract void executeWithValue(VirtualFrame frame, double value);
-
-    public abstract void executeWithValue(VirtualFrame frame, Object value);
-
-    public String getAttributeId() {
+    public final String getAttributeId() {
         return attributeId;
     }
 }

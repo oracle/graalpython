@@ -1,11 +1,11 @@
-ModuleRootNode Name: <module 'annotationType01'> SourceSection: [0,6]`j: int`
+ModuleRootNode Name: <module 'annAssign02'> SourceSection: [0,4]`a: 1`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [0,6]`j: int`
-    ExpressionWithSideEffect SourceSection: [0,6]`j: int`
+  InnerRootNode SourceSection: [0,4]`a: 1`
+    ExpressionWithSideEffect SourceSection: [0,4]`a: 1`
       Expression:
         EmptyNode SourceSection: None
       SideEffect:
@@ -15,7 +15,5 @@ ModuleRootNode Name: <module 'annotationType01'> SourceSection: [0,6]`j: int`
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [0,0]Empty
-          ReadNameNodeGen SourceSection: [3,6]`int`
-            Identifier: int
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+          IntegerLiteralNode SourceSection: [3,4]`1`
+            Value: 1

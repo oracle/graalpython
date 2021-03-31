@@ -91,7 +91,8 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     boolean isMetaInstance(Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached IsSubtypeNode isSubtype, @Exclusive @Cached GilNode gil) {
+                    @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);

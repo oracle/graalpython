@@ -29,7 +29,6 @@ import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -62,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.StorageSup
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -305,13 +305,18 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+        @Child private DispatchMissingNode missing;
+
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object getItem(VirtualFrame frame, PDict self, Object key,
+        Object getItem(VirtualFrame frame, PDict self, Object key,
                         @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile,
-                        @Cached DispatchMissingNode missing) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
             final Object result = hlib.getItemWithFrame(self.getDictStorage(), key, profile, frame);
             if (result == null) {
+                if (missing == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    missing = insert(DispatchMissingNodeGen.create());
+                }
                 return missing.execute(frame, self, key);
             }
             return result;
@@ -453,16 +458,6 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             return lib.hasKeyWithFrame(self.getDictStorage(), key, hasFrame, frame);
-        }
-    }
-
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public static boolean repr(PDict self,
-                        @Cached HashingCollectionNodes.LenNode lenNode) {
-            return lenNode.execute(self) > 0;
         }
     }
 

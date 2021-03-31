@@ -9,9 +9,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
       AndNode SourceSection: None
         ExpressionWithSideEffect SourceSection: None
           Expression:
-            BinaryComparisonNodeGen SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __lt__
+            LtNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [0,3]`x()`
                 CallNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [0,1]`x`
@@ -32,9 +30,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
                     CachedDispatchFirst SourceSection: None
         ExpressionWithSideEffect SourceSection: None
           Expression:
-            BinaryComparisonNodeGen SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __lt__
+            LtNodeGen SourceSection: None
               ReadLocalVariableNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
               ReadLocalVariableNodeGen SourceSection: None
@@ -50,9 +46,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
                   IsBuiltinClassProfile SourceSection: None
                     CachedDispatchFirst SourceSection: None
         YesNodeGen SourceSection: None
-      BinaryComparisonNodeGen SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __le__
+      LeNodeGen SourceSection: None
         ReadLocalVariableNodeGen SourceSection: None
           Frame: [1,<>temp1,Illegal]
         PythonCallNodeGen SourceSection: [19,22]`z()`

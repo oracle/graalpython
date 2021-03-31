@@ -987,7 +987,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 List<PDict> result = new ArrayList<>();
                 for (X509Certificate cert : self.getCACerts()) {
                     if (CertUtils.isCA(cert, cert.getKeyUsage())) {
-                        result.add(CertUtils.decodeCertificate(cert));
+                        result.add(CertUtils.decodeCertificate(this, cert));
                     }
                 }
                 return factory().createList(result.toArray(new Object[result.size()]));

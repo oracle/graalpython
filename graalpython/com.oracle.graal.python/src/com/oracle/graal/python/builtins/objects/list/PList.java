@@ -163,7 +163,8 @@ public final class PList extends PSequence {
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
                     @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize, @Exclusive @Cached GilNode gil) {
+                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             final int len = lenNode.execute(store);
@@ -180,7 +181,8 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public boolean isArrayElementInsertable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode, @Exclusive @Cached GilNode gil) {
+                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             final int len = lenNode.execute(store);
@@ -193,7 +195,8 @@ public final class PList extends PSequence {
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
                     @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize, @Exclusive @Cached GilNode gil) {
+                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             final int len = lenNode.execute(store);
@@ -211,7 +214,8 @@ public final class PList extends PSequence {
     @ExportMessage
     public void writeArrayElement(long index, Object value,
                     @Cached PForeignToPTypeNode convert,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {
@@ -227,7 +231,8 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public void removeArrayElement(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem, @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem,
+                    @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             try {

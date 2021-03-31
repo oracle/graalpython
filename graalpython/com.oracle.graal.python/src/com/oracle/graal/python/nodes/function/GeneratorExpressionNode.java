@@ -34,6 +34,7 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -110,12 +111,12 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
 
         if (callTargets == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             callTargets = GeneratorFunctionRootNode.createYieldTargets(callTarget);
         }
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, executionCellSlots,
-                        generatorInfo, iterator);
+        return factory.createGenerator(name, qualname, callTargets, frameDescriptor, arguments, closure, executionCellSlots, generatorInfo, iterator);
     }
 
     @Override

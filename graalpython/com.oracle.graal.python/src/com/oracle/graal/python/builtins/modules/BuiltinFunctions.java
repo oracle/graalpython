@@ -86,9 +86,11 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
@@ -110,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -781,6 +784,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PCode compile(String expression, String filename, String mode, int kwFlags, Object kwDontInherit, int kwOptimize) {
+            checkFlags(kwFlags);
+            checkOptimize(kwOptimize, kwOptimize);
+            checkSource(expression);
+
             String code = expression;
             PythonContext context = getContext();
             ParserMode pm;
@@ -821,11 +828,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castInt,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached WarnNode warnNode) {
             if (wSource instanceof PCode) {
                 return (PCode) wSource;
             }
-            String filename = lib.asPathWithState(wFilename, PArguments.getThreadState(frame));
+            String filename;
+            if (wFilename instanceof PByteArray || wFilename instanceof PMemoryView) {
+                try {
+                    filename = PythonUtils.newString(lib.getBufferBytes(wFilename));
+                    warnNode.warnFormat(frame, null, DeprecationWarning, 1, ErrorMessages.PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P, wFilename);
+                } catch (UnsupportedMessageException ex) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                filename = lib.asPathWithState(wFilename, PArguments.getThreadState(frame));
+            }
             String mode;
             try {
                 mode = castStr.execute(wMode);
@@ -839,9 +857,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } catch (CannotCastException e) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
                 }
-                if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_DONT_IMPLY_DEDENT | PyCF_ONLY_AST | PyCF_TYPE_COMMENTS)) > 0) {
-                    throw raise(ValueError, "compile(): unrecognised flags");
-                }
+                checkFlags(flags);
             }
             int optimize = 0;
             if (kwOptimize != PNone.NO_VALUE) {
@@ -850,15 +866,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } catch (CannotCastException e) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
                 }
-                if (optimize < -1 || optimize > 2) {
-                    throw raise(TypeError, "compile(): invalid optimize value", kwOptimize);
-                }
+                checkOptimize(optimize, kwOptimize);
             }
             String source = sourceAsString(wSource, filename, interopLib, lib, handleDecodingErrorNode);
-            if (source.indexOf(0) > -1) {
-                throw raise(ValueError, "source code string cannot contain null bytes");
-            }
+            checkSource(source);
             return compile(source, filename, mode, flags, kwDontInherit, optimize);
+        }
+
+        private void checkSource(String source) throws PException {
+            if (source.indexOf(0) > -1) {
+                throw raise(ValueError, ErrorMessages.SRC_CODE_CANNOT_CONTAIN_NULL_BYTES);
+            }
+        }
+
+        private void checkOptimize(int optimize, Object kwOptimize) throws PException {
+            if (optimize < -1 || optimize > 2) {
+                throw raise(TypeError, ErrorMessages.INVALID_OPTIMIZE_VALUE, kwOptimize);
+            }
+        }
+
+        private void checkFlags(int flags) {
+            if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_DONT_IMPLY_DEDENT | PyCF_ONLY_AST | PyCF_TYPE_COMMENTS)) > 0) {
+                throw raise(ValueError, ErrorMessages.UNRECOGNIZED_FLAGS);
+            }
         }
 
         // modeled after _Py_SourceAsString
@@ -1203,9 +1233,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         protected final BinaryComparisonNode createComparison() {
             if (this instanceof MaxNode) {
-                return BinaryComparisonNode.create(SpecialMethodNames.__GT__, SpecialMethodNames.__LT__, ">");
+                return BinaryComparisonNode.GtNode.create();
             } else {
-                return BinaryComparisonNode.create(SpecialMethodNames.__LT__, SpecialMethodNames.__GT__, "<");
+                return BinaryComparisonNode.LtNode.create();
             }
         }
 

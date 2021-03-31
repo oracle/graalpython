@@ -73,36 +73,6 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
         return WriteGlobalNodeGen.create(attributeId, rhs);
     }
 
-    public void writeBoolean(VirtualFrame frame, boolean value) {
-        executeWithValue(frame, value);
-    }
-
-    public void writeInt(VirtualFrame frame, int value) {
-        executeWithValue(frame, value);
-    }
-
-    public void writeLong(VirtualFrame frame, long value) {
-        executeWithValue(frame, value);
-    }
-
-    public void writeDouble(VirtualFrame frame, double value) {
-        executeWithValue(frame, value);
-    }
-
-    public void writeObject(VirtualFrame frame, Object value) {
-        executeWithValue(frame, value);
-    }
-
-    public abstract void executeWithValue(VirtualFrame frame, boolean value);
-
-    public abstract void executeWithValue(VirtualFrame frame, int value);
-
-    public abstract void executeWithValue(VirtualFrame frame, long value);
-
-    public abstract void executeWithValue(VirtualFrame frame, double value);
-
-    public abstract void executeWithValue(VirtualFrame frame, Object value);
-
     private static PDict getGlobalsDict(VirtualFrame frame) {
         return (PDict) PArguments.getGlobals(frame);
     }

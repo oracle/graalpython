@@ -622,7 +622,7 @@ public class ListBuiltins extends PythonBuiltins {
     // list.pop([i])
     @Builtin(name = "pop", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ListPopNode extends PythonBuiltinNode {
+    public abstract static class ListPopNode extends PythonBinaryBuiltinNode {
 
         private static final String POP_INDEX_OUT_OF_RANGE = "pop index out of range";
 

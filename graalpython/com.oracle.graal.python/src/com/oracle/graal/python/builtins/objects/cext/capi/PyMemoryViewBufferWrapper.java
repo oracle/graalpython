@@ -128,7 +128,8 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Exclusive @Cached ReadFieldNode readFieldNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                    @Exclusive @Cached ReadFieldNode readFieldNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             return readFieldNode.execute((PMemoryView) lib.getDelegate(this), member);

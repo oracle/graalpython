@@ -536,6 +536,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "lib.isLazyPythonClass(type)", limit = "3")
+        @TruffleBoundary
         Object doPythonCallable(String name, PythonNativeWrapper callable, PExternalFunctionWrapper wrapper, Object type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary,
@@ -566,6 +567,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isDecoratedManagedFunction(callable)")
+        @TruffleBoundary
         Object doDecoratedManaged(String name, PyCFunctionDecorator callable, PExternalFunctionWrapper wrapper, Object type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
@@ -587,6 +589,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "!isNativeWrapper(callable)"})
+        @TruffleBoundary
         PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, Object type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
@@ -595,12 +598,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
+        @TruffleBoundary
         PBuiltinFunction doNativeCallableWithoutType(String name, Object callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             return doNativeCallableWithType(name, callable, wrapper, null, lang, null);
         }
 
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "isNoValue(wrapper)", "!isNativeWrapper(callable)"})
+        @TruffleBoundary
         PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
@@ -609,6 +614,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
+        @TruffleBoundary
         PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang, null);
@@ -786,43 +792,40 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "do_richcompare", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
-        protected static BinaryComparisonNode create(int op) {
-            return BinaryComparisonNode.create(SpecialMethodNames.getCompareName(op), SpecialMethodNames.getCompareReversal(op), SpecialMethodNames.getCompareOpString(op));
-        }
 
         @Specialization(guards = "op == 0")
         Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.LtNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 1")
         Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.LeNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 2")
         Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.EqNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 3")
         Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.NeNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 4")
         Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.GtNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
 
         @Specialization(guards = "op == 5")
         Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
-                        @Cached("create(op)") BinaryComparisonNode compNode) {
+                        @Cached BinaryComparisonNode.GeNode compNode) {
             return compNode.executeWith(frame, a, b);
         }
     }

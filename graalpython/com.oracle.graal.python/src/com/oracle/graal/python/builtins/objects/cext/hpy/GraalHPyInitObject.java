@@ -96,7 +96,8 @@ public class GraalHPyInitObject implements TruffleObject {
     @ExportMessage
     @TruffleBoundary
     Object invokeMember(String key, Object[] arguments,
-                    @Cached HPyEnsureHandleNode ensureHandleNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, ArityException {
+                    @Cached HPyEnsureHandleNode ensureHandleNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, ArityException {
         boolean mustRelease = gil.acquire();
         try {
             if (arguments.length != 1) {

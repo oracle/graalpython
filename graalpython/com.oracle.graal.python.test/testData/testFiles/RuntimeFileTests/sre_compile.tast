@@ -21,9 +21,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
       ImportStarNode SourceSection: [292,319]`from sre_constants i...`
       AssertNode SourceSection: [321,370]`assert _sre.MAGIC ==...`
         YesNodeGen SourceSection: None
-          BinaryComparisonNodeGen SourceSection: [328,347]`_sre.MAGIC == MAGIC`
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __eq__
+          EqNodeGen SourceSection: [328,347]`_sre.MAGIC == MAGIC`
             GetAttributeNode SourceSection: [328,338]`_sre.MAGIC`
               GetFixedAttributeNode SourceSection: None
                 Key: MAGIC
@@ -283,9 +281,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         GeneratorIfNode SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                           YesNodeGen SourceSection: None
-                                            BinaryComparisonNodeGen SourceSection: [2209,2215]`i != j`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __ne__
+                                            NeNodeGen SourceSection: [2209,2215]`i != j`
                                               ReadLocalCellNodeGen SourceSection: [2209,2210]`i`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [1,i,Illegal]
@@ -1547,9 +1543,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 Value: 0
                                           IfNode SourceSection: [6304,6572]`if av[0] >= 0:↵     ...`
                                             YesNodeGen SourceSection: None
-                                              BinaryComparisonNodeGen SourceSection: [6307,6317]`av[0] >= 0`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __ge__
+                                              GeNodeGen SourceSection: [6307,6317]`av[0] >= 0`
                                                 GetItemNodeGen SourceSection: [6307,6312]`av[0]`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [22,av,Illegal]
@@ -1592,9 +1586,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     Frame: [35,<>temp35,Illegal]
                                               IfNode SourceSection: [6432,6537]`if lo != hi:↵       ...`
                                                 YesNodeGen SourceSection: None
-                                                  BinaryComparisonNodeGen SourceSection: [6435,6443]`lo != hi`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __ne__
+                                                  NeNodeGen SourceSection: [6435,6443]`lo != hi`
                                                     ReadLocalVariableNodeGen SourceSection: [6435,6437]`lo`
                                                       Frame: [12,lo,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [6441,6443]`hi`
@@ -2990,9 +2982,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           BlockNode SourceSection: None
                                             IfNode SourceSection: [11358,11609]`if len(charmap) == 2...`
                                               YesNodeGen SourceSection: None
-                                                BinaryComparisonNodeGen SourceSection: [11361,11380]`len(charmap) == 256`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __eq__
+                                                EqNodeGen SourceSection: [11361,11380]`len(charmap) == 256`
                                                   PythonCallUnary SourceSection: [11361,11373]`len(charmap)`
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [11361,11364]`len`
@@ -3096,9 +3086,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   Frame: [15,q,Illegal]
                             IfNode SourceSection: [12120,12156]`if p < 0:↵          ...`
                               YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [12123,12128]`p < 0`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __lt__
+                                LtNodeGen SourceSection: [12123,12128]`p < 0`
                                   ReadLocalVariableNodeGen SourceSection: [12123,12124]`p`
                                     Frame: [16,p,Illegal]
                                   IntegerLiteralNode SourceSection: [12127,12128]`0`
@@ -3107,9 +3095,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               BlockNode SourceSection: None
                             IfNode SourceSection: [12156,12225]`if len(runs) >= 2:↵ ...`
                               YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [12159,12173]`len(runs) >= 2`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __ge__
+                                GeNodeGen SourceSection: [12159,12173]`len(runs) >= 2`
                                   PythonCallUnary SourceSection: [12159,12168]`len(runs)`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [12159,12162]`len`
@@ -3140,9 +3126,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   Frame: [16,p,Illegal]
                             IfNode SourceSection: [12256,12335]`if q < 0:↵          ...`
                               YesNodeGen SourceSection: None
-                                BinaryComparisonNodeGen SourceSection: [12259,12264]`q < 0`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __lt__
+                                LtNodeGen SourceSection: [12259,12264]`q < 0`
                                   ReadLocalVariableNodeGen SourceSection: [12259,12260]`q`
                                     Frame: [15,q,Illegal]
                                   IntegerLiteralNode SourceSection: [12263,12264]`0`
@@ -3210,9 +3194,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       Frame: [25,<>temp25,Illegal]
                               IfNode SourceSection: [12446,12576]`if q - p == 1:↵     ...`
                                 YesNodeGen SourceSection: None
-                                  BinaryComparisonNodeGen SourceSection: [12449,12459]`q - p == 1`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __eq__
+                                  EqNodeGen SourceSection: [12449,12459]`q - p == 1`
                                     BinaryArithmeticExpression SourceSection: [12449,12454]`q - p`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __sub__
@@ -3275,9 +3257,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             OrNode SourceSection: [12671,12706]`hascased or len(out)...`
                               ReadLocalVariableNodeGen SourceSection: [12671,12679]`hascased`
                                 Frame: [7,hascased,Illegal]
-                              BinaryComparisonNodeGen SourceSection: [12683,12706]`len(out) < len(chars...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __lt__
+                              LtNodeGen SourceSection: [12683,12706]`len(out) < len(chars...`
                                 PythonCallUnary SourceSection: [12683,12691]`len(out)`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12683,12686]`len`
@@ -3317,9 +3297,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       BlockNode SourceSection: None
                     IfNode SourceSection: [12849,14122]`if len(charmap) == 2...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [12852,12871]`len(charmap) == 256`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [12852,12871]`len(charmap) == 256`
                           PythonCallUnary SourceSection: [12852,12864]`len(charmap)`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [12852,12855]`len`
@@ -3862,9 +3840,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         StringLiteralNode SourceSection: [15038,15041]`'I'`
                     AssertNode SourceSection: [15047,15081]`assert a.itemsize ==...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [15054,15081]`a.itemsize == _sre.C...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [15054,15081]`a.itemsize == _sre.C...`
                           GetAttributeNode SourceSection: [15054,15064]`a.itemsize`
                             GetFixedAttributeNode SourceSection: None
                               Key: itemsize
@@ -3886,9 +3862,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     AssertNode SourceSection: [15086,15122]`assert len(a) * a.it...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [15093,15122]`len(a) * a.itemsize ...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [15093,15122]`len(a) * a.itemsize ...`
                           BinaryArithmeticExpression SourceSection: [15093,15112]`len(a) * a.itemsize`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __mul__
@@ -3959,9 +3933,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                   FunctionBodyNode SourceSection: [15220,15377]`if len(p) != 1:↵    ...`
                     IfNode SourceSection: [15220,15261]`if len(p) != 1:↵    ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [15223,15234]`len(p) != 1`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __ne__
+                        NeNodeGen SourceSection: [15223,15234]`len(p) != 1`
                           PythonCallUnary SourceSection: [15223,15229]`len(p)`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [15223,15226]`len`
@@ -4119,9 +4091,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               WhileNode SourceSection: None
                                 WhileRepeatingNode SourceSection: None
                                   YesNodeGen SourceSection: None
-                                    BinaryComparisonNodeGen SourceSection: [15896,15920]`prefix[i] != prefix[...`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __ne__
+                                    NeNodeGen SourceSection: [15896,15920]`prefix[i] != prefix[...`
                                       GetItemNodeGen SourceSection: [15896,15905]`prefix[i]`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,prefix,Illegal]
@@ -4135,9 +4105,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   BlockNode SourceSection: None
                                     IfNode SourceSection: [15934,16010]`if idx == 0:↵       ...`
                                       YesNodeGen SourceSection: None
-                                        BinaryComparisonNodeGen SourceSection: [15937,15945]`idx == 0`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __eq__
+                                        EqNodeGen SourceSection: [15937,15945]`idx == 0`
                                           ReadLocalVariableNodeGen SourceSection: [15937,15940]`idx`
                                             Frame: [2,idx,Illegal]
                                           IntegerLiteralNode SourceSection: [15944,15945]`0`
@@ -5039,9 +5007,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         BlockNode SourceSection: None
                                           IfNode SourceSection: [18553,18628]`if av[1] > 0xffff:↵ ...`
                                             YesNodeGen SourceSection: None
-                                              BinaryComparisonNodeGen SourceSection: [18556,18570]`av[1] > 0xffff`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __gt__
+                                              GtNodeGen SourceSection: [18556,18570]`av[1] > 0xffff`
                                                 GetItemNodeGen SourceSection: [18556,18561]`av[1]`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [3,av,Illegal]
@@ -5183,9 +5149,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           Frame: [14,<>temp14,Illegal]
                     IfNode SourceSection: [18989,19031]`if hi > MAXCODE:↵   ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [18992,19004]`hi > MAXCODE`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __gt__
+                        GtNodeGen SourceSection: [18992,19004]`hi > MAXCODE`
                           ReadLocalVariableNodeGen SourceSection: [18992,18994]`hi`
                             Frame: [4,hi,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [18997,19004]`MAXCODE`
@@ -5200,9 +5164,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       BlockNode SourceSection: None
                     IfNode SourceSection: [19031,19136]`if lo == 0:↵        ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [19034,19041]`lo == 0`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __eq__
+                        EqNodeGen SourceSection: [19034,19041]`lo == 0`
                           ReadLocalVariableNodeGen SourceSection: [19034,19036]`lo`
                             Frame: [3,lo,Illegal]
                           IntegerLiteralNode SourceSection: [19040,19041]`0`
@@ -5417,9 +5379,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           Frame: [11,mask,Illegal]
                     IfNode SourceSection: [19988,20092]`if lo < MAXCODE:↵   ...`
                       YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [19991,20003]`lo < MAXCODE`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __lt__
+                        LtNodeGen SourceSection: [19991,20003]`lo < MAXCODE`
                           ReadLocalVariableNodeGen SourceSection: [19991,19993]`lo`
                             Frame: [3,lo,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19996,20003]`MAXCODE`
@@ -6268,9 +6228,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     WhileNode SourceSection: None
                                       WhileRepeatingNode SourceSection: None
                                         YesNodeGen SourceSection: None
-                                          BinaryComparisonNodeGen SourceSection: [21641,21648]`i < end`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __lt__
+                                          LtNodeGen SourceSection: [21641,21648]`i < end`
                                             ReadLocalVariableNodeGen SourceSection: [21641,21642]`i`
                                               Frame: [4,i,Illegal]
                                             ReadLocalCellNodeGen SourceSection: [21645,21648]`end`
@@ -6470,9 +6428,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           Frame: [6,arg,Illegal]
                                                   AssertNode SourceSection: [22370,22393]`assert arg[:3] == 'A...`
                                                     YesNodeGen SourceSection: None
-                                                      BinaryComparisonNodeGen SourceSection: [22377,22393]`arg[:3] == 'AT_'`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __eq__
+                                                      EqNodeGen SourceSection: [22377,22393]`arg[:3] == 'AT_'`
                                                         GetItemNodeGen SourceSection: [22377,22384]`arg[:3]`
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [6,arg,Illegal]
@@ -6543,9 +6499,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Frame: [6,arg,Illegal]
                                                     AssertNode SourceSection: [22572,22601]`assert arg[:9] == 'C...`
                                                       YesNodeGen SourceSection: None
-                                                        BinaryComparisonNodeGen SourceSection: [22579,22601]`arg[:9] == 'CATEGORY...`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __eq__
+                                                        EqNodeGen SourceSection: [22579,22601]`arg[:9] == 'CATEGORY...`
                                                           GetItemNodeGen SourceSection: [22579,22586]`arg[:9]`
                                                             ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [6,arg,Illegal]
@@ -7369,9 +7323,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           Frame: [28,<>temp28,Illegal]
                                                                     IfNode SourceSection: [24602,24677]`if max == MAXREPEAT:...`
                                                                       YesNodeGen SourceSection: None
-                                                                        BinaryComparisonNodeGen SourceSection: [24605,24621]`max == MAXREPEAT`
-                                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                                            Op: __eq__
+                                                                        EqNodeGen SourceSection: [24605,24621]`max == MAXREPEAT`
                                                                           ReadLocalVariableNodeGen SourceSection: [24605,24608]`max`
                                                                             Frame: [13,max,Illegal]
                                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [24612,24621]`MAXREPEAT`
@@ -7674,9 +7626,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                 Frame: [36,<>temp36,Illegal]
                                                                           IfNode SourceSection: [25221,25296]`if max == MAXREPEAT:...`
                                                                             YesNodeGen SourceSection: None
-                                                                              BinaryComparisonNodeGen SourceSection: [25224,25240]`max == MAXREPEAT`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __eq__
+                                                                              EqNodeGen SourceSection: [25224,25240]`max == MAXREPEAT`
                                                                                 ReadLocalVariableNodeGen SourceSection: [25224,25227]`max`
                                                                                   Frame: [13,max,Illegal]
                                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [25231,25240]`MAXREPEAT`

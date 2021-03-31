@@ -37,7 +37,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
@@ -72,44 +71,34 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
         return frameSlot.getIdentifier();
     }
 
-    protected Frame getGeneratorFrame(VirtualFrame frame) {
+    protected final Frame getGeneratorFrame(VirtualFrame frame) {
         return frameProfile.profile(PArguments.getGeneratorFrame(frame));
     }
 
     @Specialization(guards = "isBooleanKind(getGeneratorFrame(frame), frameSlot)")
-    @Override
-    public void writeBoolean(VirtualFrame frame, boolean value) {
+    void writeBoolean(VirtualFrame frame, boolean value) {
         getGeneratorFrame(frame).setBoolean(frameSlot, value);
     }
 
     @Specialization(guards = "isIntegerKind(getGeneratorFrame(frame), frameSlot)")
-    @Override
-    public void writeInt(VirtualFrame frame, int value) {
+    void writeInt(VirtualFrame frame, int value) {
         getGeneratorFrame(frame).setInt(frameSlot, value);
     }
 
     @Specialization(guards = "isLongKind(getGeneratorFrame(frame), frameSlot)")
-    @Override
-    public void writeLong(VirtualFrame frame, long value) {
+    void writeLong(VirtualFrame frame, long value) {
         getGeneratorFrame(frame).setLong(frameSlot, value);
     }
 
     @Specialization(guards = "isDoubleKind(getGeneratorFrame(frame), frameSlot)")
-    @Override
-    public void writeDouble(VirtualFrame frame, double value) {
+    void writeDouble(VirtualFrame frame, double value) {
         getGeneratorFrame(frame).setDouble(frameSlot, value);
     }
 
     @Specialization(replaces = {"writeBoolean", "writeInt", "writeLong", "writeDouble"})
-    @Override
-    public void writeObject(VirtualFrame frame, Object value) {
+    void writeObject(VirtualFrame frame, Object value) {
         Frame generatorFrame = getGeneratorFrame(frame);
         FrameSlotGuards.ensureObjectKind(generatorFrame, frameSlot);
         generatorFrame.setObject(frameSlot, value);
-    }
-
-    @Override
-    public NodeCost getCost() {
-        return NodeCost.NONE;
     }
 }

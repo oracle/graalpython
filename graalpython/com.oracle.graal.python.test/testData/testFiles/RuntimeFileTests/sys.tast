@@ -1125,9 +1125,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               ReadLocalVariableNodeGen SourceSection: [5800,5808]`hookname`
                                 Frame: [5,hookname,Illegal]
                               ObjectLiteralNode SourceSection: [5812,5816]`None`
-                            BinaryComparisonNodeGen SourceSection: [5820,5838]`len(hookname) == 0`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [5820,5838]`len(hookname) == 0`
                               PythonCallUnary SourceSection: [5820,5833]`len(hookname)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5820,5823]`len`
@@ -1155,9 +1153,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                             StringLiteralNode SourceSection: [5980,5995]`'pdb.set_trace'`
                         IfNode SourceSection: [6000,6046]`elif hookname == '0'...`
                           YesNodeGen SourceSection: None
-                            BinaryComparisonNodeGen SourceSection: [6005,6020]`hookname == '0'`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __eq__
+                            EqNodeGen SourceSection: [6005,6020]`hookname == '0'`
                               ReadLocalVariableNodeGen SourceSection: [6005,6013]`hookname`
                                 Frame: [5,hookname,Illegal]
                               StringLiteralNode SourceSection: [6017,6020]`'0'`
@@ -1200,9 +1196,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                             Frame: [14,<>temp14,Illegal]
                       IfNode SourceSection: [6100,6147]`if dot == '':↵      ...`
                         YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [6103,6112]`dot == ''`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __eq__
+                          EqNodeGen SourceSection: [6103,6112]`dot == ''`
                             ReadLocalVariableNodeGen SourceSection: [6103,6106]`dot`
                               Frame: [7,dot,Illegal]
                             StringLiteralNode SourceSection: [6110,6112]`''`

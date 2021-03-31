@@ -164,7 +164,8 @@ public abstract class PyUnicodeWrappers {
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached SizeofWCharNode sizeofWcharNode,
-                        @Exclusive @Cached StringLenNode stringLenNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                        @Exclusive @Cached StringLenNode stringLenNode,
+                        @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
             boolean mustRelease = gil.acquire();
             try {
                 if (isMemberReadable(member)) {
@@ -226,7 +227,8 @@ public abstract class PyUnicodeWrappers {
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ConditionProfile storageProfile,
                         @Cached StringMaterializeNode materializeNode,
-                        @Cached SizeofWCharNode sizeofWcharNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                        @Cached SizeofWCharNode sizeofWcharNode,
+                        @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
             boolean mustRelease = gil.acquire();
             try {
                 // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)

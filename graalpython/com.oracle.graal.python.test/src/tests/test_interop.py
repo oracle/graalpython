@@ -498,8 +498,8 @@ if sys.implementation.name == "graalpython":
             assert (x is None) == False
             assert x is not None
 
-            assert (x == y) == False
-            assert x != y
+            assert x == y
+            assert (x != y) == False
             assert x is y
             assert (x is not y) == False
 

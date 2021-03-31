@@ -41,11 +41,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -118,16 +116,10 @@ public final class PythonModule extends PythonObject {
         @SuppressWarnings("unused")
         @Specialization(guards = {"self == cachedModule", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
         static PDict getConstant(PythonModule self,
-                        @Cached GilNode gil,
-                        @Bind("gil.acquire()") boolean mustRelease,
                         @Cached(value = "self", weak = true) PythonModule cachedModule,
                         @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
-            try {
-                // module.__dict__ is a read-only attribute
-                return (PDict) dict;
-            } finally {
-                gil.release(mustRelease);
-            }
+            // module.__dict__ is a read-only attribute
+            return (PDict) dict;
         }
 
         @Specialization(replaces = "getConstant")

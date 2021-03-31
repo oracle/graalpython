@@ -95,7 +95,8 @@ public class PyBufferProcsWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached ToSulongNode toSulongNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
+                    @Cached ToSulongNode toSulongNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             // translate key to attribute name

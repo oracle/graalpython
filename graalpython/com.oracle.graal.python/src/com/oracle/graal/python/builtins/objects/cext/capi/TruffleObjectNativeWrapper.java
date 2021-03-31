@@ -132,7 +132,8 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         static Object execute(TruffleObjectNativeWrapper object, String key,
                         @CachedLibrary("object") PythonNativeWrapperLibrary lib,
-                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode, @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
+                        @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
+                        @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, UnknownIdentifierException {
             boolean mustRelease = gil.acquire();
             try {
                 Object delegate = lib.getDelegate(object);
@@ -155,7 +156,8 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     @ExportMessage
     void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached WriteNativeMemberNode writeNativeMemberNode, @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
+                    @Cached WriteNativeMemberNode writeNativeMemberNode,
+                    @Exclusive @Cached GilNode gil) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
         boolean mustRelease = gil.acquire();
         try {
             if (OB_REFCNT.getMemberName().equals(member)) {

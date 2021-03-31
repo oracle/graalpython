@@ -30,13 +30,11 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -100,13 +98,8 @@ public final class PBytes extends PBytesLike {
 
     @ExportMessage
     public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached SequenceStorageNodes.ToByteArrayNode toBytes, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return BytesUtils.createASCIIString(toBytes.execute(getSequenceStorage()));
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
+        return BytesUtils.createASCIIString(toBytes.execute(getSequenceStorage()));
     }
 
     @ExportMessage

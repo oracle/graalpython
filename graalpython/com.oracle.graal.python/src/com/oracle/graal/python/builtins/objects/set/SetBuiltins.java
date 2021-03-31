@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -166,9 +167,10 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(lib.union(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
         }
 
+        @SuppressWarnings("unused")
         @Fallback
         Object doOr(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "|", self, other);
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -334,9 +336,10 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(storage);
         }
 
+        @SuppressWarnings("unused")
         @Fallback
         Object doAnd(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "&", self, other);
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -446,9 +449,10 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(lib.xor(self.getDictStorage(), getHashingStorageNode.execute(frame, other)));
         }
 
+        @SuppressWarnings("unused")
         @Fallback
         Object doOr(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "^", self, other);
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -523,9 +527,10 @@ public final class SetBuiltins extends PythonBuiltins {
             return factory().createSet(storage);
         }
 
+        @SuppressWarnings("unused")
         @Fallback
         Object doSub(Object self, Object other) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, "-", self, other);
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

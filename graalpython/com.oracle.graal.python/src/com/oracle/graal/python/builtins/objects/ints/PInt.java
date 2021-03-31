@@ -41,7 +41,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -333,13 +332,8 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public double asJavaDoubleWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaDoubleNode castToDouble, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return castToDouble.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached CastToJavaDoubleNode castToDouble) {
+        return castToDouble.execute(this);
     }
 
     @SuppressWarnings("static-method")
@@ -350,13 +344,8 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaLongExactNode castToLong, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return castToLong.execute(this);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @Cached CastToJavaLongExactNode castToLong) {
+        return castToLong.execute(this);
     }
 
     @SuppressWarnings("static-method")

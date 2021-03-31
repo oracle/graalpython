@@ -336,7 +336,8 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @ExportMessage
         Object readArrayElement(long index,
                         @CachedLibrary("this.delegate") InteropLibrary delegateLib,
-                        @CachedLibrary(limit = "1") InteropLibrary elementLib, @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib,
+                        @Cached GilNode gil) throws InvalidArrayIndexException, UnsupportedMessageException {
             boolean mustRelease = gil.acquire();
             try {
                 Object element = delegateLib.readArrayElement(delegate, index);

@@ -76,7 +76,8 @@ final class NativeSpaceArrayWrapper implements TruffleObject {
     }
 
     @ExportMessage
-    Object readArrayElement(long i, @Exclusive @Cached GilNode gil) {
+    Object readArrayElement(long i,
+                    @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             GraalHPyHandleReference ref = data[(int) i];

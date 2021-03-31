@@ -242,9 +242,21 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
         try {
             writeId(SSTId.AnnAssignmentID);
             writePosition(node);
-            node.type.accept(this);
-            node.lhs[0].accept(this);
+            node.annotation.accept(this);
             node.rhs.accept(this);
+        } catch (IOException e) {
+            handleIOExceptin(e);
+        }
+        return true;
+    }
+
+    @Override
+    public Boolean visit(AnnotationSSTNode node) {
+        try {
+            writeId(SSTId.AnnotationID);
+            writePosition(node);
+            node.lhs.accept(this);
+            node.type.accept(this);
         } catch (IOException e) {
             handleIOExceptin(e);
         }
