@@ -229,18 +229,6 @@ public class KeywordsStorage extends HashingStorage {
                 result = node.execute(entry.getName(), result);
             }
             return result;
-        static Object generic(KeywordsStorage self, ForEachNode<Object> node, Object arg, @Shared("gil") @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                Object result = arg;
-                for (int i = 0; i < self.length(); i++) {
-                    PKeyword entry = self.keywords[i];
-                    result = node.execute(entry.getName(), result);
-                }
-                return result;
-            } finally {
-                gil.release(mustRelease);
-            }
         }
     }
 
