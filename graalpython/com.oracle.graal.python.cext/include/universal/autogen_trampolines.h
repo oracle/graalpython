@@ -520,6 +520,6 @@ static inline void HPyTracker_Close(HPyContext ctx, HPyTracker ht) {
 }
 
 static inline void _HPy_Dump(HPyContext ctx, HPy h) {
-     ctx->ctx_Dump ( ctx, h ); 
+     ctx->ctx_Dump ( ctx, UNWRAP(h) ); 
 }
 
