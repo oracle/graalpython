@@ -280,4 +280,23 @@ public class NumberTests extends ParserTestBase {
         checkSyntaxError("0o5__77");
     }
 
+    @Test
+    public void Float01() throws Exception {
+        checkTreeResult("1.0");
+    }
+
+    @Test
+    public void Float02() throws Exception {
+        checkTreeResult("0.0");
+    }
+
+    @Test
+    public void Float03() throws Exception {
+        checkTreeResult("-0.0");
+    }
+
+    @Test
+    public void Float04() throws Exception {
+        checkTreeResult("--0.0");
+    }
 }

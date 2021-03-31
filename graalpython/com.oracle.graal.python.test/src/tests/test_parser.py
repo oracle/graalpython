@@ -690,3 +690,57 @@ def fn():
     assert "Function Documentation" in code1.co_consts
     assert "Function Documentation" not in code2.co_consts
     assert exec(code1) == exec(code2)
+
+
+def test_negative_float():
+    
+    def check_const(fn, expected):
+        for const in fn.__code__.co_consts:
+            if repr(const) == repr(expected):
+                return True
+        else:
+            return False
+
+    def fn1():
+        return -0.0
+
+    assert check_const(fn1, -0.0)
+
+
+def find_count_in(collection, what):
+    count = 0;
+    for item in collection:
+        if item == what:
+            count +=1
+    return count
+
+def test_same_consts():
+    def fn1(): a = 1; b = 1; return a + b
+    assert find_count_in(fn1.__code__.co_consts, 1) == 1
+
+    def fn2(): a = 'a'; b = 'a'; return a + b
+    assert find_count_in(fn2.__code__.co_consts, 'a') == 1
+
+def test_tuple_in_const():
+    def fn1() : return (0,)
+    assert (0,) in fn1.__code__.co_consts
+    assert 0 not in fn1.__code__.co_consts
+
+    def fn2() : return (1, 2, 3, 1, 2, 3)
+    assert (1, 2, 3, 1, 2, 3) in fn2.__code__.co_consts
+    assert 1 not in fn2.__code__.co_consts
+    assert 2 not in fn2.__code__.co_consts
+    assert 3 not in fn2.__code__.co_consts
+    assert find_count_in(fn2.__code__.co_consts, (1, 2, 3, 1, 2, 3)) == 1
+
+    def fn3() : a = 1; return (1, 2, 1)
+    assert (1, 2, 1) in fn3.__code__.co_consts
+    assert find_count_in(fn3.__code__.co_consts, 1) == 1
+    assert 2 not in fn3.__code__.co_consts
+
+    def fn4() : a = 1; b = (1,2,3); c = 4; return (1, 2, 3, 1, 2, 3)
+    assert (1, 2, 3) in fn4.__code__.co_consts
+    assert (1, 2, 3, 1, 2, 3) in fn4.__code__.co_consts
+    assert 2 not in fn4.__code__.co_consts
+    assert find_count_in(fn4.__code__.co_consts, 1) == 1
+    assert find_count_in(fn4.__code__.co_consts, 4) == 1
